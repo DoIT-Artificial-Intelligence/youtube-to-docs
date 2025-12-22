@@ -9,28 +9,48 @@
 # ///
 #
 # Run as:
-# uv run https://raw.githubusercontent.com/DoIT-Artifical-Intelligence/youtube-to-docs/refs/heads/main/main.py --KuPc06JgI_A
+# uv run https://raw.githubusercontent.com/DoIT-Artifical-Intelligence/youtube-to-docs/refs/heads/main/main.py -- PL8ZxoInteClyHaiReuOHpv6Z4SPrXtYtW
+
 import os
 import argparse
 from googleapiclient.discovery import build
 
-# 1. Setup Argument Parsing
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "video_id",
-    nargs='?',
-    default="KuPc06JgI_A",
-    help="The YouTube Video ID (defaults to KuPc06JgI_A)")
-args = parser.parse_args()
-
-# Access the variable
-print(f"Processing Video ID: {args.video_id}")
-
-# 2. Setup YouTube Service
 try:
     YOUTUBE_DATA_API_KEY = os.environ["YOUTUBE_DATA_API_KEY"]
     youtube_service = build("youtube", "v3", developerKey=YOUTUBE_DATA_API_KEY)
 except KeyError:
     YOUTUBE_DATA_API_KEY = None
     youtube_service = None
-    print("Warning: YOUTUBE_DATA_API_KEY not found in environment.")
+    print("Warning: YOUTUBE_DATA_API_KEY not found. Playlist expansion will fail.")
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "video_id",
+    nargs='?',
+    default="KuPc06JgI_A",
+    help="A Video ID e.g. 'KuPc06JgI_A', Playlist ID (starts with PL e.g. 'PL8ZxoInteClyHaiReuOHpv6Z4SPrXtYtW'), or comma-separated list of Video IDs. (e.g. 'KuPc06JgI_A,GalhDyf3F8g')"
+)
+args = parser.parse_args()
+video_id = args.video_id
+
+# Single video
+if len(video_id) == 11:
+    video_ids = [video_id]
+# List of videos
+if ",".in(video_id):
+    video_ids = video_id.split(',')
+# Playlist
+if video_id[0:2] == "PL":
+    video_ids = []
+    request = service.playlistItems().list(
+        part="contentDetails",
+        playlistId=playlist_id,
+        maxResults=50
+    )
+    while request:
+        response = request.execute()
+        for item in response['items']:
+            video_ids.append(item['contentDetails']['videoId'])
+        request = service.playlistItems().list_next(request, response)
+
+print(video_ids)
