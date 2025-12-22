@@ -7,21 +7,30 @@
 #     "youtube-transcript-api>=1.2.3"
 # ]
 # ///
-# 
-# Run as `uv run https://raw.githubusercontent.com/DoIT-Artifical-Intelligence/youtube-to-docs/refs/heads/main/main.py`
-print("hello world")
+#
+# Run as:
+# uv run https://raw.githubusercontent.com/DoIT-Artifical-Intelligence/youtube-to-docs/refs/heads/main/main.py --KuPc06JgI_A
 import os
-
-import isodate
-
+import argparse
 from googleapiclient.discovery import build
 
+# 1. Setup Argument Parsing
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "video_id",
+    nargs='?',
+    default="KuPc06JgI_A",
+    help="The YouTube Video ID (defaults to KuPc06JgI_A)")
+args = parser.parse_args()
+
+# Access the variable
+print(f"Processing Video ID: {args.video_id}")
+
+# 2. Setup YouTube Service
 try:
     YOUTUBE_DATA_API_KEY = os.environ["YOUTUBE_DATA_API_KEY"]
     youtube_service = build("youtube", "v3", developerKey=YOUTUBE_DATA_API_KEY)
-    print(f"Video Title: {video_title}")
-except:
+except KeyError:
     YOUTUBE_DATA_API_KEY = None
     youtube_service = None
-print(YOUTUBE_DATA_API_KEY)
-    
+    print("Warning: YOUTUBE_DATA_API_KEY not found in environment.")
