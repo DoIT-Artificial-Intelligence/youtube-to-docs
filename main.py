@@ -12,9 +12,16 @@
 print("hello world")
 import os
 
+import isodate
+
+from googleapiclient.discovery import build
+
 try:
     YOUTUBE_DATA_API_KEY = os.environ["YOUTUBE_DATA_API_KEY"]
+    youtube_service = build("youtube", "v3", developerKey=YOUTUBE_DATA_API_KEY)
+    print(f"Video Title: {video_title}")
 except:
     YOUTUBE_DATA_API_KEY = None
+    youtube_service = None
 print(YOUTUBE_DATA_API_KEY)
     
