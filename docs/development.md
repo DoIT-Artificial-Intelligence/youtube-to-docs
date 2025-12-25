@@ -128,7 +128,7 @@ To publish a new version of the package to PyPI, follow these steps:
 ### Quick Deploy (One-liner)
 
 To build and deploy in one command (requires `.pypirc` configuration):
-```bash
+```powershell
 Remove-Item -Recurse -Force dist; uv tool run --from build pyproject-build; uv tool run twine upload dist/*
 ```
 
