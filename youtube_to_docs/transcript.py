@@ -116,13 +116,14 @@ def get_video_details(
         return None
 
 
-def fetch_transcript(video_id: str) -> Optional[str]:
-    """Fetches the transcript for a given video ID."""
+def fetch_transcript(video_id: str) -> Optional[Tuple[str, bool]]:
+    """Fetches the transcript for a given video ID and returns (text, is_generated)."""
     try:
         transcript_obj = ytt_api.fetch(video_id, languages=("en", "en-US"))
+        is_generated = getattr(transcript_obj, "is_generated", False)
         transcript_data = transcript_obj.to_raw_data()
         transcript = " ".join([t["text"] for t in transcript_data])
-        return transcript
+        return transcript, is_generated
     except Exception as e:
         print(f"Error fetching transcript for {video_id}: {e}")
         return None

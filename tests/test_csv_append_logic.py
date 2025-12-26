@@ -42,7 +42,7 @@ class TestCSVAppendLogic(unittest.TestCase):
             "0:01:00",
             "url1",
         )
-        mock_fetch_trans.return_value = "Transcript 1"
+        mock_fetch_trans.return_value = ("Transcript 1", False)
         mock_gen_summary.return_value = "Summary 1"
 
         with patch(
@@ -57,6 +57,8 @@ class TestCSVAppendLogic(unittest.TestCase):
         self.assertEqual(df[0, "URL"], "https://www.youtube.com/watch?v=vid1")
         self.assertEqual(df[0, "Summary Text gemini-test"], "Summary 1")
         self.assertIn("Summary File gemini-test", df.columns)
+        self.assertIn("Transcript File youtube generated", df.columns)
+        self.assertNotIn("Is Generated", df.columns)
 
     @patch("youtube_to_docs.main.get_youtube_service")
     @patch("youtube_to_docs.main.resolve_video_ids")
@@ -84,7 +86,7 @@ class TestCSVAppendLogic(unittest.TestCase):
                 "Tags": ["Tags"],
                 "Duration": ["0:01:00"],
                 "Transcript characters": [12],
-                "Transcript File": ["path1"],
+                "Transcript File youtube generated": ["path1"],
                 "Summary File gemini-test": ["spath1"],
                 "Summary Text gemini-test": ["Summary 1"],
             }
@@ -101,7 +103,7 @@ class TestCSVAppendLogic(unittest.TestCase):
             "0:02:00",
             "url2",
         )
-        mock_fetch_trans.return_value = "Transcript 2"
+        mock_fetch_trans.return_value = ("Transcript 2", False)
         mock_gen_summary.return_value = "Summary 2"
 
         with patch(
@@ -135,7 +137,7 @@ class TestCSVAppendLogic(unittest.TestCase):
                 "Tags": ["Tags"],
                 "Duration": ["0:01:00"],
                 "Transcript characters": [12],
-                "Transcript File": ["path1"],
+                "Transcript File youtube generated": ["path1"],
                 "Summary File gemini-test": ["spath1"],
                 "Summary Text gemini-test": ["Summary 1"],
             }
@@ -172,7 +174,7 @@ class TestCSVAppendLogic(unittest.TestCase):
                 "Tags": ["Tags"],
                 "Duration": ["0:01:00"],
                 "Transcript characters": [12],
-                "Transcript File": ["transcript_vid1.txt"],
+                "Transcript File youtube generated": ["transcript_vid1.txt"],
                 "Summary File gemini-test": ["spath1"],
                 "Summary Text gemini-test": ["Summary Gemini"],
             }
@@ -201,6 +203,7 @@ class TestCSVAppendLogic(unittest.TestCase):
         self.assertIn("Summary File haiku", df.columns)
         self.assertIn("Summary Text gemini-test", df.columns)
         self.assertIn("Summary File gemini-test", df.columns)
+        self.assertIn("Transcript File youtube generated", df.columns)
         self.assertEqual(
             df.filter(pl.col("URL").str.contains("vid1"))[0, "Summary Text haiku"],
             "Summary Haiku",

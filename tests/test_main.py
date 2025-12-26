@@ -131,14 +131,17 @@ class TestYoutubeToDocs(unittest.TestCase):
         ]
         mock_ytt_api.fetch.return_value = mock_transcript_obj
 
-        text = transcript.fetch_transcript("vid1")
+        result = transcript.fetch_transcript("vid1")
+        self.assertIsNotNone(result)
+        assert result is not None
+        text, is_generated = result
         self.assertEqual(text, "Hello world")
 
     @patch("youtube_to_docs.transcript.ytt_api")
     def test_fetch_transcript_error(self, mock_ytt_api):
         mock_ytt_api.fetch.side_effect = Exception("Transcript disabled")
-        text = transcript.fetch_transcript("vid1")
-        self.assertIsNone(text)
+        result = transcript.fetch_transcript("vid1")
+        self.assertIsNone(result)
 
     @patch("youtube_to_docs.llms.genai.Client")
     def test_generate_summary_gemini(self, mock_client_cls):

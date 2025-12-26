@@ -174,19 +174,20 @@ def main() -> None:
         transcript_full_path = ""
         if (
             existing_row
-            and "Transcript File" in existing_row
-            and existing_row["Transcript File"]
+            and "Transcript File youtube generated" in existing_row
+            and existing_row["Transcript File youtube generated"]
         ):
-            transcript_full_path = existing_row["Transcript File"]
+            transcript_full_path = existing_row["Transcript File youtube generated"]
             if os.path.exists(transcript_full_path):
                 print(f"Reading existing transcript from file: {transcript_full_path}")
                 with open(transcript_full_path, "r", encoding="utf-8") as f:
                     transcript = f.read()
 
         if not transcript:
-            transcript = fetch_transcript(video_id)
-            if not transcript:
+            result = fetch_transcript(video_id)
+            if not result:
                 continue
+            transcript, is_generated = result
 
             # Save Transcript
             safe_title = (
@@ -194,7 +195,8 @@ def main() -> None:
                 .replace("\n", " ")
                 .replace("\r", "")
             )
-            transcript_filename = f"{video_id} - {safe_title}.txt"
+            prefix = "youtube generated - " if is_generated else ""
+            transcript_filename = f"{prefix}{video_id} - {safe_title}.txt"
             transcript_full_path = os.path.abspath(
                 os.path.join(transcripts_dir, transcript_filename)
             )
@@ -245,7 +247,7 @@ def main() -> None:
                 "Tags": tags,
                 "Duration": video_duration,
                 "Transcript characters": len(transcript),
-                "Transcript File": transcript_full_path,
+                "Transcript File youtube generated": transcript_full_path,
                 summary_file_col_name: summary_full_path,
                 summary_col_name: summary_text,
             }
