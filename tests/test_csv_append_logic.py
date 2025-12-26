@@ -57,7 +57,7 @@ class TestCSVAppendLogic(unittest.TestCase):
         self.assertEqual(df[0, "URL"], "https://www.youtube.com/watch?v=vid1")
         self.assertEqual(df[0, "Summary Text gemini-test"], "Summary 1")
         self.assertIn("Summary File gemini-test", df.columns)
-        self.assertIn("Transcript File youtube generated", df.columns)
+        self.assertIn("Transcript File human generated", df.columns)
         self.assertNotIn("Is Generated", df.columns)
 
     @patch("youtube_to_docs.main.get_youtube_service")
@@ -85,8 +85,7 @@ class TestCSVAppendLogic(unittest.TestCase):
                 "Channel": ["Chan"],
                 "Tags": ["Tags"],
                 "Duration": ["0:01:00"],
-                "Transcript characters": [12],
-                "Transcript File youtube generated": ["path1"],
+                "Transcript File human generated": ["path1"],
                 "Summary File gemini-test": ["spath1"],
                 "Summary Text gemini-test": ["Summary 1"],
             }
@@ -137,7 +136,7 @@ class TestCSVAppendLogic(unittest.TestCase):
                 "Tags": ["Tags"],
                 "Duration": ["0:01:00"],
                 "Transcript characters": [12],
-                "Transcript File youtube generated": ["path1"],
+                "Transcript File human generated": ["path1"],
                 "Summary File gemini-test": ["spath1"],
                 "Summary Text gemini-test": ["Summary 1"],
             }
@@ -174,7 +173,7 @@ class TestCSVAppendLogic(unittest.TestCase):
                 "Tags": ["Tags"],
                 "Duration": ["0:01:00"],
                 "Transcript characters": [12],
-                "Transcript File youtube generated": ["transcript_vid1.txt"],
+                "Transcript File human generated": ["transcript_vid1.txt"],
                 "Summary File gemini-test": ["spath1"],
                 "Summary Text gemini-test": ["Summary Gemini"],
             }
@@ -203,7 +202,7 @@ class TestCSVAppendLogic(unittest.TestCase):
         self.assertIn("Summary File haiku", df.columns)
         self.assertIn("Summary Text gemini-test", df.columns)
         self.assertIn("Summary File gemini-test", df.columns)
-        self.assertIn("Transcript File youtube generated", df.columns)
+        self.assertIn("Transcript File human generated", df.columns)
         self.assertEqual(
             df.filter(pl.col("URL").str.contains("vid1"))[0, "Summary Text haiku"],
             "Summary Haiku",
@@ -214,6 +213,66 @@ class TestCSVAppendLogic(unittest.TestCase):
             ],
             "Summary Gemini",
         )
+
+    @patch("youtube_to_docs.main.get_youtube_service")
+    @patch("youtube_to_docs.main.resolve_video_ids")
+    @patch("youtube_to_docs.main.get_video_details")
+    @patch("youtube_to_docs.main.fetch_transcript")
+    @patch("youtube_to_docs.main.generate_summary")
+    @patch("os.makedirs")
+    def test_column_ordering(
+        self,
+        mock_makedirs,
+        mock_gen_summary,
+        mock_fetch_trans,
+        mock_details,
+        mock_resolve,
+        mock_svc,
+    ):
+        mock_resolve.return_value = ["vid1"]
+        mock_details.return_value = (
+            "Title 1",
+            "Desc",
+            "2023-01-01",
+            "Chan",
+            "Tags",
+            "0:01:00",
+            "url1",
+        )
+        mock_fetch_trans.return_value = ("Transcript 1", False)
+        mock_gen_summary.return_value = "Summary 1"
+
+        with patch(
+            "sys.argv", ["main.py", "vid1", "-o", self.outfile, "-m", "gemini-test"]
+        ):
+            with patch("builtins.open", mock_open()):
+                main.main()
+
+        df = pl.read_csv(self.outfile)
+        cols = df.columns
+
+        # Expected order based on logic
+        expected_start = [
+            "URL",
+            "Title",
+            "Description",
+            "Data Published",
+            "Channel",
+            "Tags",
+            "Duration",
+            "Transcript characters",
+        ]
+        for i, col in enumerate(expected_start):
+            self.assertEqual(cols[i], col)
+
+        # Transcript File should be next
+        self.assertTrue(cols[len(expected_start)].startswith("Transcript File "))
+
+        # Summary File should be next
+        self.assertTrue(cols[len(expected_start) + 1].startswith("Summary File "))
+
+        # Summary Text should be next
+        self.assertTrue(cols[len(expected_start) + 2].startswith("Summary Text "))
 
 
 if __name__ == "__main__":

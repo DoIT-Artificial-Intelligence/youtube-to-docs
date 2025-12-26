@@ -40,6 +40,42 @@ from youtube_to_docs.transcript import (
 )
 
 
+def reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
+    """Reorder columns according to the specified logical structure."""
+    cols = df.columns
+    base_order = [
+        "URL",
+        "Title",
+        "Description",
+        "Data Published",
+        "Channel",
+        "Tags",
+        "Duration",
+        "Transcript characters",
+    ]
+
+    # Filter base_order to only include columns that actually exist
+    final_order = [c for c in base_order if c in cols]
+
+    # Add Transcript File columns
+    transcript_files = [c for c in cols if c.startswith("Transcript File ")]
+    final_order.extend(sorted(transcript_files))
+
+    # Add Summary File columns
+    summary_files = [c for c in cols if c.startswith("Summary File ")]
+    final_order.extend(sorted(summary_files))
+
+    # Add Summary Text columns
+    summary_texts = [c for c in cols if c.startswith("Summary Text ")]
+    final_order.extend(sorted(summary_texts))
+
+    # Add any remaining columns that weren't caught
+    remaining = [c for c in cols if c not in final_order]
+    final_order.extend(remaining)
+
+    return df.select(final_order)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -172,16 +208,29 @@ def main() -> None:
         # Fetch/Save Transcript
         transcript = ""
         transcript_full_path = ""
-        if (
-            existing_row
-            and "Transcript File youtube generated" in existing_row
-            and existing_row["Transcript File youtube generated"]
-        ):
-            transcript_full_path = existing_row["Transcript File youtube generated"]
-            if os.path.exists(transcript_full_path):
-                print(f"Reading existing transcript from file: {transcript_full_path}")
-                with open(transcript_full_path, "r", encoding="utf-8") as f:
-                    transcript = f.read()
+        is_generated = False
+
+        # Check existing row for transcript
+        if existing_row:
+            col_youtube = "Transcript File youtube generated"
+            col_human = "Transcript File human generated"
+            found_col = None
+
+            if col_youtube in existing_row and existing_row[col_youtube]:
+                found_col = col_youtube
+                is_generated = True
+            elif col_human in existing_row and existing_row[col_human]:
+                found_col = col_human
+                is_generated = False
+
+            if found_col:
+                transcript_full_path = existing_row[found_col]
+                if os.path.exists(transcript_full_path):
+                    print(
+                        f"Reading existing transcript from file: {transcript_full_path}"
+                    )
+                    with open(transcript_full_path, "r", encoding="utf-8") as f:
+                        transcript = f.read()
 
         if not transcript:
             result = fetch_transcript(video_id)
@@ -195,7 +244,7 @@ def main() -> None:
                 .replace("\n", " ")
                 .replace("\r", "")
             )
-            prefix = "youtube generated - " if is_generated else ""
+            prefix = "youtube generated - " if is_generated else "human generated - "
             transcript_filename = f"{prefix}{video_id} - {safe_title}.txt"
             transcript_full_path = os.path.abspath(
                 os.path.join(transcripts_dir, transcript_filename)
@@ -236,6 +285,11 @@ def main() -> None:
                 except OSError as e:
                     print(f"Error writing summary: {e}")
 
+        transcript_col_name = (
+            "Transcript File youtube generated"
+            if is_generated
+            else "Transcript File human generated"
+        )
         row = existing_row.copy() if existing_row else {}
         row.update(
             {
@@ -247,7 +301,7 @@ def main() -> None:
                 "Tags": tags,
                 "Duration": video_duration,
                 "Transcript characters": len(transcript),
-                "Transcript File youtube generated": transcript_full_path,
+                transcript_col_name: transcript_full_path,
                 summary_file_col_name: summary_full_path,
                 summary_col_name: summary_text,
             }
@@ -269,6 +323,7 @@ def main() -> None:
         if "Data Published" in final_df.columns:
             final_df = final_df.sort("Data Published", descending=True)
 
+        final_df = reorder_columns(final_df)
         final_df.write_csv(outfile)
         print(f"Successfully wrote {len(final_df)} rows to {outfile}")
     else:
