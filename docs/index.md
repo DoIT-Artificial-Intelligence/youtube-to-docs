@@ -1,4 +1,6 @@
 # youtube-to-docs
+[![PyPI version](https://img.shields.io/pypi/v/youtube-to-docs.svg)](https://pypi.org/project/youtube-to-docs/)
+
 Convert YouTube videos to docs/sheets for discoverability.
 
 See the CLI by running:
