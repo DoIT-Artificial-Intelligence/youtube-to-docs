@@ -53,3 +53,9 @@ line-ending = "auto"
 [tool.ty.environment]
 # Target Python 3.14 to match project requirements
 python-version = "3.14"
+
+[dependency-groups]
+dev = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.7.1",
+]

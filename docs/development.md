@@ -107,6 +107,36 @@ uv tool run pre-commit run --all-files
 ```   
 
 
+## Documentation
+
+We use `MkDocs` with the `Material` theme for documentation.
+
+### Build and Serve Locally
+
+To preview the documentation locally:
+
+```bash
+uv run mkdocs serve
+```
+
+This will start a local server, usually at `http://127.0.0.1:8000`.
+
+To build the static site (output will be in the `site/` directory):
+
+```bash
+uv run mkdocs build
+```
+
+### Deployment
+
+The documentation is automatically built and deployed to GitHub Pages on every push to the `main` branch via GitHub Actions.
+
+If you need to deploy manually:
+
+```bash
+uv run mkdocs gh-deploy
+```
+
 ## Release to PyPI
 
 To publish a new version of the package to PyPI, follow these steps:
