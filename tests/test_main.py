@@ -21,12 +21,14 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.resolve_video_ids")
     @patch("youtube_to_docs.main.get_video_details")
     @patch("youtube_to_docs.main.fetch_transcript")
+    @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_summary")
     @patch("os.makedirs")
     def test_create_new_file(
         self,
         mock_makedirs,
         mock_gen_summary,
+        mock_get_pricing,
         mock_fetch_trans,
         mock_details,
         mock_resolve,
@@ -44,6 +46,7 @@ class TestMain(unittest.TestCase):
         )
         mock_fetch_trans.return_value = ("Transcript 1", False)
         mock_gen_summary.return_value = ("Summary 1", 100, 50)
+        mock_get_pricing.return_value = (0.0, 0.0)
 
         with patch(
             "sys.argv", ["main.py", "vid1", "-o", self.outfile, "-m", "gemini-test"]
@@ -57,22 +60,24 @@ class TestMain(unittest.TestCase):
         self.assertEqual(df[0, "URL"], "https://www.youtube.com/watch?v=vid1")
         self.assertEqual(df[0, "Summary Text gemini-test"], "Summary 1")
         self.assertIn("Summary File gemini-test", df.columns)
-        self.assertIn("gemini-test summary cost", df.columns)
+        self.assertIn("gemini-test summary cost ($)", df.columns)
         self.assertAlmostEqual(
-            df[0, "gemini-test summary cost"], 0.0
-        )  # Since pricing is mocked to 0 by default if not found
+            df[0, "gemini-test summary cost ($)"], 0.0
+        )  # Since pricing is mocked to 0.0
         self.assertIn("Transcript File human generated", df.columns)
 
     @patch("youtube_to_docs.main.get_youtube_service")
     @patch("youtube_to_docs.main.resolve_video_ids")
     @patch("youtube_to_docs.main.get_video_details")
     @patch("youtube_to_docs.main.fetch_transcript")
+    @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_summary")
     @patch("os.makedirs")
     def test_append_new_video(
         self,
         mock_makedirs,
         mock_gen_summary,
+        mock_get_pricing,
         mock_fetch_trans,
         mock_details,
         mock_resolve,
@@ -107,6 +112,7 @@ class TestMain(unittest.TestCase):
         )
         mock_fetch_trans.return_value = ("Transcript 2", False)
         mock_gen_summary.return_value = ("Summary 2", 200, 100)
+        mock_get_pricing.return_value = (0.0, 0.0)
 
         with patch(
             "sys.argv", ["main.py", "vid2", "-o", self.outfile, "-m", "gemini-test"]
@@ -159,11 +165,18 @@ class TestMain(unittest.TestCase):
 
     @patch("youtube_to_docs.main.get_youtube_service")
     @patch("youtube_to_docs.main.resolve_video_ids")
+    @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_summary")
     @patch("os.path.exists")
     @patch("os.makedirs")
     def test_add_new_summary_column(
-        self, mock_makedirs, mock_exists, mock_gen_summary, mock_resolve, mock_svc
+        self,
+        mock_makedirs,
+        mock_exists,
+        mock_gen_summary,
+        mock_get_pricing,
+        mock_resolve,
+        mock_svc,
     ):
         # Existing CSV without 'Summary Text haiku'
         initial_data = pl.DataFrame(
@@ -185,6 +198,7 @@ class TestMain(unittest.TestCase):
 
         mock_resolve.return_value = ["vid1"]
         mock_gen_summary.return_value = ("Summary Haiku", 300, 150)
+        mock_get_pricing.return_value = (0.0, 0.0)
 
         # Mock transcript file existence and reading
         def side_effect(path):
@@ -203,7 +217,7 @@ class TestMain(unittest.TestCase):
         df = pl.read_csv(self.outfile)
         self.assertIn("Summary Text haiku", df.columns)
         self.assertIn("Summary File haiku", df.columns)
-        self.assertIn("haiku summary cost", df.columns)
+        self.assertIn("haiku summary cost ($)", df.columns)
         self.assertIn("Summary Text gemini-test", df.columns)
         self.assertIn("Summary File gemini-test", df.columns)
         self.assertIn("Transcript File human generated", df.columns)
@@ -212,12 +226,14 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.resolve_video_ids")
     @patch("youtube_to_docs.main.get_video_details")
     @patch("youtube_to_docs.main.fetch_transcript")
+    @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_summary")
     @patch("os.makedirs")
     def test_column_ordering(
         self,
         mock_makedirs,
         mock_gen_summary,
+        mock_get_pricing,
         mock_fetch_trans,
         mock_details,
         mock_resolve,
@@ -235,6 +251,7 @@ class TestMain(unittest.TestCase):
         )
         mock_fetch_trans.return_value = ("Transcript 1", False)
         mock_gen_summary.return_value = ("Summary 1", 100, 50)
+        mock_get_pricing.return_value = (0.0, 0.0)
 
         with patch(
             "sys.argv", ["main.py", "vid1", "-o", self.outfile, "-m", "gemini-test"]
