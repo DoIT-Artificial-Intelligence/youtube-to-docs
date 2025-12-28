@@ -28,6 +28,8 @@ theme:
 
 nav:
   - Home: index.md
+  - Usage: usage.md
+  - Shout Outs: shout-outs.md
   - Development: development.md
 
 markdown_extensions:
