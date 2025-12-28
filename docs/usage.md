@@ -26,19 +26,19 @@ youtube-to-docs
 
 ### Examples
 
-**1. Process a specific video and save to a custom CSV:**
+**1. Process the default video and save to a custom CSV:**
 ```bash
-youtube-to-docs dQw4w9WgXcQ -o rickroll.csv
+youtube-to-docs -o youtube-docs.csv
 ```
 
 **2. Summarize a Playlist using Google Gemini:**
 ```bash
-youtube-to-docs PL8ZxoInteClyHaiReuOHpv6Z4SPrXtYtW -m gemini-3-flash-preview
+youtube-to-docs PLGKTTEqwhiHHWO-jdxM1KtzTbWo6h0Ycl -m gemini-3-flash-preview
 ```
 
 **3. Process a Channel with Summaries, TTS, and Infographics:**
 ```bash
-youtube-to-docs @GoogleDevelopers -m vertex-claude-haiku-4-5@20251001 --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-2.5-flash-image
+youtube-to-docs @mga-othercommittees6625 -m vertex-claude-haiku-4-5@20251001 --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-2.5-flash-image
 ```
 
 ## Library Usage
