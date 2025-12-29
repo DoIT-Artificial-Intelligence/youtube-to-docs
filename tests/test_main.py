@@ -339,6 +339,57 @@ class TestMain(unittest.TestCase):
                 self.assertIn("infographic-files", path)
                 self.assertTrue(path.endswith(".png"))
 
+    @patch("youtube_to_docs.main.get_youtube_service")
+    @patch("youtube_to_docs.main.resolve_video_ids")
+    @patch("youtube_to_docs.main.get_video_details")
+    @patch("youtube_to_docs.main.fetch_transcript")
+    @patch("youtube_to_docs.main.get_model_pricing")
+    @patch("youtube_to_docs.main.generate_summary")
+    @patch("youtube_to_docs.main.extract_speakers")
+    @patch("youtube_to_docs.main.generate_qa")
+    @patch("os.makedirs")
+    def test_qa_generation(
+        self,
+        mock_makedirs,
+        mock_gen_qa,
+        mock_extract_speakers,
+        mock_gen_summary,
+        mock_get_pricing,
+        mock_fetch_trans,
+        mock_details,
+        mock_resolve,
+        mock_svc,
+    ):
+        mock_resolve.return_value = ["vid1"]
+        mock_details.return_value = (
+            "Title 1",
+            "Desc",
+            "2023-01-01",
+            "Chan",
+            "Tags",
+            "0:01:00",
+            "url1",
+        )
+        mock_fetch_trans.return_value = ("Transcript 1", False)
+        mock_get_pricing.return_value = (0.0, 0.0)
+        mock_extract_speakers.return_value = ("Speaker 1", 50, 20)
+        mock_gen_qa.return_value = ("QA Table", 200, 100)
+        mock_gen_summary.return_value = ("Summary 1", 100, 50)
+
+        with patch(
+            "sys.argv", ["main.py", "vid1", "-o", self.outfile, "-m", "gemini-test"]
+        ):
+            with patch("builtins.open", mock_open()):
+                main.main()
+
+        self.assertTrue(os.path.exists(self.outfile))
+        df = pl.read_csv(self.outfile)
+        self.assertIn("QA Text gemini-test", df.columns)
+        self.assertIn("QA File gemini-test", df.columns)
+        self.assertIn("gemini-test QA cost ($)", df.columns)
+        self.assertEqual(df[0, "QA Text gemini-test"], "QA Table")
+        self.assertIn("qa-files", df[0, "QA File gemini-test"])
+
 
 if __name__ == "__main__":
     unittest.main()

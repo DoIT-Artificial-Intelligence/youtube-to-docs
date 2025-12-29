@@ -20,6 +20,7 @@ import polars as pl
 from youtube_to_docs.infographic import generate_infographic
 from youtube_to_docs.llms import (
     extract_speakers,
+    generate_qa,
     generate_summary,
     get_model_pricing,
     normalize_model_name,
@@ -66,6 +67,10 @@ def reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     audio_files = [c for c in cols if c.startswith("Summary Audio File ")]
     final_order.extend(sorted(audio_files))
 
+    # Add QA File columns
+    qa_files = [c for c in cols if c.startswith("QA File ")]
+    final_order.extend(sorted(qa_files))
+
     # Add Speakers columns
     speakers = [
         c
@@ -89,6 +94,14 @@ def reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     # Add Summary Cost columns
     summary_costs = [c for c in cols if c.endswith(" summary cost ($)")]
     final_order.extend(sorted(summary_costs))
+
+    # Add QA Text columns
+    qa_texts = [c for c in cols if c.startswith("QA Text ")]
+    final_order.extend(sorted(qa_texts))
+
+    # Add QA Cost columns
+    qa_costs = [c for c in cols if c.endswith(" QA cost ($)")]
+    final_order.extend(sorted(qa_costs))
 
     # Add any remaining columns that weren't caught
     remaining = [c for c in cols if c not in final_order]
@@ -122,7 +135,8 @@ def main() -> None:
         "--model",
         default=None,
         help=(
-            "The LLM to use for speaker extraction and summarization.\n"
+            "The LLM to use for speaker extraction, Q&A generation, and "
+            "summarization.\n"
             "Can be one of: \n"
             "Gemini model (e.g., 'gemini-3-flash-preview')\n"
             "GCP Vertex model (prefixed with 'vertex-'; e.g. "
@@ -176,10 +190,12 @@ def main() -> None:
     summaries_dir = os.path.join(base_dir, "summary-files")
     infographics_dir = os.path.join(base_dir, "infographic-files")
     speakers_dir = os.path.join(base_dir, "speaker-extraction-files")
+    qa_dir = os.path.join(base_dir, "qa-files")
     os.makedirs(transcripts_dir, exist_ok=True)
     os.makedirs(summaries_dir, exist_ok=True)
     os.makedirs(infographics_dir, exist_ok=True)
     os.makedirs(speakers_dir, exist_ok=True)
+    os.makedirs(qa_dir, exist_ok=True)
 
     # Load existing CSV if it exists
     existing_df = None
@@ -437,6 +453,53 @@ def main() -> None:
                     speaker_cost = round(speaker_cost, 2)
                     row[speaker_cost_col_name] = speaker_cost
                     print(f"Speaker extraction cost: ${speaker_cost:.2f}")
+
+            # QA Generation
+            qa_col_name = f"QA Text {model_name}"
+            qa_file_col_name = f"QA File {model_name}"
+            qa_cost_col_name = f"{normalize_model_name(model_name)} QA cost ($)"
+
+            if qa_col_name not in row or not row[qa_col_name]:
+                print(f"Generating Q&A using model: {model_name}")
+                qa_text, qa_input, qa_output = generate_qa(
+                    model_name, transcript, speakers_text
+                )
+                row[qa_col_name] = qa_text
+
+                if qa_text.strip() == "nan" or qa_text.strip() == 'float("nan")':
+                    row[qa_col_name] = float("nan")
+
+                # Save QA File
+                if qa_text and not isinstance(row[qa_col_name], float):
+                    safe_title = re.sub(r'[\\/*?:"<>|]', "_", video_title).replace(
+                        "\n", " "
+                    )
+                    safe_title = safe_title.replace("\r", "")
+                    qa_filename = f"{model_name} - {video_id} - {safe_title} - qa.md"
+                    qa_full_path = os.path.abspath(os.path.join(qa_dir, qa_filename))
+                    try:
+                        with open(qa_full_path, "w", encoding="utf-8") as f:
+                            f.write(qa_text)
+                        print(f"Saved Q&A: {qa_filename}")
+                        row[qa_file_col_name] = qa_full_path
+                    except OSError as e:
+                        print(f"Error writing Q&A file: {e}")
+
+                # Calculate QA Cost
+                input_price, output_price = get_model_pricing(model_name)
+                if input_price is not None and output_price is not None:
+                    # Add speaker tokens to cost as they are part of input
+                    # speakers_input is for extraction, not for QA prompt input
+                    # But we passed speakers_text to QA prompt, so we should count it.
+                    # The generate_qa return values (qa_input) should include it if
+                    # the API reports it correctly.
+
+                    qa_cost = (qa_input / 1_000_000) * input_price + (
+                        qa_output / 1_000_000
+                    ) * output_price
+                    qa_cost = round(qa_cost, 2)
+                    row[qa_cost_col_name] = qa_cost
+                    print(f"Q&A cost: ${qa_cost:.2f}")
 
             # Check if we already have it in the row (from existing_row)
             if summary_col_name in row and row[summary_col_name]:

@@ -318,3 +318,92 @@ def extract_speakers(model_name: str, transcript: str) -> Tuple[str, int, int]:
         f"Transcript: {transcript}"
     )
     return _query_llm(model_name, prompt)
+
+
+def add_question_numbers(markdown_table: str) -> str:
+    """
+    Adds a 'question number' column to the markdown table.
+    """
+    lines = markdown_table.strip().split("\n")
+    if not lines:
+        return markdown_table
+
+    # Check if it's a valid table (has header and separator)
+    if len(lines) < 2:
+        return markdown_table
+
+    new_lines = []
+    question_counter = 1
+
+    for i, line in enumerate(lines):
+        stripped_line = line.strip()
+        if not stripped_line:
+            continue
+
+        if i == 0:
+            # Header row
+            # Ensure it starts with | (some LLMs might miss it)
+            if not stripped_line.startswith("|"):
+                stripped_line = "|" + stripped_line
+            new_lines.append(f"| question number {stripped_line}")
+        elif i == 1 and ("---" in stripped_line or "-|-" in stripped_line):
+            # Separator row
+            if not stripped_line.startswith("|"):
+                stripped_line = "|" + stripped_line
+            new_lines.append(f"|---{stripped_line}")
+        else:
+            # Data row
+            if stripped_line.startswith("|"):
+                new_lines.append(f"| {question_counter} {stripped_line}")
+                question_counter += 1
+            else:
+                # Might be a continuation line or garbage, skip for now or append as is
+                # Ideally, we assume strict table format. If it doesn't start with |,
+                # it might be text outside the table.
+                # If we want to be safe, we only number rows starting with |
+                if "|" in stripped_line: # It has columns but maybe missing start pipe
+                     new_lines.append(f"| {question_counter} | {stripped_line}")
+                     question_counter += 1
+                else:
+                    new_lines.append(line)
+
+    return "\n".join(new_lines)
+
+
+def generate_qa(
+    model_name: str, transcript: str, speakers: str
+) -> Tuple[str, int, int]:
+    """
+    Extracts Q&A pairs from the transcript.
+    Returns (qa_markdown, input_tokens, output_tokens).
+    """
+    prompt = (
+        "I have included a transcript."
+        "\n\n"
+        "Can you please extract the questions and answers from the transcript?"
+        "\n\n"
+        "The output should be a markdown table like:"
+        "\n\n"
+        "| questioner(s) | question | responder(s) | answer |"
+        "\n"
+        "|---|---|---|---|"
+        "\n"
+        "| Speaker 1 | What is... | Speaker 2 | It is... |"
+        "\n\n"
+        "If the questioner or responder is unknown use the placeholder UNKNOWN. "
+        'If no Q&A pairs are detected set it to float("nan").'
+        "\n\n"
+        f"Speakers detected: {speakers}"
+        "\n\n"
+        f"Transcript: {transcript}"
+    )
+    response_text, input_tokens, output_tokens = _query_llm(model_name, prompt)
+
+    if (
+        response_text.strip() != "nan"
+        and response_text.strip() != 'float("nan")'
+        and "|" in response_text
+    ):
+        response_text = add_question_numbers(response_text)
+
+    return response_text, input_tokens, output_tokens
