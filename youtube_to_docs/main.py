@@ -67,8 +67,12 @@ def reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     final_order.extend(sorted(audio_files))
 
     # Add Speakers columns
-    speakers = [c for c in cols if c.startswith("Speakers ")]
+    speakers = [c for c in cols if c.startswith("Speakers ") and not c.startswith("Speakers File ")]
     final_order.extend(sorted(speakers))
+
+    # Add Speakers File columns
+    speakers_files = [c for c in cols if c.startswith("Speakers File ")]
+    final_order.extend(sorted(speakers_files))
 
     # Add Speaker Extraction Cost columns
     speaker_costs = [c for c in cols if c.endswith(" Speaker extraction cost ($)")]
@@ -114,15 +118,17 @@ def main() -> None:
         "--model",
         default=None,
         help=(
-            "The LLM to use for summarization. Can be one of: \n"
+            "The LLM to use for speaker extraction and summarization.\n"
+            "Can be one of: \n"
             "Gemini model (e.g., 'gemini-3-flash-preview')\n"
-            "GCP Vertex model (prefixed with 'vertex-'). e.g. "
-            "vertex-claude-haiku-4-5@20251001\n"
-            "AWS Bedrock model (prefixed with 'bedrock-'). e.g. "
-            "bedrock-claude-haiku-4-5-20251001-v1\n"
-            "bedrock-nova-2-lite-v1\n"
-            "Azure Foundry model (prefix with 'foundry-). e.g. 'foundry-gpt-5-mini'\n"
-            "Can also be a comma-separated list of models (e.g., "
+            "GCP Vertex model (prefixed with 'vertex-'; e.g. "
+            "'vertex-claude-haiku-4-5@20251001')\n"
+            "AWS Bedrock model (prefixed with 'bedrock-'; e.g. "
+            "'bedrock-claude-haiku-4-5-20251001-v1'\n"
+            "'bedrock-nova-2-lite-v1')\n"
+            "Azure Foundry model (prefix with 'foundry-'; e.g. "
+            "'foundry-gpt-5-mini)'\n"
+            "Can also be a comma-separated list of models (e.g. "
             "'gemini-3-flash-preview,bedrock-claude-haiku-4-5-20251001-v1').\n"
             "Defaults to None."
         ),
@@ -165,9 +171,11 @@ def main() -> None:
     transcripts_dir = os.path.join(base_dir, "transcript-files")
     summaries_dir = os.path.join(base_dir, "summary-files")
     infographics_dir = os.path.join(base_dir, "infographic-files")
+    speakers_dir = os.path.join(base_dir, "speaker-extraction-files")
     os.makedirs(transcripts_dir, exist_ok=True)
     os.makedirs(summaries_dir, exist_ok=True)
     os.makedirs(infographics_dir, exist_ok=True)
+    os.makedirs(speakers_dir, exist_ok=True)
 
     # Load existing CSV if it exists
     existing_df = None
@@ -365,6 +373,7 @@ def main() -> None:
             summary_col_name = f"Summary Text {model_name}"
             summary_file_col_name = f"Summary File {model_name}"
             speakers_col_name = f"Speakers {model_name}"
+            speakers_file_col_name = f"Speakers File {model_name}"
             summary_cost_col_name = (
                 f"{normalize_model_name(model_name)} summary cost ($)"
             )
@@ -394,6 +403,26 @@ def main() -> None:
                     or speakers_text.strip() == 'float("nan")'
                 ):
                     row[speakers_col_name] = float("nan")
+
+                # Save Speakers File
+                if speakers_text and not isinstance(row[speakers_col_name], float):
+                    safe_title = re.sub(r'[\\/*?:"<>|]', "_", video_title).replace(
+                        "\n", " "
+                    )
+                    safe_title = safe_title.replace("\r", "")
+                    speakers_filename = (
+                        f"{model_name} - {video_id} - {safe_title} - speakers.txt"
+                    )
+                    speakers_full_path = os.path.abspath(
+                        os.path.join(speakers_dir, speakers_filename)
+                    )
+                    try:
+                        with open(speakers_full_path, "w", encoding="utf-8") as f:
+                            f.write(speakers_text)
+                        print(f"Saved speakers: {speakers_filename}")
+                        row[speakers_file_col_name] = speakers_full_path
+                    except OSError as e:
+                        print(f"Error writing speakers file: {e}")
 
                 # Calculate Speaker Cost immediately
                 input_price, output_price = get_model_pricing(model_name)
