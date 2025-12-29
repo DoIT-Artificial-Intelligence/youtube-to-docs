@@ -282,12 +282,14 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.get_video_details")
     @patch("youtube_to_docs.main.fetch_transcript")
     @patch("youtube_to_docs.main.generate_summary")
+    @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_infographic")
     @patch("os.makedirs")
     def test_infographic_storage(
         self,
         mock_makedirs,
         mock_gen_info,
+        mock_get_pricing,
         mock_gen_summary,
         mock_fetch_trans,
         mock_details,
@@ -306,7 +308,8 @@ class TestMain(unittest.TestCase):
         )
         mock_fetch_trans.return_value = ("Transcript 1", False)
         mock_gen_summary.return_value = ("Summary 1", 100, 50)
-        mock_gen_info.return_value = b"fake_image_bytes"
+        mock_get_pricing.return_value = (0.0, 0.0)
+        mock_gen_info.return_value = (b"fake_image_bytes", 100, 1290)
 
         with patch(
             "sys.argv",
@@ -338,6 +341,12 @@ class TestMain(unittest.TestCase):
                 path = df[0, col_name]
                 self.assertIn("infographic-files", path)
                 self.assertTrue(path.endswith(".png"))
+
+                # Verify Infographic Cost Column
+                cost_col = "Summary Infographic Cost gemini-test gemini-image ($)"
+                self.assertIn(cost_col, df.columns)
+                # Cost should be 0.0 because pricing is mocked to (0.0, 0.0)
+                self.assertEqual(df[0, cost_col], 0.0)
 
     @patch("youtube_to_docs.main.get_youtube_service")
     @patch("youtube_to_docs.main.resolve_video_ids")

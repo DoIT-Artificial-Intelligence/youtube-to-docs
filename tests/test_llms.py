@@ -214,77 +214,72 @@ class TestModelNormalization(unittest.TestCase):
 
 
 class TestPricing(unittest.TestCase):
-    @patch("youtube_to_docs.llms.requests.get")
-    def test_get_model_pricing_found(self, mock_get):
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {
-            "prices": [{"id": "gpt-4", "input": 30.0, "output": 60.0}]
-        }
-        mock_get.return_value = mock_resp
-
+    @patch(
+        "youtube_to_docs.llms.PRICES",
+        {"prices": [{"id": "gpt-4", "input": 30.0, "output": 60.0}]},
+    )
+    def test_get_model_pricing_found(self):
         inp, outp = llms.get_model_pricing("gpt-4")
         self.assertEqual(inp, 30.0)
         self.assertEqual(outp, 60.0)
 
-    @patch("youtube_to_docs.llms.requests.get")
-    def test_get_model_pricing_normalized(self, mock_get):
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {
-            "prices": [{"id": "gpt-4", "input": 30.0, "output": 60.0}]
-        }
-        mock_get.return_value = mock_resp
-
+    @patch(
+        "youtube_to_docs.llms.PRICES",
+        {"prices": [{"id": "gpt-4", "input": 30.0, "output": 60.0}]},
+    )
+    def test_get_model_pricing_normalized(self):
         inp, outp = llms.get_model_pricing("vertex-gpt-4")
         self.assertEqual(inp, 30.0)
         self.assertEqual(outp, 60.0)
 
-    @patch("youtube_to_docs.llms.requests.get")
-    def test_get_model_pricing_aliased(self, mock_get):
+    @patch(
+        "youtube_to_docs.llms.PRICES",
+        {
+            "prices": [{"id": "claude-4.5-haiku", "input": 1.0, "output": 5.0}],
+            "aliases": {"claude-haiku-4-5": "claude-4.5-haiku"},
+        },
+    )
+    def test_get_model_pricing_aliased(self):
         """Test that aliases (like claude-haiku-4-5 -> claude-4.5-haiku) work."""
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {
-            "prices": [{"id": "claude-4.5-haiku", "input": 1.0, "output": 5.0}]
-        }
-        mock_get.return_value = mock_resp
-
         # This model name normalizes to 'claude-haiku-4-5'
         # which should alias to 'claude-4.5-haiku'
         inp, outp = llms.get_model_pricing("bedrock-claude-haiku-4-5-20251001-v1")
         self.assertEqual(inp, 1.0)
         self.assertEqual(outp, 5.0)
 
-    @patch("youtube_to_docs.llms.requests.get")
-    def test_get_model_pricing_specific_models(self, mock_get):
-        """Test getting pricing for specific models requested by user."""
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        # Minimal mock data with just enough to pass if logic is correct
-        # Note: In real run, this comes from the URL.
-        # Since we are mocking, we must provide the data we EXPECT to be there.
-
-        mock_resp.json.return_value = {
+    @patch(
+        "youtube_to_docs.llms.PRICES",
+        {
             "prices": [
                 {"id": "claude-4.5-haiku", "input": 1.0, "output": 5.0},
                 {"id": "gemini-3-flash-preview", "input": 0.5, "output": 3.0},
                 {"id": "gpt-5-mini", "input": 0.25, "output": 2.0},
                 {
-                    "id": "amazon-nova-lite",
-                    "input": 0.06,
-                    "output": 0.24,
-                },  # Assuming nova-2-lite aliases to this
-            ]
-        }
-        mock_get.return_value = mock_resp
-
+                    "id": "amazon-nova-2-lite",
+                    "input": 0.3,
+                    "output": 2.5,
+                },
+                {
+                    "id": "imagen-4",
+                    "input": 0.0,
+                    "output": 40.0,
+                },
+            ],
+            "aliases": {
+                "claude-haiku-4-5": "claude-4.5-haiku",
+                "nova-2-lite": "amazon-nova-2-lite",
+            },
+        },
+    )
+    def test_get_model_pricing_specific_models(self):
+        """Test getting pricing for specific models requested by user."""
         models = [
             "gemini-3-flash-preview",
             "vertex-claude-haiku-4-5@20251001",
             "bedrock-claude-haiku-4-5-20251001-v1",
             "bedrock-nova-2-lite-v1",
             "foundry-gpt-5-mini",
+            "imagen-4",
         ]
 
         for model in models:
@@ -295,13 +290,8 @@ class TestPricing(unittest.TestCase):
                     outp, f"Output price for {model} should not be None"
                 )
 
-    @patch("youtube_to_docs.llms.requests.get")
-    def test_get_model_pricing_not_found(self, mock_get):
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {"prices": [{"id": "gpt-4"}]}
-        mock_get.return_value = mock_resp
-
+    @patch("youtube_to_docs.llms.PRICES", {"prices": [{"id": "gpt-4"}]})
+    def test_get_model_pricing_not_found(self):
         inp, outp = llms.get_model_pricing("non-existent-model")
         self.assertIsNone(inp)
         self.assertIsNone(outp)

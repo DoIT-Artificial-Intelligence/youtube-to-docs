@@ -28,14 +28,18 @@ class TestInfographic(unittest.TestCase):
         mock_part = MagicMock()
         mock_part.inline_data.data = b"fake_gemini_bytes"
         mock_chunk.candidates = [MagicMock(content=MagicMock(parts=[mock_part]))]
+        mock_chunk.usage_metadata.prompt_token_count = 10
+        mock_chunk.usage_metadata.candidates_token_count = 20
 
         mock_client.models.generate_content_stream.return_value = [mock_chunk]
 
-        image_bytes = infographic.generate_infographic(
+        image_bytes, in_tok, out_tok = infographic.generate_infographic(
             "gemini-2.5-flash-image", "Summary text", "Video Title"
         )
 
         self.assertEqual(image_bytes, b"fake_gemini_bytes")
+        self.assertEqual(in_tok, 10)
+        self.assertEqual(out_tok, 20)
         mock_client.models.generate_content_stream.assert_called_once()
 
     @patch("youtube_to_docs.infographic.genai.Client")
@@ -50,24 +54,30 @@ class TestInfographic(unittest.TestCase):
 
         mock_client.models.generate_images.return_value = mock_resp
 
-        image_bytes = infographic.generate_infographic(
+        image_bytes, in_tok, out_tok = infographic.generate_infographic(
             "imagen-4.0-generate-001", "Summary text", "Video Title"
         )
 
         self.assertEqual(image_bytes, b"fake_imagen_bytes")
+        self.assertEqual(in_tok, 0)
+        self.assertEqual(out_tok, 1000)
         mock_client.models.generate_images.assert_called_once()
 
     def test_generate_infographic_none_model(self):
-        image_bytes = infographic.generate_infographic(
+        image_bytes, in_tok, out_tok = infographic.generate_infographic(
             None, "Summary text", "Video Title"
         )
         self.assertIsNone(image_bytes)
+        self.assertEqual(in_tok, 0)
+        self.assertEqual(out_tok, 0)
 
     def test_generate_infographic_unsupported_model(self):
-        image_bytes = infographic.generate_infographic(
+        image_bytes, in_tok, out_tok = infographic.generate_infographic(
             "unsupported-model", "Summary text", "Video Title"
         )
         self.assertIsNone(image_bytes)
+        self.assertEqual(in_tok, 0)
+        self.assertEqual(out_tok, 0)
 
     @patch("youtube_to_docs.infographic.genai.Client")
     def test_generate_infographic_imagen_no_images(self, mock_client_cls):
@@ -76,10 +86,12 @@ class TestInfographic(unittest.TestCase):
         mock_resp.generated_images = []
         mock_client.models.generate_images.return_value = mock_resp
 
-        image_bytes = infographic.generate_infographic(
+        image_bytes, in_tok, out_tok = infographic.generate_infographic(
             "imagen-4.0-generate-001", "Summary text", "Video Title"
         )
         self.assertIsNone(image_bytes)
+        self.assertEqual(in_tok, 0)
+        self.assertEqual(out_tok, 0)
 
     @patch("youtube_to_docs.infographic.genai.Client")
     def test_generate_infographic_gemini_no_data(self, mock_client_cls):
@@ -90,13 +102,16 @@ class TestInfographic(unittest.TestCase):
         mock_chunk.candidates = [
             MagicMock(content=MagicMock(parts=[MagicMock(inline_data=None)]))
         ]
+        mock_chunk.usage_metadata = None
 
         mock_client.models.generate_content_stream.return_value = [mock_chunk]
 
-        image_bytes = infographic.generate_infographic(
+        image_bytes, in_tok, out_tok = infographic.generate_infographic(
             "gemini-2.5-flash-image", "Summary text", "Video Title"
         )
         self.assertIsNone(image_bytes)
+        self.assertEqual(in_tok, 0)
+        self.assertEqual(out_tok, 0)
 
 
 if __name__ == "__main__":

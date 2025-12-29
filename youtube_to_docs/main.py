@@ -63,6 +63,10 @@ def reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     infographic_files = [c for c in cols if c.startswith("Summary Infographic File ")]
     final_order.extend(sorted(infographic_files))
 
+    # Add Summary Infographic Cost columns
+    infographic_costs = [c for c in cols if c.startswith("Summary Infographic Cost ")]
+    final_order.extend(sorted(infographic_costs))
+
     # Add Audio File columns (from TTS)
     audio_files = [c for c in cols if c.startswith("Summary Audio File ")]
     final_order.extend(sorted(audio_files))
@@ -160,6 +164,7 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "-i",
         "--infographic",
         default=None,
         help=(
@@ -619,7 +624,9 @@ def main() -> None:
                     continue
 
                 print(f"Generating infographic for model: {m_name}")
-                image_bytes = generate_infographic(infographic_arg, s_text, video_title)
+                image_bytes, input_tokens, output_tokens = generate_infographic(
+                    infographic_arg, s_text, video_title
+                )
                 if image_bytes:
                     safe_title = re.sub(r"[\\/*?:\"<>|]", "_", video_title).replace(
                         "\n", " "
@@ -637,6 +644,21 @@ def main() -> None:
                             f.write(image_bytes)
                         print(f"Saved infographic: {infographic_filename}")
                         row[info_col] = infographic_full_path
+
+                        # Calculate Infographic Cost
+                        input_price, output_price = get_model_pricing(infographic_arg)
+                        if input_price is not None and output_price is not None:
+                            cost = (input_tokens / 1_000_000) * input_price + (
+                                output_tokens / 1_000_000
+                            ) * output_price
+                            cost = round(cost, 2)
+                            cost_col = (
+                                f"Summary Infographic Cost {m_name} "
+                                f"{infographic_arg} ($)"
+                            )
+                            row[cost_col] = cost
+                            print(f"Infographic cost: ${cost:.2f}")
+
                     except OSError as e:
                         print(f"Error writing infographic: {e}")
 

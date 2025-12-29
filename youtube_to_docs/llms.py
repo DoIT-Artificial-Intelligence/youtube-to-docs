@@ -9,6 +9,8 @@ from google.auth.transport.requests import Request as GoogleAuthRequest
 from google.genai import types
 from openai import OpenAI
 
+from youtube_to_docs.prices import PRICES
+
 
 def normalize_model_name(model_name: str) -> str:
     """
@@ -32,66 +34,32 @@ def normalize_model_name(model_name: str) -> str:
 
 def get_model_pricing(model_name: str) -> Tuple[float | None, float | None]:
     """
-    Fetches model pricing from llm-prices repository.
+    Fetches model pricing from local prices.py.
     Returns (input_price_per_1m, output_price_per_1m).
     """
     try:
-        url = "https://www.llm-prices.com/current-v1.json"
-        response = requests.get(url, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            prices = data.get("prices", [])
+        prices = PRICES.get("prices", [])
+        aliases = PRICES.get("aliases", {})
 
-            # Add https://github.com/simonw/llm-prices/pull/48/files here until merge
-            prices.extend(
-                [
-                    {
-                        "id": "amazon-nova-2-omni-preview",
-                        "name": "Amazon Nova 2 Omni (Preview)",
-                        "input": 0.3,
-                        "output": 2.5,
-                    },
-                    {
-                        "id": "amazon-nova-2-pro-preview",
-                        "name": "Amazon Nova 2 Pro (Preview)",
-                        "input": 1.25,
-                        "output": 10.0,
-                    },
-                    {
-                        "id": "amazon-nova-2-lite",
-                        "name": "Amazon Nova 2 Lite",
-                        "input": 0.3,
-                        "output": 2.5,
-                    },
-                ]
-            )
+        # 1. Try exact match first
+        for p in prices:
+            if p["id"] == model_name:
+                return p["input"], p["output"]
 
-            # 1. Try exact match first
-            for p in prices:
-                if p["id"] == model_name:
-                    return p["input"], p["output"]
+        # 2. Try normalized name
+        normalized_name = normalize_model_name(model_name)
 
-            # 2. Try normalized name
-            normalized_name = normalize_model_name(model_name)
+        # Check aliases
+        search_name = aliases.get(normalized_name, normalized_name)
 
-            # Check aliases
-            aliases = {
-                "claude-haiku-4-5": "claude-4.5-haiku",
-                "nova-2-lite": "amazon-nova-2-lite",
-            }
-            search_name = aliases.get(normalized_name, normalized_name)
+        for p in prices:
+            if p["id"] == search_name:
+                return p.get("input"), p.get("output")
 
-            for p in prices:
-                if p["id"] == search_name:
-                    return p.get("input"), p.get("output")
-
-            print(
-                f"model {model_name} is not found in "
-                "https://www.llm-prices.com/current-v1.json"
-            )
+        print(f"model {model_name} is not found in youtube_to_docs/prices.py")
 
     except Exception as e:
-        print(f"Error fetching pricing data: {e}")
+        print(f"Error accessing pricing data: {e}")
 
     return None, None
 
