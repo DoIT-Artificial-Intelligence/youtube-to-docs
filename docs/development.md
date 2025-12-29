@@ -3,20 +3,13 @@
 ## Prerequisites
 
 - Python 3.14 or higher
-- `uv` (recommended) or `pip`
+- `uv`
 
 ## Installation
 
 1. Install dependencies:
    ```bash
-   uv pip install -r requirements.txt
-   # OR
-   pip install -r requirements.txt
-   ```
-
-2. Install the package in editable mode (optional, but recommended for development):
-   ```bash
-   uv pip install -e .
+   uv sync
    ```
 
 ## Usage
@@ -65,7 +58,7 @@ Remove-Item -Path "youtube-docs.csv", "transcript-files", "summary-files", "audi
 
 - `main.py`: Main application script.
 - `tests/`: Directory containing test files.
-- `requirements.txt`: Python package dependencies.
+- `pyproject.toml`: Project configuration and dependencies.
 
 ## Tooling
 

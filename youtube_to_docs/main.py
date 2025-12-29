@@ -18,7 +18,11 @@ import time
 import polars as pl
 
 from youtube_to_docs.infographic import generate_infographic
-from youtube_to_docs.llms import generate_summary, get_model_pricing
+from youtube_to_docs.llms import (
+    generate_summary,
+    get_model_pricing,
+    normalize_model_name,
+)
 from youtube_to_docs.transcript import (
     fetch_transcript,
     get_video_details,
@@ -107,6 +111,7 @@ def main() -> None:
             "vertex-claude-haiku-4-5@20251001\n"
             "AWS Bedrock model (prefixed with 'bedrock-'). e.g. "
             "bedrock-claude-haiku-4-5-20251001-v1\n"
+            "bedrock-nova-2-lite-v1\n"
             "Azure Foundry model (prefix with 'foundry-). e.g. 'foundry-gpt-5-mini'\n"
             "Defaults to None."
         ),
@@ -131,9 +136,11 @@ def main() -> None:
     args = parser.parse_args()
     video_id_input = args.video_id
     outfile = args.outfile
-    model_name = args.model
+    model_names_arg = args.model
     tts_arg = args.tts
     infographic_arg = args.infographic
+
+    model_names = model_names_arg.split(",") if model_names_arg else []
 
     youtube_service = get_youtube_service()
 
@@ -163,22 +170,10 @@ def main() -> None:
     print(f"Processing {len(video_ids)} videos.")
     print(f"Processing Videos: {video_ids}")
     print(f"Saving to: {outfile}")
-    if model_name:
-        print(f"Summarizing using model: {model_name}")
+    if model_names:
+        print(f"Summarizing using models: {model_names}")
 
     rows = []
-    summary_col_name = f"Summary Text {model_name}" if model_name else "Summary Text"
-    summary_file_col_name = (
-        f"Summary File {model_name}" if model_name else "Summary File"
-    )
-    summary_cost_col_name = (
-        f"{model_name} summary cost ($)" if model_name else "summary cost ($)"
-    )
-    infographic_col_name = (
-        f"Summary Infographic File {model_name} {infographic_arg}"
-        if model_name
-        else f"Summary Infographic File None {infographic_arg}"
-    )
 
     for video_id in video_ids:
         url = f"https://www.youtube.com/watch?v={video_id}"
@@ -194,28 +189,70 @@ def main() -> None:
         # Determine if we need to process this video
         needs_details = existing_row is None
         needs_transcript = existing_row is None
-        needs_summary = model_name is not None and (
-            existing_row is None
-            or summary_col_name not in existing_row
-            or not existing_row[summary_col_name]
-        )
-        needs_infographic = infographic_arg is not None and (
-            existing_row is None
-            or infographic_col_name not in existing_row
-            or not existing_row[infographic_col_name]
-        )
+
+        # Check needs for each model
+        models_needing_summary = []
+        for model_name in model_names:
+            s_col = f"Summary Text {model_name}"
+            if (
+                existing_row is None
+                or s_col not in existing_row
+                or not existing_row[s_col]
+            ):
+                models_needing_summary.append(model_name)
+
+        # Check needs for infographic (any summary text column without
+        # corresponding infographic)
+        # This is a bit complex to pre-calculate perfectly without the row
+        # constructed, but we can rely on the loop later.
+        # Generally if we are adding new summaries, we likely need
+        # infographics for them.
+
+        missing_costs = False
+        for model_name in model_names:
+            summary_cost_col_name = (
+                f"{normalize_model_name(model_name)} summary cost ($)"
+            )
+            if existing_row:
+                if (
+                    summary_cost_col_name not in existing_row
+                    or existing_row[summary_cost_col_name] is None
+                    or (
+                        isinstance(existing_row[summary_cost_col_name], float)
+                        and existing_row[summary_cost_col_name]
+                        != existing_row[summary_cost_col_name]
+                    )
+                ):
+                    missing_costs = True
+                    break
 
         if (
             not needs_details
             and not needs_transcript
-            and not needs_summary
-            and not needs_infographic
+            and not models_needing_summary
+            and not infographic_arg  # No infographic arg, don't care about missing
+            and not missing_costs
         ):
-            print(
-                f"Skipping {video_id}: already exists in table with metadata "
-                "and summary."
-            )
-            continue
+            # If infographic arg IS present, we should check if we are missing
+            # any infographics for existing summaries.
+            missing_infographics = False
+            if infographic_arg and existing_row:
+                for k in existing_row.keys():
+                    if k.startswith("Summary Text ") and existing_row[k]:
+                        m_name = k[len("Summary Text ") :]
+                        info_col = (
+                            f"Summary Infographic File {m_name} {infographic_arg}"
+                        )
+                        if info_col not in existing_row or not existing_row[info_col]:
+                            missing_infographics = True
+                            break
+
+            if not missing_infographics and not missing_costs:
+                print(
+                    f"Skipping {video_id}: already exists in table with metadata, "
+                    "summaries, and infographics."
+                )
+                continue
 
         # Get Details
         if needs_details:
@@ -290,45 +327,6 @@ def main() -> None:
             except OSError as e:
                 print(f"Error writing transcript: {e}")
 
-        # Summarize
-        summary_text = existing_row.get(summary_col_name, "") if existing_row else ""
-        summary_full_path = (
-            existing_row.get(summary_file_col_name, "") if existing_row else ""
-        )
-
-        if needs_summary:
-            print(f"Summarizing using model: {model_name}")
-            summary_text, input_tokens, output_tokens = generate_summary(
-                model_name, transcript, video_title, url
-            )
-
-            summary_cost = float("nan")
-            if model_name:
-                input_price, output_price = get_model_pricing(model_name)
-                if input_price is not None and output_price is not None:
-                    summary_cost = (input_tokens / 1_000_000) * input_price + (
-                        output_tokens / 1_000_000
-                    ) * output_price
-                    print(f"Summary cost: ${summary_cost:.6f}")
-
-            if summaries_dir and summary_text:
-                safe_title = re.sub(r"[\\/*?:\"<>|]", "_", video_title).replace(
-                    "\n", " "
-                )
-                safe_title = safe_title.replace("\r", "")
-                summary_filename = (
-                    f"{model_name} - {video_id} - {safe_title} - summary.md"
-                )
-                summary_full_path = os.path.abspath(
-                    os.path.join(summaries_dir, summary_filename)
-                )
-                try:
-                    with open(summary_full_path, "w", encoding="utf-8") as f:
-                        f.write(summary_text)
-                    print(f"Saved summary: {summary_filename}")
-                except OSError as e:
-                    print(f"Error writing summary: {e}")
-
         # Prepare row data base
         row = existing_row.copy() if existing_row else {}
 
@@ -351,7 +349,72 @@ def main() -> None:
             }
         )
 
-        if needs_summary:
+        # Summarize for each requested model
+        for model_name in model_names:
+            summary_col_name = f"Summary Text {model_name}"
+            summary_file_col_name = f"Summary File {model_name}"
+            summary_cost_col_name = (
+                f"{normalize_model_name(model_name)} summary cost ($)"
+            )
+
+            # Check if we already have it in the row (from existing_row)
+            if summary_col_name in row and row[summary_col_name]:
+                # Check if cost is missing and backfill if possible
+                if (
+                    summary_cost_col_name not in row
+                    or row[summary_cost_col_name] is None
+                    or (
+                        isinstance(row[summary_cost_col_name], float)
+                        and row[summary_cost_col_name] != row[summary_cost_col_name]
+                    )
+                ):  # Check for NaN
+                    print(f"Backfilling cost for model: {model_name}")
+                    input_price, output_price = get_model_pricing(model_name)
+                    if input_price is not None and output_price is not None:
+                        # Estimate tokens: ~4 chars per token
+                        est_input_tokens = len(transcript) / 4
+                        est_output_tokens = len(row[summary_col_name]) / 4
+                        summary_cost = (est_input_tokens / 1_000_000) * input_price + (
+                            est_output_tokens / 1_000_000
+                        ) * output_price
+                        summary_cost = round(summary_cost, 2)
+                        row[summary_cost_col_name] = summary_cost
+                        print(f"Estimated summary cost: ${summary_cost:.2f}")
+                continue
+
+            print(f"Summarizing using model: {model_name}")
+            summary_text, input_tokens, output_tokens = generate_summary(
+                model_name, transcript, video_title, url
+            )
+
+            summary_cost = float("nan")
+            input_price, output_price = get_model_pricing(model_name)
+            if input_price is not None and output_price is not None:
+                summary_cost = (input_tokens / 1_000_000) * input_price + (
+                    output_tokens / 1_000_000
+                ) * output_price
+                summary_cost = round(summary_cost, 2)
+                print(f"Summary cost: ${summary_cost:.2f}")
+
+            summary_full_path = ""
+            if summaries_dir and summary_text:
+                safe_title = re.sub(r"[\\/*?:\"<>|]", "_", video_title).replace(
+                    "\n", " "
+                )
+                safe_title = safe_title.replace("\r", "")
+                summary_filename = (
+                    f"{model_name} - {video_id} - {safe_title} - summary.md"
+                )
+                summary_full_path = os.path.abspath(
+                    os.path.join(summaries_dir, summary_filename)
+                )
+                try:
+                    with open(summary_full_path, "w", encoding="utf-8") as f:
+                        f.write(summary_text)
+                    print(f"Saved summary: {summary_filename}")
+                except OSError as e:
+                    print(f"Error writing summary: {e}")
+
             row[summary_file_col_name] = summary_full_path
             row[summary_col_name] = summary_text
             row[summary_cost_col_name] = summary_cost
@@ -360,17 +423,11 @@ def main() -> None:
         if infographic_arg:
             summary_targets = []
 
-            # 1. Target the specific model requested (if any)
-            if model_name:
-                col = f"Summary Text {model_name}"
-                summary_targets.append((col, model_name, summary_text))
-
-            # 2. Target ALL existing summaries if no model specified
-            if not model_name and existing_row:
-                for k in existing_row.keys():
-                    if k.startswith("Summary Text ") and existing_row[k]:
-                        m_name = k[len("Summary Text ") :]
-                        summary_targets.append((k, m_name, existing_row[k]))
+            # Target ALL summaries in the row (both existing and newly created)
+            for k in list(row.keys()):
+                if k.startswith("Summary Text ") and row[k]:
+                    m_name = k[len("Summary Text ") :]
+                    summary_targets.append((k, m_name, row[k]))
 
             for sum_col, m_name, s_text in summary_targets:
                 if not s_text:

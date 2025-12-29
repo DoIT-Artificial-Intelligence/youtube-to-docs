@@ -20,7 +20,7 @@ youtube-to-docs
 | :--- | :--- | :--- | :--- |
 | `video_id` | The YouTube content to process. Can be a **Video ID**, **Playlist ID** (starts with `PL`), **Channel Handle** (starts with `@`), or a **comma-separated list** of Video IDs. | `atmGAHYpf_c` | `youtube-to-docs @mychannel` |
 | `-o`, `--outfile` | Path to save the output CSV file. | `youtube-docs.csv` | `-o my-data.csv` |
-| `-m`, `--model` | The LLM to use for summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. | `None` | `-m gemini-3-flash-preview` |
+| `-m`, `--model` | The LLM(s) to use for summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. **Can be a comma-separated list.** | `None` | `-m gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001` |
 | `--tts` | The TTS model and voice to use for generating audio summaries. Format: `{model}-{voice}`. | `None` | `--tts gemini-2.5-flash-preview-tts-Kore` |
 | `--infographic`| The image model to use for generating a visual summary. | `None` | `--infographic gemini-2.5-flash-image` |
 
@@ -31,9 +31,9 @@ youtube-to-docs
 youtube-to-docs -o my-docs.csv
 ```
 
-**2. Summarize a Playlist using Google Gemini:**
+**2. Summarize a Playlist using multiple models (Gemini and Vertex):**
 ```bash
-youtube-to-docs PLGKTTEqwhiHHWO-jdxM1KtzTbWo6h0Ycl -m gemini-3-flash-preview
+youtube-to-docs PLGKTTEqwhiHHWO-jdxM1KtzTbWo6h0Ycl -m gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001
 ```
 
 **3. Process a Channel with Summaries, TTS, and Infographics:**

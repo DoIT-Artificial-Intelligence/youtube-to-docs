@@ -159,6 +159,61 @@ class TestPricing(unittest.TestCase):
         self.assertEqual(outp, 60.0)
 
     @patch("youtube_to_docs.llms.requests.get")
+    def test_get_model_pricing_aliased(self, mock_get):
+        """Test that aliases (like claude-haiku-4-5 -> claude-4.5-haiku) work."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "prices": [{"id": "claude-4.5-haiku", "input": 1.0, "output": 5.0}]
+        }
+        mock_get.return_value = mock_resp
+
+        # This model name normalizes to 'claude-haiku-4-5'
+        # which should alias to 'claude-4.5-haiku'
+        inp, outp = llms.get_model_pricing("bedrock-claude-haiku-4-5-20251001-v1")
+        self.assertEqual(inp, 1.0)
+        self.assertEqual(outp, 5.0)
+
+    @patch("youtube_to_docs.llms.requests.get")
+    def test_get_model_pricing_specific_models(self, mock_get):
+        """Test getting pricing for specific models requested by user."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        # Minimal mock data with just enough to pass if logic is correct
+        # Note: In real run, this comes from the URL.
+        # Since we are mocking, we must provide the data we EXPECT to be there.
+
+        mock_resp.json.return_value = {
+            "prices": [
+                {"id": "claude-4.5-haiku", "input": 1.0, "output": 5.0},
+                {"id": "gemini-3-flash-preview", "input": 0.5, "output": 3.0},
+                {"id": "gpt-5-mini", "input": 0.25, "output": 2.0},
+                {
+                    "id": "amazon-nova-lite",
+                    "input": 0.06,
+                    "output": 0.24,
+                },  # Assuming nova-2-lite aliases to this
+            ]
+        }
+        mock_get.return_value = mock_resp
+
+        models = [
+            "gemini-3-flash-preview",
+            "vertex-claude-haiku-4-5@20251001",
+            "bedrock-claude-haiku-4-5-20251001-v1",
+            "bedrock-nova-2-lite-v1",
+            "foundry-gpt-5-mini",
+        ]
+
+        for model in models:
+            with self.subTest(model=model):
+                inp, outp = llms.get_model_pricing(model)
+                self.assertIsNotNone(inp, f"Input price for {model} should not be None")
+                self.assertIsNotNone(
+                    outp, f"Output price for {model} should not be None"
+                )
+
+    @patch("youtube_to_docs.llms.requests.get")
     def test_get_model_pricing_not_found(self, mock_get):
         mock_resp = MagicMock()
         mock_resp.status_code = 200

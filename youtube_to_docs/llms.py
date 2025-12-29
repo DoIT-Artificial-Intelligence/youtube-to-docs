@@ -42,6 +42,30 @@ def get_model_pricing(model_name: str) -> Tuple[float | None, float | None]:
             data = response.json()
             prices = data.get("prices", [])
 
+            # Add https://github.com/simonw/llm-prices/pull/48/files here until merge
+            prices.extend(
+                [
+                    {
+                        "id": "amazon-nova-2-omni-preview",
+                        "name": "Amazon Nova 2 Omni (Preview)",
+                        "input": 0.3,
+                        "output": 2.5,
+                    },
+                    {
+                        "id": "amazon-nova-2-pro-preview",
+                        "name": "Amazon Nova 2 Pro (Preview)",
+                        "input": 1.25,
+                        "output": 10.0,
+                    },
+                    {
+                        "id": "amazon-nova-2-lite",
+                        "name": "Amazon Nova 2 Lite",
+                        "input": 0.3,
+                        "output": 2.5,
+                    },
+                ]
+            )
+
             # 1. Try exact match first
             for p in prices:
                 if p["id"] == model_name:
@@ -49,9 +73,17 @@ def get_model_pricing(model_name: str) -> Tuple[float | None, float | None]:
 
             # 2. Try normalized name
             normalized_name = normalize_model_name(model_name)
+
+            # Check aliases
+            aliases = {
+                "claude-haiku-4-5": "claude-4.5-haiku",
+                "nova-2-lite": "amazon-nova-2-lite",
+            }
+            search_name = aliases.get(normalized_name, normalized_name)
+
             for p in prices:
-                if p["id"] == normalized_name:
-                    return p["input"], p["output"]
+                if p["id"] == search_name:
+                    return p.get("input"), p.get("output")
 
             print(
                 f"model {model_name} is not found in "

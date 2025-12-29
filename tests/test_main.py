@@ -148,6 +148,7 @@ class TestMain(unittest.TestCase):
                 "Transcript File human generated": ["path1"],
                 "Summary File gemini-test": ["spath1"],
                 "Summary Text gemini-test": ["Summary 1"],
+                "gemini-test summary cost ($)": [0.0],
             }
         )
         initial_data.write_csv(self.outfile)
