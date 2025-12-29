@@ -482,6 +482,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#speaker-extraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Speaker Extraction
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#library-usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -642,6 +653,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#speaker-extraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Speaker Extraction
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#library-usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -744,6 +766,14 @@
 <p><strong>3. Process a Channel with Summaries, TTS, and Infographics:</strong>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>youtube-to-docs<span class="w"> </span>@mga-othercommittees6625<span class="w"> </span>-m<span class="w"> </span>vertex-claude-haiku-4-5@20251001<span class="w"> </span>--tts<span class="w"> </span>gemini-2.5-flash-preview-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-2.5-flash-image
 </code></pre></div></p>
+<h2 id="speaker-extraction">Speaker Extraction</h2>
+<p>When a model is specified using the <code>-m</code> or <code>--model</code> argument, the tool automatically performs speaker extraction before generating a summary.</p>
+<ul>
+<li><strong>Model Matching</strong>: The extraction uses the same model as the summary. If multiple models are provided, each will perform its own extraction.</li>
+<li><strong>Structured Output</strong>: It identifies speakers and their professional titles or roles (e.g., "Speaker 1 (Senator Katie Fry Hester, Co-Chair)").</li>
+<li><strong>Cost Tracking</strong>: The cost of speaker extraction is tracked separately in the <code>{model} Speaker extraction cost ($)</code> column and included in the total <code>{model} summary cost ($)</code>.</li>
+<li><strong>Unknowns</strong>: If a speaker or title cannot be identified, the tool uses the placeholder <code>UNKNOWN</code>. If no speakers are detected at all, the field is set to <code>NaN</code>.</li>
+</ul>
 <h2 id="library-usage">Library Usage</h2>
 <p>While primarily a CLI, you can import core functions for custom workflows.</p>
 <div class="language-python highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">youtube_to_docs.transcript</span><span class="w"> </span><span class="kn">import</span> <span class="n">fetch_transcript</span>
@@ -758,6 +788,7 @@
 <p><strong>Multimodal Output</strong>: It doesn't just stop at text.</p>
 <ul>
 <li><strong>Summaries</strong>: Uses state-of-the-art LLMs to create concise summaries.</li>
+<li><strong>Speaker Extraction</strong>: Automatically identifies speakers and their titles/roles from the transcript.</li>
 <li><strong>Audio (TTS)</strong>: Converts summaries into audio files, perfect for listening on the go.</li>
 <li><strong>Visuals (Infographics)</strong>: Generates AI-created infographics to visually represent the content.</li>
 </ul>
