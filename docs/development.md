@@ -46,12 +46,12 @@ To delete the generated CSV file and all cached directories:
 
 **Bash:**
 ```bash
-rm -rf youtube-docs.csv transcript-files/ summary-files/ audio-files/ infographic-files/
+rm -rf youtube-docs.csv transcript-files/ summary-files/ audio-files/ infographic-files/ speaker-extraction-files/
 ```
 
 **PowerShell:**
 ```powershell
-Remove-Item -Path "youtube-docs.csv", "transcript-files", "summary-files", "audio-files", "infographic-files" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "youtube-docs.csv", "transcript-files", "summary-files", "audio-files", "infographic-files" "speaker-extraction-files" -Recurse -Force -ErrorAction SilentlyContinue
 ```
 
 ## Project Structure

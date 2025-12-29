@@ -67,7 +67,11 @@ def reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     final_order.extend(sorted(audio_files))
 
     # Add Speakers columns
-    speakers = [c for c in cols if c.startswith("Speakers ") and not c.startswith("Speakers File ")]
+    speakers = [
+        c
+        for c in cols
+        if c.startswith("Speakers ") and not c.startswith("Speakers File ")
+    ]
     final_order.extend(sorted(speakers))
 
     # Add Speakers File columns
