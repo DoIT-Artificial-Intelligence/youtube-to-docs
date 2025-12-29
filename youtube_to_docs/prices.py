@@ -1,7 +1,7 @@
 # Taken from https://www.llm-prices.com/
 # Moving to here until PRs are review e.g. https://github.com/simonw/llm-prices/pull/48
 PRICES = {
-    "updated_at": "2025-12-17",
+    "updated_at": "2025-12-29",
     "prices": [
         {
             "id": "amazon-nova-micro",
@@ -57,6 +57,22 @@ PRICES = {
             "name": "Amazon Nova 2 Lite",
             "input": 0.3,
             "output": 2.5,
+            "input_cached": None,
+        },
+        {
+            "id": "amazon.titan-image-generator-v2:0",
+            "vendor": "amazon",
+            "name": "Titan Image Generator v2",
+            "input": 0.0,
+            "output": 10.0,
+            "input_cached": None,
+        },
+        {
+            "id": "amazon.nova-canvas-v1:0",
+            "vendor": "amazon",
+            "name": "Amazon Nova Canvas v1",
+            "input": 0.0,
+            "output": 40.0,
             "input_cached": None,
         },
         {
@@ -636,6 +652,14 @@ PRICES = {
             "input_cached": 0.2,
         },
         {
+            "id": "gpt-image-1.5",
+            "vendor": "openai",
+            "name": "gpt-image-1.5 (image gen)",
+            "input": 5,
+            "output": 34,
+            "input_cached": None,
+        },
+        {
             "id": "gpt-5-pro",
             "vendor": "openai",
             "name": "GPT-5 Pro",
@@ -817,6 +841,22 @@ PRICES = {
             "name": "Imagen 4 Ultra",
             "input": 0.0,
             "output": 60.0,
+            "input_cached": None,
+        },
+        {
+            "id": "imagen-4.0-ultra-generate-001",
+            "vendor": "google",
+            "name": "Imagen 4.0 Ultra Generate 001",
+            "input": 0.0,
+            "output": 60.0,
+            "input_cached": None,
+        },
+        {
+            "id": "imagen-4.0-fast-generate-001",
+            "vendor": "google",
+            "name": "Imagen 4.0 Fast Generate 001",
+            "input": 0.0,
+            "output": 20.0,
             "input_cached": None,
         },
     ],

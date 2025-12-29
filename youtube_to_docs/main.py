@@ -623,7 +623,16 @@ def main() -> None:
                 if info_col in row and row[info_col]:
                     continue
 
-                print(f"Generating infographic for model: {m_name}")
+                summary_file_path = row.get(f"Summary File {m_name}", "")
+                summary_filename = (
+                    os.path.basename(summary_file_path)
+                    if summary_file_path
+                    else "unknown file"
+                )
+                print(
+                    f"Generating infographic using model {infographic_arg} "
+                    f"from {summary_filename}"
+                )
                 image_bytes, input_tokens, output_tokens = generate_infographic(
                     infographic_arg, s_text, video_title
                 )
