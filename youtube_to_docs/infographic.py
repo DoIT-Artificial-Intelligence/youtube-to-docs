@@ -9,7 +9,7 @@ from google.genai import types
 try:
     from openai import OpenAI
 except ImportError:
-    OpenAI = None
+    OpenAI = None  # type: ignore
 
 
 def generate_infographic(
@@ -91,15 +91,23 @@ def generate_infographic(
             return None, 0, 0
 
         elif image_model.startswith("imagen"):
+            if len(prompt) > 1000:
+                print(
+                    f"Warning: Prompt length ({len(prompt)}) exceeds Imagen "
+                    "limit (1000). Skipping infographic generation for "
+                    f"{image_model}."
+                )
+                return None, 0, 0
+
             response = client.models.generate_images(
                 model=image_model,
                 prompt=prompt,
-                config={
-                    "number_of_images": 1,
-                    "output_mime_type": "image/jpeg",
-                    "person_generation": "dont_allow",
-                    "aspect_ratio": "16:9",
-                },
+                config=types.GenerateImagesConfig(
+                    number_of_images=1,
+                    output_mime_type="image/jpeg",
+                    person_generation=types.PersonGeneration.DONT_ALLOW,
+                    aspect_ratio="16:9",
+                ),
             )
 
             if response.generated_images:

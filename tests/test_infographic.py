@@ -1,5 +1,6 @@
 import os
 import unittest
+from unittest import mock
 from unittest.mock import MagicMock, patch
 
 from youtube_to_docs import infographic
@@ -208,7 +209,7 @@ class TestInfographic(unittest.TestCase):
         self.assertEqual(out_tok, 3400)
         mock_client.images.generate.assert_called_once_with(
             model="gpt-image-1.5",
-            prompt=unittest.mock.ANY,
+            prompt=mock.ANY,
             n=1,
             size="1536x1024",
             response_format="b64_json",
