@@ -6,14 +6,17 @@ import isodate
 import static_ffmpeg
 import yt_dlp
 from googleapiclient.discovery import Resource, build
+from youtube_transcript_api import (
+    IpBlocked,
+    NoTranscriptFound,
+    TranscriptsDisabled,
+    TranslationLanguageNotAvailable,
+    VideoUnavailable,
+    YouTubeTranscriptApi,
+)
 
 # Ensure ffmpeg is in path
 static_ffmpeg.add_paths()
-
-from youtube_transcript_api import YouTubeTranscriptApi  # noqa: E402
-
-# Global instance for transcript API
-ytt_api = YouTubeTranscriptApi()
 
 
 def extract_audio(video_id: str, output_dir: str) -> Optional[str]:
@@ -149,14 +152,94 @@ def get_video_details(
         return None
 
 
-def fetch_transcript(video_id: str) -> Optional[Tuple[str, bool]]:
-    """Fetches the transcript for a given video ID and returns (text, is_generated)."""
+def fetch_transcript(video_id: str, language: str = "en") -> Optional[Tuple[str, bool]]:
+    """
+    Fetches the transcript for a given video ID.
+    Tries to find a transcript in the requested language.
+    If not found, tries to translate an English transcript (or any available)
+    to the requested language.
+    Returns (text, is_generated).
+    """
     try:
-        transcript_obj = ytt_api.fetch(video_id, languages=("en", "en-US"))
-        is_generated = getattr(transcript_obj, "is_generated", False)
-        transcript_data = transcript_obj.to_raw_data()
-        transcript = " ".join([t["text"] for t in transcript_data])
-        return transcript, is_generated
+        transcript_list = YouTubeTranscriptApi().list(video_id)
+        transcript_obj = None
+
+        # 1. Try exact match (manual)
+        try:
+            transcript_obj = transcript_list.find_manually_created_transcript(
+                [language]
+            )
+        except Exception:
+            pass
+
+        # 2. Try exact match (generated)
+        if not transcript_obj:
+            try:
+                transcript_obj = transcript_list.find_generated_transcript([language])
+            except Exception:
+                pass
+
+        # 3. Try translating from English (manual)
+        if not transcript_obj:
+            try:
+                en_transcript = transcript_list.find_manually_created_transcript(
+                    ["en", "en-US", "en-GB"]
+                )
+                transcript_obj = en_transcript.translate(language)
+            except Exception:
+                pass
+
+        # 4. Try translating from English (generated)
+        if not transcript_obj:
+            try:
+                en_transcript = transcript_list.find_generated_transcript(
+                    ["en", "en-US", "en-GB"]
+                )
+                transcript_obj = en_transcript.translate(language)
+            except Exception:
+                pass
+
+        # 5. Try translating from ANY available
+        if not transcript_obj:
+            try:
+                # Just take the first one
+                first_transcript = next(iter(transcript_list))
+                transcript_obj = first_transcript.translate(language)
+            except Exception:
+                pass
+
+        if transcript_obj:
+            transcript_data = transcript_obj.fetch()
+            transcript = " ".join([t.text for t in transcript_data])
+            is_generated = transcript_obj.is_generated
+            if transcript_obj.translation_languages:
+                # If it was translated, we consider it "generated" in a sense,
+                # or at least not the original human source.
+                # But strictly `is_generated` refers to ASR.
+                # Let's keep it as is from the object, but if it's a translation
+                # it might be good to know. For now, just return what the obj says.
+                pass
+            return transcript, is_generated
+
+        return None
+
+    except (
+        TranscriptsDisabled,
+        NoTranscriptFound,
+        VideoUnavailable,
+        TranslationLanguageNotAvailable,
+    ):
+        print(
+            f"Transcript not available for {video_id} in language '{language}' "
+            "(or translation failed)."
+        )
+        return None
+    except IpBlocked:
+        print(
+            f"Warning: YouTube returned an IP Blocked error for {video_id}. "
+            "This might be due to rate limiting or the transcript isn't available."
+        )
+        return None
     except Exception as e:
         print(f"Error fetching transcript for {video_id}: {e}")
         return None

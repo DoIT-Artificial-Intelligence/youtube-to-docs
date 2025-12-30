@@ -117,26 +117,75 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(details[0], "Test Video")
         self.assertEqual(details[5], "0:01:10")  # Duration
 
-    @patch("youtube_to_docs.transcript.ytt_api")
-    def test_fetch_transcript(self, mock_ytt_api):
+    @patch("youtube_to_docs.transcript.YouTubeTranscriptApi.list")
+    def test_fetch_transcript(self, mock_list):
+        mock_transcript_list = MagicMock()
         mock_transcript_obj = MagicMock()
-        mock_transcript_obj.to_raw_data.return_value = [
-            {"text": "Hello"},
-            {"text": "world"},
-        ]
-        mock_ytt_api.fetch.return_value = mock_transcript_obj
+
+        snippet1 = MagicMock()
+        snippet1.text = "Hello"
+        snippet2 = MagicMock()
+        snippet2.text = "world"
+
+        mock_transcript_obj.fetch.return_value = [snippet1, snippet2]
+        mock_transcript_obj.is_generated = False
+        mock_transcript_obj.translation_languages = []
+
+        # Setup the chain:
+        # list -> find_manually_created_transcript -> mock_transcript_obj
+        mock_list.return_value = mock_transcript_list
+        mock_transcript_list.find_manually_created_transcript.return_value = (
+            mock_transcript_obj
+        )
 
         result = transcript.fetch_transcript("vid1")
         self.assertIsNotNone(result)
         assert result is not None
         text, is_generated = result
         self.assertEqual(text, "Hello world")
+        self.assertFalse(is_generated)
 
-    @patch("youtube_to_docs.transcript.ytt_api")
-    def test_fetch_transcript_error(self, mock_ytt_api):
-        mock_ytt_api.fetch.side_effect = Exception("Transcript disabled")
+    @patch("youtube_to_docs.transcript.YouTubeTranscriptApi.list")
+    def test_fetch_transcript_error(self, mock_list):
+        mock_list.side_effect = Exception("Transcript disabled")
         result = transcript.fetch_transcript("vid1")
         self.assertIsNone(result)
+
+    @patch("youtube_to_docs.transcript.YouTubeTranscriptApi.list")
+    def test_fetch_transcript_translation(self, mock_list_transcripts):
+        mock_transcript_list = MagicMock()
+        mock_en_transcript = MagicMock()
+        mock_es_transcript = MagicMock()
+
+        mock_en_transcript.translate.return_value = mock_es_transcript
+
+        snippet1 = MagicMock()
+        snippet1.text = "Hola"
+        snippet2 = MagicMock()
+        snippet2.text = "mundo"
+
+        mock_es_transcript.fetch.return_value = [snippet1, snippet2]
+        mock_es_transcript.is_generated = False
+        mock_es_transcript.translation_languages = [
+            {"language": "Spanish", "language_code": "es"}
+        ]
+
+        mock_list_transcripts.return_value = mock_transcript_list
+        # fail find 'es'
+        mock_transcript_list.find_manually_created_transcript.side_effect = [
+            Exception("Not found es"),  # 1st call for 'es'
+            mock_en_transcript,  # 2nd call for 'en'
+        ]
+        mock_transcript_list.find_generated_transcript.side_effect = Exception(
+            "Not found generated"
+        )
+
+        result = transcript.fetch_transcript("vid1", language="es")
+        self.assertIsNotNone(result)
+        assert result is not None
+        text, _ = result
+        self.assertEqual(text, "Hola mundo")
+        mock_en_transcript.translate.assert_called_with("es")
 
 
 if __name__ == "__main__":

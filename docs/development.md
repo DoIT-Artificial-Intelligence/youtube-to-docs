@@ -42,16 +42,16 @@ uv run --group test pytest
 
 ### Cleanup
 
-To delete the generated CSV file and all cached directories:
+To delete all generated artifacts:
 
 **Bash:**
 ```bash
-rm -rf youtube-docs.csv audio-files/ transcript-files/ speaker-extraction-files/ qa-files/ summary-files/  infographic-files/ 
+rm -rf youtube-to-docs-artifacts/
 ```
 
 **PowerShell:**
 ```powershell
-Remove-Item -Path "youtube-docs.csv", "transcript-files", "summary-files", "audio-files", "infographic-files" "speaker-extraction-files" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "youtube-to-docs-artifacts" -Recurse -Force -ErrorAction SilentlyContinue
 ```
 
 ## Project Structure

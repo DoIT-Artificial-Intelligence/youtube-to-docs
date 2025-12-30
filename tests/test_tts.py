@@ -125,7 +125,9 @@ class TestTTS(unittest.TestCase):
         self.assertIn("Summary Audio File 1 tts-arg File", updated_df.columns)
 
         # Check generate_speech called once (for the first row only)
-        mock_generate_speech.assert_called_once_with("Summary text", "tts", "arg")
+        mock_generate_speech.assert_called_once_with(
+            "Summary text", "tts", "arg", "en-US"
+        )
 
         # Check wave_file called once
         mock_wave_file.assert_called_once()
@@ -139,6 +141,45 @@ class TestTTS(unittest.TestCase):
         new_col = updated_df["Summary Audio File 1 tts-arg File"]
         self.assertTrue(new_col[0].endswith("summary1 - tts-arg.wav"))
         self.assertTrue(new_col[1].endswith("summary2 - tts-arg.wav"))
+
+    @patch("youtube_to_docs.tts.wave_file")
+    @patch("youtube_to_docs.tts.generate_speech")
+    @patch("os.path.exists")
+    @patch("os.path.getsize")
+    @patch("os.makedirs")
+    @patch("builtins.open", new_callable=mock_open, read_data="Texto resumen")
+    def test_process_tts_with_language(
+        self,
+        mock_open,
+        mock_makedirs,
+        mock_getsize,
+        mock_exists,
+        mock_generate_speech,
+        mock_wave_file,
+    ):
+        # Setup DataFrame with language-suffixed column
+        df = pl.DataFrame(
+            {
+                "Summary File (es)": ["/path/to/summary_es.md"],
+            }
+        )
+
+        # Mock that audio file doesn't exist
+        def exists_side_effect(path):
+            if path.endswith(".md"):
+                return True
+            return False
+
+        mock_exists.side_effect = exists_side_effect
+        mock_generate_speech.return_value = b"audio_bytes"
+
+        # Execute
+        process_tts(df, "tts-arg", "/tmp")
+
+        # Verify generate_speech called with 'es-US'
+        mock_generate_speech.assert_called_once_with(
+            "Texto resumen", "tts", "arg", "es-US"
+        )
 
 
 if __name__ == "__main__":

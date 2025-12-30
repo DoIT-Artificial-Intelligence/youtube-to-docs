@@ -90,6 +90,10 @@ def reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     audio_files = [c for c in cols if c.startswith("Summary Audio File ")]
     final_order.extend(sorted(audio_files))
 
+    # Add Video File columns
+    video_files = [c for c in cols if c == "Video File"]
+    final_order.extend(video_files)
+
     # Add QA File columns
     qa_files = [c for c in cols if c.startswith("QA File ")]
     final_order.extend(sorted(qa_files))
@@ -166,7 +170,7 @@ def main() -> None:
     parser.add_argument(
         "-o",
         "--outfile",
-        default="youtube-docs.csv",
+        default="youtube-to-docs-artifacts/youtube-docs.csv",
         help=("Can be one of: \nLocal file path to save the output CSV file."),
     )
     parser.add_argument(
@@ -206,7 +210,8 @@ def main() -> None:
         default=None,
         help=(
             "The TTS model and voice to use. "
-            "Format: {model}-{voice} e.g. 'gemini-2.5-flash-preview-tts-Kore'"
+            "Format: {model}-{voice} e.g. 'gemini-2.5-flash-preview-tts-Kore' \n"
+            "or 'gemini-2.5-pro-preview-tts'"
         ),
     )
     parser.add_argument(
@@ -459,7 +464,8 @@ def main() -> None:
                     with open(str(en_path), "r", encoding="utf-8") as f:
                         youtube_transcript = f.read()
                     print(
-                        f"Using existing English transcript as fallback for {language} processing."
+                        "Using existing English transcript as fallback for "
+                        f"{language} processing."
                     )
                 else:
                     # Try fetching English fresh
@@ -467,12 +473,13 @@ def main() -> None:
                     if en_result:
                         youtube_transcript, en_is_generated = en_result
                         print(
-                            f"Fetched English transcript as fallback for {language} processing."
+                            f"Fetched English transcript as fallback for {language} "
+                            "processing."
                         )
                         # Save English transcript if missing
-                        if not row.get("Transcript File human generated") and not row.get(
-                            "Transcript File youtube generated"
-                        ):
+                        if not row.get(
+                            "Transcript File human generated"
+                        ) and not row.get("Transcript File youtube generated"):
                             prefix = (
                                 "youtube generated - "
                                 if en_is_generated
@@ -487,9 +494,13 @@ def main() -> None:
                                     f.write(youtube_transcript)
                                 print(f"Saved fallback English transcript: {filename}")
                                 if en_is_generated:
-                                    row["Transcript File youtube generated"] = en_full_path
+                                    row["Transcript File youtube generated"] = (
+                                        en_full_path
+                                    )
                                 else:
-                                    row["Transcript File human generated"] = en_full_path
+                                    row["Transcript File human generated"] = (
+                                        en_full_path
+                                    )
                             except OSError as e:
                                 print(f"Error writing fallback English transcript: {e}")
 
@@ -576,8 +587,8 @@ def main() -> None:
 
             if not transcript:
                 print(
-                    f"No transcript (YouTube or AI) available for {video_id} ({language}). "
-                    "Skipping further processing for this language."
+                    f"No transcript (YouTube or AI) available for {video_id} "
+                    f"({language}). Skipping further processing for this language."
                 )
                 continue
 
@@ -640,10 +651,10 @@ def main() -> None:
                         if en_path and os.path.exists(str(en_path)):
                             with open(str(en_path), "r", encoding="utf-8") as f:
                                 speaker_source_transcript = f.read()
-                            print(
-                                f"Using English transcript for speaker extraction ({model_name})."
-                            )
-
+                                print(
+                                    "Using English transcript for speaker extraction "
+                                    f"({model_name})."
+                                )
                     print(f"Extracting speakers using model: {model_name}")
                     speakers_text, speakers_input, speakers_output = extract_speakers(
                         model_name, speaker_source_transcript
@@ -907,19 +918,20 @@ def main() -> None:
                     if yt_speakers_text == 'float("nan")' and (
                         not row.get(yt_speakers_col_name)
                     ):
-                        # Try to use English transcript for YT speaker extraction if available
+                        # Try to use English transcript for YT speaker extraction
+                        # if available
                         yt_speaker_source_transcript = youtube_transcript
                         if language != "en":
-                            en_path = row.get("Transcript File human generated") or row.get(
-                                "Transcript File youtube generated"
-                            )
+                            en_path = row.get(
+                                "Transcript File human generated"
+                            ) or row.get("Transcript File youtube generated")
                             if en_path and os.path.exists(str(en_path)):
                                 with open(str(en_path), "r", encoding="utf-8") as f:
                                     yt_speaker_source_transcript = f.read()
-                                print(
-                                    f"Using English transcript for YouTube speaker extraction ({model_name})."
-                                )
-
+                                    print(
+                                        "Using English transcript for YouTube speaker "
+                                        f"extraction ({model_name})."
+                                    )
                         print(
                             f"Extracting speakers using model: {model_name} "
                             "(Source: YouTube Transcript)"

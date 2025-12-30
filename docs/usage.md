@@ -19,12 +19,13 @@ youtube-to-docs
 | Argument | Description | Default | Example |
 | :--- | :--- | :--- | :--- |
 | `video_id` | The YouTube content to process. Can be a **Video ID**, **Playlist ID** (starts with `PL`), **Channel Handle** (starts with `@`), or a **comma-separated list** of Video IDs. | `atmGAHYpf_c` | `youtube-to-docs @mychannel` |
-| `-o`, `--outfile` | Path to save the output CSV file. | `youtube-docs.csv` | `-o my-data.csv` |
+| `-o`, `--outfile` | Path to save the output CSV file. | `youtube-to-docs-artifacts/youtube-docs.csv` | `-o my-data.csv` |
 | `-t`, `--transcript` | The transcript source to use. Can be `'youtube'` (default) to fetch existing YouTube transcripts, or an AI model name to perform STT on extracted audio. | `youtube` | `-t gemini-2.0-flash-exp` |
 | `-m`, `--model` | The LLM(s) to use for speaker extraction, Q&A generation, and summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. **Can be a comma-separated list.** | `None` | `-m gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001` |
 | `--tts` | The TTS model and voice to use for generating audio summaries. Format: `{model}-{voice}`. | `None` | `--tts gemini-2.5-flash-preview-tts-Kore` |
 | `--infographic`| The image model to use for generating a visual summary. Supports models from Google (Gemini, Imagen), AWS Bedrock (Titan, Nova Canvas), and Azure Foundry. | `None` | `--infographic gemini-2.5-flash-image` |
 | `--no-youtube-summary` | If set, skips generating a secondary summary from the YouTube transcript when using an AI model for the primary transcript. | `False` | `--no-youtube-summary` |
+| `-l`, `--language` | The target language(s) (e.g. 'es', 'fr', 'en'). Can be a comma-separated list. Default is 'en'. | `en` | `-l es,fr` |
 
 ### Examples
 

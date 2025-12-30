@@ -45,7 +45,12 @@ For each video, the specified model performs three distinct tasks:
     *   **Task**: Create a concise, comprehensive summary of the content.
     *   **Output**: A Markdown-formatted summary.
 
-### 4. Multimodal Generation
+4.  **Multi-Language Support**:
+    *   The tool supports processing videos in multiple languages via the `--language` argument.
+    *   It iterates through each requested language, fetching or generating transcripts, summaries, Q&A, and infographics for that specific language.
+    *   File names and column headers are suffixed with the language code (e.g., `(es)`) to keep assets organized.
+
+### 5. Multimodal Generation
 Beyond text, the tool creates audio and visual assets:
 
 - **Text-to-Speech (TTS)**:
@@ -60,7 +65,7 @@ Beyond text, the tool creates audio and visual assets:
         *   **Azure Foundry**: GPT Image models (requires `AZURE_FOUNDRY_ENDPOINT` and `AZURE_FOUNDRY_API_KEY`).
     *   The prompt includes the video title and the generated summary text to ensure relevance.
 
-### 5. Cost Tracking
+### 6. Cost Tracking
 The system includes a pricing engine (`youtube_to_docs/prices.py`) that tracks token usage for every API call.
 - It calculates costs for input and output tokens based on the specific model used.
 - Costs are aggregated for speaker extraction, Q&A, summarization, and infographic generation.
@@ -68,17 +73,18 @@ The system includes a pricing engine (`youtube_to_docs/prices.py`) that tracks t
 
 ## Data Organization
 
-The final output is a structured CSV file (managed via `polars`) containing metadata, file paths, and AI outputs. Corresponding files are organized into subdirectories:
+The final output is a structured CSV file (managed via `polars`) containing metadata, file paths, and AI outputs. Corresponding files are organized into subdirectories within a central artifacts folder:
 
 ```text
-output_directory/
+youtube-to-docs-artifacts/
+├── youtube-docs.csv              # The main data file
 ├── transcript-files/             # Raw text transcripts
 ├── audio-files/                  # Extracted audio files (for AI transcription)
 ├── speaker-extraction-files/     # Identified speakers lists
 ├── qa-files/                     # Markdown Q&A tables
 ├── summary-files/                # Markdown summaries
-├── summary-audio-files/          # TTS audio files
-└── infographic-files/            # Generated infographic images
+├── infographic-files/            # Generated infographic images
+└── video-files/                  # Combined infographic + audio videos
 ```
 
 This structure ensures that while the CSV provides a high-level data view, the actual content is easily accessible as standalone files.

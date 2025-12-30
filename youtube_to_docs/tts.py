@@ -197,7 +197,7 @@ def main() -> None:
     parser.add_argument(
         "-o",
         "--outfile",
-        default="youtube-docs.csv",
+        default="youtube-to-docs-artifacts/youtube-docs.csv",
         help=("Local file path to the CSV file to process."),
     )
     parser.add_argument(

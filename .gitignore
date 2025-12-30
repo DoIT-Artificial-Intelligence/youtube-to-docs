@@ -206,13 +206,7 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-youtube-docs.csv
-transcript-files/
-summary-files/
-audio-files/
-infographic-files/
-speaker-extraction-files/
-qa-files/
+youtube-to-docs-artifacts/
 
 implementation_plan.md
 

@@ -13,7 +13,7 @@ test = [
 
 [project]
 name = "youtube-to-docs"
-version = "0.0.12"
+version = "0.0.13"
 description = "Convert YouTube videos to docs/sheets for discoverability"
 readme = "README.md"
 requires-python = ">=3.14"
@@ -32,10 +32,11 @@ dependencies = [
 
 [project.scripts]
 youtube-to-docs = "youtube_to_docs.main:main"
+youtube-to-video = "youtube_to_docs.video:main"
 
 [tool.setuptools.packages.find]
 include = ["youtube_to_docs*"]
-exclude = ["tests*", "docs*", "summary-files*", "transcript-files*"]
+exclude = ["tests*", "docs*", "youtube-to-docs-artifacts*", "summary-files*", "transcript-files*", "audio-files*", "infographic-files*", "speaker-extraction-files*", "qa-files*", "video-files*"]
 
 [tool.ruff]
 # Match the project's Python version requirement

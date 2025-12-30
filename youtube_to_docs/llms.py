@@ -248,7 +248,7 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
 
 
 def generate_transcript(
-    model_name: str, audio_path: str, url: str
+    model_name: str, audio_path: str, url: str, language: str = "en"
 ) -> Tuple[str, int, int]:
     """
     Generates a transcript from an audio file using the specified model.
@@ -266,7 +266,7 @@ def generate_transcript(
             audio_bytes = f.read()
 
         prompt = (
-            f"Can you extract the transcript for {url} from this audio? "
+            f"Can you extract the transcript for {url} from this audio in {language}? "
             "Start the response immediately with the transcript."
         )
 
@@ -308,13 +308,17 @@ def generate_transcript(
 
 
 def generate_summary(
-    model_name: str, transcript: str, video_title: str, url: str
+    model_name: str,
+    transcript: str,
+    video_title: str,
+    url: str,
+    language: str = "en",
 ) -> Tuple[str, int, int]:
     """Generates a summary and returns (summary_text, input_tokens, output_tokens)."""
     prompt = (
         f"I have included a transcript for {url} ({video_title})"
         "\n\n"
-        "Can you please summarize this?"
+        f"Can you please summarize this in {language}?"
         "\n\n"
         f"{transcript}"
     )
@@ -331,7 +335,7 @@ def extract_speakers(model_name: str, transcript: str) -> Tuple[str, int, int]:
         "\n\n"
         "Can you please identify the speakers in the transcript?"
         "\n\n"
-        "The output should be a markdown string like"
+        "The output should be a markdown string in English like"
         "\n\n"
         "Speaker 1 (title)"
         "\n"
@@ -396,7 +400,7 @@ def add_question_numbers(markdown_table: str) -> str:
 
 
 def generate_qa(
-    model_name: str, transcript: str, speakers: str
+    model_name: str, transcript: str, speakers: str, language: str = "en"
 ) -> Tuple[str, int, int]:
     """
     Extracts Q&A pairs from the transcript.
@@ -405,7 +409,8 @@ def generate_qa(
     prompt = (
         "I have included a transcript."
         "\n\n"
-        "Can you please extract the questions and answers from the transcript?"
+        "Can you please extract the questions and answers from the transcript "
+        f"in {language}?"
         "\n\n"
         "The output should be a markdown table like:"
         "\n\n"

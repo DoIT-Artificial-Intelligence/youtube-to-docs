@@ -13,7 +13,10 @@ except ImportError:
 
 
 def generate_infographic(
-    image_model: Optional[str], summary_text: str, video_title: str
+    image_model: Optional[str],
+    summary_text: str,
+    video_title: str,
+    language: str = "en",
 ) -> Tuple[Optional[bytes], int, int]:
     """
     Generates an infographic image using the specified model.
@@ -28,7 +31,8 @@ def generate_infographic(
         f"Video Title: {video_title}\n\n"
         f"Summary:\n{summary_text}\n\n"
         "The infographic should be easy to read, professional, and capture "
-        "the key points."
+        "the key points. Ensure any text in the infographic is in "
+        f"{language}."
     )
 
     try:

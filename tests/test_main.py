@@ -135,35 +135,44 @@ class TestMain(unittest.TestCase):
     def test_skip_existing(
         self, mock_makedirs, mock_fetch_trans, mock_details, mock_resolve, mock_svc
     ):
-        # Create initial CSV with summary
-        initial_data = pl.DataFrame(
-            {
-                "URL": ["https://www.youtube.com/watch?v=vid1"],
-                "Title": ["Title 1"],
-                "Description": ["Desc"],
-                "Data Published": ["2023-01-01"],
-                "Channel": ["Chan"],
-                "Tags": ["Tags"],
-                "Duration": ["0:01:00"],
-                "Transcript characters from youtube": [12],
-                "Transcript File human generated": ["path1"],
-                "Summary File gemini-test from youtube": ["spath1"],
-                "Summary Text gemini-test from youtube": ["Summary 1"],
-                "gemini-test summary cost from youtube ($)": [0.0],
-            }
-        )
-        initial_data.write_csv(self.outfile)
+        # Create a dummy transcript file
+        dummy_transcript = "transcript_dummy.txt"
+        with open(dummy_transcript, "w", encoding="utf-8") as f:
+            f.write("Dummy transcript content")
 
-        mock_resolve.return_value = ["vid1"]
+        try:
+            # Create initial CSV with summary
+            initial_data = pl.DataFrame(
+                {
+                    "URL": ["https://www.youtube.com/watch?v=vid1"],
+                    "Title": ["Title 1"],
+                    "Description": ["Desc"],
+                    "Data Published": ["2023-01-01"],
+                    "Channel": ["Chan"],
+                    "Tags": ["Tags"],
+                    "Duration": ["0:01:00"],
+                    "Transcript characters from youtube": [12],
+                    "Transcript File human generated": [dummy_transcript],
+                    "Summary File gemini-test from youtube": ["spath1"],
+                    "Summary Text gemini-test from youtube": ["Summary 1"],
+                    "gemini-test summary cost from youtube ($)": [0.0],
+                }
+            )
+            initial_data.write_csv(self.outfile)
 
-        with patch(
-            "sys.argv", ["main.py", "vid1", "-o", self.outfile, "-m", "gemini-test"]
-        ):
-            main.main()
+            mock_resolve.return_value = ["vid1"]
 
-        # If skipped, these should NOT be called
-        mock_details.assert_not_called()
-        mock_fetch_trans.assert_not_called()
+            with patch(
+                "sys.argv", ["main.py", "vid1", "-o", self.outfile, "-m", "gemini-test"]
+            ):
+                main.main()
+
+            # If skipped, these should NOT be called
+            mock_details.assert_not_called()
+            mock_fetch_trans.assert_not_called()
+        finally:
+            if os.path.exists(dummy_transcript):
+                os.remove(dummy_transcript)
 
     @patch("youtube_to_docs.main.get_youtube_service")
     @patch("youtube_to_docs.main.resolve_video_ids")
@@ -366,14 +375,10 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.fetch_transcript")
     @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_summary")
-    @patch("youtube_to_docs.main.extract_speakers")
-    @patch("youtube_to_docs.main.generate_qa")
     @patch("os.makedirs")
-    def test_qa_generation(
+    def test_translation_columns(
         self,
         mock_makedirs,
-        mock_gen_qa,
-        mock_extract_speakers,
         mock_gen_summary,
         mock_get_pricing,
         mock_fetch_trans,
@@ -391,26 +396,95 @@ class TestMain(unittest.TestCase):
             "0:01:00",
             "url1",
         )
-        mock_fetch_trans.return_value = ("Transcript 1", False)
+        mock_fetch_trans.return_value = ("Transcripción 1", False)
+        mock_gen_summary.return_value = ("Resumen 1", 100, 50)
         mock_get_pricing.return_value = (0.0, 0.0)
-        mock_extract_speakers.return_value = ("Speaker 1", 50, 20)
-        mock_gen_qa.return_value = ("QA Table", 200, 100)
-        mock_gen_summary.return_value = ("Summary 1", 100, 50)
 
         with patch(
-            "sys.argv", ["main.py", "vid1", "-o", self.outfile, "-m", "gemini-test"]
+            "sys.argv",
+            [
+                "main.py",
+                "vid1",
+                "-o",
+                self.outfile,
+                "-m",
+                "gemini-test",
+                "--language",
+                "es",
+            ],
         ):
             with patch("builtins.open", mock_open()):
                 main.main()
 
         self.assertTrue(os.path.exists(self.outfile))
         df = pl.read_csv(self.outfile)
-        self.assertIn("QA Text gemini-test from youtube", df.columns)
-        self.assertIn("QA File gemini-test from youtube", df.columns)
-        self.assertIn("gemini-test QA cost from youtube ($)", df.columns)
-        self.assertEqual(df[0, "QA Text gemini-test from youtube"], "QA Table")
-        self.assertIn("qa-files", df[0, "QA File gemini-test from youtube"])
-        self.assertIn("Speakers gemini-test from youtube", df.columns)
+        self.assertEqual(len(df), 1)
+        self.assertEqual(df[0, "URL"], "https://www.youtube.com/watch?v=vid1")
+        # Column names should have (es)
+        self.assertEqual(
+            df[0, "Summary Text gemini-test from youtube (es)"], "Resumen 1"
+        )
+        self.assertIn("Summary File gemini-test from youtube (es)", df.columns)
+        self.assertIn("Transcript File human generated (es)", df.columns)
+        self.assertIn("Transcript characters from youtube (es)", df.columns)
+
+    @patch("youtube_to_docs.main.get_youtube_service")
+    @patch("youtube_to_docs.main.resolve_video_ids")
+    @patch("youtube_to_docs.main.get_video_details")
+    @patch("youtube_to_docs.main.fetch_transcript")
+    @patch("youtube_to_docs.main.get_model_pricing")
+    @patch("youtube_to_docs.main.generate_summary")
+    @patch("os.makedirs")
+    def test_multiple_languages(
+        self,
+        mock_makedirs,
+        mock_gen_summary,
+        mock_get_pricing,
+        mock_fetch_trans,
+        mock_details,
+        mock_resolve,
+        mock_svc,
+    ):
+        mock_resolve.return_value = ["vid1"]
+        mock_details.return_value = (
+            "Title 1",
+            "Desc",
+            "2023-01-01",
+            "Chan",
+            "Tags",
+            "0:01:00",
+            "url1",
+        )
+        mock_fetch_trans.return_value = ("Transcript", False)
+        mock_gen_summary.return_value = ("Summary", 100, 50)
+        mock_get_pricing.return_value = (0.0, 0.0)
+
+        with patch(
+            "sys.argv",
+            [
+                "main.py",
+                "vid1",
+                "-o",
+                self.outfile,
+                "-m",
+                "gemini-test",
+                "--language",
+                "en,es",
+            ],
+        ):
+            with patch("builtins.open", mock_open()):
+                main.main()
+
+        self.assertTrue(os.path.exists(self.outfile))
+        df = pl.read_csv(self.outfile)
+
+        # Check EN columns
+        self.assertIn("Summary Text gemini-test from youtube", df.columns)
+        self.assertIn("Transcript File human generated", df.columns)
+
+        # Check ES columns
+        self.assertIn("Summary Text gemini-test from youtube (es)", df.columns)
+        self.assertIn("Transcript File human generated (es)", df.columns)
 
 
 if __name__ == "__main__":

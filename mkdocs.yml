@@ -29,7 +29,7 @@ theme:
 nav:
   - Home: index.md
   - Usage: usage.md
-  - Shout Outs: shout-outs.md
+  - How It Works: how-this-works.md
   - Development: development.md
 
 markdown_extensions:
