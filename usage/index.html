@@ -543,6 +543,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#mcp-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP Server
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MCP Server">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#library-usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -764,6 +803,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#mcp-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP Server
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MCP Server">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#library-usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -939,6 +1017,17 @@
 <li><strong>Cost Tracking</strong>: The cost of speaker extraction is tracked separately in the <code>{model} Speaker extraction cost ($)</code> column and included in the total <code>{model} summary cost ($)</code>.</li>
 <li><strong>Unknowns</strong>: If a speaker or title cannot be identified, the tool uses the placeholder <code>UNKNOWN</code>. If no speakers are detected at all, the field is set to <code>NaN</code>.</li>
 </ul>
+<h2 id="mcp-server">MCP Server</h2>
+<p>This tool also functions as a Model Context Protocol (MCP) server, allowing it to be used as a tool by AI agents (like the Gemini CLI).</p>
+<p>The server exposes a <code>process_video</code> tool that mirrors the CLI functionality.</p>
+<h3 id="configuration">Configuration</h3>
+<p>The repository includes a <code>gemini-extension.json</code> file at the root, which configures the MCP server for use with the Gemini CLI.</p>
+<h3 id="usage">Usage</h3>
+<p>Once the extension is registered with your agent, you can ask it to process videos using natural language:</p>
+<blockquote>
+<p>"Save a summary of https://www.youtube.com/watch?v=KuPc06JgI_A"</p>
+</blockquote>
+<p>The agent will prompt you for any necessary details (like the model to use) and then execute the tool.</p>
 <h2 id="library-usage">Library Usage</h2>
 <p>While primarily a CLI, you can import core functions for custom workflows.</p>
 <div class="language-python highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">youtube_to_docs.transcript</span><span class="w"> </span><span class="kn">import</span> <span class="n">fetch_transcript</span>
