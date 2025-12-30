@@ -837,6 +837,12 @@
 <td style="text-align: left;"><code>-o my-data.csv</code></td>
 </tr>
 <tr>
+<td style="text-align: left;"><code>-t</code>, <code>--transcript</code></td>
+<td style="text-align: left;">The transcript source to use. Can be <code>'youtube'</code> (default) to fetch existing YouTube transcripts, or an AI model name to perform STT on extracted audio.</td>
+<td style="text-align: left;"><code>youtube</code></td>
+<td style="text-align: left;"><code>-t gemini-2.0-flash-exp</code></td>
+</tr>
+<tr>
 <td style="text-align: left;"><code>-m</code>, <code>--model</code></td>
 <td style="text-align: left;">The LLM(s) to use for speaker extraction, Q&amp;A generation, and summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. <strong>Can be a comma-separated list.</strong></td>
 <td style="text-align: left;"><code>None</code></td>
@@ -850,9 +856,15 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>--infographic</code></td>
-<td style="text-align: left;">The image model to use for generating a visual summary.</td>
+<td style="text-align: left;">The image model to use for generating a visual summary. Supports models from Google (Gemini, Imagen), AWS Bedrock (Titan, Nova Canvas), and Azure Foundry.</td>
 <td style="text-align: left;"><code>None</code></td>
 <td style="text-align: left;"><code>--infographic gemini-2.5-flash-image</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--no-youtube-summary</code></td>
+<td style="text-align: left;">If set, skips generating a secondary summary from the YouTube transcript when using an AI model for the primary transcript.</td>
+<td style="text-align: left;"><code>False</code></td>
+<td style="text-align: left;"><code>--no-youtube-summary</code></td>
 </tr>
 </tbody>
 </table>
@@ -860,14 +872,20 @@
 <p><strong>1. Summarize the default video using a single model:</strong>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>youtube-to-docs<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview
 </code></pre></div></p>
-<p><strong>2. Process the default video and save to a custom CSV:</strong>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>youtube-to-docs<span class="w"> </span>-o<span class="w"> </span>my-docs.csv
+<p><strong>2. Generate a transcript using Gemini 2.0 Flash and summarize:</strong>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>youtube-to-docs<span class="w"> </span>-t<span class="w"> </span>gemini-2.0-flash-exp<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview
 </code></pre></div></p>
-<p><strong>3. Summarize a Playlist using multiple models (Gemini and Vertex):</strong>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>youtube-to-docs<span class="w"> </span>PLGKTTEqwhiHHWO-jdxM1KtzTbWo6h0Ycl<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001
+<p><strong>3. Process the default video and save to a custom CSV:</strong>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>youtube-to-docs<span class="w"> </span>-o<span class="w"> </span>my-docs.csv
 </code></pre></div></p>
-<p><strong>4. Process a Channel with Summaries, TTS, and Infographics:</strong>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>youtube-to-docs<span class="w"> </span>@mga-othercommittees6625<span class="w"> </span>-m<span class="w"> </span>vertex-claude-haiku-4-5@20251001<span class="w"> </span>--tts<span class="w"> </span>gemini-2.5-flash-preview-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-2.5-flash-image
+<p><strong>4. Summarize a Playlist using multiple models (Gemini and Vertex):</strong>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>youtube-to-docs<span class="w"> </span>PLGKTTEqwhiHHWO-jdxM1KtzTbWo6h0Ycl<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001
+</code></pre></div></p>
+<p><strong>5. Process a Channel with Summaries, TTS, and Infographics:</strong>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>youtube-to-docs<span class="w"> </span>@mga-othercommittees6625<span class="w"> </span>-m<span class="w"> </span>vertex-claude-haiku-4-5@20251001<span class="w"> </span>--tts<span class="w"> </span>gemini-2.5-flash-preview-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-2.5-flash-image
+</code></pre></div></p>
+<p><strong>6. Generate an Infographic using AWS Bedrock:</strong>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>--infographic<span class="w"> </span>bedrock-titan-image-generator-v2:0
 </code></pre></div></p>
 <h2 id="csv-column-reference">CSV Column Reference</h2>
 <p>The output CSV file contains a variety of columns depending on the arguments provided. Below is a reference of the possible columns:</p>
@@ -880,11 +898,13 @@
 <li><strong>Channel</strong>: The name of the YouTube channel.</li>
 <li><strong>Tags</strong>: Video tags (comma-separated).</li>
 <li><strong>Duration</strong>: The duration of the video.</li>
-<li><strong>Transcript characters</strong>: The total number of characters in the transcript.</li>
+<li><strong>Transcript characters from youtube</strong>: The total number of characters in the YouTube transcript.</li>
+<li><strong>Transcript characters from {model}</strong>: The total number of characters in the AI-generated transcript (if applicable).</li>
+<li><strong>Audio File</strong>: Path to the extracted audio file (used for AI transcription).</li>
 </ul>
 <h3 id="files">Files</h3>
 <ul>
-<li><strong>Transcript File {type}</strong>: Path to the saved transcript file. <code>{type}</code> is either <code>youtube generated</code> or <code>human generated</code>.</li>
+<li><strong>Transcript File {type}</strong>: Path to the saved transcript file. <code>{type}</code> is either <code>youtube generated</code>, <code>human generated</code>, or <code>{model} generated</code>.</li>
 <li><strong>Speakers File {model}</strong>: Path to the saved speaker extraction text file.</li>
 <li><strong>QA File {model}</strong>: Path to the saved Q&amp;A Markdown file.</li>
 <li><strong>Summary File {model}</strong>: Path to the Markdown summary file generated by a specific model.</li>
@@ -900,6 +920,7 @@
 <li><strong>Summary Text {model}</strong>: The full text of the summary (also saved to the summary file).</li>
 <li><strong>{normalized_model} summary cost ($)</strong>: The total estimated API cost for both speaker extraction and summarization.</li>
 <li><strong>Summary Infographic Cost {model} {infographic_model} ($)</strong>: The estimated API cost for infographic generation.</li>
+<li><strong>{normalized_model} STT cost ($)</strong>: The estimated API cost for Speech-to-Text generation.</li>
 </ul>
 <blockquote>
 <p><strong>Note</strong>: <code>{normalized_model}</code> refers to the model name with prefixes (like <code>vertex-</code>) and date suffixes removed for cleaner column headers.</p>
@@ -914,10 +935,10 @@
 </ul>
 <h2 id="library-usage">Library Usage</h2>
 <p>While primarily a CLI, you can import core functions for custom workflows.</p>
-<div class="language-python highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">youtube_to_docs.transcript</span><span class="w"> </span><span class="kn">import</span> <span class="n">fetch_transcript</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">video_id</span> <span class="o">=</span> <span class="s2">&quot;atmGAHYpf_c&quot;</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">transcript</span><span class="p">,</span> <span class="n">is_generated</span> <span class="o">=</span> <span class="n">fetch_transcript</span><span class="p">(</span><span class="n">video_id</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">youtube_to_docs.transcript</span><span class="w"> </span><span class="kn">import</span> <span class="n">fetch_transcript</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">video_id</span> <span class="o">=</span> <span class="s2">&quot;atmGAHYpf_c&quot;</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">transcript</span><span class="p">,</span> <span class="n">is_generated</span> <span class="o">=</span> <span class="n">fetch_transcript</span><span class="p">(</span><span class="n">video_id</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="why-use-youtube-to-docs">Why use <code>youtube-to-docs</code>?</h2>
 <p>You might find other tools that download YouTube transcripts, but <code>youtube-to-docs</code> distinguishes itself in several ways:</p>
