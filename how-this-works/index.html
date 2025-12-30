@@ -11,6 +11,10 @@
         <link rel="canonical" href="https://DoIT-Artificial-Intelligence.github.io/youtube-to-docs/how-this-works/">
       
       
+        <link rel="prev" href="../usage/">
+      
+      
+        <link rel="next" href="../development/">
       
       
         
@@ -21,7 +25,7 @@
     
     
       
-        <title>How This Works - YouTube to Docs</title>
+        <title>How It Works - YouTube to Docs</title>
       
     
     
@@ -106,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              How This Works
+              How It Works
             
           </span>
         </div>
@@ -253,15 +257,17 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../shout-outs.md" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
         
   
   
     
   
-  Shout Outs
+  How It Works
 
       </a>
     </li>
@@ -390,17 +396,44 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../shout-outs.md" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How It Works
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
   <span class="md-ellipsis">
     
   
-    Shout Outs
+    How It Works
   
 
     
@@ -409,6 +442,109 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#system-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="System Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-input-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Input Resolution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-metadata-audio-transcript-retrieval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Metadata, Audio &amp; Transcript Retrieval
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-the-llm-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. The LLM Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-multimodal-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Multimodal Generation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-cost-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Cost Tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-organization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Organization
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -512,10 +648,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-multimodal-generation" class="md-nav__link">
+  <a href="#5-multimodal-generation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Multimodal Generation
+        5. Multimodal Generation
       
     </span>
   </a>
@@ -523,10 +659,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#5-cost-tracking" class="md-nav__link">
+  <a href="#6-cost-tracking" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Cost Tracking
+        6. Cost Tracking
       
     </span>
   </a>
@@ -621,8 +757,16 @@
 <li><strong>Output</strong>: A Markdown-formatted summary.</li>
 </ul>
 </li>
+<li>
+<p><strong>Multi-Language Support</strong>:</p>
+<ul>
+<li>The tool supports processing videos in multiple languages via the <code>--language</code> argument.</li>
+<li>It iterates through each requested language, fetching or generating transcripts, summaries, Q&amp;A, and infographics for that specific language.</li>
+<li>File names and column headers are suffixed with the language code (e.g., <code>(es)</code>) to keep assets organized.</li>
+</ul>
+</li>
 </ol>
-<h3 id="4-multimodal-generation">4. Multimodal Generation</h3>
+<h3 id="5-multimodal-generation">5. Multimodal Generation</h3>
 <p>Beyond text, the tool creates audio and visual assets:</p>
 <ul>
 <li>
@@ -646,21 +790,22 @@
 </ul>
 </li>
 </ul>
-<h3 id="5-cost-tracking">5. Cost Tracking</h3>
+<h3 id="6-cost-tracking">6. Cost Tracking</h3>
 <p>The system includes a pricing engine (<code>youtube_to_docs/prices.py</code>) that tracks token usage for every API call.
 - It calculates costs for input and output tokens based on the specific model used.
 - Costs are aggregated for speaker extraction, Q&amp;A, summarization, and infographic generation.
 - These estimates are saved directly into the output CSV.</p>
 <h2 id="data-organization">Data Organization</h2>
-<p>The final output is a structured CSV file (managed via <code>polars</code>) containing metadata, file paths, and AI outputs. Corresponding files are organized into subdirectories:</p>
-<div class="language-text highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>output_directory/
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── transcript-files/             # Raw text transcripts
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>├── audio-files/                  # Extracted audio files (for AI transcription)
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├── speaker-extraction-files/     # Identified speakers lists
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>├── qa-files/                     # Markdown Q&amp;A tables
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>├── summary-files/                # Markdown summaries
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>├── summary-audio-files/          # TTS audio files
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>└── infographic-files/            # Generated infographic images
+<p>The final output is a structured CSV file (managed via <code>polars</code>) containing metadata, file paths, and AI outputs. Corresponding files are organized into subdirectories within a central artifacts folder:</p>
+<div class="language-text highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>youtube-to-docs-artifacts/
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── youtube-docs.csv              # The main data file
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>├── transcript-files/             # Raw text transcripts
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├── audio-files/                  # Extracted audio files (for AI transcription)
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>├── speaker-extraction-files/     # Identified speakers lists
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>├── qa-files/                     # Markdown Q&amp;A tables
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>├── summary-files/                # Markdown summaries
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>├── infographic-files/            # Generated infographic images
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>└── video-files/                  # Combined infographic + audio videos
 </code></pre></div>
 <p>This structure ensures that while the CSV provides a high-level data view, the actual content is easily accessible as standalone files.</p>
 
