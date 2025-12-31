@@ -28,6 +28,7 @@ from youtube_to_docs.llms import (
     get_model_pricing,
     normalize_model_name,
 )
+from youtube_to_docs.storage import GoogleDriveStorage, LocalStorage
 from youtube_to_docs.transcript import (
     extract_audio,
     fetch_transcript,
@@ -256,31 +257,52 @@ def main() -> None:
     video_ids = resolve_video_ids(video_id_input, youtube_service)
 
     # Setup Output Directories
-    output_dir = os.path.dirname(outfile)
-    if output_dir and not os.path.exists(output_dir):
-        os.makedirs(output_dir, exist_ok=True)
-    base_dir = output_dir if output_dir else "."
+    # Setup Storage
+    if outfile == "workspace" or (
+        len(outfile) > 20
+        and "." not in outfile
+        and "/" not in outfile
+        and "\\" not in outfile
+    ):
+        # Heuristic: "workspace" or looks like a Folder ID
+        print(f"Using Google Workspace storage. Output: {outfile}")
+        storage = GoogleDriveStorage(outfile)
+        outfile_path = "youtube-docs.csv"  # Relative to root_folder_id
+        base_dir = "."
+    else:
+        print(f"Using Local storage. Output: {outfile}")
+        storage = LocalStorage()
+        output_dir = os.path.dirname(outfile)
+        storage.ensure_directory(output_dir)  # Ensure parent of CSV exists
+        base_dir = output_dir if output_dir else "."
+        outfile_path = outfile  # Keep original path for local
+
     transcripts_dir = os.path.join(base_dir, "transcript-files")
     summaries_dir = os.path.join(base_dir, "summary-files")
     infographics_dir = os.path.join(base_dir, "infographic-files")
     speakers_dir = os.path.join(base_dir, "speaker-extraction-files")
     qa_dir = os.path.join(base_dir, "qa-files")
+    # audio_dir for storage (final destination)
     audio_dir = os.path.join(base_dir, "audio-files")
-    os.makedirs(transcripts_dir, exist_ok=True)
-    os.makedirs(summaries_dir, exist_ok=True)
-    os.makedirs(infographics_dir, exist_ok=True)
-    os.makedirs(speakers_dir, exist_ok=True)
-    os.makedirs(qa_dir, exist_ok=True)
-    os.makedirs(audio_dir, exist_ok=True)
+
+    # Local temp dir for processing (Audio/TTS require local files)
+    local_temp_dir = "temp_processing_artifacts"
+    local_audio_dir = os.path.join(local_temp_dir, "audio-files")
+    os.makedirs(local_audio_dir, exist_ok=True)
+
+    storage.ensure_directory(transcripts_dir)
+    storage.ensure_directory(summaries_dir)
+    storage.ensure_directory(infographics_dir)
+    storage.ensure_directory(speakers_dir)
+    storage.ensure_directory(qa_dir)
+    storage.ensure_directory(audio_dir)
 
     # Load existing CSV if it exists
-    existing_df = None
-    if os.path.exists(outfile):
-        try:
-            existing_df = pl.read_csv(outfile)
-            print(f"Loaded existing data from {outfile} ({len(existing_df)} rows)")
-        except Exception as e:
-            print(f"Warning: Could not read existing CSV {outfile}: {e}")
+    existing_df = storage.load_dataframe(outfile_path)
+    if existing_df is not None:
+        print(f"Loaded existing data from {outfile} ({len(existing_df)} rows)")
+    else:
+        print(f"No existing data found at {outfile}. Starting fresh.")
 
     print(f"Processing {len(video_ids)} videos.")
     print(f"Processing Videos: {video_ids}")
@@ -350,27 +372,43 @@ def main() -> None:
 
         # Audio Extraction (needed if AI transcript is requested,
         # regardless of language)
-        # Check disk first if missing in row
+        # Check storage first if missing in row
         if transcript_arg != "youtube":
-            if not row.get("Audio File") or not str(row.get("Audio File")).endswith(
-                ".m4a"
-            ):
-                expected_audio = os.path.abspath(
-                    os.path.join(audio_dir, f"{video_id}.m4a")
-                )
-                if os.path.exists(expected_audio):
+            audio_link_or_path = row.get("Audio File")
+            if not audio_link_or_path or not storage.exists(str(audio_link_or_path)):
+                # Check if it exists in storage (by convention)
+                expected_audio = os.path.join(audio_dir, f"{video_id}.m4a")
+                if storage.exists(expected_audio):
                     print(f"Found existing audio file: {expected_audio}")
-                    row["Audio File"] = expected_audio
+                    row["Audio File"] = (
+                        storage.get_full_path(expected_audio)
+                        if hasattr(storage, "get_full_path")
+                        else expected_audio
+                    )
+                    pass
 
         audio_file_path = row.get("Audio File", "")
-        if transcript_arg != "youtube" and (
-            not audio_file_path or not audio_file_path.endswith(".m4a")
-        ):
-            print(f"Extracting audio for STT using {transcript_arg}...")
-            audio_file_path = extract_audio(video_id, audio_dir)
-            if audio_file_path:
-                print(f"Audio saved to: {audio_file_path}")
-                row["Audio File"] = audio_file_path
+        local_audio_path = ""
+
+        # If we need audio for generation (STT not "youtube"), ensures we have logic
+        if transcript_arg != "youtube":
+            # If we already have a link/path
+            if audio_file_path and storage.exists(audio_file_path):
+                # It exists in storage.
+                pass
+            else:
+                # Need to extract
+                print(f"Extracting audio for {transcript_arg}...")
+                local_audio_path = extract_audio(video_id, local_audio_dir)
+                if local_audio_path:
+                    # Upload to storage
+                    target_audio_path = os.path.join(audio_dir, f"{video_id}.m4a")
+                    uploaded_path_or_link = storage.upload_file(
+                        local_audio_path, target_audio_path, content_type="audio/mp4"
+                    )
+                    print(f"Audio saved to: {uploaded_path_or_link}")
+                    row["Audio File"] = uploaded_path_or_link
+                    audio_file_path = uploaded_path_or_link
 
         # --- Language Dependent Logic ---
         for language in languages:
@@ -383,42 +421,33 @@ def main() -> None:
 
             # --- YouTube Transcript Fetching ---
             youtube_transcript = ""
-            youtube_transcript_full_path = ""
             is_generated = False
 
-            # Check disk if not in row
+            # Check storage if not in row
             if not row.get(col_youtube) and not row.get(col_human):
-                gen_path = os.path.abspath(
-                    os.path.join(
-                        transcripts_dir,
-                        f"youtube generated{lang_str} - {video_id} - {safe_title}.txt",
-                    )
+                gen_path = os.path.join(
+                    transcripts_dir,
+                    f"youtube generated{lang_str} - {video_id} - {safe_title}.txt",
                 )
-                human_path = os.path.abspath(
-                    os.path.join(
-                        transcripts_dir,
-                        f"human generated{lang_str} - {video_id} - {safe_title}.txt",
-                    )
+                human_path = os.path.join(
+                    transcripts_dir,
+                    f"human generated{lang_str} - {video_id} - {safe_title}.txt",
                 )
-                if os.path.exists(human_path):
+                if storage.exists(human_path):
                     row[col_human] = human_path
-                elif os.path.exists(gen_path):
+                elif storage.exists(gen_path):
                     row[col_youtube] = gen_path
 
-            # Load from row (which might have just been updated from disk)
+            # Load from row
             if row.get(col_youtube):
                 path = row[col_youtube]
-                if path and os.path.exists(str(path)):
-                    with open(str(path), "r", encoding="utf-8") as f:
-                        youtube_transcript = f.read()
-                    youtube_transcript_full_path = str(path)
+                if path and storage.exists(str(path)):
+                    youtube_transcript = storage.read_text(str(path))
                     is_generated = True
             elif row.get(col_human):
                 path = row[col_human]
-                if path and os.path.exists(str(path)):
-                    with open(str(path), "r", encoding="utf-8") as f:
-                        youtube_transcript = f.read()
-                    youtube_transcript_full_path = str(path)
+                if path and storage.exists(str(path)):
+                    youtube_transcript = storage.read_text(str(path))
                     is_generated = False
 
             # If no existing transcript, fetch from YouTube
@@ -432,23 +461,20 @@ def main() -> None:
                         else f"human generated{lang_str} - "
                     )
                     filename = f"{prefix}{video_id} - {safe_title}.txt"
-                    youtube_transcript_full_path = os.path.abspath(
-                        os.path.join(transcripts_dir, filename)
-                    )
-                    try:
-                        with open(
-                            youtube_transcript_full_path, "w", encoding="utf-8"
-                        ) as f:
-                            f.write(youtube_transcript)
-                        print(f"Saved YouTube transcript ({language}): {filename}")
-                    except OSError as e:
-                        print(f"Error writing YouTube transcript: {e}")
+                    # Relative path for storage
+                    target_path = os.path.join(transcripts_dir, filename)
 
-                    # Update row with YouTube transcript info
-                    if is_generated:
-                        row[col_youtube] = youtube_transcript_full_path
-                    else:
-                        row[col_human] = youtube_transcript_full_path
+                    try:
+                        saved_path = storage.write_text(target_path, youtube_transcript)
+                        print(f"Saved YouTube transcript ({language}): {filename}")
+
+                        # Update row with YouTube transcript info
+                        if is_generated:
+                            row[col_youtube] = saved_path
+                        else:
+                            row[col_human] = saved_path
+                    except Exception as e:
+                        print(f"Error writing YouTube transcript: {e}")
 
             # Update character counts
             if youtube_transcript:
@@ -460,9 +486,8 @@ def main() -> None:
                 en_path = row.get("Transcript File human generated") or row.get(
                     "Transcript File youtube generated"
                 )
-                if en_path and os.path.exists(str(en_path)):
-                    with open(str(en_path), "r", encoding="utf-8") as f:
-                        youtube_transcript = f.read()
+                if en_path and storage.exists(str(en_path)):
+                    youtube_transcript = storage.read_text(str(en_path))
                     print(
                         "Using existing English transcript as fallback for "
                         f"{language} processing."
@@ -486,22 +511,20 @@ def main() -> None:
                                 else "human generated - "
                             )
                             filename = f"{prefix}{video_id} - {safe_title}.txt"
-                            en_full_path = os.path.abspath(
-                                os.path.join(transcripts_dir, filename)
-                            )
+                            target_path = os.path.join(transcripts_dir, filename)
+
                             try:
-                                with open(en_full_path, "w", encoding="utf-8") as f:
-                                    f.write(youtube_transcript)
+                                saved_path = storage.write_text(
+                                    target_path, youtube_transcript
+                                )
                                 print(f"Saved fallback English transcript: {filename}")
                                 if en_is_generated:
                                     row["Transcript File youtube generated"] = (
-                                        en_full_path
+                                        saved_path
                                     )
                                 else:
-                                    row["Transcript File human generated"] = (
-                                        en_full_path
-                                    )
-                            except OSError as e:
+                                    row["Transcript File human generated"] = saved_path
+                            except Exception as e:
                                 print(f"Error writing fallback English transcript: {e}")
 
                 if youtube_transcript:
@@ -520,51 +543,60 @@ def main() -> None:
                     f"{normalize_model_name(transcript_arg)} STT cost{col_suffix} ($)"
                 )
 
-                # Check disk if not in row
+                # Check storage if not in row
                 if not row.get(ai_col):
-                    expected_ai_path = os.path.abspath(
-                        os.path.join(
-                            transcripts_dir,
-                            f"{transcript_arg} generated{lang_str} - "
-                            f"{video_id} - {safe_title}.txt",
-                        )
+                    expected_ai_path = os.path.join(
+                        transcripts_dir,
+                        f"{transcript_arg} generated{lang_str} - "
+                        f"{video_id} - {safe_title}.txt",
                     )
-                    if os.path.exists(expected_ai_path):
+                    if storage.exists(expected_ai_path):
                         row[ai_col] = expected_ai_path
 
                 # Check row for AI transcript
                 if row.get(ai_col):
                     path = row[ai_col]
-                    if path and os.path.exists(str(path)):
-                        with open(str(path), "r", encoding="utf-8") as f:
-                            ai_transcript = f.read()
+                    if path and storage.exists(str(path)):
+                        ai_transcript = storage.read_text(str(path))
 
                 # If no existing AI transcript, generate it
                 if not ai_transcript:
-                    if not audio_file_path or not os.path.exists(audio_file_path):
-                        print(f"Error: Audio file not found for STT: {audio_file_path}")
+                    audio_input_path = (
+                        local_audio_path
+                        if local_audio_path and os.path.exists(local_audio_path)
+                        else None
+                    )
+                    if (
+                        not audio_input_path
+                        and audio_file_path
+                        and isinstance(storage, LocalStorage)
+                    ):
+                        audio_input_path = audio_file_path
+
+                    if not audio_input_path:
+                        print(
+                            "Error: Local audio file not available for STT. "
+                            "(Drive download not yet implemented for STT)"
+                        )
                     else:
                         print(
                             f"Generating transcript using model: {transcript_arg} "
                             f"({language})..."
                         )
                         ai_transcript, stt_in, stt_out = generate_transcript(
-                            transcript_arg, audio_file_path, url, language=language
+                            transcript_arg, audio_input_path, url, language=language
                         )
+
                         # Save AI transcript
                         prefix = f"{transcript_arg} generated{lang_str} - "
                         filename = f"{prefix}{video_id} - {safe_title}.txt"
-                        ai_transcript_full_path = os.path.abspath(
-                            os.path.join(transcripts_dir, filename)
-                        )
+                        target_path = os.path.join(transcripts_dir, filename)
+
                         try:
-                            with open(
-                                ai_transcript_full_path, "w", encoding="utf-8"
-                            ) as f:
-                                f.write(ai_transcript)
+                            saved_path = storage.write_text(target_path, ai_transcript)
                             print(f"Saved AI transcript: {filename}")
-                            row[ai_col] = ai_transcript_full_path
-                        except OSError as e:
+                            row[ai_col] = saved_path
+                        except Exception as e:
                             print(f"Error writing AI transcript: {e}")
 
                         # Calculate STT Cost
@@ -625,18 +657,15 @@ def main() -> None:
                         f"{model_name} - {video_id} - {safe_title} - "
                         f"speakers (from {transcript_arg}).txt"
                     )
-                    expected_path = os.path.abspath(
-                        os.path.join(speakers_dir, speakers_filename)
-                    )
-                    if os.path.exists(expected_path):
+                    expected_path = os.path.join(speakers_dir, speakers_filename)
+                    if storage.exists(expected_path):
                         row[speakers_file_col_name] = expected_path
 
                 # Load speakers from file/row
                 if row.get(speakers_file_col_name):
                     path = row[speakers_file_col_name]
-                    if path and os.path.exists(str(path)):
-                        with open(str(path), "r", encoding="utf-8") as f:
-                            speakers_text = f.read()
+                    if path and storage.exists(str(path)):
+                        speakers_text = storage.read_text(str(path))
                         row[speakers_col_name] = speakers_text
                 elif row.get(speakers_col_name):
                     speakers_text = row[speakers_col_name]
@@ -648,13 +677,12 @@ def main() -> None:
                         en_path = row.get("Transcript File human generated") or row.get(
                             "Transcript File youtube generated"
                         )
-                        if en_path and os.path.exists(str(en_path)):
-                            with open(str(en_path), "r", encoding="utf-8") as f:
-                                speaker_source_transcript = f.read()
-                                print(
-                                    "Using English transcript for speaker extraction "
-                                    f"({model_name})."
-                                )
+                        if en_path and storage.exists(str(en_path)):
+                            speaker_source_transcript = storage.read_text(str(en_path))
+                            print(
+                                "Using English transcript for speaker extraction "
+                                f"({model_name})."
+                            )
                     print(f"Extracting speakers using model: {model_name}")
                     speakers_text, speakers_input, speakers_output = extract_speakers(
                         model_name, speaker_source_transcript
@@ -672,15 +700,12 @@ def main() -> None:
                             f"{model_name} - {video_id} - {safe_title} - "
                             f"speakers (from {transcript_arg}).txt"
                         )
-                        speakers_full_path = os.path.abspath(
-                            os.path.join(speakers_dir, speakers_filename)
-                        )
+                        target_path = os.path.join(speakers_dir, speakers_filename)
                         try:
-                            with open(speakers_full_path, "w", encoding="utf-8") as f:
-                                f.write(speakers_text)
+                            saved_path = storage.write_text(target_path, speakers_text)
                             print(f"Saved speakers: {speakers_filename}")
-                            row[speakers_file_col_name] = speakers_full_path
-                        except OSError as e:
+                            row[speakers_file_col_name] = saved_path
+                        except Exception as e:
                             print(f"Error writing speakers file: {e}")
 
                     # Calculate Speaker Cost immediately
@@ -708,16 +733,15 @@ def main() -> None:
                         f"{model_name} - {video_id} - {safe_title} - "
                         f"qa (from {transcript_arg}){lang_str}.md"
                     )
-                    expected_path = os.path.abspath(os.path.join(qa_dir, qa_filename))
-                    if os.path.exists(expected_path):
+                    expected_path = os.path.join(qa_dir, qa_filename)
+                    if storage.exists(expected_path):
                         row[qa_file_col_name] = expected_path
 
                 # Load QA from file/row
                 if row.get(qa_file_col_name):
                     path = row[qa_file_col_name]
-                    if path and os.path.exists(str(path)):
-                        with open(str(path), "r", encoding="utf-8") as f:
-                            row[qa_col_name] = f.read()
+                    if path and storage.exists(str(path)):
+                        row[qa_col_name] = storage.read_text(str(path))
 
                 if not row.get(qa_col_name):
                     print(f"Generating Q&A using model: {model_name} ({language})")
@@ -735,15 +759,12 @@ def main() -> None:
                             f"{model_name} - {video_id} - {safe_title} - "
                             f"qa (from {transcript_arg}){lang_str}.md"
                         )
-                        qa_full_path = os.path.abspath(
-                            os.path.join(qa_dir, qa_filename)
-                        )
+                        target_path = os.path.join(qa_dir, qa_filename)
                         try:
-                            with open(qa_full_path, "w", encoding="utf-8") as f:
-                                f.write(qa_text)
+                            saved_path = storage.write_text(target_path, qa_text)
                             print(f"Saved Q&A: {qa_filename}")
-                            row[qa_file_col_name] = qa_full_path
-                        except OSError as e:
+                            row[qa_file_col_name] = saved_path
+                        except Exception as e:
                             print(f"Error writing Q&A file: {e}")
 
                     # Calculate QA Cost
@@ -820,18 +841,19 @@ def main() -> None:
                         f"{model_name} - {video_id} - {safe_title} - "
                         f"summary (from {transcript_arg}){lang_str}.md"
                     )
-                    expected_path = os.path.abspath(
-                        os.path.join(summaries_dir, summary_filename)
-                    )
-                    if os.path.exists(expected_path):
+                    expected_path = os.path.join(summaries_dir, summary_filename)
+                    if storage.exists(expected_path):
                         row[summary_file_col_name] = expected_path
 
                 # Load Summary from file/row
                 if row.get(summary_file_col_name):
                     path = row[summary_file_col_name]
-                    if path and os.path.exists(str(path)):
-                        with open(str(path), "r", encoding="utf-8") as f:
-                            row[summary_col_name] = f.read()
+                    if path:
+                        # We try to read.
+                        try:
+                            row[summary_col_name] = storage.read_text(str(path))
+                        except Exception:
+                            pass
 
                 if not row.get(summary_col_name):
                     print(f"Summarizing using model: {model_name} ({language})")
@@ -858,14 +880,13 @@ def main() -> None:
                             f"{model_name} - {video_id} - {safe_title} - "
                             f"summary (from {transcript_arg}){lang_str}.md"
                         )
-                        summary_full_path = os.path.abspath(
-                            os.path.join(summaries_dir, summary_filename)
-                        )
+                        target_path = os.path.join(summaries_dir, summary_filename)
                         try:
-                            with open(summary_full_path, "w", encoding="utf-8") as f:
-                                f.write(summary_text)
+                            summary_full_path = storage.write_text(
+                                target_path, summary_text
+                            )
                             print(f"Saved summary: {summary_filename}")
-                        except OSError as e:
+                        except Exception as e:
                             print(f"Error writing summary: {e}")
 
                     row[summary_file_col_name] = summary_full_path
@@ -897,19 +918,19 @@ def main() -> None:
                             f"{model_name} - {video_id} - {safe_title} - "
                             f"speakers (from youtube).txt"
                         )
-                        expected_path = os.path.abspath(
-                            os.path.join(speakers_dir, yt_speakers_filename)
-                        )
-                        if os.path.exists(expected_path):
+                        expected_path = os.path.join(speakers_dir, yt_speakers_filename)
+                        if storage.exists(expected_path):
                             row[yt_speakers_file_col_name] = expected_path
 
                     # Load YT speakers from file/row
                     if row.get(yt_speakers_file_col_name):
                         path = row[yt_speakers_file_col_name]
-                        if path and os.path.exists(str(path)):
-                            with open(str(path), "r", encoding="utf-8") as f:
-                                yt_speakers_text = f.read()
-                            row[yt_speakers_col_name] = yt_speakers_text
+                        if path:
+                            try:
+                                yt_speakers_text = storage.read_text(str(path))
+                                row[yt_speakers_col_name] = yt_speakers_text
+                            except Exception:
+                                pass
                     elif row.get(yt_speakers_col_name):
                         yt_speakers_text = row[yt_speakers_col_name]
 
@@ -957,17 +978,17 @@ def main() -> None:
                                 f"{model_name} - {video_id} - {safe_title} - "
                                 f"speakers (from youtube).txt"
                             )
-                            yt_speakers_full_path = os.path.abspath(
-                                os.path.join(speakers_dir, yt_speakers_filename)
+                            target_path = os.path.join(
+                                speakers_dir, yt_speakers_filename
                             )
+
                             try:
-                                with open(
-                                    yt_speakers_full_path, "w", encoding="utf-8"
-                                ) as f:
-                                    f.write(yt_speakers_text)
+                                saved_path = storage.write_text(
+                                    target_path, yt_speakers_text
+                                )
                                 print(f"Saved YouTube speakers: {yt_speakers_filename}")
-                                row[yt_speakers_file_col_name] = yt_speakers_full_path
-                            except OSError as e:
+                                row[yt_speakers_file_col_name] = saved_path
+                            except Exception as e:
                                 print(f"Error writing YouTube speakers file: {e}")
 
                         # Calculate YouTube Speaker Cost
@@ -1006,18 +1027,18 @@ def main() -> None:
                             f"{model_name} - {video_id} - {safe_title} - "
                             f"qa (from youtube){lang_str}.md"
                         )
-                        expected_path = os.path.abspath(
-                            os.path.join(qa_dir, qa_filename)
-                        )
-                        if os.path.exists(expected_path):
+                        expected_path = os.path.join(qa_dir, qa_filename)
+                        if storage.exists(expected_path):
                             row[yt_qa_file_col_name] = expected_path
 
                     # Load YT QA from file/row
                     if row.get(yt_qa_file_col_name):
                         path = row[yt_qa_file_col_name]
-                        if path and os.path.exists(str(path)):
-                            with open(str(path), "r", encoding="utf-8") as f:
-                                row[yt_qa_col_name] = f.read()
+                        if path:
+                            try:
+                                row[yt_qa_col_name] = storage.read_text(str(path))
+                            except Exception:
+                                pass
 
                     if not row.get(yt_qa_col_name):
                         print(
@@ -1056,14 +1077,14 @@ def main() -> None:
                                 f"{model_name} - {video_id} - {safe_title} - "
                                 f"qa (from youtube){lang_str}.md"
                             )
-                            yt_qa_full_path = os.path.abspath(
-                                os.path.join(qa_dir, qa_filename)
-                            )
+                            target_path = os.path.join(qa_dir, qa_filename)
+
                             try:
-                                with open(yt_qa_full_path, "w", encoding="utf-8") as f:
-                                    f.write(row[yt_qa_col_name])
+                                yt_qa_full_path = storage.write_text(
+                                    target_path, row[yt_qa_col_name]
+                                )
                                 print(f"Saved YouTube Q&A: {qa_filename}")
-                            except OSError as e:
+                            except Exception as e:
                                 print(f"Error writing YouTube Q&A: {e}")
 
                         row[yt_qa_file_col_name] = yt_qa_full_path
@@ -1092,18 +1113,18 @@ def main() -> None:
                             f"{model_name} - {video_id} - {safe_title} - "
                             f"summary (from youtube){lang_str}.md"
                         )
-                        expected_path = os.path.abspath(
-                            os.path.join(summaries_dir, summary_filename)
-                        )
-                        if os.path.exists(expected_path):
+                        expected_path = os.path.join(summaries_dir, summary_filename)
+                        if storage.exists(expected_path):
                             row[yt_sum_file_col_name] = expected_path
 
                     # Load YT Summary from file/row
                     if row.get(yt_sum_file_col_name):
                         path = row[yt_sum_file_col_name]
-                        if path and os.path.exists(str(path)):
-                            with open(str(path), "r", encoding="utf-8") as f:
-                                row[yt_sum_col_name] = f.read()
+                        if path:
+                            try:
+                                row[yt_sum_col_name] = storage.read_text(str(path))
+                            except Exception:
+                                pass
 
                     if not row.get(yt_sum_col_name):
                         print(
@@ -1143,16 +1164,14 @@ def main() -> None:
                                 f"{model_name} - {video_id} - {safe_title} - "
                                 f"summary (from youtube){lang_str}.md"
                             )
-                            yt_summary_full_path = os.path.abspath(
-                                os.path.join(summaries_dir, summary_filename)
-                            )
+                            target_path = os.path.join(summaries_dir, summary_filename)
+
                             try:
-                                with open(
-                                    yt_summary_full_path, "w", encoding="utf-8"
-                                ) as f:
-                                    f.write(yt_summary_text)
+                                yt_summary_full_path = storage.write_text(
+                                    target_path, yt_summary_text
+                                )
                                 print(f"Saved YouTube summary: {summary_filename}")
-                            except OSError as e:
+                            except Exception as e:
                                 print(f"Error writing YouTube summary: {e}")
 
                         row[yt_sum_file_col_name] = yt_summary_full_path
@@ -1206,10 +1225,8 @@ def main() -> None:
                         f"{m_name} - {infographic_arg} - {video_id} - "
                         f"{safe_title} - infographic.png"
                     )
-                    expected_path = os.path.abspath(
-                        os.path.join(infographics_dir, infographic_filename)
-                    )
-                    if os.path.exists(expected_path):
+                    expected_path = os.path.join(infographics_dir, infographic_filename)
+                    if storage.exists(expected_path):
                         row[info_col] = expected_path
                         continue
 
@@ -1227,12 +1244,10 @@ def main() -> None:
                         infographic_arg, s_text, video_title, language=language
                     )
                     if image_bytes:
-                        infographic_full_path = expected_path
                         try:
-                            with open(infographic_full_path, "wb") as f:
-                                f.write(image_bytes)
+                            saved_path = storage.write_bytes(expected_path, image_bytes)
                             print(f"Saved infographic: {infographic_filename}")
-                            row[info_col] = infographic_full_path
+                            row[info_col] = saved_path
 
                             # Calculate Infographic Cost
                             input_price, output_price = get_model_pricing(
@@ -1250,7 +1265,7 @@ def main() -> None:
                                 row[cost_col] = cost
                                 print(f"Infographic cost: ${cost:.2f}")
 
-                        except OSError as e:
+                        except Exception as e:
                             print(f"Error writing infographic: {e}")
 
         rows.append(row)
@@ -1281,12 +1296,14 @@ def main() -> None:
             print("Checking for TTS generation...")
             # TTS will scan all columns, so it should pick up the new
             # language columns too
-            final_df = process_tts(final_df, tts_arg, base_dir, languages=languages)
+            final_df = process_tts(
+                final_df, tts_arg, storage, base_dir, languages=languages
+            )
             should_save = True
 
         if should_save:
             final_df = reorder_columns(final_df)
-            final_df.write_csv(outfile)
+            storage.save_dataframe(final_df, outfile_path)
             print(f"Successfully wrote {len(final_df)} rows to {outfile}")
         else:
             print("No new data to gather or all videos already processed.")

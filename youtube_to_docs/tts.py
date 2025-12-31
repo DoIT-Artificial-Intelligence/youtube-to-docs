@@ -1,4 +1,5 @@
 import argparse
+import io
 import os
 import wave
 from typing import List, Optional, Tuple
@@ -7,9 +8,11 @@ import polars as pl
 from google import genai
 from google.genai import types
 
+from youtube_to_docs.storage import Storage
+
 
 def wave_file(filename, pcm, channels=1, rate=24000, sample_width=2):
-    """Writes PCM data to a WAV file."""
+    """Writes PCM data to a WAV file (or file-like object)."""
     with wave.open(filename, "wb") as wf:
         wf.setnchannels(channels)
         wf.setsampwidth(sample_width)
@@ -80,6 +83,7 @@ def parse_tts_arg(tts_arg: str) -> Tuple[str, str]:
 def process_tts(
     df: pl.DataFrame,
     tts_arg: str,
+    storage: Storage,
     base_dir: str = ".",
     languages: Optional[List[str]] = None,
 ) -> pl.DataFrame:
@@ -90,8 +94,9 @@ def process_tts(
     print(f"Using TTS Model: {model_name}, Voice: {voice_name}")
 
     # Setup Audio Directory
+    # Setup Audio Directory
     audio_dir = os.path.join(base_dir, "audio-files")
-    os.makedirs(audio_dir, exist_ok=True)
+    storage.ensure_directory(audio_dir)
 
     # Find Summary File columns
     summary_file_cols = [c for c in df.columns if c.startswith("Summary File ")]
@@ -143,7 +148,7 @@ def process_tts(
             if (
                 not summary_path
                 or not isinstance(summary_path, str)
-                or not os.path.exists(summary_path)
+                or not storage.exists(summary_path)
             ):
                 new_col_values.append(None)
                 continue
@@ -151,17 +156,32 @@ def process_tts(
             summary_filename = os.path.basename(summary_path)
             base_name = os.path.splitext(summary_filename)[0]
             audio_filename = f"{base_name} - {tts_arg}.wav"
-            audio_full_path = os.path.abspath(os.path.join(audio_dir, audio_filename))
+            # Use relative path for storage
+            target_path = os.path.join(audio_dir, audio_filename)
 
-            if os.path.exists(audio_full_path) and os.path.getsize(audio_full_path) > 0:
-                new_col_values.append(audio_full_path)
-                continue
+            if storage.exists(target_path):
+                if hasattr(storage, "get_full_path"):
+                    new_col_values.append(storage.get_full_path(target_path))
+                    continue
+                else:
+                    pass
 
             print(f"Generating audio for: {summary_filename}")
 
             try:
-                with open(summary_path, "r", encoding="utf-8") as f:
-                    text = f.read()
+                # Read summary from storage
+                # summary_path comes from row, might be Link or Path.
+                text = ""
+                if summary_path.startswith("http"):
+                    print(
+                        "Skipping summary (URL not supported for reading yet): "
+                        f"{summary_path}"
+                    )
+                    new_col_values.append(None)
+                    continue
+                else:
+                    text = storage.read_text(summary_path)
+
             except Exception as e:
                 print(f"Error reading summary file {summary_path}: {e}")
                 new_col_values.append(None)
@@ -176,9 +196,14 @@ def process_tts(
 
             if pcm_data:
                 try:
-                    wave_file(audio_full_path, pcm_data)
+                    # Write to BytesIO then storage.write_bytes
+                    wav_io = io.BytesIO()
+                    wave_file(wav_io, pcm_data)
+                    wav_bytes = wav_io.getvalue()
+
+                    saved_path = storage.write_bytes(target_path, wav_bytes)
                     print(f"Saved audio: {audio_filename}")
-                    new_col_values.append(audio_full_path)
+                    new_col_values.append(saved_path)
                 except Exception as e:
                     print(f"Error writing audio file: {e}")
                     new_col_values.append(None)
@@ -227,12 +252,18 @@ def main() -> None:
         print(f"Error reading CSV {outfile}: {e}")
         return
 
+    from youtube_to_docs.storage import LocalStorage
+
+    print("Using Local storage for standalone TTS run.")
+    storage = LocalStorage()
     output_dir = os.path.dirname(outfile)
+    storage.ensure_directory(output_dir)
     base_dir = output_dir if output_dir else "."
 
-    updated_df = process_tts(df, tts_arg, base_dir)
+    updated_df = process_tts(df, tts_arg, storage, base_dir)
 
     # Save the updated DataFrame
+    # If using local storage, outfile is path
     updated_df.write_csv(outfile)
     print(f"Updated {outfile} with new audio columns.")
 

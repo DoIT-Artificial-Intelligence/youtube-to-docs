@@ -18,8 +18,8 @@ description = "Convert YouTube videos to docs/sheets for discoverability"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "google-auth>=2.45.0",
-    "google-genai>=1.56.0",
+    "google-auth-oauthlib",
+    "google-genai",
     "google-api-python-client>=2.187.0",
     "isodate>=0.7.2",
     "openai>=1.56.0",

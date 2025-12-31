@@ -213,11 +213,6 @@ def fetch_transcript(video_id: str, language: str = "en") -> Optional[Tuple[str,
             transcript = " ".join([t.text for t in transcript_data])
             is_generated = transcript_obj.is_generated
             if transcript_obj.translation_languages:
-                # If it was translated, we consider it "generated" in a sense,
-                # or at least not the original human source.
-                # But strictly `is_generated` refers to ASR.
-                # Let's keep it as is from the object, but if it's a translation
-                # it might be good to know. For now, just return what the obj says.
                 pass
             return transcript, is_generated
 
