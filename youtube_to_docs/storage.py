@@ -206,7 +206,6 @@ class GoogleDriveStorage(Storage):
                 return folder.get("id")
         else:
             # Assume it is a Folder ID
-            # Verify?
             return output_arg
 
     def _get_parent_id(self, path: str) -> str:
@@ -329,7 +328,7 @@ class GoogleDriveStorage(Storage):
                 .execute()
             )
             return content.decode("utf-8")
-        except Exception:
+        except HttpError:
             # Maybe it is a binary file or text file? use get_media
             # But we are in read_text
             request = self.service.files().get_media(fileId=file_id)
