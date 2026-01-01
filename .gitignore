@@ -207,6 +207,8 @@ marimo/_lsp/
 __marimo__/
 
 youtube-to-docs-artifacts/
+youtube-to-docs-artifacts-test/
+temp-processing-artifacts/
 
 implementation_plan.md
 

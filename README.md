@@ -1,13 +1,14 @@
 # youtube-to-docs
 [![PyPI version](https://img.shields.io/pypi/v/youtube-to-docs.svg)](https://pypi.org/project/youtube-to-docs/)
 
-Convert YouTube videos to docs/sheets for discoverability.
+Convert YouTube videos into structured docs, summaries, audio, and visual assets for easier discovery.
 
-See the CLI by running:
+View all available CLI options:
 
 ```bash
 uvx youtube-to-docs --help
 ```
+
 Install as a Gemini CLI extension:
 
 ```bash

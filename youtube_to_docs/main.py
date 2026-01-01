@@ -1,17 +1,3 @@
-# /// script
-# requires-python = ">=3.14"
-# dependencies = [
-#     "google-auth>=2.45.0",
-#     "google-genai>=1.56.0",
-#     "google-api-python-client>=2.187.0",
-#     "isodate>=0.7.2",
-#     "openai>=1.56.0",
-#     "polars>=1.36.1",
-#     "requests>=2.32.5",
-#     "youtube-transcript-api>=1.2.3",
-#     "yt-dlp>=2025.2.19",
-#     "static-ffmpeg>=2.5"
-# ///
 import argparse
 import os
 import re
@@ -173,7 +159,11 @@ def main(args_list: list[str] | None = None) -> None:
         "-o",
         "--outfile",
         default="youtube-to-docs-artifacts/youtube-docs.csv",
-        help=("Can be one of: \nLocal file path to save the output CSV file."),
+        help=(
+            "Can be one of: \n"
+            "Local file path to save the output CSV file.\n"
+            "'workspace' or 'w' to store to Google Drive or a workspace folder ID."
+        ),
     )
     parser.add_argument(
         "-t",
@@ -226,6 +216,7 @@ def main(args_list: list[str] | None = None) -> None:
         ),
     )
     parser.add_argument(
+        "-nys",
         "--no-youtube-summary",
         action="store_true",
         help=(
@@ -240,12 +231,53 @@ def main(args_list: list[str] | None = None) -> None:
         help=("The target language (e.g. 'es', 'fr', 'en'). Default is 'en'."),
     )
     parser.add_argument(
+        "-cia",
         "--combine-infographic-audio",
         action="store_true",
         help="Combine the infographic and audio summary into a video file.",
     )
+    parser.add_argument(
+        "--all-gemini-flash",
+        action="store_true",
+        help=(
+            "Shortcut to use Gemini Flash models for everything: "
+            "summarization (gemini-3-flash-preview), "
+            "TTS (gemini-2.5-flash-preview-tts-Kore), "
+            "and Infographic (gemini-2.5-flash-image). "
+            "Also sets --no-youtube-summary."
+        ),
+    )
+    parser.add_argument(
+        "--all-gemini-pro",
+        action="store_true",
+        help=(
+            "Shortcut to use Gemini Pro models for everything: "
+            "summarization (gemini-3-pro-preview), "
+            "TTS (gemini-2.5-pro-preview-tts-Kore), "
+            "and Infographic (gemini-3-pro-image-preview). "
+            "Also sets --no-youtube-summary."
+        ),
+    )
 
     args = parser.parse_args(args_list)
+
+    if args.all_gemini_flash:
+        if args.model is None:
+            args.model = "gemini-3-flash-preview"
+        if args.tts is None:
+            args.tts = "gemini-2.5-flash-preview-tts-Kore"
+        if args.infographic is None:
+            args.infographic = "gemini-2.5-flash-image"
+        args.no_youtube_summary = True
+
+    if args.all_gemini_pro:
+        if args.model is None:
+            args.model = "gemini-3-pro-preview"
+        if args.tts is None:
+            args.tts = "gemini-2.5-pro-preview-tts-Kore"
+        if args.infographic is None:
+            args.infographic = "gemini-3-pro-image-preview"
+        args.no_youtube_summary = True
     transcript_arg = args.transcript
     video_id_input = args.video_id
     outfile = args.outfile
@@ -265,7 +297,7 @@ def main(args_list: list[str] | None = None) -> None:
 
     # Setup Output Directories
     # Setup Storage
-    if outfile == "workspace" or (
+    if outfile in ("workspace", "w") or (
         len(outfile) > 20
         and "." not in outfile
         and "/" not in outfile
@@ -289,8 +321,8 @@ def main(args_list: list[str] | None = None) -> None:
     infographics_dir = os.path.join(base_dir, "infographic-files")
     speakers_dir = os.path.join(base_dir, "speaker-extraction-files")
     qa_dir = os.path.join(base_dir, "qa-files")
-    # audio_dir for storage (final destination)
     audio_dir = os.path.join(base_dir, "audio-files")
+    video_dir = os.path.join(base_dir, "video-files")
 
     # Local temp dir for processing (Audio/TTS require local files)
     local_temp_dir = "temp_processing_artifacts"
@@ -303,6 +335,7 @@ def main(args_list: list[str] | None = None) -> None:
     storage.ensure_directory(speakers_dir)
     storage.ensure_directory(qa_dir)
     storage.ensure_directory(audio_dir)
+    storage.ensure_directory(video_dir)
 
     # Load existing CSV if it exists
     existing_df = storage.load_dataframe(outfile_path)

@@ -1,3 +1,5 @@
+"""Helpers for YouTube metadata, audio extraction, and transcript retrieval."""
+
 import os
 import sys
 from typing import Any, List, Optional, Tuple, cast
