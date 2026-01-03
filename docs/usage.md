@@ -2,6 +2,28 @@
 
 `youtube-to-docs` is a versatile tool designed to convert YouTube content into structured documentation, including transcripts, summaries, audio, and infographics. It is primarily designed as a Command Line Interface (CLI) tool but can also be used as a Python library.
 
+## Installation
+
+The recommended way to run `youtube-to-docs` is using `uvx`.
+
+```bash
+uvx youtube-to-docs --help
+```
+
+### Installing `uv`
+
+If you don't have `uv` installed, you can install it using the following commands:
+
+**macOS/Linux:**
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**Windows:**
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
 ## Setup
 
 Before running the tool, ensure your environment is correctly configured with the necessary API keys and authentication files.

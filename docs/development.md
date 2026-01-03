@@ -3,7 +3,21 @@
 ## Prerequisites
 
 - Python 3.14 or higher
-- `uv`
+- `uv`: A fast Python package and project manager.
+
+### Installing `uv`
+
+**macOS/Linux:**
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**Windows:**
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+For more information, see the [official `uv` documentation](https://docs.astral.sh/uv/getting-started/installation/).
 
 ## Installation
 
