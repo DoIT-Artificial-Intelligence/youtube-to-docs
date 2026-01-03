@@ -18,7 +18,9 @@ def process_video(
     infographic_model: str | None = None,
     no_youtube_summary: bool = False,
     languages: str = "en",
+    combine_infographic_audio: bool = False,
     all_suite: str | None = None,
+    verbose: bool = False,
 ) -> str:
     """
     Process a YouTube video to generate transcripts, summaries, Q&A, and infographics.
@@ -41,8 +43,11 @@ def process_video(
             YouTube transcript when using an AI model for the primary transcript.
         languages: The target language(s) (e.g., 'es', 'fr', 'en'). Defaults to 'en'.
             Can be a comma-separated list.
+        combine_infographic_audio: If True, combines the infographic and audio summary
+            into a video file. Requires both tts_model and infographic_model.
         all_suite: Shortcut to use a specific model suite for everything.
             e.g., 'gemini-flash', 'gemini-pro', or 'gemini-flash-pro-infographic'.
+        verbose: If True, enables verbose logging in the output.
     """
     args = [
         url,
@@ -66,8 +71,14 @@ def process_video(
     if no_youtube_summary:
         args.append("--no-youtube-summary")
 
+    if combine_infographic_audio:
+        args.append("--combine-infographic-audio")
+
     if all_suite:
         args.extend(["--all", all_suite])
+
+    if verbose:
+        args.append("--verbose")
 
     # Capture stdout/stderr to return as tool output
     f = io.StringIO()

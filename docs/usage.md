@@ -2,6 +2,57 @@
 
 `youtube-to-docs` is a versatile tool designed to convert YouTube content into structured documentation, including transcripts, summaries, audio, and infographics. It is primarily designed as a Command Line Interface (CLI) tool but can also be used as a Python library.
 
+## Setup
+
+Before running the tool, ensure your environment is correctly configured with the necessary API keys and authentication files.
+
+### 1. Environment Variables
+
+Set the following environment variables based on the AI providers you intend to use.
+
+| Variable | Description | Required For |
+| :--- | :--- | :--- |
+| `YOUTUBE_DATA_API_KEY` | API key for the YouTube Data API v3. | Fetching video metadata. |
+| `GEMINI_API_KEY` | API key for Google Gemini models. | Gemini models (`-m gemini...`). |
+| `PROJECT_ID` | Google Cloud Project ID. | GCP Vertex models (`-m vertex...`). |
+| `AWS_BEARER_TOKEN_BEDROCK` | AWS Bearer Token. | AWS Bedrock models (`-m bedrock...`). |
+| `AZURE_FOUNDRY_ENDPOINT` | Azure Foundry Endpoint URL. | Azure Foundry models (`-m foundry...`). |
+| `AZURE_FOUNDRY_API_KEY` | Azure Foundry API Key. | Azure Foundry models (`-m foundry...`). |
+
+### 2. Storage Authentication (Optional)
+
+If you plan to save outputs to Google Drive (`workspace`) or Microsoft SharePoint/OneDrive (`sharepoint`), you need to configure authentication files in your home directory.
+
+#### Google Drive (Workspace)
+Create a file at `~/.google_client_secret.json` with your Google Cloud OAuth 2.0 Client Secret JSON.
+
+```json
+{
+  "installed": {
+    "client_id": "YOUR_CLIENT_ID.apps.googleusercontent.com",
+    "project_id": "your-project-id",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_secret": "YOUR_CLIENT_SECRET",
+    "redirect_uris": ["http://localhost"]
+  }
+}
+```
+*   **First Run**: The tool will open a browser window to authenticate and generate a `~/.token.json` file for future non-interactive use.
+
+#### Microsoft 365 (SharePoint/OneDrive)
+Create a file at `~/.azure_client.json` with your Azure App Registration details.
+
+```json
+{
+    "client_id": "YOUR_CLIENT_ID",
+    "authority": "https://login.microsoftonline.com/consumers"
+}
+```
+*   **Authority**: Use `.../consumers` for personal accounts or `.../YOUR_TENANT_ID` for organizational accounts.
+*   **First Run**: The tool will attempt to authenticate (silently or interactively) and cache the token in `~/.msal_token_cache.json`.
+
 ## Command Line Interface (CLI)
 
 The main command is `youtube-to-docs`.
@@ -23,11 +74,12 @@ youtube-to-docs
 | `-t`, `--transcript` | The transcript source to use. Can be `'youtube'` (default) to fetch existing YouTube transcripts, or an AI model name to perform STT on extracted audio. | `youtube` | `-t gemini-2.0-flash-exp` |
 | `-m`, `--model` | The LLM(s) to use for speaker extraction, Q&A generation, and summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. **Can be a comma-separated list.** | `None` | `-m gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001` |
 | `--tts` | The TTS model and voice to use for generating audio summaries. Format: `{model}-{voice}`. | `None` | `--tts gemini-2.5-flash-preview-tts-Kore` |
-| `--infographic`| The image model to use for generating a visual summary. Supports models from Google (Gemini, Imagen), AWS Bedrock (Titan, Nova Canvas), and Azure Foundry. | `None` | `--infographic gemini-2.5-flash-image` |
-| `--no-youtube-summary` | If set, skips generating a secondary summary from the YouTube transcript when using an AI model for the primary transcript. | `False` | `--no-youtube-summary` |
+| `-i`, `--infographic`| The image model to use for generating a visual summary. Supports models from Google (Gemini, Imagen), AWS Bedrock (Titan, Nova Canvas), and Azure Foundry. | `None` | `--infographic gemini-2.5-flash-image` |
+| `-nys`, `--no-youtube-summary` | If set, skips generating a secondary summary from the YouTube transcript when using an AI model for the primary transcript. | `False` | `--no-youtube-summary` |
 | `-l`, `--language` | The target language(s) (e.g. 'es', 'fr', 'en'). Can be a comma-separated list. Default is 'en'. | `en` | `-l es,fr` |
-| `--combine-infographic-audio` | Combine the infographic and audio summary into a video file (MP4). Requires both `--tts` and `--infographic` to be effective. | `False` | `--combine-infographic-audio` |
+| `-cia`, `--combine-infographic-audio` | Combine the infographic and audio summary into a video file (MP4). Requires both `--tts` and `--infographic` to be effective. | `False` | `--combine-infographic-audio` |
 | `--all` | Shortcut to use a specific model suite for everything. Supported: `'gemini-flash'`, `'gemini-pro'`. Sets models for summary, TTS, and infographic, and enables `--no-youtube-summary`. | `None` | `--all gemini-flash` |
+| `--verbose` | Enable verbose output. | `False` | `--verbose` |
 
 ### Examples
 
