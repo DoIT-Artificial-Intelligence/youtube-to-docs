@@ -4,6 +4,7 @@ import re
 import time
 
 import polars as pl
+from rich_argparse import RichHelpFormatter
 
 from youtube_to_docs.infographic import generate_infographic
 from youtube_to_docs.llms import (
@@ -28,17 +29,22 @@ from youtube_to_docs.video import process_videos
 
 
 def main(args_list: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser()
+    # Define styles for the help output
+    RichHelpFormatter.styles["argparse.args"] = "cyan italic"
+    RichHelpFormatter.styles["argparse.groups"] = "bold yellow"
+    RichHelpFormatter.styles["argparse.metavar"] = "bold magenta"
+
+    parser = argparse.ArgumentParser(formatter_class=RichHelpFormatter)
     parser.add_argument(
         "video_id",
         nargs="?",
         default="atmGAHYpf_c",
         help=(
             "Can be one of: \n"
-            "A Video ID e.g. 'atmGAHYpf_c'\n"
-            "Playlist ID (starts with PL e.g. 'PL8ZxoInteClyHaiReuOHpv6Z4SPrXtYtW')\n"
-            "Channel Handle (starts with @ e.g. '@mga-hgo1740')\n"
-            "Comma-separated list of Video IDs. (e.g. 'KuPc06JgI_A,GalhDyf3F8g')"
+            "A Video ID e.g. `atmGAHYpf_c`\n"
+            "Playlist ID (starts with `PL` e.g. `PL8ZxoInteClyHaiReuOHpv6Z4SPrXtYtW`)\n"
+            "Channel Handle (starts with `@` e.g. `@mga-hgo1740`)\n"
+            "Comma-separated list of Video IDs. (e.g. `KuPc06JgI_A,GalhDyf3F8g`)"
         ),
     )
     parser.add_argument(
@@ -48,7 +54,7 @@ def main(args_list: list[str] | None = None) -> None:
         help=(
             "Can be one of: \n"
             "Local file path to save the output CSV file.\n"
-            "'workspace' or 'w' to store to Google Drive or a workspace folder ID."
+            "`workspace` or `w` to store to Google Drive or a workspace folder ID."
         ),
     )
     parser.add_argument(
@@ -57,8 +63,8 @@ def main(args_list: list[str] | None = None) -> None:
         default="youtube",
         help=(
             "The transcript source to use. \n"
-            "Can be 'youtube' (default) to fetch existing YouTube transcripts, \n"
-            "or an AI model name (e.g. 'gemini-3-flash-preview') to perform STT on "
+            "Can be `youtube` (default) to fetch existing YouTube transcripts, \n"
+            "or an AI model name (e.g. `gemini-3-flash-preview`) to perform STT on "
             "extracted audio."
         ),
     )
@@ -70,17 +76,17 @@ def main(args_list: list[str] | None = None) -> None:
             "The LLM to use for speaker extraction, Q&A generation, and "
             "summarization.\n"
             "Can be one of: \n"
-            "Gemini model (e.g., 'gemini-3-flash-preview')\n"
-            "GCP Vertex model (prefixed with 'vertex-'; e.g. "
-            "'vertex-claude-haiku-4-5@20251001')\n"
-            "AWS Bedrock model (prefixed with 'bedrock-'; e.g. "
-            "'bedrock-claude-haiku-4-5-20251001-v1\n"
-            "'bedrock-nova-2-lite-v1')\n"
-            "Azure Foundry model (prefix with 'foundry-'; e.g. "
-            "'foundry-gpt-5-mini)'\n"
+            "Gemini model (e.g., `gemini-3-flash-preview`)\n"
+            "GCP Vertex model (prefixed with `vertex-`; e.g. "
+            "`vertex-claude-haiku-4-5@20251001`)\n"
+            "AWS Bedrock model (prefixed with `bedrock-`; e.g. "
+            "`bedrock-claude-haiku-4-5-20251001-v1`\n"
+            "`bedrock-nova-2-lite-v1`)\n"
+            "Azure Foundry model (prefix with `foundry-`; e.g. "
+            "`foundry-gpt-5-mini`)\n"
             "Can also be a comma-separated list of models (e.g. "
-            "'gemini-3-flash-preview,bedrock-claude-haiku-4-5-20251001-v1').\n"
-            "Defaults to None."
+            "`gemini-3-flash-preview,bedrock-claude-haiku-4-5-20251001-v1`).\n"
+            "Defaults to `None`."
         ),
     )
     parser.add_argument(
@@ -88,8 +94,8 @@ def main(args_list: list[str] | None = None) -> None:
         default=None,
         help=(
             "The TTS model and voice to use. "
-            "Format: {model}-{voice} e.g. 'gemini-2.5-flash-preview-tts-Kore' \n"
-            "or 'gemini-2.5-pro-preview-tts-Kore'"
+            "Format: `{model}-{voice}` e.g. `gemini-2.5-flash-preview-tts-Kore` \n"
+            "or `gemini-2.5-pro-preview-tts-Kore`"
         ),
     )
     parser.add_argument(
@@ -98,7 +104,7 @@ def main(args_list: list[str] | None = None) -> None:
         default=None,
         help=(
             "The image model to use for generating an infographic. "
-            "e.g. 'gemini-2.5-flash-image' or 'gemini-3-pro-image-preview'"
+            "e.g. `gemini-2.5-flash-image` or `gemini-3-pro-image-preview`"
         ),
     )
     parser.add_argument(
@@ -114,7 +120,7 @@ def main(args_list: list[str] | None = None) -> None:
         "-l",
         "--language",
         default="en",
-        help=("The target language (e.g. 'es', 'fr', 'en'). Default is 'en'."),
+        help=("The target language (e.g. `es`, `fr`, `en`). Default is `en`."),
     )
     parser.add_argument(
         "-cia",
@@ -127,13 +133,13 @@ def main(args_list: list[str] | None = None) -> None:
         help=(
             "Shortcut to use a specific model suite for everything. \n"
             "Supported values: \n"
-            "'gemini-flash': summarization (gemini-3-flash-preview), "
-            "TTS (gemini-2.5-flash-preview-tts-Kore), "
-            "and Infographic (gemini-2.5-flash-image). \n"
-            "'gemini-pro': summarization (gemini-3-pro-preview), "
-            "TTS (gemini-2.5-pro-preview-tts-Kore), "
-            "and Infographic (gemini-3-pro-image-preview). \n"
-            "Also sets --no-youtube-summary."
+            "`gemini-flash`: summarization (`gemini-3-flash-preview`), "
+            "TTS (`gemini-2.5-flash-preview-tts-Kore`), "
+            "and Infographic (`gemini-2.5-flash-image`). \n"
+            "`gemini-pro`: summarization (`gemini-3-pro-preview`), "
+            "TTS (`gemini-2.5-pro-preview-tts-Kore`), "
+            "and Infographic (`gemini-3-pro-image-preview`). \n"
+            "Also sets `--no-youtube-summary`."
         ),
     )
 
