@@ -1390,6 +1390,37 @@ def main(args_list: list[str] | None = None) -> None:
                     print(f"Transcript: {trans}")
 
         rows.append(row)
+
+        # Save progress after each video
+        try:
+            # Create a DataFrame from the rows processed so far
+            current_rows_df = pl.DataFrame(rows)
+
+            # Combine with existing data
+            if existing_df is not None:
+                # Identify URLs processed in this session
+                processed_urls = current_rows_df["URL"].to_list()
+                # Keep rows from existing_df that haven't been re-processed
+                existing_remaining = existing_df.filter(
+                    ~pl.col("URL").is_in(processed_urls)
+                )
+                current_save_df = pl.concat(
+                    [existing_remaining, current_rows_df], how="diagonal"
+                )
+            else:
+                current_save_df = current_rows_df
+
+            if "Data Published" in current_save_df.columns:
+                current_save_df = current_save_df.sort(
+                    "Data Published", descending=True
+                )
+
+            current_save_df = reorder_columns(current_save_df)
+            storage.save_dataframe(current_save_df, outfile_path)
+            vprint(f"Progress saved to {outfile}")
+        except Exception as e:
+            print(f"Warning: Could not save progress: {e}")
+
         time.sleep(1)
         print()
 
