@@ -15,10 +15,17 @@ class TestMain(unittest.TestCase):
         self.sleep_patcher = patch("youtube_to_docs.main.time.sleep")
         self.mock_sleep = self.sleep_patcher.start()
 
+        # Create dummy audio file for tests that need it
+        self.dummy_audio = os.path.abspath("dummy_audio.m4a")
+        with open(self.dummy_audio, "wb") as f:
+            f.write(b"dummy audio content")
+
     def tearDown(self):
         self.sleep_patcher.stop()
         if os.path.exists(self.outfile):
             os.remove(self.outfile)
+        if os.path.exists(self.dummy_audio):
+            os.remove(self.dummy_audio)
 
     @patch("youtube_to_docs.main.get_youtube_service")
     @patch("youtube_to_docs.main.resolve_video_ids")
@@ -554,10 +561,14 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.generate_infographic")
     @patch("youtube_to_docs.main.extract_speakers")
     @patch("youtube_to_docs.main.generate_qa")
+    @patch("youtube_to_docs.main.extract_audio")
+    @patch("youtube_to_docs.storage.LocalStorage.upload_file")
     @patch("os.makedirs")
     def test_all_gemini_flash_flag(
         self,
         mock_makedirs,
+        mock_upload_file,
+        mock_extract_audio,
         mock_gen_qa,
         mock_extract_speakers,
         mock_gen_info,
@@ -585,6 +596,8 @@ class TestMain(unittest.TestCase):
         mock_gen_info.return_value = (b"fake_image_bytes", 100, 1290)
         mock_extract_speakers.return_value = ("Speaker 1", 10, 10)
         mock_gen_qa.return_value = ("Q&A", 20, 20)
+        mock_extract_audio.return_value = self.dummy_audio
+        mock_upload_file.return_value = "audio-files/vid1.m4a"
 
         # Ensure process_tts returns the dataframe it receives
         mock_tts.side_effect = lambda df, *args, **kwargs: df
@@ -632,10 +645,14 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.generate_infographic")
     @patch("youtube_to_docs.main.extract_speakers")
     @patch("youtube_to_docs.main.generate_qa")
+    @patch("youtube_to_docs.main.extract_audio")
+    @patch("youtube_to_docs.storage.LocalStorage.upload_file")
     @patch("os.makedirs")
     def test_all_gemini_pro_flag(
         self,
         mock_makedirs,
+        mock_upload_file,
+        mock_extract_audio,
         mock_gen_qa,
         mock_extract_speakers,
         mock_gen_info,
@@ -663,6 +680,8 @@ class TestMain(unittest.TestCase):
         mock_gen_info.return_value = (b"fake_image_bytes", 100, 1290)
         mock_extract_speakers.return_value = ("Speaker 1", 10, 10)
         mock_gen_qa.return_value = ("Q&A", 20, 20)
+        mock_extract_audio.return_value = self.dummy_audio
+        mock_upload_file.return_value = "audio-files/vid1.m4a"
 
         # Ensure process_tts returns the dataframe it receives
         mock_tts.side_effect = lambda df, *args, **kwargs: df
@@ -706,10 +725,14 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.generate_infographic")
     @patch("youtube_to_docs.main.extract_speakers")
     @patch("youtube_to_docs.main.generate_qa")
+    @patch("youtube_to_docs.main.extract_audio")
+    @patch("youtube_to_docs.storage.LocalStorage.upload_file")
     @patch("os.makedirs")
     def test_all_gemini_flash_pro_image_flag(
         self,
         mock_makedirs,
+        mock_upload_file,
+        mock_extract_audio,
         mock_gen_qa,
         mock_extract_speakers,
         mock_gen_info,
@@ -737,6 +760,8 @@ class TestMain(unittest.TestCase):
         mock_gen_info.return_value = (b"fake_image_bytes", 100, 1290)
         mock_extract_speakers.return_value = ("Speaker 1", 10, 10)
         mock_gen_qa.return_value = ("Q&A", 20, 20)
+        mock_extract_audio.return_value = self.dummy_audio
+        mock_upload_file.return_value = "audio-files/vid1.m4a"
 
         # Ensure process_tts returns the dataframe it receives
         mock_tts.side_effect = lambda df, *args, **kwargs: df

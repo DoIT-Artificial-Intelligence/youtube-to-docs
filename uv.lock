@@ -1676,11 +1676,11 @@ requires-dist = [
     { name = "rich-argparse", specifier = ">=1.7.2" },
     { name = "static-ffmpeg", marker = "extra == 'video'", specifier = ">=2.13" },
     { name = "xlsxwriter", marker = "extra == 'm365'", specifier = ">=3.2.9" },
-    { name = "youtube-to-docs", extras = ["azure", "gcp", "workspace", "m365", "audio", "video"], marker = "extra == 'all'" },
+    { name = "youtube-to-docs", extras = ["aws", "azure", "gcp", "workspace", "m365", "audio", "video"], marker = "extra == 'all'" },
     { name = "youtube-transcript-api", specifier = ">=1.2.3" },
     { name = "yt-dlp", marker = "extra == 'audio'", specifier = ">=2025.12.8" },
 ]
-provides-extras = ["azure", "gcp", "workspace", "m365", "audio", "video", "all"]
+provides-extras = ["aws", "azure", "gcp", "workspace", "m365", "audio", "video", "all"]
 
 [package.metadata.requires-dev]
 dev = [
