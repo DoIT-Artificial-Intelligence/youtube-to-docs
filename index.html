@@ -331,6 +331,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="." class="md-nav__link md-nav__link--active">
         
   
@@ -347,6 +365,36 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#optional-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -426,6 +474,25 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#optional-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -454,11 +521,29 @@
 <p>View all available CLI options:</p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uvx<span class="w"> </span>youtube-to-docs<span class="w"> </span>--help
 </code></pre></div>
+<h3 id="optional-features">Optional Features</h3>
+<p>To keep the installation light, some features are optional. You can enable them by specifying "extras":</p>
+<ul>
+<li><code>audio</code>: Required for TTS and audio processing (uses <code>yt-dlp</code>).</li>
+<li><code>video</code>: Required for video generation (uses <code>static-ffmpeg</code>).</li>
+<li><code>workspace</code>: Required for Google Drive integration.</li>
+<li><code>m365</code>: Required for Microsoft SharePoint/OneDrive integration.</li>
+<li><code>aws</code>: AWS Bedrock support.</li>
+<li><code>azure</code>: Required for Azure OpenAI models.</li>
+<li><code>gcp</code>: Required for Google Gemini and Vertex AI models (uses <code>google-genai</code>).</li>
+<li><code>all</code>: Installs everything.</li>
+</ul>
+<p><strong>Example: Run with audio and video support</strong>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uvx<span class="w"> </span>--with<span class="w"> </span><span class="s2">&quot;youtube-to-docs[audio,video]&quot;</span><span class="w"> </span>youtube-to-docs<span class="w"> </span>...
+</code></pre></div></p>
+<p><strong>Example: Run with everything</strong>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uvx<span class="w"> </span>--with<span class="w"> </span><span class="s2">&quot;youtube-to-docs[all]&quot;</span><span class="w"> </span>youtube-to-docs<span class="w"> </span>...
+</code></pre></div></p>
 <p><em>Note: The commands above require <code>uv</code>. You can install it via:</em>
 *   <strong>macOS/Linux</strong>: <code>curl -LsSf https://astral.sh/uv/install.sh | sh</code>
 *   <strong>Windows</strong>: <code>powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"</code></p>
 <p>Install as a Gemini CLI extension:</p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>gemini<span class="w"> </span>extensions<span class="w"> </span>install<span class="w"> </span>https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs.git
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>gemini<span class="w"> </span>extensions<span class="w"> </span>install<span class="w"> </span>https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs.git
 </code></pre></div>
 <p><em>Created with the help of AI. All artifacts have been checked and work as expected.</em></p>
 
