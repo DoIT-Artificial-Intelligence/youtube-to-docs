@@ -338,8 +338,8 @@ class TestMain(unittest.TestCase):
 
         # Expected order based on logic
         expected_start = [
-            "URL",
             "Title",
+            "URL",
             "Description",
             "Data Published",
             "Channel",

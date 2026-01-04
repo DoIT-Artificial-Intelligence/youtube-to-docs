@@ -6,8 +6,10 @@ import wave
 from typing import List, Optional, Tuple
 
 import polars as pl
+from rich import print as rprint
 
 from youtube_to_docs.storage import Storage
+from youtube_to_docs.utils import format_clickable_path
 
 
 def wave_file(filename, pcm, channels=1, rate=24000, sample_width=2):
@@ -93,7 +95,7 @@ def process_tts(
     Processes the DataFrame to generate TTS for each summary file found.
     """
     model_name, voice_name = parse_tts_arg(tts_arg)
-    print(f"Using TTS Model: {model_name}, Voice: {voice_name}")
+    rprint(f"Using TTS Model: {model_name}, Voice: {voice_name}")
 
     # Setup Audio Directory
     # Setup Audio Directory
@@ -140,7 +142,7 @@ def process_tts(
         new_col_name = (
             col.replace("Summary File", "Summary Audio File") + f" {tts_arg} File"
         )
-        print(f"Processing column: {col} -> {new_col_name} (Language: {lang_code})")
+        rprint(f"Processing column: {col} -> {new_col_name} (Language: {lang_code})")
 
         new_col_values = []
 
@@ -186,12 +188,13 @@ def process_tts(
 
             if storage.exists(target_path):
                 if hasattr(storage, "get_full_path"):
-                    new_col_values.append(storage.get_full_path(target_path))
+                    full_path = storage.get_full_path(target_path)
+                    new_col_values.append(full_path)
                     continue
                 else:
                     pass
 
-            print(f"Generating audio for: {summary_filename}")
+            rprint(f"Generating audio for: {summary_filename}")
 
             try:
                 # Read summary from storage
@@ -218,7 +221,7 @@ def process_tts(
                     wav_bytes = wav_io.getvalue()
 
                     saved_path = storage.write_bytes(target_path, wav_bytes)
-                    print(f"Saved audio: {audio_filename}")
+                    rprint(f"Saved audio: {format_clickable_path(saved_path)}")
                     new_col_values.append(saved_path)
                 except Exception as e:
                     print(f"Error writing audio file: {e}")

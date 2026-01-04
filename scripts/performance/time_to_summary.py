@@ -63,7 +63,7 @@ def main():
     # Output to docs/assets
     docs_assets_dir = os.path.abspath(os.path.join(script_dir, "../../docs/assets"))
     os.makedirs(docs_assets_dir, exist_ok=True)
-    
+
     output_path = os.path.join(docs_assets_dir, "time_to_summarize.csv")
     md_output_path = os.path.join(docs_assets_dir, "time_to_summarize.md")
 
@@ -127,7 +127,7 @@ def main():
         )
         df = df.sort("time (seconds)")
         df.write_csv(output_path)
-        
+
         # Write markdown table
         with open(md_output_path, "w") as f:
             # Header

@@ -20,7 +20,7 @@ def generate_infographic(
 
     prompt = (
         "Create a visually appealing infographic summarizing the following "
-        "video content.\n"
+        "video content. Do not include any people in the infographic.\n"
         f"Video Title: {video_title}\n\n"
         f"Summary:\n{summary_text}\n\n"
         "The infographic should be easy to read, professional, and capture "

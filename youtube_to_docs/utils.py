@@ -1,6 +1,28 @@
+import os
 import re
+from pathlib import Path
 
 import polars as pl
+
+
+def format_clickable_path(path: str) -> str:
+    """
+    Formats a path or URL as a clickable link for Rich.
+    If it's a local file path, it uses the file:// URI scheme.
+    """
+    if not path or not isinstance(path, str):
+        return str(path)
+
+    if path.startswith("http"):
+        return f"[link={path}]{path}[/link]"
+
+    # Assume it's a local path if it doesn't start with http
+    try:
+        abs_path = os.path.abspath(path)
+        uri = Path(abs_path).as_uri()
+        return f"[link={uri}]{path}[/link]"
+    except Exception:
+        return path
 
 
 def reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
@@ -10,8 +32,8 @@ def reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
 
     # 1. Video metadata
     metadata = [
-        "URL",
         "Title",
+        "URL",
         "Description",
         "Data Published",
         "Channel",

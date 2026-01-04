@@ -5,6 +5,7 @@ import re
 import time
 
 import polars as pl
+from rich import print as rprint
 from rich_argparse import RichHelpFormatter
 
 from youtube_to_docs.infographic import generate_infographic
@@ -26,23 +27,27 @@ from youtube_to_docs.transcript import (
     resolve_video_ids,
 )
 from youtube_to_docs.tts import process_tts
-from youtube_to_docs.utils import normalize_model_name, reorder_columns
+from youtube_to_docs.utils import (
+    format_clickable_path,
+    normalize_model_name,
+    reorder_columns,
+)
 from youtube_to_docs.video import process_videos
 
 
 class VerboseRow(dict):
     def __setitem__(self, key, value):
         super().__setitem__(key, value)
-        print(f"Updated column: {key}")
+        rprint(f"Updated column: {key}")
 
     def update(self, *args, **kwargs):
         super().update(*args, **kwargs)
         if args:
             if isinstance(args[0], dict):
                 for k in args[0]:
-                    print(f"Updated column: {k}")
+                    rprint(f"Updated column: {k}")
         for k in kwargs:
-            print(f"Updated column: {k}")
+            rprint(f"Updated column: {k}")
 
 
 def main(args_list: list[str] | None = None) -> None:
@@ -147,6 +152,7 @@ def main(args_list: list[str] | None = None) -> None:
         help="Combine the infographic and audio summary into a video file.",
     )
     parser.add_argument(
+        "-a",
         "--all",
         help=(
             "Shortcut to use a specific model suite for everything. \n"
@@ -181,7 +187,7 @@ def main(args_list: list[str] | None = None) -> None:
 
     def vprint(*args, **kwargs):
         if verbose:
-            print(*args, **kwargs)
+            rprint(*args, **kwargs)
 
     if args.all in MODEL_SUITES:
         suite = MODEL_SUITES[args.all]
@@ -400,7 +406,10 @@ def main(args_list: list[str] | None = None) -> None:
                     uploaded_path_or_link = storage.upload_file(
                         local_audio_path, target_audio_path, content_type="audio/mp4"
                     )
-                    vprint(f"Audio saved to: {uploaded_path_or_link}")
+                    vprint(
+                        "Audio saved to: "
+                        f"{format_clickable_path(uploaded_path_or_link)}"
+                    )
                     row["Audio File"] = uploaded_path_or_link
                     audio_file_path = uploaded_path_or_link
 
@@ -460,7 +469,10 @@ def main(args_list: list[str] | None = None) -> None:
 
                     try:
                         saved_path = storage.write_text(target_path, youtube_transcript)
-                        vprint(f"Saved YouTube transcript ({language}): {filename}")
+                        vprint(
+                            f"Saved YouTube transcript ({language}): "
+                            f"{format_clickable_path(saved_path)}"
+                        )
 
                         # Update row with YouTube transcript info
                         if is_generated:
@@ -511,7 +523,10 @@ def main(args_list: list[str] | None = None) -> None:
                                 saved_path = storage.write_text(
                                     target_path, youtube_transcript
                                 )
-                                vprint(f"Saved fallback English transcript: {filename}")
+                                vprint(
+                                    f"Saved fallback English transcript: "
+                                    f"{format_clickable_path(saved_path)}"
+                                )
                                 if en_is_generated:
                                     row["Transcript File youtube generated"] = (
                                         saved_path
@@ -586,7 +601,10 @@ def main(args_list: list[str] | None = None) -> None:
 
                         try:
                             saved_path = storage.write_text(target_path, ai_transcript)
-                            vprint(f"Saved AI transcript: {filename}")
+                            vprint(
+                                "Saved AI transcript: "
+                                f"{format_clickable_path(saved_path)}"
+                            )
                             row[ai_col] = saved_path
                         except Exception as e:
                             print(f"Error writing AI transcript: {e}")
@@ -698,7 +716,9 @@ def main(args_list: list[str] | None = None) -> None:
                         target_path = os.path.join(speakers_dir, speakers_filename)
                         try:
                             saved_path = storage.write_text(target_path, speakers_text)
-                            vprint(f"Saved speakers: {speakers_filename}")
+                            vprint(
+                                f"Saved speakers: {format_clickable_path(saved_path)}"
+                            )
                             row[speakers_file_col_name] = saved_path
                         except Exception as e:
                             print(f"Error writing speakers file: {e}")
@@ -760,7 +780,7 @@ def main(args_list: list[str] | None = None) -> None:
                         target_path = os.path.join(qa_dir, qa_filename)
                         try:
                             saved_path = storage.write_text(target_path, qa_text)
-                            vprint(f"Saved Q&A: {qa_filename}")
+                            vprint(f"Saved Q&A: {format_clickable_path(saved_path)}")
                             row[qa_file_col_name] = saved_path
                         except Exception as e:
                             print(f"Error writing Q&A file: {e}")
@@ -892,7 +912,10 @@ def main(args_list: list[str] | None = None) -> None:
                             summary_full_path = storage.write_text(
                                 target_path, summary_text
                             )
-                            vprint(f"Saved summary: {summary_filename}")
+                            vprint(
+                                "Saved summary: "
+                                f"{format_clickable_path(summary_full_path)}"
+                            )
                         except Exception as e:
                             print(f"Error writing summary: {e}")
 
@@ -1135,7 +1158,10 @@ def main(args_list: list[str] | None = None) -> None:
                                 yt_qa_full_path = storage.write_text(
                                     target_path, row[yt_qa_col_name]
                                 )
-                                vprint(f"Saved YouTube Q&A: {qa_filename}")
+                                vprint(
+                                    f"Saved YouTube Q&A: "
+                                    f"{format_clickable_path(yt_qa_full_path)}"
+                                )
                             except Exception as e:
                                 print(f"Error writing YouTube Q&A: {e}")
 
@@ -1229,7 +1255,10 @@ def main(args_list: list[str] | None = None) -> None:
                                 yt_summary_full_path = storage.write_text(
                                     target_path, yt_summary_text
                                 )
-                                vprint(f"Saved YouTube summary: {summary_filename}")
+                                vprint(
+                                    f"Saved YouTube summary: "
+                                    f"{format_clickable_path(yt_summary_full_path)}"
+                                )
                             except Exception as e:
                                 print(f"Error writing YouTube summary: {e}")
 
@@ -1343,7 +1372,10 @@ def main(args_list: list[str] | None = None) -> None:
                     if image_bytes:
                         try:
                             saved_path = storage.write_bytes(expected_path, image_bytes)
-                            vprint(f"Saved infographic: {infographic_filename}")
+                            vprint(
+                                "Saved infographic: "
+                                f"{format_clickable_path(saved_path)}"
+                            )
                             row[info_col] = saved_path
 
                             # Calculate Infographic Cost
@@ -1376,7 +1408,7 @@ def main(args_list: list[str] | None = None) -> None:
                 None,
             )
             if oss:
-                print(f"Summary: {oss}")
+                rprint(f"Summary: {oss}")
             else:
                 trans = next(
                     (
@@ -1387,7 +1419,7 @@ def main(args_list: list[str] | None = None) -> None:
                     None,
                 )
                 if trans:
-                    print(f"Transcript: {trans}")
+                    rprint(f"Transcript: {format_clickable_path(trans)}")
 
         rows.append(row)
 
@@ -1469,7 +1501,10 @@ def main(args_list: list[str] | None = None) -> None:
         if should_save:
             final_df = reorder_columns(final_df)
             saved_path = storage.save_dataframe(final_df, outfile_path)
-            print(f"Successfully wrote {len(final_df)} rows to {saved_path}")
+            rprint(
+                f"Successfully wrote {len(final_df)} rows to "
+                f"{format_clickable_path(saved_path)}"
+            )
         else:
             vprint("No new data to gather or all videos already processed.")
     else:

@@ -212,3 +212,5 @@ youtube-to-docs-test/
 temp-processing-artifacts/
 
 .vscode/
+
+*.m4a

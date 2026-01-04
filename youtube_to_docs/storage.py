@@ -184,7 +184,7 @@ class GoogleDriveStorage(Storage):
         return creds
 
     def _resolve_root_folder_id(self, output_arg: str) -> str:
-        if output_arg == "workspace":
+        if output_arg in ("workspace", "w"):
             folder_name = "youtube-to-docs-artifacts"
             # specific logic to find or create "youtube-to-docs-artifacts" in root
             query = (

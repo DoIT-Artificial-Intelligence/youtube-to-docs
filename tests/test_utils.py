@@ -21,8 +21,8 @@ class TestReorderColumns(unittest.TestCase):
         cols = reordered.columns
 
         # Check that known columns are at the start in correct order
-        self.assertEqual(cols[0], "URL")
-        self.assertEqual(cols[1], "Title")
+        self.assertEqual(cols[0], "Title")
+        self.assertEqual(cols[1], "URL")
         self.assertEqual(cols[2], "Description")
         self.assertEqual(cols[3], "Tags")
 

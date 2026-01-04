@@ -3,8 +3,10 @@ import subprocess
 import tempfile
 
 import polars as pl
+from rich import print as rprint
 
 from youtube_to_docs.storage import Storage
+from youtube_to_docs.utils import format_clickable_path
 
 
 def create_video(image_path: str, audio_path: str, output_path: str) -> bool:
@@ -73,7 +75,7 @@ def process_videos(
 
     # Create a temporary directory for local processing (download/ffmpeg)
     with tempfile.TemporaryDirectory() as temp_dir:
-        print(f"Using temporary directory for video processing: {temp_dir}")
+        rprint(f"Using temporary directory for video processing: {temp_dir}")
 
         for row in df.iter_rows(named=True):
             # Find valid infographics and audios for this row
@@ -130,10 +132,10 @@ def process_videos(
                         video_files.append(storage.get_full_path(target_video_path))
                     else:
                         video_files.append(target_video_path)
-                    print(f"Video already exists: {video_filename}")
+                    rprint(f"Video already exists: {video_filename}")
                     continue
 
-                print(f"Creating video: {video_filename}")
+                rprint(f"Creating video: {video_filename}")
 
                 # Download files to temp dir
                 local_info_path = os.path.join(temp_dir, "input_image.png")
@@ -165,7 +167,10 @@ def process_videos(
                             target_video_path,
                             content_type="video/mp4",
                         )
-                        print(f"Successfully created and uploaded: {video_filename}")
+                        rprint(
+                            f"Successfully created and uploaded: "
+                            f"{format_clickable_path(uploaded_link)}"
+                        )
                         video_files.append(uploaded_link)
                     else:
                         video_files.append(None)
