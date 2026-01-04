@@ -23,7 +23,7 @@ class TestLLMs(unittest.TestCase):
     def tearDown(self):
         self.env_patcher.stop()
 
-    @patch("youtube_to_docs.llms.genai.Client")
+    @patch("google.genai.Client")
     def test_generate_summary_gemini(self, mock_client_cls):
         mock_client = mock_client_cls.return_value
         mock_resp = MagicMock()
@@ -82,7 +82,7 @@ class TestLLMs(unittest.TestCase):
         self.assertEqual(in_tokens, 100)
         self.assertEqual(out_tokens, 50)
 
-    @patch("youtube_to_docs.llms.OpenAI")
+    @patch("openai.OpenAI")
     def test_generate_summary_foundry(self, mock_openai):
         mock_client = mock_openai.return_value
         mock_completion = MagicMock()
@@ -98,7 +98,7 @@ class TestLLMs(unittest.TestCase):
         self.assertEqual(in_tokens, 100)
         self.assertEqual(out_tokens, 50)
 
-    @patch("youtube_to_docs.llms.genai.Client")
+    @patch("google.genai.Client")
     def test_extract_speakers_gemini(self, mock_client_cls):
         mock_client = mock_client_cls.return_value
         mock_resp = MagicMock()
@@ -114,7 +114,7 @@ class TestLLMs(unittest.TestCase):
         self.assertEqual(in_tokens, 120)
         self.assertEqual(out_tokens, 30)
 
-    @patch("youtube_to_docs.llms.genai.Client")
+    @patch("google.genai.Client")
     def test_generate_qa_gemini(self, mock_client_cls):
         mock_client = mock_client_cls.return_value
         mock_resp = MagicMock()

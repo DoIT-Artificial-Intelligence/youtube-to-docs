@@ -3,13 +3,6 @@ import os
 from typing import Optional, Tuple
 
 import requests
-from google import genai
-from google.genai import types
-
-try:
-    from openai import OpenAI
-except ImportError:
-    OpenAI = None  # type: ignore
 
 
 def generate_infographic(
@@ -36,6 +29,9 @@ def generate_infographic(
     )
 
     try:
+        from google import genai
+        from google.genai import types
+
         GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
         if not GEMINI_API_KEY:
             print("Error: GEMINI_API_KEY not found for infographic generation")
@@ -188,9 +184,7 @@ def generate_infographic(
 
         elif image_model.startswith("foundry"):
             try:
-                if OpenAI is None:
-                    print("Error: openai library not installed.")
-                    return None, 0, 0
+                from openai import OpenAI
 
                 AZURE_FOUNDRY_ENDPOINT = os.environ["AZURE_FOUNDRY_ENDPOINT"]
                 AZURE_FOUNDRY_API_KEY = os.environ["AZURE_FOUNDRY_API_KEY"]

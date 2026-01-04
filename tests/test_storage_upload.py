@@ -5,8 +5,8 @@ from youtube_to_docs.storage import GoogleDriveStorage
 
 
 class TestGoogleDriveStorage(unittest.TestCase):
-    @patch("youtube_to_docs.storage.build")
-    @patch("youtube_to_docs.storage.Credentials")
+    @patch("googleapiclient.discovery.build")
+    @patch("google.oauth2.credentials.Credentials")
     @patch("youtube_to_docs.storage.Path")
     def setUp(self, mock_path, mock_creds, mock_build):
         self.mock_service = MagicMock()
@@ -22,7 +22,7 @@ class TestGoogleDriveStorage(unittest.TestCase):
         # Mock _resolve_root_folder_id to avoid API call in init
         self.storage.root_folder_id = "root_id"
 
-    @patch("youtube_to_docs.storage.MediaFileUpload")
+    @patch("googleapiclient.http.MediaFileUpload")
     def test_upload_file_uses_media_file_upload(self, mock_media_file_upload):
         # Setup mocks
         with (

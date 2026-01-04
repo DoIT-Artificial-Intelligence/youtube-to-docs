@@ -28,7 +28,7 @@ class TestVideo(unittest.TestCase):
         shutil.rmtree(self.temp_dir)
 
     @patch("youtube_to_docs.video.subprocess.run")
-    @patch("youtube_to_docs.video.run.get_or_fetch_platform_executables_else_raise")
+    @patch("static_ffmpeg.run.get_or_fetch_platform_executables_else_raise")
     def test_create_video_success(self, mock_get_ffmpeg, mock_run):
         mock_get_ffmpeg.return_value = ("/usr/bin/ffmpeg", None)
         mock_run.return_value = MagicMock(returncode=0)
@@ -47,7 +47,7 @@ class TestVideo(unittest.TestCase):
         self.assertIn(self.output_path, args)
 
     @patch("youtube_to_docs.video.subprocess.run")
-    @patch("youtube_to_docs.video.run.get_or_fetch_platform_executables_else_raise")
+    @patch("static_ffmpeg.run.get_or_fetch_platform_executables_else_raise")
     def test_create_video_failure(self, mock_get_ffmpeg, mock_run):
         mock_get_ffmpeg.return_value = ("/usr/bin/ffmpeg", None)
         import subprocess

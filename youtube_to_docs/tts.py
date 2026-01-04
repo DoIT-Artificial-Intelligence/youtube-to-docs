@@ -6,8 +6,6 @@ import wave
 from typing import List, Optional, Tuple
 
 import polars as pl
-from google import genai
-from google.genai import types
 
 from youtube_to_docs.storage import Storage
 
@@ -29,6 +27,9 @@ def generate_speech(
     Returns the raw PCM audio bytes.
     """
     try:
+        from google import genai
+        from google.genai import types
+
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             print("Error: GEMINI_API_KEY environment variable not set.")

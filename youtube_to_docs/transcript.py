@@ -5,9 +5,6 @@ import sys
 from typing import Any, List, Optional, Tuple, cast
 
 import isodate
-import static_ffmpeg
-import yt_dlp
-from googleapiclient.discovery import Resource, build
 from youtube_transcript_api import (
     IpBlocked,
     NoTranscriptFound,
@@ -17,12 +14,15 @@ from youtube_transcript_api import (
     YouTubeTranscriptApi,
 )
 
-# Ensure ffmpeg is in path
-static_ffmpeg.add_paths()
-
 
 def extract_audio(video_id: str, output_dir: str) -> Optional[str]:
     """Extracts audio from a YouTube video using yt-dlp."""
+    import static_ffmpeg
+    import yt_dlp
+
+    # Ensure ffmpeg is in path
+    static_ffmpeg.add_paths()
+
     url = f"https://www.youtube.com/watch?v={video_id}"
     os.makedirs(output_dir, exist_ok=True)
 
@@ -48,12 +48,14 @@ def extract_audio(video_id: str, output_dir: str) -> Optional[str]:
     return None
 
 
-def get_youtube_service() -> Optional[Resource]:
+def get_youtube_service() -> Optional[Any]:
     """Builds and returns the YouTube Data API service."""
     try:
+        from googleapiclient.discovery import build
+
         api_key = os.environ["YOUTUBE_DATA_API_KEY"]
         return build("youtube", "v3", developerKey=api_key)
-    except KeyError:
+    except (KeyError, ImportError):
         print(
             "Warning: YOUTUBE_DATA_API_KEY not found. Playlist and Channel expansion "
             "will fail."
@@ -61,9 +63,7 @@ def get_youtube_service() -> Optional[Resource]:
         return None
 
 
-def resolve_video_ids(
-    video_id_input: str, youtube_service: Optional[Resource]
-) -> List[str]:
+def resolve_video_ids(video_id_input: str, youtube_service: Optional[Any]) -> List[str]:
     """
     Resolves the input (video ID, list, playlist, or channel handle)
     into a list of video IDs.
@@ -115,7 +115,7 @@ def resolve_video_ids(
 
 
 def get_video_details(
-    video_id: str, youtube_service: Optional[Resource]
+    video_id: str, youtube_service: Optional[Any]
 ) -> Optional[Tuple[str, str, str, str, str, str, str]]:
     """
     Fetches video metadata from YouTube Data API.

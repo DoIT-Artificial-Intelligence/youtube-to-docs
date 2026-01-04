@@ -24,7 +24,7 @@ class TestTTS(unittest.TestCase):
         self.assertEqual(model, "singlemodelname")
         self.assertEqual(voice, "Kore")
 
-    @patch("youtube_to_docs.tts.genai")
+    @patch("google.genai")
     @patch.dict(os.environ, {"GEMINI_API_KEY": "fake_key"})
     def test_generate_speech_success(self, mock_genai):
         # Setup mock client and response
@@ -45,7 +45,7 @@ class TestTTS(unittest.TestCase):
         self.assertEqual(audio_data, b"fake_audio_data")
         mock_client.models.generate_content.assert_called_once()
 
-    @patch("youtube_to_docs.tts.genai")
+    @patch("google.genai")
     @patch.dict(os.environ, {}, clear=True)
     def test_generate_speech_no_api_key(self, mock_genai):
         # Execute
@@ -55,7 +55,7 @@ class TestTTS(unittest.TestCase):
         self.assertEqual(audio_data, b"")
         mock_genai.Client.assert_not_called()
 
-    @patch("youtube_to_docs.tts.genai")
+    @patch("google.genai")
     @patch.dict(os.environ, {"GEMINI_API_KEY": "fake_key"})
     def test_generate_speech_api_error(self, mock_genai):
         # Setup mock to raise exception

@@ -21,41 +21,48 @@ This directory contains regression tests for the `youtube-to-docs` tool.
 To run a specific test case from the project root:
 
 ```bash
-uv run python scripts/regression/regression_en_full.py
+# Full English run with transcript, infographic, and TTS
+uv run --extra audio --extra video --extra gcp python scripts/regression/regression_en_full.py
 ```
 
 or
 
 ```bash
-uv run python scripts/regression/regression_es_no_yt_summary.py
+# Spanish run with gcp model
+uv run --extra gcp python scripts/regression/regression_es_no_yt_summary.py
 ```
 
 or
 
 ```bash
-uv run python scripts/regression/regression_workspace.py
+# Google Drive storage with gcp model
+uv run --extra workspace --extra gcp python scripts/regression/regression_workspace.py
 ```
 
 or
 
 ```bash
-uv run python scripts/regression/regression_workspace_es.py
+# Google Drive storage (Spanish) with gcp model
+uv run --extra workspace --extra gcp python scripts/regression/regression_workspace_es.py
 ```
 
 or
 
 ```bash
-uv run python scripts/regression/regression_sharepoint.py
+# SharePoint storage with azure model
+uv run --extra m365 --extra azure python scripts/regression/regression_sharepoint.py
 ```
 
 or
 
 ```bash
-uv run python scripts/regression/regression_two_vids.py
+# gcp model tests
+uv run --extra gcp python scripts/regression/regression_two_vids.py
 ```
 
 or
 
 ```bash
-uv run python scripts/regression/regression_two_vids_verbose.py
+# gcp model tests (verbose)
+uv run --extra gcp python scripts/regression/regression_two_vids_verbose.py
 ```

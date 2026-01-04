@@ -1,11 +1,7 @@
 import os
 from typing import Any, Dict, List, Tuple, cast
 
-import google.auth
 import requests
-from google import genai
-from google.genai import types
-from openai import OpenAI
 
 from youtube_to_docs.prices import PRICES
 from youtube_to_docs.utils import add_question_numbers, normalize_model_name
@@ -54,6 +50,9 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
 
     if model_name.startswith("gemini"):
         try:
+            from google import genai
+            from google.genai import types
+
             GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
             google_genai_client = genai.Client(api_key=GEMINI_API_KEY)
             response = google_genai_client.models.generate_content(
@@ -79,6 +78,7 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
         try:
             import subprocess
 
+            import google.auth
             from google.auth.exceptions import RefreshError
             from google.auth.transport.requests import AuthorizedSession
 
@@ -170,6 +170,9 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
                     )
                     print(response_text)
             elif actual_model_name.startswith("gemini"):
+                from google import genai
+                from google.genai import types
+
                 vertex_location = os.environ.get("VERTEX_LOCATION", "us-east5")
                 client = genai.Client(
                     vertexai=True,
@@ -258,6 +261,8 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
 
     elif model_name.startswith("foundry"):
         try:
+            from openai import OpenAI
+
             AZURE_FOUNDRY_ENDPOINT = os.environ["AZURE_FOUNDRY_ENDPOINT"]
             AZURE_FOUNDRY_API_KEY = os.environ["AZURE_FOUNDRY_API_KEY"]
             actual_model_name = model_name.replace("foundry-", "")
@@ -302,6 +307,9 @@ def generate_transcript(
         return f"Error: STT not yet implemented for model {model_name}", 0, 0
 
     try:
+        from google import genai
+        from google.genai import types
+
         GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
         client = genai.Client(api_key=GEMINI_API_KEY)
 

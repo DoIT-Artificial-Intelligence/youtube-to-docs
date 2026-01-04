@@ -23,7 +23,7 @@ class TestInfographic(unittest.TestCase):
     def tearDown(self):
         self.env_patcher.stop()
 
-    @patch("youtube_to_docs.infographic.genai.Client")
+    @patch("google.genai.Client")
     def test_generate_infographic_gemini(self, mock_client_cls):
         mock_client = mock_client_cls.return_value
 
@@ -46,7 +46,7 @@ class TestInfographic(unittest.TestCase):
         self.assertEqual(out_tok, 20)
         mock_client.models.generate_content_stream.assert_called_once()
 
-    @patch("youtube_to_docs.infographic.genai.Client")
+    @patch("google.genai.Client")
     def test_generate_infographic_imagen(self, mock_client_cls):
         mock_client = mock_client_cls.return_value
         mock_resp = MagicMock()
@@ -83,7 +83,7 @@ class TestInfographic(unittest.TestCase):
         self.assertEqual(in_tok, 0)
         self.assertEqual(out_tok, 0)
 
-    @patch("youtube_to_docs.infographic.genai.Client")
+    @patch("google.genai.Client")
     def test_generate_infographic_imagen_no_images(self, mock_client_cls):
         mock_client = mock_client_cls.return_value
         mock_resp = MagicMock()
@@ -97,7 +97,7 @@ class TestInfographic(unittest.TestCase):
         self.assertEqual(in_tok, 0)
         self.assertEqual(out_tok, 0)
 
-    @patch("youtube_to_docs.infographic.genai.Client")
+    @patch("google.genai.Client")
     def test_generate_infographic_gemini_no_data(self, mock_client_cls):
         mock_client = mock_client_cls.return_value
 
@@ -191,7 +191,7 @@ class TestInfographic(unittest.TestCase):
         self.assertEqual(out_tok, 0)
         mock_post.assert_not_called()
 
-    @patch("youtube_to_docs.infographic.OpenAI")
+    @patch("openai.OpenAI")
     def test_generate_infographic_foundry(self, mock_openai_cls):
         mock_client = mock_openai_cls.return_value
         mock_resp = MagicMock()

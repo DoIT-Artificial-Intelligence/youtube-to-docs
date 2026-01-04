@@ -8,19 +8,11 @@ import shutil
 import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from urllib.parse import quote
 
-import msal
 import polars as pl
-import pypandoc
 import requests
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload, MediaIoBaseUpload
 
 
 class Storage(ABC):
@@ -154,6 +146,8 @@ class GoogleDriveStorage(Storage):
     SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 
     def __init__(self, output_arg: str):
+        from googleapiclient.discovery import build
+
         self.creds = self._get_creds()
         self.service = build("drive", "v3", credentials=self.creds)
         self.sheets_service = build("sheets", "v4", credentials=self.creds)
@@ -164,6 +158,10 @@ class GoogleDriveStorage(Storage):
         self.file_cache: dict[str, dict] = {}
 
     def _get_creds(self):
+        from google.auth.transport.requests import Request
+        from google.oauth2.credentials import Credentials
+        from google_auth_oauthlib.flow import InstalledAppFlow
+
         creds = None
         creds_file = Path.home() / ".google_client_secret.json"
         token_file = Path.home() / ".token.json"
@@ -336,7 +334,13 @@ class GoogleDriveStorage(Storage):
                 .execute()
             )
             return content.decode("utf-8")
-        except HttpError:
+        except Exception as e:
+            from googleapiclient.errors import HttpError
+            from googleapiclient.http import MediaIoBaseDownload
+
+            if not isinstance(e, HttpError):
+                raise e
+
             # Maybe it is a binary file or text file? use get_media
             # But we are in read_text
             request = self.service.files().get_media(fileId=file_id)
@@ -356,6 +360,8 @@ class GoogleDriveStorage(Storage):
 
         if not file_id:
             raise FileNotFoundError(f"File not found: {path}")
+
+        from googleapiclient.http import MediaIoBaseDownload
 
         request = self.service.files().get_media(fileId=file_id)
         fh = io.BytesIO()
@@ -378,6 +384,8 @@ class GoogleDriveStorage(Storage):
             "mimeType": "application/vnd.google-apps.document",  # Convert to Doc
             "parents": [parent_id],
         }
+
+        from googleapiclient.http import MediaIoBaseUpload
 
         fh = io.BytesIO(content.encode("utf-8"))
         media = MediaIoBaseUpload(fh, mimetype="text/markdown", resumable=True)
@@ -418,6 +426,8 @@ class GoogleDriveStorage(Storage):
             "name": filename,
             "parents": [parent_id],
         }
+
+        from googleapiclient.http import MediaIoBaseUpload
 
         fh = io.BytesIO(content)
         mime_type = "application/octet-stream"
@@ -487,6 +497,8 @@ class GoogleDriveStorage(Storage):
             "mimeType": "application/vnd.google-apps.spreadsheet",
             "parents": [parent_id],
         }
+
+        from googleapiclient.http import MediaIoBaseUpload
 
         media = MediaIoBaseUpload(csv_buffer, mimetype="text/csv", resumable=True)
 
@@ -592,6 +604,8 @@ class GoogleDriveStorage(Storage):
 
         file_metadata = {"name": filename, "parents": [parent_id]}
 
+        from googleapiclient.http import MediaFileUpload
+
         media = MediaFileUpload(local_path, mimetype=content_type, resumable=True)
 
         if existing_id:
@@ -648,8 +662,13 @@ class GoogleDriveStorage(Storage):
             with open(local_path, "wb") as f:
                 f.write(data)
             return local_path
-        except (HttpError, OSError) as e:
-            print(f"Error downloading file {path} to local: {e}")
+        except Exception as e:
+            from googleapiclient.errors import HttpError
+
+            if isinstance(e, (HttpError, OSError)):
+                print(f"Error downloading file {path} to local: {e}")
+            else:
+                raise e
             return None
 
 
@@ -675,7 +694,9 @@ class M365Storage(Storage):
             )
         return json.loads(self.CLIENT_CONFIG_FILE.read_text(encoding="utf-8"))
 
-    def _build_msal_app(self) -> msal.PublicClientApplication:
+    def _build_msal_app(self) -> Any:
+        import msal
+
         config = self._get_client_config()
         client_id = config.get("client_id")
         authority = config.get("authority")
@@ -843,6 +864,8 @@ class M365Storage(Storage):
         filename = item.get("name", "")
 
         if filename.endswith(".docx"):
+            import pypandoc
+
             with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
                 tmp.write(content_bytes)
                 tmp_path = tmp.name
@@ -887,6 +910,8 @@ class M365Storage(Storage):
     def write_text(self, path: str, content: str) -> str:
         filename = Path(path).name
         if filename.endswith(".md") or filename.endswith(".txt"):
+            import pypandoc
+
             remote_path = self._get_full_remote_path(
                 str(Path(path).with_suffix(".docx"))
             )
