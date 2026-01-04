@@ -5,6 +5,7 @@ import sys
 from typing import Any, List, Optional, Tuple, cast
 
 import isodate
+from googleapiclient.discovery import build
 from youtube_transcript_api import (
     IpBlocked,
     NoTranscriptFound,
@@ -51,11 +52,9 @@ def extract_audio(video_id: str, output_dir: str) -> Optional[str]:
 def get_youtube_service() -> Optional[Any]:
     """Builds and returns the YouTube Data API service."""
     try:
-        from googleapiclient.discovery import build
-
         api_key = os.environ["YOUTUBE_DATA_API_KEY"]
         return build("youtube", "v3", developerKey=api_key)
-    except (KeyError, ImportError):
+    except KeyError:
         print(
             "Warning: YOUTUBE_DATA_API_KEY not found. Playlist and Channel expansion "
             "will fail."

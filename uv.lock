@@ -1598,9 +1598,10 @@ wheels = [
 
 [[package]]
 name = "youtube-to-docs"
-version = "0.0.27"
+version = "0.0.28"
 source = { editable = "." }
 dependencies = [
+    { name = "google-api-python-client" },
     { name = "isodate" },
     { name = "mcp" },
     { name = "polars" },
@@ -1613,7 +1614,6 @@ dependencies = [
 [package.optional-dependencies]
 all = [
     { name = "fastexcel" },
-    { name = "google-api-python-client" },
     { name = "google-auth-oauthlib" },
     { name = "google-genai" },
     { name = "msal" },
@@ -1644,7 +1644,6 @@ video = [
     { name = "static-ffmpeg" },
 ]
 workspace = [
-    { name = "google-api-python-client" },
     { name = "google-auth-oauthlib" },
 ]
 
@@ -1661,7 +1660,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "fastexcel", marker = "extra == 'm365'", specifier = ">=0.12.0" },
-    { name = "google-api-python-client", marker = "extra == 'workspace'", specifier = ">=2.187.0" },
+    { name = "google-api-python-client", specifier = ">=2.187.0" },
     { name = "google-auth-oauthlib", marker = "extra == 'workspace'" },
     { name = "google-genai", marker = "extra == 'gcp'" },
     { name = "isodate", specifier = ">=0.7.2" },

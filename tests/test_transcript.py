@@ -19,7 +19,7 @@ class TestTranscript(unittest.TestCase):
     def tearDown(self):
         self.env_patcher.stop()
 
-    @patch("googleapiclient.discovery.build")
+    @patch("youtube_to_docs.transcript.build")
     def test_get_youtube_service(self, mock_build):
         service = transcript.get_youtube_service()
         self.assertIsNotNone(service)
@@ -42,7 +42,7 @@ class TestTranscript(unittest.TestCase):
         with self.assertRaises(SystemExit):
             transcript.resolve_video_ids("PL8ZxoInteClyHaiReuOHpv6Z4SPrXtYtW", None)
 
-    @patch("googleapiclient.discovery.build")
+    @patch("youtube_to_docs.transcript.build")
     def test_resolve_video_ids_playlist(self, mock_build):
         mock_service = MagicMock()
         mock_request = MagicMock()
@@ -60,7 +60,7 @@ class TestTranscript(unittest.TestCase):
         ids = transcript.resolve_video_ids("PL123", mock_service)
         self.assertEqual(ids, ["vid1", "vid2"])
 
-    @patch("googleapiclient.discovery.build")
+    @patch("youtube_to_docs.transcript.build")
     def test_resolve_video_ids_channel_handle(self, mock_build):
         mock_service = MagicMock()
 

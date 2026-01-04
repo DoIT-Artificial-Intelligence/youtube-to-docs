@@ -13,6 +13,13 @@ from urllib.parse import quote
 
 import polars as pl
 import requests
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from googleapiclient.http import (
+    MediaFileUpload,
+    MediaIoBaseDownload,
+    MediaIoBaseUpload,
+)
 
 
 class Storage(ABC):
@@ -146,8 +153,6 @@ class GoogleDriveStorage(Storage):
     SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 
     def __init__(self, output_arg: str):
-        from googleapiclient.discovery import build
-
         self.creds = self._get_creds()
         self.service = build("drive", "v3", credentials=self.creds)
         self.sheets_service = build("sheets", "v4", credentials=self.creds)
@@ -335,9 +340,6 @@ class GoogleDriveStorage(Storage):
             )
             return content.decode("utf-8")
         except Exception as e:
-            from googleapiclient.errors import HttpError
-            from googleapiclient.http import MediaIoBaseDownload
-
             if not isinstance(e, HttpError):
                 raise e
 
@@ -361,8 +363,6 @@ class GoogleDriveStorage(Storage):
         if not file_id:
             raise FileNotFoundError(f"File not found: {path}")
 
-        from googleapiclient.http import MediaIoBaseDownload
-
         request = self.service.files().get_media(fileId=file_id)
         fh = io.BytesIO()
 
@@ -384,8 +384,6 @@ class GoogleDriveStorage(Storage):
             "mimeType": "application/vnd.google-apps.document",  # Convert to Doc
             "parents": [parent_id],
         }
-
-        from googleapiclient.http import MediaIoBaseUpload
 
         fh = io.BytesIO(content.encode("utf-8"))
         media = MediaIoBaseUpload(fh, mimetype="text/markdown", resumable=True)
@@ -426,8 +424,6 @@ class GoogleDriveStorage(Storage):
             "name": filename,
             "parents": [parent_id],
         }
-
-        from googleapiclient.http import MediaIoBaseUpload
 
         fh = io.BytesIO(content)
         mime_type = "application/octet-stream"
@@ -497,8 +493,6 @@ class GoogleDriveStorage(Storage):
             "mimeType": "application/vnd.google-apps.spreadsheet",
             "parents": [parent_id],
         }
-
-        from googleapiclient.http import MediaIoBaseUpload
 
         media = MediaIoBaseUpload(csv_buffer, mimetype="text/csv", resumable=True)
 
@@ -604,8 +598,6 @@ class GoogleDriveStorage(Storage):
 
         file_metadata = {"name": filename, "parents": [parent_id]}
 
-        from googleapiclient.http import MediaFileUpload
-
         media = MediaFileUpload(local_path, mimetype=content_type, resumable=True)
 
         if existing_id:
@@ -663,8 +655,6 @@ class GoogleDriveStorage(Storage):
                 f.write(data)
             return local_path
         except Exception as e:
-            from googleapiclient.errors import HttpError
-
             if isinstance(e, (HttpError, OSError)):
                 print(f"Error downloading file {path} to local: {e}")
             else:
