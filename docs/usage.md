@@ -6,8 +6,46 @@
 
 The recommended way to run `youtube-to-docs` is using `uvx`.
 
+### Basic Usage
+
+For basic usage (YouTube data fetching, local CSV output, standard Gemini models):
+
 ```bash
 uvx youtube-to-docs --help
+```
+
+### Optional Features (Extras)
+
+To keep the installation footprint small, many features are optional. You can enable them by installing specific "extras":
+
+| Extra | Description | Dependencies |
+| :--- | :--- | :--- |
+| `audio` | **Recommended.** Required for downloading audio (for TTS/transcription). | `yt-dlp` |
+| `video` | Required for generating video files (combining audio & infographic). | `static-ffmpeg` |
+| `workspace` | Required for saving to Google Drive. | `google-api-python-client`, `google-auth-oauthlib` |
+| `m365` | Required for saving to SharePoint/OneDrive. | `msal`, `fastexcel`, `xlsxwriter`, `pypandoc` |
+| `aws` | AWS Bedrock support. | None |
+| `azure` | Required if using Azure OpenAI models. | `openai` |
+| `gcp` | Required if using Google Gemini or Vertex AI models. | `google-genai` |
+| `all` | Installs all of the above. | All optional dependencies. |
+
+**How to use extras with `uvx`:**
+
+Use the `--with` flag followed by the package name and extras in brackets.
+
+**Example 1: Audio and Video support (Common)**
+```bash
+uvx --with "youtube-to-docs[audio,video]" youtube-to-docs ...
+```
+
+**Example 2: Google Drive + Audio support**
+```bash
+uvx --with "youtube-to-docs[workspace,audio]" youtube-to-docs ...
+```
+
+**Example 3: Everything (Full feature set)**
+```bash
+uvx --with "youtube-to-docs[all]" youtube-to-docs ...
 ```
 
 ### Installing `uv`

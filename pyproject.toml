@@ -29,6 +29,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+aws = []
 azure = [
     "openai>=1.56.0",
 ]
@@ -53,7 +54,7 @@ video = [
     "static-ffmpeg>=2.13",
 ]
 all = [
-    "youtube-to-docs[azure,gcp,workspace,m365,audio,video]",
+    "youtube-to-docs[aws,azure,gcp,workspace,m365,audio,video]",
 ]
 
 [project.scripts]

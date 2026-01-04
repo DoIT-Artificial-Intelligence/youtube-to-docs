@@ -21,9 +21,9 @@ For more information, see the [official `uv` documentation](https://docs.astral.
 
 ## Installation
 
-1. Install dependencies:
+1. Install dependencies (including all optional features for full development support):
    ```bash
-   uv sync
+   uv sync --all-extras
    ```
 
 ## Usage
