@@ -6,7 +6,7 @@
   "mcpServers": {
     "youtube-to-docs": {
       "command": "uv",
-      "args": ["run", "--with", "'youtube-to-docs[all]'", "python", "-m", "youtube_to_docs.mcp_server"]
+      "args": ["run", "--with", "youtube-to-docs[all]", "python", "-m", "youtube_to_docs.mcp_server"]
     }
   }
 }
