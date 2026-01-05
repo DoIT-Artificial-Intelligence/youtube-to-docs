@@ -5,6 +5,14 @@
   <img src="assets/logo.png" alt="youtube-to-docs logo" width="300" />
 </div>
 
+Click on the image below to see a demo of YouTube to docs:
+
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=H6Jw10bmMcI">
+    <img src="https://img.youtube.com/vi/H6Jw10bmMcI/0.jpg" alt="Watch the video" width="300" />
+  </a>
+</div>
+
 Convert YouTube videos into structured docs, summaries, audio, and visual assets for easier discovery.
 
 View all available CLI options:
