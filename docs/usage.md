@@ -132,7 +132,7 @@ youtube-to-docs
 | `video_id` | The YouTube content to process. Can be a **YouTube URL**, **Video ID**, **Playlist ID** (starts with `PL`), **Channel Handle** (starts with `@`), or a **comma-separated list** of Video IDs. | `atmGAHYpf_c` | `youtube-to-docs @mychannel` |
 | `-o`, `--outfile` | Path to save the output CSV file. <br> - Local path: `my-data.csv` <br> - Google Workspace: `workspace` or `w` (saves to Drive folder `youtube-to-docs-artifacts`) or a specific Folder ID. <br> - SharePoint/OneDrive: `sharepoint` or `s` (saves to `youtube-to-docs-artifacts`). <br> - No-op: `none` or `n` (skips saving to a file, results are printed to the console). | `youtube-to-docs-artifacts/youtube-docs.csv` | `-o n` |
 | `-t`, `--transcript` | The transcript source to use. Can be `'youtube'` (default) to fetch existing YouTube transcripts, or an AI model name to perform STT on extracted audio. | `youtube` | `-t gemini-2.0-flash-exp` |
-| `-m`, `--model` | The LLM(s) to use for speaker extraction, Q&A generation, and summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. **Can be a comma-separated list.** | `None` | `-m gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001` |
+| `-m`, `--model` | The LLM(s) to use for speaker extraction, Q&A generation, tag generation, and summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. **Can be a comma-separated list.** | `None` | `-m gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001` |
 | `--tts` | The TTS model and voice to use for generating audio summaries. Format: `{model}-{voice}`. | `None` | `--tts gemini-2.5-flash-preview-tts-Kore` |
 | `-i`, `--infographic`| The image model to use for generating a visual summary. Supports models from Google (Gemini, Imagen), AWS Bedrock (Titan, Nova Canvas), and Azure Foundry. | `None` | `--infographic gemini-2.5-flash-image` |
 | `-nys`, `--no-youtube-summary` | If set, skips generating a secondary summary from the YouTube transcript when using an AI model for the primary transcript. | `False` | `--no-youtube-summary` |
@@ -188,7 +188,8 @@ The output CSV file contains a variety of columns depending on the arguments pro
 *   **Description**: The video description.
 *   **Data Published**: The date the video was published.
 *   **Channel**: The name of the YouTube channel.
-*   **Tags**: Video tags (comma-separated).
+*   **Tags**: Video tags from YouTube (comma-separated).
+*   **Tags {Transcript} {Model} model**: Up to 5 AI-generated tags based on the transcript.
 *   **Duration**: The duration of the video.
 *   **Transcript characters from youtube**: The total number of characters in the YouTube transcript.
 *   **Transcript characters from {model}**: The total number of characters in the AI-generated transcript (if applicable).
@@ -211,6 +212,7 @@ The output CSV file contains a variety of columns depending on the arguments pro
 *   **Summary Text {model}**: The full text of the summary (also saved to the summary file).
 *   **{normalized_model} summary cost ($)**: The total estimated API cost for both speaker extraction and summarization.
 *   **Summary Infographic Cost {model} {infographic_model} ($)**: The estimated API cost for infographic generation.
+*   **{normalized_model} tags cost from {transcript} ($)**: The estimated API cost for AI tag generation.
 *   **{normalized_model} STT cost ($)**: The estimated API cost for Speech-to-Text generation.
 
 > **Note**: `{normalized_model}` refers to the model name with prefixes (like `vertex-`) and date suffixes removed for cleaner column headers.
@@ -267,6 +269,7 @@ You might find other tools that download YouTube transcripts, but `youtube-to-do
     *   **Summaries**: Uses state-of-the-art LLMs to create concise summaries.
     *   **Speaker Extraction**: Automatically identifies speakers and their titles/roles from the transcript.
     *   **Audio (TTS)**: Converts summaries into audio files, perfect for listening on the go.
+    *   **Tags**: Automatically generates up to 5 relevant tags for the video content.
     *   **Visuals (Infographics)**: Generates AI-created infographics to visually represent the content.
     *   **Videos**: Combines infographics and audio into a shareable video summary.
 

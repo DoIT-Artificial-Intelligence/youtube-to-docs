@@ -456,3 +456,24 @@ def generate_qa(
         response_text = add_question_numbers(response_text)
 
     return response_text, input_tokens, output_tokens
+
+
+def generate_tags(
+    model_name: str, transcript: str, language: str = "en"
+) -> Tuple[str, int, int]:
+    """
+    Generates up to 5 comma-separated tags for the transcript.
+    Returns (tags_string, input_tokens, output_tokens).
+    """
+    prompt = (
+        "I have included a transcript."
+        "\n\n"
+        f"Can you please generate up to 5 comma-separated tags for this transcript in "
+        f"{language}? "
+        "Each tag can be one or more words. "
+        "Return ONLY the comma-separated tags string without any introductory or "
+        "concluding text."
+        "\n\n"
+        f"Transcript: {transcript}"
+    )
+    return _query_llm(model_name, prompt)

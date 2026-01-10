@@ -45,6 +45,11 @@ For each video, the specified model performs three distinct tasks:
     *   **Task**: Create a concise, comprehensive summary of the content.
     *   **Output**: A Markdown-formatted summary.
 
+4.  **Tag Generation**:
+    *   **Input**: Full transcript.
+    *   **Task**: Generate up to 5 comma-separated tags for the transcript.
+    *   **Output**: A comma-separated string of tags.
+
 4.  **Multi-Language Support**:
     *   The tool supports processing videos in multiple languages via the `--language` argument.
     *   It iterates through each requested language, fetching or generating transcripts, summaries, Q&A, and infographics for that specific language.

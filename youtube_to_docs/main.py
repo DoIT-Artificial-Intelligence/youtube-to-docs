@@ -14,6 +14,7 @@ from youtube_to_docs.llms import (
     generate_one_sentence_summary,
     generate_qa,
     generate_summary,
+    generate_tags,
     generate_transcript,
     get_model_pricing,
 )
@@ -103,8 +104,8 @@ def main(args_list: list[str] | None = None) -> None:
         "--model",
         default=None,
         help=(
-            "The LLM to use for speaker extraction, Q&A generation, and "
-            "summarization.\n"
+            "The LLM to use for speaker extraction, Q&A generation, tag generation, "
+            "and summarization.\n"
             "Can be one of: \n"
             "Gemini model (e.g., `gemini-3-flash-preview`)\n"
             "GCP Vertex model (prefixed with `vertex-`; e.g. "
@@ -809,6 +810,42 @@ def main(args_list: list[str] | None = None) -> None:
                             qa_cost = round(qa_cost, 2)
                             row[qa_cost_col_name] = qa_cost
                             vprint(f"Q&A cost: ${qa_cost:.2f}")
+
+                # Tag Generation
+                tags_col_name = f"Tags {transcript_arg} {model_name} model{col_suffix}"
+                tags_cost_col_name = (
+                    f"{normalize_model_name(model_name)} "
+                    f"tags cost from {transcript_arg}{col_suffix} ($)"
+                )
+
+                if not row.get(tags_col_name):
+                    vprint(f"Generating tags using model: {model_name} ({language})")
+                    tags_text, tags_input, tags_output = generate_tags(
+                        model_name, transcript, language=language
+                    )
+
+                    # Ensure no more than 5 tags
+                    tag_list = [t.strip() for t in tags_text.split(",") if t.strip()]
+                    if len(tag_list) > 5:
+                        tag_list = tag_list[:5]
+                    row[tags_col_name] = ", ".join(tag_list)
+
+                    if (
+                        tags_text.strip() == "nan"
+                        or tags_text.strip() == 'float("nan")'
+                    ):
+                        row[tags_col_name] = float("nan")
+
+                    # Calculate Tags Cost
+                    if verbose:
+                        input_price, output_price = get_model_pricing(model_name)
+                        if input_price is not None and output_price is not None:
+                            tags_cost = (tags_input / 1_000_000) * input_price + (
+                                tags_output / 1_000_000
+                            ) * output_price
+                            tags_cost = round(tags_cost, 2)
+                            row[tags_cost_col_name] = tags_cost
+                            vprint(f"Tags cost: ${tags_cost:.2f}")
 
                 # Check if we already have it in the row (from existing_row
                 # or just loaded)

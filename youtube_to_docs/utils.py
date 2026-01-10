@@ -76,6 +76,10 @@ def reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     speaker_cols = [c for c in cols if c.startswith("Speakers ") and "cost" not in c]
     final_order.extend(sorted(speaker_cols))
 
+    # 5.5 AI Tags
+    ai_tags_cols = [c for c in cols if c.startswith("Tags ") and c.endswith(" model")]
+    final_order.extend(sorted(ai_tags_cols))
+
     # 6. Questions and answers
     qa_cols = [
         c for c in cols if (c.startswith("QA Text ") or c.startswith("QA File "))

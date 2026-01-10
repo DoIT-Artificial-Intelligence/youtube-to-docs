@@ -132,6 +132,22 @@ class TestLLMs(unittest.TestCase):
         self.assertEqual(in_tokens, 150)
         self.assertEqual(out_tokens, 60)
 
+    @patch("google.genai.Client")
+    def test_generate_tags_gemini(self, mock_client_cls):
+        mock_client = mock_client_cls.return_value
+        mock_resp = MagicMock()
+        mock_resp.text = "Tag1, Tag2, Tag3, Tag4, Tag5"
+        mock_resp.usage_metadata.prompt_token_count = 80
+        mock_resp.usage_metadata.candidates_token_count = 20
+        mock_client.models.generate_content.return_value = mock_resp
+
+        tags, in_tokens, out_tokens = llms.generate_tags(
+            "gemini-pro", "transcript content", "en"
+        )
+        self.assertEqual(tags, "Tag1, Tag2, Tag3, Tag4, Tag5")
+        self.assertEqual(in_tokens, 80)
+        self.assertEqual(out_tokens, 20)
+
 
 class TestPricing(unittest.TestCase):
     @patch(

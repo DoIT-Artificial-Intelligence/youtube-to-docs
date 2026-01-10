@@ -33,10 +33,12 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.fetch_transcript")
     @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_summary")
+    @patch("youtube_to_docs.main.generate_tags")
     @patch("os.makedirs")
     def test_create_new_file(
         self,
         mock_makedirs,
+        mock_gen_tags,
         mock_gen_summary,
         mock_get_pricing,
         mock_fetch_trans,
@@ -44,6 +46,7 @@ class TestMain(unittest.TestCase):
         mock_resolve,
         mock_svc,
     ):
+        mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
         mock_resolve.return_value = ["vid1"]
         mock_details.return_value = (
             "Title 1",
@@ -84,10 +87,12 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.fetch_transcript")
     @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_summary")
+    @patch("youtube_to_docs.main.generate_tags")
     @patch("os.makedirs")
     def test_no_verbose_no_cost_columns(
         self,
         mock_makedirs,
+        mock_gen_tags,
         mock_gen_summary,
         mock_get_pricing,
         mock_fetch_trans,
@@ -95,6 +100,7 @@ class TestMain(unittest.TestCase):
         mock_resolve,
         mock_svc,
     ):
+        mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
         mock_resolve.return_value = ["vid1"]
         mock_details.return_value = (
             "Title 1",
@@ -132,10 +138,12 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.fetch_transcript")
     @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_summary")
+    @patch("youtube_to_docs.main.generate_tags")
     @patch("os.makedirs")
     def test_append_new_video(
         self,
         mock_makedirs,
+        mock_gen_tags,
         mock_gen_summary,
         mock_get_pricing,
         mock_fetch_trans,
@@ -143,6 +151,7 @@ class TestMain(unittest.TestCase):
         mock_resolve,
         mock_svc,
     ):
+        mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
         # Create initial CSV
         initial_data = pl.DataFrame(
             {
@@ -237,17 +246,20 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.resolve_video_ids")
     @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_summary")
+    @patch("youtube_to_docs.main.generate_tags")
     @patch("os.path.exists")
     @patch("os.makedirs")
     def test_add_new_summary_column(
         self,
         mock_makedirs,
         mock_exists,
+        mock_gen_tags,
         mock_gen_summary,
         mock_get_pricing,
         mock_resolve,
         mock_svc,
     ):
+        mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
         # Existing CSV without 'Summary Text haiku'
         initial_data = pl.DataFrame(
             {
@@ -301,10 +313,12 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.fetch_transcript")
     @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_summary")
+    @patch("youtube_to_docs.main.generate_tags")
     @patch("os.makedirs")
     def test_column_ordering(
         self,
         mock_makedirs,
+        mock_gen_tags,
         mock_gen_summary,
         mock_get_pricing,
         mock_fetch_trans,
@@ -312,6 +326,7 @@ class TestMain(unittest.TestCase):
         mock_resolve,
         mock_svc,
     ):
+        mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
         mock_resolve.return_value = ["vid1"]
         mock_details.return_value = (
             "Title 1",
@@ -358,10 +373,12 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.generate_summary")
     @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_infographic")
+    @patch("youtube_to_docs.main.generate_tags")
     @patch("os.makedirs")
     def test_infographic_storage(
         self,
         mock_makedirs,
+        mock_gen_tags,
         mock_gen_info,
         mock_get_pricing,
         mock_gen_summary,
@@ -370,6 +387,7 @@ class TestMain(unittest.TestCase):
         mock_resolve,
         mock_svc,
     ):
+        mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
         mock_resolve.return_value = ["vid1"]
         mock_details.return_value = (
             "Title 1",
@@ -440,10 +458,12 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.fetch_transcript")
     @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_summary")
+    @patch("youtube_to_docs.main.generate_tags")
     @patch("os.makedirs")
     def test_translation_columns(
         self,
         mock_makedirs,
+        mock_gen_tags,
         mock_gen_summary,
         mock_get_pricing,
         mock_fetch_trans,
@@ -451,6 +471,7 @@ class TestMain(unittest.TestCase):
         mock_resolve,
         mock_svc,
     ):
+        mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
         mock_resolve.return_value = ["vid1"]
         mock_details.return_value = (
             "Title 1",
@@ -499,10 +520,12 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.fetch_transcript")
     @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_summary")
+    @patch("youtube_to_docs.main.generate_tags")
     @patch("os.makedirs")
     def test_multiple_languages(
         self,
         mock_makedirs,
+        mock_gen_tags,
         mock_gen_summary,
         mock_get_pricing,
         mock_fetch_trans,
@@ -510,6 +533,7 @@ class TestMain(unittest.TestCase):
         mock_resolve,
         mock_svc,
     ):
+        mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
         mock_resolve.return_value = ["vid1"]
         mock_details.return_value = (
             "Title 1",
@@ -565,10 +589,12 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.storage.LocalStorage.upload_file")
     @patch("youtube_to_docs.main.generate_transcript")
     @patch("youtube_to_docs.main.generate_one_sentence_summary")
+    @patch("youtube_to_docs.main.generate_tags")
     @patch("os.makedirs")
     def test_all_gemini_flash_flag(
         self,
         mock_makedirs,
+        mock_gen_tags,
         mock_gen_one_sentence,
         mock_gen_transcript,
         mock_upload_file,
@@ -584,6 +610,7 @@ class TestMain(unittest.TestCase):
         mock_resolve,
         mock_svc,
     ):
+        mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
         mock_resolve.return_value = ["vid1"]
         mock_details.return_value = (
             "Title 1",
@@ -655,10 +682,12 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.storage.LocalStorage.upload_file")
     @patch("youtube_to_docs.main.generate_transcript")
     @patch("youtube_to_docs.main.generate_one_sentence_summary")
+    @patch("youtube_to_docs.main.generate_tags")
     @patch("os.makedirs")
     def test_all_gemini_pro_flag(
         self,
         mock_makedirs,
+        mock_gen_tags,
         mock_gen_one_sentence,
         mock_gen_transcript,
         mock_upload_file,
@@ -674,6 +703,7 @@ class TestMain(unittest.TestCase):
         mock_resolve,
         mock_svc,
     ):
+        mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
         mock_resolve.return_value = ["vid1"]
         mock_details.return_value = (
             "Title 1",
@@ -741,10 +771,12 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.storage.LocalStorage.upload_file")
     @patch("youtube_to_docs.main.generate_transcript")
     @patch("youtube_to_docs.main.generate_one_sentence_summary")
+    @patch("youtube_to_docs.main.generate_tags")
     @patch("os.makedirs")
     def test_all_gemini_flash_pro_image_flag(
         self,
         mock_makedirs,
+        mock_gen_tags,
         mock_gen_one_sentence,
         mock_gen_transcript,
         mock_upload_file,
@@ -760,6 +792,7 @@ class TestMain(unittest.TestCase):
         mock_resolve,
         mock_svc,
     ):
+        mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
         mock_resolve.return_value = ["vid1"]
         mock_details.return_value = (
             "Title 1",
@@ -822,10 +855,12 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_summary")
     @patch("youtube_to_docs.main.generate_one_sentence_summary")
+    @patch("youtube_to_docs.main.generate_tags")
     @patch("os.makedirs")
     def test_one_sentence_summary_column(
         self,
         mock_makedirs,
+        mock_gen_tags,
         mock_gen_one_sentence,
         mock_gen_summary,
         mock_get_pricing,
@@ -834,6 +869,7 @@ class TestMain(unittest.TestCase):
         mock_resolve,
         mock_svc,
     ):
+        mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
         mock_resolve.return_value = ["vid1"]
         mock_details.return_value = (
             "Title 1",
@@ -873,10 +909,12 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.fetch_transcript")
     @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_summary")
+    @patch("youtube_to_docs.main.generate_tags")
     @patch("os.makedirs")
     def test_null_storage(
         self,
         mock_makedirs,
+        mock_gen_tags,
         mock_gen_summary,
         mock_get_pricing,
         mock_fetch_trans,
@@ -884,6 +922,7 @@ class TestMain(unittest.TestCase):
         mock_resolve,
         mock_svc,
     ):
+        mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
         mock_resolve.return_value = ["vid1"]
         mock_details.return_value = (
             "Title 1",
