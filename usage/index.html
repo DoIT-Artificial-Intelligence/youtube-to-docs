@@ -1325,7 +1325,7 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>-m</code>, <code>--model</code></td>
-<td style="text-align: left;">The LLM(s) to use for speaker extraction, Q&amp;A generation, and summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. <strong>Can be a comma-separated list.</strong></td>
+<td style="text-align: left;">The LLM(s) to use for speaker extraction, Q&amp;A generation, tag generation, and summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. <strong>Can be a comma-separated list.</strong></td>
 <td style="text-align: left;"><code>None</code></td>
 <td style="text-align: left;"><code>-m gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001</code></td>
 </tr>
@@ -1404,7 +1404,8 @@
 <li><strong>Description</strong>: The video description.</li>
 <li><strong>Data Published</strong>: The date the video was published.</li>
 <li><strong>Channel</strong>: The name of the YouTube channel.</li>
-<li><strong>Tags</strong>: Video tags (comma-separated).</li>
+<li><strong>Tags</strong>: Video tags from YouTube (comma-separated).</li>
+<li><strong>Tags {Transcript} {Model} model</strong>: Up to 5 AI-generated tags based on the transcript.</li>
 <li><strong>Duration</strong>: The duration of the video.</li>
 <li><strong>Transcript characters from youtube</strong>: The total number of characters in the YouTube transcript.</li>
 <li><strong>Transcript characters from {model}</strong>: The total number of characters in the AI-generated transcript (if applicable).</li>
@@ -1429,6 +1430,7 @@
 <li><strong>Summary Text {model}</strong>: The full text of the summary (also saved to the summary file).</li>
 <li><strong>{normalized_model} summary cost ($)</strong>: The total estimated API cost for both speaker extraction and summarization.</li>
 <li><strong>Summary Infographic Cost {model} {infographic_model} ($)</strong>: The estimated API cost for infographic generation.</li>
+<li><strong>{normalized_model} tags cost from {transcript} ($)</strong>: The estimated API cost for AI tag generation.</li>
 <li><strong>{normalized_model} STT cost ($)</strong>: The estimated API cost for Speech-to-Text generation.</li>
 </ul>
 <blockquote>
@@ -1472,6 +1474,7 @@
 <li><strong>Summaries</strong>: Uses state-of-the-art LLMs to create concise summaries.</li>
 <li><strong>Speaker Extraction</strong>: Automatically identifies speakers and their titles/roles from the transcript.</li>
 <li><strong>Audio (TTS)</strong>: Converts summaries into audio files, perfect for listening on the go.</li>
+<li><strong>Tags</strong>: Automatically generates up to 5 relevant tags for the video content.</li>
 <li><strong>Visuals (Infographics)</strong>: Generates AI-created infographics to visually represent the content.</li>
 <li><strong>Videos</strong>: Combines infographics and audio into a shareable video summary.</li>
 </ul>
