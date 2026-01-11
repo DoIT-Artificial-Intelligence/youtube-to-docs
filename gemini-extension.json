@@ -7,7 +7,7 @@
     "youtube-to-docs": {
       "command": "uv",
       "args": [
-        "--directory",
+        "--project",
         "${extensionPath}",
         "run",
         "--all-extras",
@@ -15,7 +15,7 @@
         "-m",
         "youtube_to_docs.mcp_server"
       ],
-      "cwd": "${workspacePath}"
+      "cwd": "${cwd}"
     }
   }
 }
