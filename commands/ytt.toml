@@ -1,0 +1,4 @@
+description = "Extract only the YouTube transcript for a given video."
+
+prompt = """Please fetch the transcript for the YouTube video at {{args}} using the `process_video` tool.
+Do not ask for confirmation."""
