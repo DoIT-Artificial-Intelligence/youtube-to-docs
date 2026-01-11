@@ -23,8 +23,20 @@ Here are the following args for the tool:
 ## Usage Instructions
 
 1.  **Identify Intent**: When a user asks to "download a summary", "process a video", "get a transcript", "generate an infographic", or "create an audio summary" for a YouTube URL.
-    * If the user says "gemini" for the model assume flash e.g. "gemini-3-flash-preview" for transcript and summary, "gemini-2.5-flash-preview-tts-Kore" for TTS, "gemini-2.5-flash-image" for infographic.
-    * If the user says "gemini pro" for the model assume pro e.g. "gemini-3-pro-preview" for transcript and summary, "gemini-2.5-pro-preview-tts-Kore" for TTS, "gemini-3-pro-image-preview" for infographic.
+    *   **Model Shorthand**:
+        *   "gemini" or "gemini flash" -> **Flash**:
+            *   Summary/Transcript: `gemini-3-flash-preview`
+            *   TTS: `gemini-2.5-flash-preview-tts-Kore`
+            *   Infographic: `gemini-2.5-flash-image`
+        *   "gemini pro" -> **Pro**:
+            *   Summary/Transcript: `gemini-3-pro-preview`
+            *   TTS: `gemini-2.5-pro-preview-tts-Kore`
+            *   Infographic: `gemini-3-pro-image-preview`
+2.  **Slash Commands**:
+    *   `/ytt <url>`: Fetches only the YouTube transcript (uses `ytt.toml`).
+    *   `/infographic <url> <family>`: Generates an infographic and summary. 
+        *   `<family>` can be "gemini flash" or "gemini pro".
+        *   Defaults to Flash summary (`gemini-3-flash-preview`) with relevant image model.
 3.  **Clarify Parameters**:
     *   **Model**: If not specified, ask: "What model do you want to use for the summary?".
     *   **Output Location**: If not specified, ask: "Where you want the output file saved? Is the default location (youtube-to-docs-artifacts/youtube-docs.csv) okay?"
