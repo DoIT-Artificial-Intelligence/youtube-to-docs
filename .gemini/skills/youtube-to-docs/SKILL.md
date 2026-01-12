@@ -25,7 +25,7 @@ Use this when the user simply wants the text transcript of a video, without addi
 
 *   **Goal**: Get the raw text from a YouTube video.
 *   **Tool**: `process_video`
-*   **Key Argument**: `url` (The YouTube link)
+*   **Required Argument**: `url` (The YouTube link)
 *   **Defaults**: By default, `process_video` fetches the transcript from YouTube.
 *   **Example Prompt**: "Get the transcript for https://www.youtube.com/watch?v=..."
 
@@ -35,8 +35,8 @@ Use this when the user wants a visual summary or "infographic" representing the 
 
 *   **Goal**: Create a visual summary (image).
 *   **Tool**: `process_video`
-*   **Key Arguments**:
-    *   `url`: The YouTube link.
+*   **Required Argument**: `url` (The YouTube link)
+*   **Optional Arguments**:
     *   `infographic_model`: The image generation model to use.
     *   `model`: The text model for summarization (required context for the image).
 *   **Model Selection Strategy**:
@@ -54,8 +54,8 @@ Use this when the user asks for "everything", a "kitchen sink" run, or a "video 
 
 *   **Goal**: Generate all possible artifacts, including a video file.
 *   **Tool**: `process_video`
-*   **Key Arguments**:
-    *   `url`: The YouTube link.
+*   **Required Argument**: `url` (The YouTube link)
+*   **Optional Arguments**:
     *   `all_suite`: Shortcut to set models (`'gemini-flash'` or `'gemini-pro'`).
     *   `combine_infographic_audio`: Set to `True` to create the final video (Requires `video` extra).
     *   `verbose`: Set to `True` for detailed logging.
@@ -112,10 +112,19 @@ Use this when the user specifies particular models or output locations.
 
 While this skill primarily uses the `process_video` tool, you can also run the underlying CLI manually for testing or development.
 
+**Note on CLI Syntax**: The video URL/ID is a **positional** argument and is **required**. Do NOT use `--url`.
+
 **Always use `uv` to run the tool** (do not use `python` directly) to ensure dependencies are correctly resolved:
 
 ```bash
-uv run youtube-to-docs --help
+# General Syntax:
+uv run youtube-to-docs <video_url_or_id> [options]
+
+# Example: Get transcript
+uv run youtube-to-docs https://www.youtube.com/watch?v=B0x2I_doX9o
+
+# Example: Kitchen sink with gemini-pro suite
+uv run youtube-to-docs B0x2I_doX9o --all gemini-pro --verbose
 ```
 
 See `docs/usage.md` for full documentation and `docs/development.md` for setup details.
