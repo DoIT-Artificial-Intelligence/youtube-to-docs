@@ -14,6 +14,7 @@ Here are the following args for the tool:
 - **model**: (Optional) The LLM model(s) to use for summarization, Q&A, speaker extraction and tag generation (e.g., 'gemini-3-flash-preview'). Can be a comma-separated list.
 - **tts_model**: (Optional) The TTS model and voice to use (e.g., 'gemini-2.5-flash-preview-tts-Kore', 'gemini-2.5-pro-preview-tts-Kore').
 - **infographic_model**: (Optional) The image model to use for generating an infographic (e.g., 'gemini-2.5-flash-image' or 'gemini-3-pro-image-preview').
+- **alt_text_model**: (Optional) The LLM model to use for generating multimodal alt text for the infographic. Defaults to the summary model.
 - **no_youtube_summary**: (Optional) If `True`, skips generating a secondary summary from the YouTube transcript when using an AI model for the primary transcript.
 - **languages**: (Optional) Target language(s) (e.g., 'es', 'fr', 'en'). Defaults to 'en'.
 - **combine_infographic_audio**: (Optional) If `True`, combines the infographic and audio summary into a video file (MP4). Requires `tts_model` and `infographic_model`.
@@ -46,8 +47,14 @@ Here are the following args for the tool:
     *   **Output Location**: If not specified, ask: "Where you want the output file saved? Is the default location (youtube-to-docs-artifacts/youtube-docs.csv) okay?"
     *   **Additional Features**: If appropriate, ask if they want to:
         *   Generate an infographic (needs `infographic_model`).
+        *   Generate multimodal alt text for the infographic (uses `alt_text_model`, defaults to summary model).
         *   Generate an audio summary (needs `tts_model`).
         *   Create a video summary (needs `combine_infographic_audio`, `tts_model`, and `infographic_model`).
         *   Use a specific AI model for transcription (needs `transcript_source`).
         *   Translate to other languages (needs `languages`).
-4.  **Execute**: Call `process_video` with the gathered parameters.
+5.  **Artifact Storage**: Note that granular textual artifacts are saved to:
+    *   `tag-files/`: AI-generated tags.
+    *   `one-sentence-summary-files/`: One-sentence summaries.
+    *   `alt-text-files/`: Multimodal infographic alt text.
+    *   These are linked as columns in the output CSV.
+6.  **Execute**: Call `process_video` with the gathered parameters.

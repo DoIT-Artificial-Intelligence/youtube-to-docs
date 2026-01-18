@@ -46,7 +46,8 @@ Use this when the user wants a visual summary or "infographic" representing the 
     *   **Flash (Speed/Cost)**: Use if "gemini flash" is requested.
         *   `model='gemini-3-flash-preview'`
         *   `infographic_model='gemini-2.5-flash-image'`
-*   **Confirmation**: Proceed without asking for extra confirmation unless parameters are missing.
+-   **Alt Text (Accessibility)**: By default, `process_video` generates multimodal alt text using the summary model (image-to-text) for any created infographic. Use `alt_text_model` to override the model for this step.
+-   **Confirmation**: Proceed without asking for extra confirmation unless parameters are missing.
 
 ### 3. Kitchen Sink (Comprehensive Processing)
 
@@ -87,6 +88,7 @@ Use this when the user specifies particular models or output locations.
 | `url` | **Required**. YouTube URL, ID, Playlist ID, or Channel Handle. | - | `https://youtu.be/...`, `@channel` |
 | `model` | LLM for summaries/Q&A. | `gcp` / `azure` | `gemini-3-flash-preview` |
 | `infographic_model` | Model for generating the infographic image. | `gcp` | `gemini-3-pro-image-preview` |
+| `alt_text_model` | Model for generating multimodal alt text for the infographic. | `gcp` | `gemini-3-flash-preview` |
 | `tts_model` | Model for text-to-speech audio. | `gcp` | `gemini-2.5-flash-preview-tts-Kore` |
 | `all_suite` | Shortcut to apply a suite of models. | `gcp`, `audio`, `video` | `gemini-pro`, `gemini-flash` |
 | `combine_infographic_audio` | Boolean. If True, creates an MP4 video. | `video` | `True` |

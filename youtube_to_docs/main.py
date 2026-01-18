@@ -11,6 +11,7 @@ from rich_argparse import RichHelpFormatter
 from youtube_to_docs.infographic import generate_infographic
 from youtube_to_docs.llms import (
     extract_speakers,
+    generate_alt_text,
     generate_one_sentence_summary,
     generate_qa,
     generate_summary,
@@ -139,6 +140,14 @@ def main(args_list: list[str] | None = None) -> None:
         ),
     )
     parser.add_argument(
+        "--alt-text-model",
+        default=None,
+        help=(
+            "The LLM model to use for generating alt text for the infographic. "
+            "Defaults to the model used for summarization."
+        ),
+    )
+    parser.add_argument(
         "-nys",
         "--no-youtube-summary",
         action="store_true",
@@ -220,6 +229,7 @@ def main(args_list: list[str] | None = None) -> None:
     model_names_arg = args.model
     tts_arg = args.tts
     infographic_arg = args.infographic
+    alt_text_model_arg = args.alt_text_model
     no_youtube_summary = args.no_youtube_summary
     language_arg = args.language
 
@@ -269,6 +279,9 @@ def main(args_list: list[str] | None = None) -> None:
     qa_dir = os.path.join(base_dir, "qa-files")
     audio_dir = os.path.join(base_dir, "audio-files")
     video_dir = os.path.join(base_dir, "video-files")
+    one_sentence_summaries_dir = os.path.join(base_dir, "one-sentence-summary-files")
+    tags_dir = os.path.join(base_dir, "tag-files")
+    alt_text_dir = os.path.join(base_dir, "alt-text-files")
 
     # Local temp dir for processing (Audio/TTS require local files)
     local_temp_dir = "temp_processing_artifacts"
@@ -282,6 +295,9 @@ def main(args_list: list[str] | None = None) -> None:
     storage.ensure_directory(qa_dir)
     storage.ensure_directory(audio_dir)
     storage.ensure_directory(video_dir)
+    storage.ensure_directory(one_sentence_summaries_dir)
+    storage.ensure_directory(tags_dir)
+    storage.ensure_directory(alt_text_dir)
 
     # Load existing CSV if it exists
     existing_df = storage.load_dataframe(outfile_path)
@@ -964,6 +980,31 @@ def main(args_list: list[str] | None = None) -> None:
                     )
                     row[one_sentence_col_name] = one_sentence_text
 
+                    # Save One Sentence Summary File
+                    if one_sentence_text and one_sentence_summaries_dir:
+                        os_filename = (
+                            f"{model_name} - {video_id} - {safe_title} - "
+                            f"one-sentence-summary (from {transcript_arg}){lang_str}.md"
+                        )
+                        target_path = os.path.join(
+                            one_sentence_summaries_dir, os_filename
+                        )
+                        try:
+                            os_full_path = storage.write_text(
+                                target_path, one_sentence_text
+                            )
+                            vprint(
+                                "Saved one sentence summary: "
+                                f"{format_clickable_path(os_full_path)}"
+                            )
+                            os_col = (
+                                f"One Sentence Summary File {model_name} from "
+                                f"{transcript_arg}{col_suffix}"
+                            )
+                            row[os_col] = os_full_path
+                        except Exception as e:
+                            print(f"Error writing one sentence summary: {e}")
+
                     # Cost
                     if verbose:
                         input_price, output_price = get_model_pricing(model_name)
@@ -1008,9 +1049,33 @@ def main(args_list: list[str] | None = None) -> None:
                             tags_cost = (tags_input / 1_000_000) * input_price + (
                                 tags_output / 1_000_000
                             ) * output_price
-                            tags_cost = round(tags_cost, 2)
                             row[tags_cost_col_name] = tags_cost
                             vprint(f"Tags cost: ${tags_cost:.2f}")
+
+                    # Save Tags File
+                    if row.get(tags_col_name) and tags_dir:
+                        tags_val = row[tags_col_name]
+                        if isinstance(tags_val, str) and tags_val != 'float("nan")':
+                            tags_filename = (
+                                f"{model_name} - {video_id} - {safe_title} - "
+                                f"tags (from {transcript_arg}){lang_str}.txt"
+                            )
+                            target_path = os.path.join(tags_dir, tags_filename)
+                            try:
+                                tags_full_path = storage.write_text(
+                                    target_path, tags_val
+                                )
+                                vprint(
+                                    "Saved tags: "
+                                    f"{format_clickable_path(tags_full_path)}"
+                                )
+                                tags_file_col = (
+                                    f"Tags File {transcript_arg} {model_name} "
+                                    f"model{col_suffix}"
+                                )
+                                row[tags_file_col] = tags_full_path
+                            except Exception as e:
+                                print(f"Error writing tags: {e}")
 
                 # --- Secondary Speaker Extraction from YouTube (if applicable) ---
                 yt_speakers_text = 'float("nan")'
@@ -1359,6 +1424,33 @@ def main(args_list: list[str] | None = None) -> None:
                                     f"YouTube one sentence summary cost: ${cost:.2f}"
                                 )
 
+                        # Save YT One Sentence Summary File
+                        if yt_one_sentence_text and one_sentence_summaries_dir:
+                            os_filename = (
+                                f"{model_name} - {video_id} - {safe_title} - "
+                                f"one-sentence-summary (from youtube){lang_str}.md"
+                            )
+                            target_path = os.path.join(
+                                one_sentence_summaries_dir, os_filename
+                            )
+                            try:
+                                os_full_path = storage.write_text(
+                                    target_path, yt_one_sentence_text
+                                )
+                                vprint(
+                                    "Saved YouTube one sentence summary: "
+                                    f"{format_clickable_path(os_full_path)}"
+                                )
+                                os_col = (
+                                    f"One Sentence Summary File {model_name} from "
+                                    f"youtube{col_suffix}"
+                                )
+                                row[os_col] = os_full_path
+                            except Exception as e:
+                                print(
+                                    f"Error writing YouTube one sentence summary: {e}"
+                                )
+
             # Infographic Generation
             if infographic_arg:
                 summary_targets = []
@@ -1388,70 +1480,139 @@ def main(args_list: list[str] | None = None) -> None:
 
                     info_col = f"Summary Infographic File {m_name} {infographic_arg}"
 
-                    # Check if already exists in row
-                    if info_col in row and row[info_col]:
+                    alt_text_col = (
+                        f"Summary Infographic Alt Text {m_name} {infographic_arg}"
+                    )
+                    alt_text_file_col = (
+                        f"Summary Infographic Alt Text File {m_name} {infographic_arg}"
+                    )
+
+                    # 1. Check if both already exist in row
+                    if row.get(info_col) and row.get(alt_text_col):
                         continue
 
-                    # Check disk
+                    # 2. Check disk for infographic
                     safe_title = re.sub(r"[\\/*?:\"<>|]", "_", video_title).replace(
                         "\n", " "
                     )
                     safe_title = safe_title.replace("\r", "")
 
-                    # Infographic filename should include language if m_name
-                    # includes it. m_name already includes (es) if
-                    # applicable because we sliced it from k.
-                    # So the filename will automatically include (es).
                     infographic_filename = (
                         f"{m_name} - {infographic_arg} - {video_id} - "
                         f"{safe_title} - infographic.png"
                     )
                     expected_path = os.path.join(infographics_dir, infographic_filename)
+
+                    image_bytes = None
                     if storage.exists(expected_path):
                         row[info_col] = expected_path
-                        continue
-
-                    summary_file_path = row.get(f"Summary File {m_name}", "")
-                    summary_filename = (
-                        os.path.basename(summary_file_path)
-                        if summary_file_path
-                        else "unknown file"
-                    )
-                    vprint(
-                        f"Generating infographic using model {infographic_arg} "
-                        f"from {summary_filename}"
-                    )
-                    image_bytes, input_tokens, output_tokens = generate_infographic(
-                        infographic_arg, s_text, video_title, language=language
-                    )
-                    if image_bytes:
-                        try:
-                            saved_path = storage.write_bytes(expected_path, image_bytes)
+                        # If we need alt text, we need the bytes
+                        if not row.get(alt_text_col):
                             vprint(
-                                "Saved infographic: "
-                                f"{format_clickable_path(saved_path)}"
+                                "Loading existing infographic for alt text: "
+                                f"{format_clickable_path(expected_path)}"
                             )
-                            row[info_col] = saved_path
-
-                            # Calculate Infographic Cost
-                            if verbose:
-                                input_price, output_price = get_model_pricing(
-                                    infographic_arg
+                            image_bytes = storage.read_bytes(expected_path)
+                    else:
+                        # 3. Generate infographic if it doesn't exist on disk
+                        summary_file_path = row.get(f"Summary File {m_name}", "")
+                        summary_filename = (
+                            os.path.basename(summary_file_path)
+                            if summary_file_path
+                            else "unknown file"
+                        )
+                        vprint(
+                            f"Generating infographic using model {infographic_arg} "
+                            f"from {summary_filename}"
+                        )
+                        image_bytes, input_tokens, output_tokens = generate_infographic(
+                            infographic_arg, s_text, video_title, language=language
+                        )
+                        if image_bytes:
+                            try:
+                                saved_path = storage.write_bytes(
+                                    expected_path, image_bytes
                                 )
-                                if input_price is not None and output_price is not None:
-                                    cost = (input_tokens / 1_000_000) * input_price + (
-                                        output_tokens / 1_000_000
-                                    ) * output_price
-                                    cost = round(cost, 2)
-                                    cost_col = (
-                                        f"Summary Infographic Cost {m_name} "
-                                        f"{infographic_arg} ($)"
-                                    )
-                                    row[cost_col] = cost
-                                    vprint(f"Infographic cost: ${cost:.2f}")
+                                vprint(
+                                    "Saved infographic: "
+                                    f"{format_clickable_path(saved_path)}"
+                                )
+                                row[info_col] = saved_path
 
-                        except Exception as e:
-                            print(f"Error writing infographic: {e}")
+                                # Calculate Infographic Cost
+                                if verbose:
+                                    input_price, output_price = get_model_pricing(
+                                        infographic_arg
+                                    )
+                                    if (
+                                        input_price is not None
+                                        and output_price is not None
+                                    ):
+                                        cost = (
+                                            input_tokens / 1_000_000
+                                        ) * input_price + (
+                                            output_tokens / 1_000_000
+                                        ) * output_price
+                                        cost = round(cost, 2)
+                                        cost_col = (
+                                            f"Summary Infographic Cost {m_name} "
+                                            f"{infographic_arg} ($)"
+                                        )
+                                        row[cost_col] = cost
+                                        vprint(f"Infographic cost: ${cost:.2f}")
+
+                            except Exception as e:
+                                print(f"Error writing infographic: {e}")
+
+                    # 4. Alt Text Generation
+                    if image_bytes and not row.get(alt_text_col):
+                        alt_text_model = (
+                            alt_text_model_arg or model_name
+                        )  # model_name is the current summary model
+                        vprint(
+                            "Generating multimodal alt text using model: "
+                            f"{alt_text_model}"
+                        )
+                        alt_text, at_input, at_output = generate_alt_text(
+                            alt_text_model, image_bytes, language=language
+                        )
+                        row[alt_text_col] = alt_text
+
+                        # Save Alt Text File
+                        if alt_text and not alt_text.startswith("Error"):
+                            alt_text_filename = (
+                                f"{m_name} - {infographic_arg} - {video_id} - "
+                                f"{safe_title} - alt-text.md"
+                            )
+                            target_path = os.path.join(alt_text_dir, alt_text_filename)
+                            try:
+                                alt_text_full_path = storage.write_text(
+                                    target_path, alt_text
+                                )
+                                vprint(
+                                    "Saved alt text: "
+                                    f"{format_clickable_path(alt_text_full_path)}"
+                                )
+                                row[alt_text_file_col] = alt_text_full_path
+                            except Exception as e:
+                                print(f"Error writing alt text: {e}")
+
+                        # Cost
+                        if verbose:
+                            input_price, output_price = get_model_pricing(
+                                alt_text_model
+                            )
+                            if input_price is not None and output_price is not None:
+                                at_cost = (at_input / 1_000_000) * input_price + (
+                                    at_output / 1_000_000
+                                ) * output_price
+                                at_cost = round(at_cost, 2)
+                                at_cost_col = (
+                                    "Summary Infographic Alt Text Cost "
+                                    f"{m_name} {infographic_arg} ($)"
+                                )
+                                row[at_cost_col] = at_cost
+                                vprint(f"Alt text cost: ${at_cost:.2f}")
 
         if not verbose:
             oss = next(

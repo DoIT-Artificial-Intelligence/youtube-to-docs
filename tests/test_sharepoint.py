@@ -152,6 +152,7 @@ def delete_with_retry(token: str, file_id: str, max_tries: int = 8) -> None:
     raise RuntimeError(f"Could not delete after {max_tries} tries; still locked.")
 
 
+@pytest.mark.integration
 @pytest.mark.skipif(
     os.environ.get("CI") is not None, reason="Skipping this test on CI environment"
 )
@@ -188,6 +189,7 @@ def test_markdown_to_word_upload():
         pytest.fail(f"An error occurred: {e}")
 
 
+@pytest.mark.integration
 @pytest.mark.skipif(
     os.environ.get("CI") is not None, reason="Skipping this test on CI environment"
 )

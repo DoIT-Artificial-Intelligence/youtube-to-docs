@@ -1,4 +1,5 @@
 import os
+import re
 from typing import Any, Dict, List, Tuple, cast
 
 import requests
@@ -477,3 +478,72 @@ def generate_tags(
         f"Summary: {summary_text}"
     )
     return _query_llm(model_name, prompt)
+
+
+def generate_alt_text(
+    model_name: str,
+    image_bytes: bytes,
+    language: str = "en",
+) -> Tuple[str, int, int]:
+    """
+    Generates alt text for an infographic based on the generated image.
+    Returns (alt_text, input_tokens, output_tokens).
+    """
+    if not model_name.startswith("gemini"):
+        return f"Error: Multimodal alt text not yet implemented for {model_name}", 0, 0
+
+    try:
+        from google import genai
+        from google.genai import types
+
+        GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
+        client = genai.Client(api_key=GEMINI_API_KEY)
+
+        prompt = (
+            f"Please provide a descriptive alt text for this infographic "
+            f"in {language}. "
+            "The alt text should describe the visual layout and key information "
+            "presented, making it accessible for someone who cannot see the image. "
+            "Start the response immediately with the alt text."
+        )
+
+        contents = [
+            types.Content(
+                role="user",
+                parts=[
+                    types.Part.from_bytes(
+                        mime_type="image/png",
+                        data=image_bytes,
+                    ),
+                    types.Part.from_text(text=prompt),
+                ],
+            ),
+        ]
+
+        generate_content_config = types.GenerateContentConfig()
+
+        response = client.models.generate_content(
+            model=model_name,
+            contents=contents,
+            config=generate_content_config,
+        )
+
+        response_text = response.text or ""
+        # Post-processing: Remove common prefixes like "Alt text: " or "Alt text - "
+        response_text = re.sub(
+            r"^(Alt text[:\-\s]+)", "", response_text, flags=re.IGNORECASE
+        ).strip()
+
+        input_tokens = 0
+        output_tokens = 0
+        if response.usage_metadata:
+            input_tokens = response.usage_metadata.prompt_token_count or 0
+            output_tokens = response.usage_metadata.candidates_token_count or 0
+
+        return response_text, input_tokens, output_tokens
+
+    except KeyError:
+        return "Error: GEMINI_API_KEY not found", 0, 0
+    except Exception as e:
+        print(f"Gemini Alt Text Error: {e}")
+        return f"Error: {e}", 0, 0

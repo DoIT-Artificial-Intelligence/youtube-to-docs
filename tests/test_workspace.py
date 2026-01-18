@@ -32,6 +32,7 @@ def get_creds():
     return creds
 
 
+@pytest.mark.integration
 @pytest.mark.skipif(
     os.environ.get("CI") is not None, reason="Skipping this test on CI environment"
 )
@@ -63,6 +64,7 @@ def test_google_drive_upload():
         pytest.fail(f"An error occurred: {e}")
 
 
+@pytest.mark.integration
 @pytest.mark.skipif(
     os.environ.get("CI") is not None, reason="Skipping this test on CI environment"
 )

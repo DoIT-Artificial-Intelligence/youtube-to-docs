@@ -10,6 +10,7 @@ dev = [
 test = [
     "pytest>=9.0.2",
     "pytest-mock>=3.15.1",
+    "pytest-xdist>=3.8.0",
 ]
 
 [project]
@@ -101,10 +102,15 @@ skip-magic-trailing-comma = false
 # Automatically detect the appropriate line ending.
 line-ending = "auto"
 
+[tool.pytest.ini_options]
+python_files = "*.py"
+testpaths = ["tests"]
+markers = [
+    "integration: marks tests as integration tests (skipped by default)",
+]
+
 [tool.ty.environment]
 python-version = "3.14"
 
 [tool.ty.src]
 exclude = ["scripts"]
-
-

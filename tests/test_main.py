@@ -1,4 +1,5 @@
 import os
+import tempfile
 import unittest
 from unittest.mock import mock_open, patch
 
@@ -9,23 +10,21 @@ from youtube_to_docs import main
 
 class TestMain(unittest.TestCase):
     def setUp(self):
-        self.outfile = "test_output_main.csv"
-        if os.path.exists(self.outfile):
-            os.remove(self.outfile)
+        self.test_dir_obj = tempfile.TemporaryDirectory()
+        self.test_dir = self.test_dir_obj.name
+        self.outfile = os.path.join(self.test_dir, "test_output_main.csv")
+
         self.sleep_patcher = patch("youtube_to_docs.main.time.sleep")
         self.mock_sleep = self.sleep_patcher.start()
 
-        # Create dummy audio file for tests that need it
-        self.dummy_audio = os.path.abspath("dummy_audio.m4a")
+        # Create dummy audio file for tests that need it inside the temp dir
+        self.dummy_audio = os.path.join(self.test_dir, "dummy_audio.m4a")
         with open(self.dummy_audio, "wb") as f:
             f.write(b"dummy audio content")
 
     def tearDown(self):
         self.sleep_patcher.stop()
-        if os.path.exists(self.outfile):
-            os.remove(self.outfile)
-        if os.path.exists(self.dummy_audio):
-            os.remove(self.dummy_audio)
+        self.test_dir_obj.cleanup()
 
     @patch("youtube_to_docs.main.get_youtube_service")
     @patch("youtube_to_docs.main.resolve_video_ids")

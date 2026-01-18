@@ -207,6 +207,16 @@ marimo/_lsp/
 __marimo__/
 
 youtube-to-docs-artifacts/
+alt-text-files/
+audio-files/
+infographic-files/
+one-sentence-summary-files/
+qa-files/
+speaker-extraction-files/
+summary-files/
+tag-files/
+transcript-files/
+video-files/
 youtube-to-docs-artifacts-test/
 youtube-to-docs-test/
 temp-processing-artifacts/

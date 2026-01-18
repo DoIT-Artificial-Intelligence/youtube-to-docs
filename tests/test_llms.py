@@ -148,6 +148,22 @@ class TestLLMs(unittest.TestCase):
         self.assertEqual(in_tokens, 80)
         self.assertEqual(out_tokens, 20)
 
+    @patch("google.genai.Client")
+    def test_generate_alt_text_gemini(self, mock_client_cls):
+        mock_client = mock_client_cls.return_value
+        mock_resp = MagicMock()
+        mock_resp.text = "Alt text: A beautiful infographic description."
+        mock_resp.usage_metadata.prompt_token_count = 110
+        mock_resp.usage_metadata.candidates_token_count = 40
+        mock_client.models.generate_content.return_value = mock_resp
+
+        alt_text, in_tokens, out_tokens = llms.generate_alt_text(
+            "gemini-pro", b"fake_image_bytes", "en"
+        )
+        self.assertEqual(alt_text, "A beautiful infographic description.")
+        self.assertEqual(in_tokens, 110)
+        self.assertEqual(out_tokens, 40)
+
 
 class TestPricing(unittest.TestCase):
     @patch(

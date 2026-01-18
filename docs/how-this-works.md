@@ -69,6 +69,10 @@ Beyond text, the tool creates audio and visual assets:
         *   **AWS Bedrock**: Titan Image Generator, Nova Canvas (requires `AWS_BEARER_TOKEN_BEDROCK`).
         *   **Azure Foundry**: GPT Image models (requires `AZURE_FOUNDRY_ENDPOINT` and `AZURE_FOUNDRY_API_KEY`).
     *   The prompt includes the video title and the generated summary text to ensure relevance.
+- **Multimodal Alt Text**:
+    *   Once an infographic is generated, an AI model processes the image bytes directly to generate descriptive alt text.
+    *   **Post-processing**: The tool automatically strips common prefixes like "Alt text: " to ensure the output is clean and ready for accessibility use.
+    *   This ensures infographics are accessible and searchable.
 
 - **Video Generation**:
     *   Combines the generated infographic (visual) and TTS audio (sound) into a single MP4 video file.
@@ -93,7 +97,10 @@ youtube-to-docs-artifacts/
 ├── speaker-extraction-files/     # Identified speakers lists
 ├── qa-files/                     # Markdown Q&A tables
 ├── summary-files/                # Markdown summaries
+├── one-sentence-summary-files/   # Concisely summarized content
+├── tag-files/                    # AI-generated tags files
 ├── infographic-files/            # Generated infographic images
+├── alt-text-files/               # Multimodal alt text for infographics
 └── video-files/                  # Combined infographic + audio videos
 ```
 

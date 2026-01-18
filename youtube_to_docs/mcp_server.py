@@ -16,6 +16,7 @@ def process_video(
     model: str | None = None,
     tts_model: str | None = None,
     infographic_model: str | None = None,
+    alt_text_model: str | None = None,
     no_youtube_summary: bool = False,
     languages: str = "en",
     combine_infographic_audio: bool = False,
@@ -46,6 +47,8 @@ def process_video(
             (e.g., 'gemini-2.5-flash-preview-tts-Kore').
         infographic_model: The image model to use for generating an infographic
             (e.g., 'gemini-2.5-flash-image').
+        alt_text_model: The LLM model to use for generating alt text for the
+            infographic. Defaults to the summary model.
         no_youtube_summary: If True, skips generating a secondary summary from the
             YouTube transcript when using an AI model for the primary transcript.
         languages: The target language(s) (e.g., 'es', 'fr', 'en'). Defaults to 'en'.
@@ -74,6 +77,9 @@ def process_video(
 
     if infographic_model:
         args.extend(["--infographic", infographic_model])
+
+    if alt_text_model:
+        args.extend(["--alt-text-model", alt_text_model])
 
     if no_youtube_summary:
         args.append("--no-youtube-summary")
