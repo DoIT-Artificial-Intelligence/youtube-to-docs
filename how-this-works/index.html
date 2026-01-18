@@ -796,6 +796,14 @@
 </ul>
 </li>
 <li>
+<p><strong>Multimodal Alt Text</strong>:</p>
+<ul>
+<li>Once an infographic is generated, an AI model processes the image bytes directly to generate descriptive alt text.</li>
+<li><strong>Post-processing</strong>: The tool automatically strips common prefixes like "Alt text: " to ensure the output is clean and ready for accessibility use.</li>
+<li>This ensures infographics are accessible and searchable.</li>
+</ul>
+</li>
+<li>
 <p><strong>Video Generation</strong>:</p>
 <ul>
 <li>Combines the generated infographic (visual) and TTS audio (sound) into a single MP4 video file.</li>
@@ -818,8 +826,11 @@
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>├── speaker-extraction-files/     # Identified speakers lists
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>├── qa-files/                     # Markdown Q&amp;A tables
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>├── summary-files/                # Markdown summaries
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>├── infographic-files/            # Generated infographic images
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>└── video-files/                  # Combined infographic + audio videos
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>├── one-sentence-summary-files/   # Concisely summarized content
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>├── tag-files/                    # AI-generated tags files
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>├── infographic-files/            # Generated infographic images
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>├── alt-text-files/               # Multimodal alt text for infographics
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>└── video-files/                  # Combined infographic + audio videos
 </code></pre></div>
 <p>This structure ensures that while the CSV provides a high-level data view, the actual content is easily accessible as standalone files.</p>
 
