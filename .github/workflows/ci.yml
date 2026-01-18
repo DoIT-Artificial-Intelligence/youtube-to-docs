@@ -32,4 +32,4 @@ jobs:
       run: uv run --with ty --all-extras --group test ty check
 
     - name: Run Tests
-      run: uv run --all-extras --group test pytest
+      run: uv run --all-extras --group test pytest -n auto

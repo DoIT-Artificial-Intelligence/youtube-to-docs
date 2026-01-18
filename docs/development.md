@@ -46,10 +46,10 @@ We use `pytest` for testing.
 
 ### Using `uv` (Recommended)
 
-To run tests with all dependencies automatically handled:
+To run tests in parallel with all dependencies automatically handled:
 
 ```bash
-uv run --group test pytest
+uv run --group test pytest -n auto
 ```
 
 ## Utilities

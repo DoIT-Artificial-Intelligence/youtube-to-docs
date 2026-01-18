@@ -103,6 +103,7 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.pytest.ini_options]
+addopts = "-n auto"
 python_files = "*.py"
 testpaths = ["tests"]
 markers = [

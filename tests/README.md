@@ -4,14 +4,7 @@ This directory contains the test suite for `youtube-to-docs`.
 
 ## Running Tests with uv
 
-To run the full test suite with all required dependencies (including all optional "extras" and development tools), use:
-
-```bash
-uv run --all-extras --group test pytest
-```
-
-### Tips for Speed
-For faster execution, you can run tests in parallel using `pytest-xdist`:
+To run the full test suite in parallel with all required dependencies, use:
 
 ```bash
 uv run --all-extras --group test pytest -n auto
