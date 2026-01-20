@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Any, Dict, List, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import requests
 
@@ -297,7 +297,11 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
 
 
 def generate_transcript(
-    model_name: str, audio_path: str, url: str, language: str = "en"
+    model_name: str,
+    audio_path: str,
+    url: str,
+    language: str = "en",
+    srt: bool = False,
 ) -> Tuple[str, int, int]:
     """
     Generates a transcript from an audio file using the specified model.
@@ -319,8 +323,22 @@ def generate_transcript(
 
         prompt = (
             f"Can you extract the transcript for {url} from this audio in {language}? "
-            "Start the response immediately with the transcript."
+            "Start the response immediately with the transcript. "
+            "Provide the transcript as a single continuous string of text without line breaks or speaker labels."
         )
+        if srt:
+            prompt = (
+                f"Can you extract the transcript for {url} from this audio in {language}? "
+                "Start the response immediately with the transcript. "
+                "\n\nPlease provide the transcript in SRT format with accurate "
+                "time stamps."
+            )
+        else:
+            prompt = (
+                f"Can you extract the transcript for {url} from this audio in {language}? "
+                "Start the response immediately with the transcript. "
+                "Provide the transcript as a single continuous string of text without line breaks or speaker labels."
+            )
 
         contents = [
             types.Content(
@@ -419,34 +437,50 @@ def extract_speakers(model_name: str, transcript: str) -> Tuple[str, int, int]:
 
 
 def generate_qa(
-    model_name: str, transcript: str, speakers: str, language: str = "en"
+    model_name: str,
+    transcript: str,
+    speakers: str,
+    url: str,
+    language: str = "en",
+    timing_reference: Optional[str] = None,
 ) -> Tuple[str, int, int]:
     """
     Extracts Q&A pairs from the transcript.
     Returns (qa_markdown, input_tokens, output_tokens).
     """
     prompt = (
-        "I have included a transcript."
+        "I have included a transcript (which might be in SRT format with timestamps)."
         "\n\n"
         "Can you please extract the questions and answers from the transcript "
         f"in {language}?"
         "\n\n"
         "The output should be a markdown table like:"
         "\n\n"
-        "| questioner(s) | question | responder(s) | answer |"
+        "| questioner(s) | question | responder(s) | answer | timestamp | timestamp url |"
         "\n"
-        "|---|---|---|---|"
+        "|---|---|---|---|---|---|"
         "\n"
-        "| Speaker 1 | What is... | Speaker 2 | It is... |"
+        "| Speaker 1 | What is... | Speaker 2 | It is... | 01:23 | https://youtu.be/... |\n"
         "\n\n"
         "If the questioner or responder is unknown use the placeholder UNKNOWN. "
         "Use people's name and titles in the questioner and responder fields. "
         'If no Q&A pairs are detected set it to float("nan").'
         "\n\n"
+        "For the 'timestamp' column, use the format MM:SS or HH:MM:SS. "
+        "If the 'Timing Reference' below is provided, please use its timestamps "
+        "to provide high accuracy timestamps. Otherwise, use timestamps from the main transcript."
+        "For the 'timestamp url' column, use the base YouTube URL provided below "
+        "and append the timestamp in seconds (e.g. &t=123 or ?t=123). "
+        "If the base URL already contains a '?', use '&t=' otherwise use '?t='. "
+        f"Base URL: {url}"
+        "\n\n"
         f"Speakers detected: {speakers}"
         "\n\n"
-        f"Transcript: {transcript}"
+        f"Content Transcript: {transcript}"
     )
+    if timing_reference:
+        prompt += f"\n\nTiming Reference (SRT): {timing_reference}"
+
     response_text, input_tokens, output_tokens = _query_llm(model_name, prompt)
 
     if (

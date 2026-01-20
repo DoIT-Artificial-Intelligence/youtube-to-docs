@@ -3,7 +3,7 @@
 import os
 import re
 import sys
-from typing import Any, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import isodate
 from googleapiclient.discovery import build
@@ -220,11 +220,13 @@ def fetch_transcript(video_id: str, language: str = "en") -> Optional[Tuple[str,
 
         if transcript_obj:
             transcript_data = transcript_obj.fetch()
-            transcript = " ".join([t.text for t in transcript_data])
+            # Handle both dicts and objects (some versions return FetchedTranscriptSnippet)
+            def get_val(item, key):
+                return item[key] if isinstance(item, dict) else getattr(item, key)
+
+            transcript_text = " ".join([get_val(t, "text") for t in transcript_data])
             is_generated = transcript_obj.is_generated
-            if transcript_obj.translation_languages:
-                pass
-            return transcript, is_generated
+            return transcript_text, is_generated, transcript_data
 
         return None
 
@@ -248,3 +250,35 @@ def fetch_transcript(video_id: str, language: str = "en") -> Optional[Tuple[str,
     except Exception as e:
         print(f"Error fetching transcript for {video_id}: {e}")
         return None
+
+
+def format_as_srt(transcript_data: List[Any]) -> str:
+    """Formats raw transcript data (list of dicts/objects) as an SRT string."""
+    srt_output = []
+
+    def get_val(item, key):
+        return item[key] if isinstance(item, dict) else getattr(item, key)
+
+    for i, entry in enumerate(transcript_data, 1):
+        start = get_val(entry, "start")
+        duration = get_val(entry, "duration")
+        end = start + duration
+        text = get_val(entry, "text")
+
+        start_time = format_srt_timestamp(start)
+        end_time = format_srt_timestamp(end)
+
+        srt_output.append(f"{i}")
+        srt_output.append(f"{start_time} --> {end_time}")
+        srt_output.append(f"{text}\n")
+
+    return "\n".join(srt_output)
+
+
+def format_srt_timestamp(seconds: float) -> str:
+    """Formats seconds into SRT timestamp format (HH:MM:SS,mmm)."""
+    hrs = int(seconds // 3600)
+    mins = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    msecs = int((seconds * 1000) % 1000)
+    return f"{hrs:02d}:{mins:02d}:{secs:02d},{msecs:03d}"

@@ -56,5 +56,8 @@ Here are the following args for the tool:
     *   `tag-files/`: AI-generated tags.
     *   `one-sentence-summary-files/`: One-sentence summaries.
     *   `alt-text-files/`: Multimodal infographic alt text.
+    *   `srt-files/`: SRT transcript files (both YouTube and AI generated).
+    *   `qa-files/`: Q&A markdown files (now includes "Timestamp" and "Timestamp URL" columns).
     *   These are linked as columns in the output CSV.
-6.  **Execute**: Call `process_video` with the gathered parameters.
+6.  **Timestamp Accuracy**: The server automatically cross-references YouTube SRT timestamps when generating AI Q&A to ensure pinpoint accuracy for "Timestamp URL" links.
+7.  **Execute**: Call `process_video` with the gathered parameters.

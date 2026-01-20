@@ -132,10 +132,8 @@ class TestTranscript(unittest.TestCase):
         mock_transcript_list = MagicMock()
         mock_transcript_obj = MagicMock()
 
-        snippet1 = MagicMock()
-        snippet1.text = "Hello"
-        snippet2 = MagicMock()
-        snippet2.text = "world"
+        snippet1 = {"text": "Hello", "start": 0.0, "duration": 1.0}
+        snippet2 = {"text": "world", "start": 1.0, "duration": 1.0}
 
         mock_transcript_obj.fetch.return_value = [snippet1, snippet2]
         mock_transcript_obj.is_generated = False
@@ -151,9 +149,10 @@ class TestTranscript(unittest.TestCase):
         result = transcript.fetch_transcript("vid1")
         self.assertIsNotNone(result)
         assert result is not None
-        text, is_generated = result
+        text, is_generated, data = result
         self.assertEqual(text, "Hello world")
         self.assertFalse(is_generated)
+        self.assertEqual(data, [snippet1, snippet2])
 
     @patch("youtube_to_docs.transcript.YouTubeTranscriptApi.list")
     def test_fetch_transcript_error(self, mock_list):
@@ -169,10 +168,8 @@ class TestTranscript(unittest.TestCase):
 
         mock_en_transcript.translate.return_value = mock_es_transcript
 
-        snippet1 = MagicMock()
-        snippet1.text = "Hola"
-        snippet2 = MagicMock()
-        snippet2.text = "mundo"
+        snippet1 = {"text": "Hola", "start": 0.0, "duration": 1.0}
+        snippet2 = {"text": "mundo", "start": 1.0, "duration": 1.0}
 
         mock_es_transcript.fetch.return_value = [snippet1, snippet2]
         mock_es_transcript.is_generated = False
@@ -193,8 +190,9 @@ class TestTranscript(unittest.TestCase):
         result = transcript.fetch_transcript("vid1", language="es")
         self.assertIsNotNone(result)
         assert result is not None
-        text, _ = result
+        text, _, data = result
         self.assertEqual(text, "Hola mundo")
+        self.assertEqual(data, [snippet1, snippet2])
         mock_en_transcript.translate.assert_called_with("es")
 
 

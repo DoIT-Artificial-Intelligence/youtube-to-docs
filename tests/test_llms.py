@@ -124,7 +124,7 @@ class TestLLMs(unittest.TestCase):
         mock_client.models.generate_content.return_value = mock_resp
 
         qa, in_tokens, out_tokens = llms.generate_qa(
-            "gemini-pro", "transcript content", "Speaker 1, Speaker 2"
+            "gemini-pro", "transcript content", "Speaker 1, Speaker 2", "https://youtu.be/vid1"
         )
         # Expecting the added column
         expected_qa = "| question number | Q | A |\n|---|---|---|\n| 1 | Q1 | A1 |"

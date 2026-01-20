@@ -29,6 +29,7 @@ from youtube_to_docs.storage import (
 from youtube_to_docs.transcript import (
     extract_audio,
     fetch_transcript,
+    format_as_srt,
     get_video_details,
     get_youtube_service,
     resolve_video_ids,
@@ -282,6 +283,7 @@ def main(args_list: list[str] | None = None) -> None:
     one_sentence_summaries_dir = os.path.join(base_dir, "one-sentence-summary-files")
     tags_dir = os.path.join(base_dir, "tag-files")
     alt_text_dir = os.path.join(base_dir, "alt-text-files")
+    srt_dir = os.path.join(base_dir, "srt-files")
 
     # Local temp dir for processing (Audio/TTS require local files)
     local_temp_dir = "temp_processing_artifacts"
@@ -298,6 +300,7 @@ def main(args_list: list[str] | None = None) -> None:
     storage.ensure_directory(one_sentence_summaries_dir)
     storage.ensure_directory(tags_dir)
     storage.ensure_directory(alt_text_dir)
+    storage.ensure_directory(srt_dir)
 
     # Load existing CSV if it exists
     existing_df = storage.load_dataframe(outfile_path)
@@ -455,10 +458,12 @@ def main(args_list: list[str] | None = None) -> None:
 
             col_youtube = f"Transcript File youtube generated{col_suffix}"
             col_human = f"Transcript File human generated{col_suffix}"
+            col_srt = f"SRT File youtube{col_suffix}"
 
             # --- YouTube Transcript Fetching ---
             youtube_transcript = ""
             is_generated = False
+            srt_content = ""
 
             # Check storage if not in row
             if not row.get(col_youtube) and not row.get(col_human):
@@ -487,19 +492,37 @@ def main(args_list: list[str] | None = None) -> None:
                     youtube_transcript = storage.read_text(str(path))
                     is_generated = False
 
+            # Load SRT if available
+            if youtube_transcript and row.get(col_srt):
+                srt_path = row[col_srt]
+                if srt_path and storage.exists(str(srt_path)):
+                    srt_content = storage.read_text(str(srt_path))
+            elif youtube_transcript and not srt_content:
+                # Try to find it on disk
+                expected_srt_path = os.path.join(
+                    srt_dir,
+                    f"{'youtube' if is_generated else 'human'} generated{lang_str} - "
+                    f"{video_id} - {safe_title}.srt",
+                )
+                if storage.exists(expected_srt_path):
+                    srt_content = storage.read_text(expected_srt_path)
+                    row[col_srt] = expected_srt_path
+
             # If no existing transcript, fetch from YouTube
             if not youtube_transcript:
                 result = fetch_transcript(video_id, language=language)
                 if result:
-                    youtube_transcript, is_generated = result
+                    youtube_transcript, is_generated, transcript_data = result
                     prefix = (
                         f"youtube generated{lang_str} - "
                         if is_generated
                         else f"human generated{lang_str} - "
                     )
                     filename = f"{prefix}{video_id} - {safe_title}.txt"
+                    srt_filename = f"{prefix}{video_id} - {safe_title}.srt"
                     # Relative path for storage
                     target_path = os.path.join(transcripts_dir, filename)
+                    srt_target_path = os.path.join(srt_dir, srt_filename)
 
                     try:
                         saved_path = storage.write_text(target_path, youtube_transcript)
@@ -513,8 +536,14 @@ def main(args_list: list[str] | None = None) -> None:
                             row[col_youtube] = saved_path
                         else:
                             row[col_human] = saved_path
+
+                        # Save SRT
+                        srt_content = format_as_srt(transcript_data)
+                        saved_srt_path = storage.write_text(srt_target_path, srt_content)
+                        vprint(f"Saved YouTube SRT: {format_clickable_path(saved_srt_path)}")
+                        row[col_srt] = saved_srt_path
                     except Exception as e:
-                        print(f"Error writing YouTube transcript: {e}")
+                        print(f"Error writing YouTube transcript/SRT: {e}")
 
             # Update character counts
             if youtube_transcript:
@@ -577,11 +606,13 @@ def main(args_list: list[str] | None = None) -> None:
 
             # --- AI Transcript Generation (if requested) ---
             ai_transcript = ""
+            ai_srt_content = ""
             stt_cost = float("nan")
             transcript = youtube_transcript  # Default to YouTube transcript
 
             if transcript_arg != "youtube":
                 ai_col = f"Transcript File {transcript_arg} generated{col_suffix}"
+                ai_srt_col = f"SRT File {transcript_arg}{col_suffix}"
                 stt_cost_col = (
                     f"{normalize_model_name(transcript_arg)} STT cost{col_suffix} ($)"
                 )
@@ -601,6 +632,22 @@ def main(args_list: list[str] | None = None) -> None:
                     path = row[ai_col]
                     if path and storage.exists(str(path)):
                         ai_transcript = storage.read_text(str(path))
+
+                # Load AI SRT if available
+                if ai_transcript and row.get(ai_srt_col):
+                    srt_path = row[ai_srt_col]
+                    if srt_path and storage.exists(str(srt_path)):
+                        ai_srt_content = storage.read_text(str(srt_path))
+                elif ai_transcript and not ai_srt_content:
+                    # Try to find it on disk
+                    expected_ai_srt_path = os.path.join(
+                        srt_dir,
+                        f"{transcript_arg} generated{lang_str} - "
+                        f"{video_id} - {safe_title}.srt",
+                    )
+                    if storage.exists(expected_ai_srt_path):
+                        ai_srt_content = storage.read_text(expected_ai_srt_path)
+                        row[ai_srt_col] = expected_ai_srt_path
 
                 # If no existing AI transcript, generate it
                 if not ai_transcript:
@@ -628,10 +675,21 @@ def main(args_list: list[str] | None = None) -> None:
                             transcript_arg, audio_input_path, url, language=language
                         )
 
+                        # Also generate SRT for AI transcript
+                        ai_srt_content, _, _ = generate_transcript(
+                            transcript_arg,
+                            audio_input_path,
+                            url,
+                            language=language,
+                            srt=True,
+                        )
+
                         # Save AI transcript
                         prefix = f"{transcript_arg} generated{lang_str} - "
                         filename = f"{prefix}{video_id} - {safe_title}.txt"
+                        srt_filename = f"{prefix}{video_id} - {safe_title}.srt"
                         target_path = os.path.join(transcripts_dir, filename)
+                        srt_target_path = os.path.join(srt_dir, srt_filename)
 
                         try:
                             saved_path = storage.write_text(target_path, ai_transcript)
@@ -640,8 +698,16 @@ def main(args_list: list[str] | None = None) -> None:
                                 f"{format_clickable_path(saved_path)}"
                             )
                             row[ai_col] = saved_path
+
+                            saved_srt_path = storage.write_text(
+                                srt_target_path, ai_srt_content
+                            )
+                            vprint(
+                                "Saved AI SRT: " f"{format_clickable_path(saved_srt_path)}"
+                            )
+                            row[ai_srt_col] = saved_srt_path
                         except Exception as e:
-                            print(f"Error writing AI transcript: {e}")
+                            print(f"Error writing AI transcript/SRT: {e}")
 
                         # Calculate STT Cost
                         if verbose:
@@ -659,6 +725,11 @@ def main(args_list: list[str] | None = None) -> None:
                 # use it for summaries
                 if ai_transcript:
                     transcript = ai_transcript
+                    # Use SRT for Q&A if available
+                    srt_transcript = ai_srt_content if ai_srt_content else transcript
+                else:
+                    transcript = youtube_transcript
+                    srt_transcript = srt_content if srt_content else transcript
 
                 row[f"Transcript characters from {transcript_arg}{col_suffix}"] = len(
                     ai_transcript
@@ -779,6 +850,9 @@ def main(args_list: list[str] | None = None) -> None:
                     f"{transcript_arg}{col_suffix} ($)"
                 )
 
+                # Determine the best transcript for QA (prefer SRT for timestamps)
+                qa_transcript_to_use = srt_transcript if srt_transcript else transcript
+
                 # Check disk for QA file
                 if not row.get(qa_file_col_name):
                     qa_filename = (
@@ -798,7 +872,12 @@ def main(args_list: list[str] | None = None) -> None:
                 if not row.get(qa_col_name):
                     vprint(f"Generating Q&A using model: {model_name} ({language})")
                     qa_text, qa_input, qa_output = generate_qa(
-                        model_name, transcript, speakers_text, language=language
+                        model_name,
+                        qa_transcript_to_use,
+                        speakers_text,
+                        url,
+                        language=language,
+                        timing_reference=srt_content if transcript_arg != "youtube" else None,
                     )
                     row[qa_col_name] = qa_text
 
