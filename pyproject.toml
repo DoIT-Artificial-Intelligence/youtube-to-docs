@@ -16,7 +16,7 @@ test = [
 
 [project]
 name = "youtube-to-docs"
-version = "0.0.46"
+version = "0.0.47"
 description = "Convert YouTube videos into structured docs, summaries, audio, and visual assets for easier discovery"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -44,6 +44,8 @@ gcp = [
 ]
 workspace = [
     "google-auth-oauthlib",
+    "pypandoc>=1.16.2",
+    "pypandoc_binary>=1.16.2",
 ]
 m365 = [
     "msal>=1.34.0",

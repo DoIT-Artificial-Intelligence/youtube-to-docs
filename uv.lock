@@ -2064,7 +2064,7 @@ wheels = [
 
 [[package]]
 name = "youtube-to-docs"
-version = "0.0.45"
+version = "0.0.47"
 source = { editable = "." }
 dependencies = [
     { name = "google-api-python-client" },
@@ -2117,6 +2117,8 @@ video = [
 ]
 workspace = [
     { name = "google-auth-oauthlib" },
+    { name = "pypandoc" },
+    { name = "pypandoc-binary" },
 ]
 
 [package.dev-dependencies]
@@ -2146,7 +2148,9 @@ requires-dist = [
     { name = "openai", marker = "extra == 'azure'", specifier = ">=1.56.0" },
     { name = "polars", specifier = ">=1.36.1" },
     { name = "pypandoc", marker = "extra == 'm365'", specifier = ">=1.16.2" },
+    { name = "pypandoc", marker = "extra == 'workspace'", specifier = ">=1.16.2" },
     { name = "pypandoc-binary", marker = "extra == 'm365'", specifier = ">=1.16.2" },
+    { name = "pypandoc-binary", marker = "extra == 'workspace'", specifier = ">=1.16.2" },
     { name = "requests", specifier = ">=2.32.5" },
     { name = "rich", specifier = ">=14.2.0" },
     { name = "rich-argparse", specifier = ">=1.7.2" },
