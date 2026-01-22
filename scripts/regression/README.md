@@ -15,7 +15,7 @@ This directory contains regression tests for the `youtube-to-docs` tool.
 - **[regression_sharepoint.py](regression_sharepoint.py)**: A run that stores results in SharePoint/OneDrive (specifically a folder named `youtube-to-docs-artifacts`). Uses `foundry-gpt-5-mini` for summarization.
 - **[regression_two_vids.py](regression_two_vids.py)**: Processes two videos (`B0x2I_doX9o,Cu27fBy-kHQ`) with `gemini-3-flash-preview` and no YouTube summary (`-nys`).
 - **[regression_two_vids_verbose.py](regression_two_vids_verbose.py)**: Same as above but with verbose output enabled.
-- **[test_gcp_stt.py](test_gcp_stt.py)**: Tests GCP Speech-to-Text V2 (`gcp-chirp3`) integration. Requires `GOOGLE_CLOUD_PROJECT` and optional `YTD_GCS_BUCKET_NAME` env vars.
+- **[regression_gcp_stt.py](regression_gcp_stt.py)**: Tests GCP Speech-to-Text V2 (`gcp-chirp3`) integration. Requires `GOOGLE_CLOUD_PROJECT` and optional `YTD_GCS_BUCKET_NAME` env vars.
 
 ## Usage
 
@@ -72,5 +72,5 @@ or
 
 ```bash
 # GCP STT (Chirp) tests
-uv run --extra gcp python scripts/regression/test_gcp_stt.py
+uv run --extra gcp python scripts/regression/regression_gcp_stt.py
 ```

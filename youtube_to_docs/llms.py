@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import uuid
 from typing import Any, Dict, List, Optional, Tuple, cast
 
@@ -413,10 +414,6 @@ def _transcribe_gcp(
         return "Error: GOOGLE_CLOUD_PROJECT environment variable is required.", 0, 0
 
     # Extract model ID (e.g. gcp-chirp3 -> chirp_3 or just pass as is if mapped?)
-    # User example: gcp-chirp3 -> model="chirp_3"
-    # We might need a mapping or just stripping prefix.
-    # Let's assume simple mapping for now or strip 'gcp-' and replace '-' with '_'
-    # User asked: "gcp-chirp3 which translates to model='chirp_3'"
     actual_model = model_name.replace("gcp-", "").replace("-", "_")
     if actual_model == "chirp3":
         actual_model = "chirp_3"  # specific fix based on user example
@@ -426,7 +423,7 @@ def _transcribe_gcp(
     location = os.environ.get("GOOGLE_CLOUD_LOCATION")
     if not location:
         if "chirp" in actual_model:
-            location = "us-central1"
+            location = "us"
         else:
             location = "global"
 
@@ -437,7 +434,6 @@ def _transcribe_gcp(
         blob_name = f"temp/ytd_audio_{uuid.uuid4()}.m4a"
         blob = bucket.blob(blob_name)
 
-        # print(f"Uploading {audio_path} to gs://{bucket_name}/{blob_name}...")
         blob.upload_from_filename(audio_path)
         gcs_uri = f"gs://{bucket_name}/{blob_name}"
     except Exception as e:
@@ -455,92 +451,125 @@ def _transcribe_gcp(
         # Instantiates a client
         client = speech_v2.SpeechClient(client_options=client_options)
 
+        # Map 'en' to 'en-US' for GCP V2 if needed
+        if language == "en":
+            language = "en-US"
+
         config = cloud_speech.RecognitionConfig(
             auto_decoding_config=cloud_speech.AutoDetectDecodingConfig(),
             language_codes=[language],
             model=actual_model,
         )
 
-        # If SRT is requested, we need word timings.
-        # But V2 batch recognize response structure for inline might be different
-        # or we need to parse it.
-        # User snippet:
-        # for result in response.results[audio_uri].transcript.results:
-        #     print(f"Transcript: {result.alternatives[0].transcript}")
-        # The V2 API result object has alternatives.
-        # For SRT we need word level timestamps.
-        # Let's enable features if possible, but for now stick to basic text logic
-        # closer to snippet unless srt is strictly required.
-        # The user's request mentions --transcript arg supports youtube or AI model.
-        # generate_transcript returns text.
-        # Logic in main parses it? No, main expects text.
-        # If srt=True, main expects SRT content.
-        # Implementing SRT generation from Chirp response requires word timestamps.
-        # Let's check if we can get those.
-        # config features...
         if srt:
-            config.features = cloud_speech.RecognitionFeatures(
-                enable_word_time_offsets=True
+            config.features = speech_v2.RecognitionFeatures(
+                enable_word_time_offsets=True,
+                enable_automatic_punctuation=True,
+            )
+        else:
+            config.features = speech_v2.RecognitionFeatures(
+                enable_automatic_punctuation=True,
             )
 
-        file_metadata = cloud_speech.BatchRecognizeFileMetadata(uri=gcs_uri)
+        file_metadata = speech_v2.BatchRecognizeFileMetadata(uri=gcs_uri)
 
-        request = cloud_speech.BatchRecognizeRequest(
+        request = speech_v2.BatchRecognizeRequest(
             recognizer=f"projects/{project_id}/locations/{location}/recognizers/_",
             config=config,
             files=[file_metadata],
-            recognition_output_config=cloud_speech.RecognitionOutputConfig(
-                inline_response_config=cloud_speech.InlineOutputConfig(),
+            recognition_output_config=speech_v2.RecognitionOutputConfig(
+                inline_response_config=speech_v2.InlineOutputConfig(),
             ),
         )
 
-        # print("Starting transcription...")
+        print("Starting transcription...")
         operation = client.batch_recognize(request=request)
-        response = operation.result(
-            timeout=3000
-        )  # Wait up to 50 mins? 300s = 5m. chirp can be slow. 3000s = 50m.
+
+        # Poll logic
+        while not operation.done():
+            print("Transcript processing...", end="\r")
+            time.sleep(5)
+
+        response = operation.result()
 
         if gcs_uri in response.results:
             batch_result = response.results[gcs_uri]
             if batch_result.transcript and batch_result.transcript.results:
                 results = batch_result.transcript.results
+
+                # Full text accumulator
                 full_text_parts = []
 
-                for i, result in enumerate(results):
+                # SRT accumulator
+                srt_entries = []
+                srt_counter = 1
+
+                # Helper for SRT formatting
+                def format_time(timedelta_obj):
+                    total_seconds = timedelta_obj.total_seconds()
+                    hours = int(total_seconds // 3600)
+                    minutes = int((total_seconds % 3600) // 60)
+                    seconds = int(total_seconds % 60)
+                    milliseconds = int((total_seconds * 1000) % 1000)
+                    return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
+
+                for result in results:
                     alt = result.alternatives[0]
                     full_text_parts.append(alt.transcript)
 
-                    # Simple SRT construction if needed
-                    # Note: This is a simplification.
-                    # Real SRT construction needs accurate timing from words.
                     if srt and hasattr(alt, "words"):
-                        # This would be complex to implement fully without a proper
-                        # library or more detailed logic.
-                        # For now, let's fallback to just text if SRT logic isn't
-                        # trivial OR try to do a best effort if words act exists.
-                        pass
+                        words = alt.words
+                        current_segment_words = []
+                        current_segment_len = 0
+
+                        for word_info in words:
+                            word = word_info.word
+                            start = word_info.start_offset
+                            end = word_info.end_offset
+
+                            current_segment_words.append((word, start, end))
+                            current_segment_len += len(word) + 1
+
+                            # Break segment on punctuation or length
+                            if (
+                                word.endswith(".")
+                                or word.endswith("?")
+                                or word.endswith("!")
+                                or current_segment_len > 80
+                            ):
+                                # Flush segment
+                                if current_segment_words:
+                                    seg_text = " ".join(
+                                        [w[0] for w in current_segment_words]
+                                    )
+                                    seg_start = format_time(current_segment_words[0][1])
+                                    seg_end = format_time(current_segment_words[-1][2])
+
+                                    srt_entries.append(
+                                        f"{srt_counter}\n"
+                                        f"{seg_start} --> {seg_end}\n"
+                                        f"{seg_text}\n"
+                                    )
+                                    srt_counter += 1
+                                    current_segment_words = []
+                                    current_segment_len = 0
+
+                        # Flush remaining
+                        if current_segment_words:
+                            seg_text = " ".join([w[0] for w in current_segment_words])
+                            seg_start = format_time(current_segment_words[0][1])
+                            seg_end = format_time(current_segment_words[-1][2])
+                            srt_entries.append(
+                                f"{srt_counter}\n"
+                                f"{seg_start} --> {seg_end}\n"
+                                f"{seg_text}\n"
+                            )
+                            srt_counter += 1
 
                 transcript_text = " ".join(full_text_parts)
 
-                # If input was SRT request, we really should return SRT format.
-                # But since I can't easily test complexity of V2 word object structure
-                # right now:
                 if srt:
-                    # Fallback or simple placeholder/warning if we can't do it easily?
-                    # The user prompt example didn't handle SRT.
-                    # I will return the text and let caller handle it (it won't be SRT
-                    # formatted).
-                    # Actually, main.py expects that if srt=True the return is SRT
-                    # formatted text.
-                    # If I return plain text, it might break or just be a wall of text.
-                    # For now, I'll validly return plain text and if it's not SRT, so
-                    # be it, OR I could parse.
-                    # V2 result.alternatives[0].words list of WordInfo (start_offset,
-                    # end_offset).
-                    # But those are TimeDelta (proto).
-                    # Let's assume text for now to satisfy the prompt's explicit
-                    # snippet, which only printed transcript.
-                    pass
+                    return "\n".join(srt_entries), 0, 0  # Return SRT string
 
             else:
                 # Check for errors
@@ -562,12 +591,6 @@ def _transcribe_gcp(
         except Exception:
             pass
 
-    # Estimate tokens?
-    # STT doesn't use tokens like LLMs.
-    # We can return 0, 0 or estimates based on char count.
-    # main.py calculates cost based on get_model_pricing.
-    # We should ensure 'chirp_3' or similar is in prices.py if we want cost calc.
-    # For now, returns 0 tokens.
     return transcript_text, 0, 0
 
 
