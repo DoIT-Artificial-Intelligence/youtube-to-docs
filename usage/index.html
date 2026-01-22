@@ -1189,7 +1189,7 @@
 <tr>
 <td style="text-align: left;"><code>gcp</code></td>
 <td style="text-align: left;">Required if using Google Gemini or Vertex AI models.</td>
-<td style="text-align: left;"><code>google-genai</code></td>
+<td style="text-align: left;"><code>google-genai</code>, <code>google-cloud-speech</code>, <code>google-cloud-storage</code>, <code>google-cloud-texttospeech</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>all</code></td>
@@ -1243,7 +1243,7 @@
 <tr>
 <td style="text-align: left;"><code>PROJECT_ID</code></td>
 <td style="text-align: left;">Google Cloud Project ID.</td>
-<td style="text-align: left;">GCP Vertex models (<code>-m vertex...</code>) and GCP STT (<code>-t gcp...</code>).</td>
+<td style="text-align: left;">GCP Vertex models (<code>-m vertex...</code>), GCP STT (<code>-t gcp...</code>) and GCP TTS (<code>--tts gcp...</code>).</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>YTD_GCS_BUCKET_NAME</code></td>
@@ -1336,9 +1336,9 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>--tts</code></td>
-<td style="text-align: left;">The TTS model and voice to use for generating audio summaries. Format: <code>{model}-{voice}</code>.</td>
+<td style="text-align: left;">The TTS model and voice to use for generating audio summaries. Format: <code>{model}-{voice}</code>. Supports Gemini models (e.g., <code>gemini-2.5-flash-preview-tts-Kore</code>) and GCP Cloud TTS (e.g., <code>gcp-chirp3-Kore</code>).</td>
 <td style="text-align: left;"><code>None</code></td>
-<td style="text-align: left;"><code>--tts gemini-2.5-flash-preview-tts-Kore</code></td>
+<td style="text-align: left;"><code>--tts gcp-chirp3-Kore</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>-i</code>, <code>--infographic</code></td>
