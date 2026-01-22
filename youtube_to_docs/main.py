@@ -1616,7 +1616,7 @@ def main(args_list: list[str] | None = None) -> None:
                         # 3. Generate infographic if it doesn't exist on disk
                         summary_file_path = row.get(f"Summary File {m_name}", "")
                         summary_filename = (
-                            os.path.basename(summary_file_path)
+                            storage.get_name(summary_file_path)
                             if summary_file_path
                             else "unknown file"
                         )

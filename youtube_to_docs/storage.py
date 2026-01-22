@@ -79,6 +79,11 @@ class Storage(ABC):
         pass
 
     @abstractmethod
+    def get_name(self, path: str) -> str:
+        """Returns the filename or name of the resource."""
+        pass
+
+    @abstractmethod
     def get_local_file(
         self, path: str, download_dir: Optional[str] = None
     ) -> Optional[str]:
@@ -140,6 +145,9 @@ class LocalStorage(Storage):
     def get_full_path(self, path: str) -> str:
         return os.path.abspath(path)
 
+    def get_name(self, path: str) -> str:
+        return os.path.basename(path)
+
     def get_local_file(
         self, path: str, download_dir: Optional[str] = None
     ) -> Optional[str]:
@@ -151,11 +159,15 @@ class LocalStorage(Storage):
 class GoogleDriveStorage(Storage):
     """Implementation of Storage for Google Drive."""
 
-    SCOPES = ["https://www.googleapis.com/auth/drive.file"]
+    SCOPES = [
+        "https://www.googleapis.com/auth/drive.file",
+        "https://www.googleapis.com/auth/documents",
+    ]
 
     def __init__(self, output_arg: str):
         self.creds = self._get_creds()
         self.service = build("drive", "v3", credentials=self.creds)
+        self.docs_service = build("docs", "v1", credentials=self.creds)
         self.sheets_service = build("sheets", "v4", credentials=self.creds)
         self.root_folder_id = self._resolve_root_folder_id(output_arg)
         # Cache for folder IDs to avoid constant lookups
@@ -377,6 +389,24 @@ class GoogleDriveStorage(Storage):
             status, done = downloader.next_chunk()
         return fh.getvalue()
 
+    def _set_landscape(self, document_id: str) -> None:
+        """Sets the document to landscape orientation using the Docs API."""
+        try:
+            requests = [
+                {
+                    "updateDocumentStyle": {
+                        "documentStyle": {"flipPageOrientation": True},
+                        "fields": "flipPageOrientation",
+                    }
+                }
+            ]
+            self.docs_service.documents().batchUpdate(
+                documentId=document_id, body={"requests": requests}
+            ).execute()
+        except Exception as e:
+            vprint = globals().get("vprint", print)
+            vprint(f"Warning: Failed to set landscape orientation: {e}")
+
     def write_text(self, path: str, content: str) -> str:
         parent_id = self._get_parent_id(path)
         filename = Path(path).name
@@ -436,8 +466,13 @@ class GoogleDriveStorage(Storage):
                 .execute()
             )
 
+        doc_id = file.get("id")
+        # Set landscape for Q&A files
+        if doc_id and "- qa" in filename.lower():
+            self._set_landscape(doc_id)
+
         # Update cache
-        if file.get("id"):
+        if doc_id:
             self.file_cache[path] = file
 
         return file.get("webViewLink")
@@ -662,6 +697,27 @@ class GoogleDriveStorage(Storage):
         if metadata and "webViewLink" in metadata:
             return metadata["webViewLink"]
         return path
+
+    def get_name(self, path: str) -> str:
+        """Returns the filename or name of the resource."""
+        if path.startswith("http"):
+            file_id = self._extract_id_from_url(path)
+            if file_id:
+                try:
+                    file = (
+                        self.service.files()
+                        .get(fileId=file_id, fields="name")
+                        .execute()
+                    )
+                    return file.get("name", path)
+                except Exception:
+                    pass
+        else:
+            metadata = self._get_file_metadata(path)
+            if metadata and "name" in metadata:
+                return metadata["name"]
+
+        return os.path.basename(path)
 
     def get_local_file(
         self, path: str, download_dir: Optional[str] = None
@@ -1090,11 +1146,14 @@ class M365Storage(Storage):
     def get_full_path(self, path: str) -> str:
         if path.startswith("http"):
             return path
-
         item = self._get_item(path)
-        if item:
-            return item.get("webUrl", path)
-        return path
+        return item.get("webUrl", path) if item else path
+
+    def get_name(self, path: str) -> str:
+        item = self._get_item(path)
+        if item and "name" in item:
+            return item["name"]
+        return os.path.basename(path)
 
     def get_local_file(
         self, path: str, download_dir: Optional[str] = None
@@ -1159,6 +1218,9 @@ class NullStorage(Storage):
 
     def get_full_path(self, path: str) -> str:
         return path
+
+    def get_name(self, path: str) -> str:
+        return os.path.basename(path)
 
     def get_local_file(
         self, path: str, download_dir: Optional[str] = None
