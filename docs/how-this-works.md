@@ -33,7 +33,7 @@ For each video, the specified model performs three distinct tasks:
     *   **Input**: Full transcript + Identified Speakers + **Timing Reference (SRT)**.
     *   **Task**: Extract key questions and answers discussed in the video.
     *   **Precision Timing**: If YouTube SRT is available, it is passed to the LLM as a "Timing Reference". The model uses this to align the high-quality speech identification of the AI transcript with the pinpoint accuracy of YouTube's timing.
-    *   **Output**: A Markdown table with columns for Questioner, Question, Responder, Answer, Timestamp, and **Timestamp URL**.
+    *   **Output**: A Markdown table with columns for Questioner, Question, Responder, Answer, Timestamp, and **Timestamp URL** (formatted as a markdown hyperlink).
 
 3.  **Summarization**:
     *   **Input**: Full transcript + Video Metadata.
