@@ -109,7 +109,13 @@ def generate_speech(
 
         # The response structure based on the docs:
         # response.candidates[0].content.parts[0].inline_data.data
-        if response.candidates and response.candidates[0].content.parts:
+        if (
+            response.candidates
+            and response.candidates[0].content
+            and response.candidates[0].content.parts
+            and response.candidates[0].content.parts[0].inline_data
+            and response.candidates[0].content.parts[0].inline_data.data
+        ):
             return response.candidates[0].content.parts[0].inline_data.data
         else:
             print("Error: No audio data in response.")

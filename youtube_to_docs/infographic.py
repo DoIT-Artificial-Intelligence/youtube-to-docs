@@ -110,7 +110,12 @@ def generate_infographic(
                 ),
             )
 
-            if response.generated_images:
+            if (
+                response
+                and response.generated_images
+                and response.generated_images[0].image
+                and response.generated_images[0].image.image_bytes
+            ):
                 return response.generated_images[0].image.image_bytes, 0, 1000
 
             print(f"No image data found in response from {image_model}")
