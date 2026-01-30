@@ -76,6 +76,7 @@ class TestGCPSTT(unittest.TestCase):
                 "gs://test-bucket/temp/transcripts/ytd_audio_1234_transcript.json"
             )
             mock_batch_result.error = None  # Ensure no error is triggered
+            mock_batch_result.inline_result = None  # Ensure GCS fallback
 
             # Setup transcript JSON content
             mock_json_content = """
@@ -143,6 +144,7 @@ class TestGCPSTT(unittest.TestCase):
 
             # Inline Result Mock
             mock_batch_result = MagicMock()
+            mock_batch_result.error = None
 
             # Setup the nested structure for inline_result.transcript.results
             mock_inline_transcript = MagicMock()

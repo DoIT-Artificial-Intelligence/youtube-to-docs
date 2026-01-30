@@ -4,6 +4,7 @@ import os
 import re
 import time
 
+import isodate
 import polars as pl
 from rich import print as rprint
 from rich_argparse import RichHelpFormatter
@@ -383,6 +384,24 @@ def main(args_list: list[str] | None = None) -> None:
             video_duration = row.get("Duration", "")
             # Approximate duration from string if not fresh, or 0.0
             video_duration_seconds = 0.0
+            if video_duration and isinstance(video_duration, str):
+                try:
+                    if "T" in video_duration:
+                        # YouTube duration is in ISO 8601 format (e.g., PT1H2M3S)
+                        duration_obj = isodate.parse_duration(video_duration)
+                        video_duration_seconds = duration_obj.total_seconds()
+                    elif ":" in video_duration:
+                        # Handle HH:MM:SS format from existing CSV
+                        parts = video_duration.split(":")
+                        if len(parts) == 3:  # HH:MM:SS
+                            h, m, s = map(int, parts)
+                            video_duration_seconds = h * 3600 + m * 60 + s
+                        elif len(parts) == 2:  # MM:SS
+                            m, s = map(int, parts)
+                            video_duration_seconds = m * 60 + s
+                except Exception:
+                    # Fallback to 0.0 if parsing fails
+                    video_duration_seconds = 0.0
 
         display_title = video_title if video_title else video_id
         print(f"(Video {i} of {len(video_ids)}) Video Title: {display_title}")

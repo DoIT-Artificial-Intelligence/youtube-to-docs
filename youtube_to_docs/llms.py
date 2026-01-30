@@ -1,6 +1,8 @@
 import json
 import os
 import re
+import subprocess
+import tempfile
 import time
 import uuid
 from typing import Any, Dict, List, Optional, Tuple, cast
@@ -431,6 +433,192 @@ def generate_transcript(
         return f"Error: {e}", 0, 0
 
 
+def _parse_gcp_time(time_str: str) -> float:
+    """Parses a time string (e.g. '10s', '0.100s', or '0:00:02.640000') into seconds."""
+    if not time_str:
+        return 0.0
+    time_str = str(time_str)
+    if ":" in time_str:
+        # Handle HH:MM:SS.mmmmmm format
+        parts = time_str.split(":")
+        if len(parts) == 3:
+            h, m, s = parts
+            return int(h) * 3600 + int(m) * 60 + float(s)
+        elif len(parts) == 2:
+            m, s = parts
+            return int(m) * 60 + float(s)
+    return float(time_str.replace("s", ""))
+
+
+def _format_srt_time(seconds: float) -> str:
+    """Formats seconds into SRT timestamp format (HH:MM:SS,mmm)."""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    milliseconds = int((seconds * 1000) % 1000)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d},{milliseconds:03d}"
+
+
+def _process_gcp_batch_result(
+    batch_result: Any,
+    storage_client: Any,
+    offset_seconds: float,
+    srt_counter_start: int,
+) -> Tuple[str, List[str], int]:
+    """
+    Processes a single file result from a BatchRecognizeResponse.
+    Returns (transcript_text, srt_entries_list, next_srt_counter).
+    """
+
+    transcript_text = ""
+    srt_entries = []
+    next_ctr = srt_counter_start
+
+    if batch_result.error and batch_result.error.code != 0:
+        error_msg = batch_result.error.message or "Unknown error"
+        print(f"Error in chunk result: {error_msg}")
+        return "", [], next_ctr
+
+    # Check for inline result first
+    if batch_result.inline_result and batch_result.inline_result.transcript:
+        results_list = batch_result.inline_result.transcript.results
+        return _process_alternatives(results_list, offset_seconds, srt_counter_start)
+
+    # Fallback to GCS output
+    output_uri = batch_result.uri
+    if not output_uri:
+        print("Error: No output URI or inline result for chunk.")
+        return "", [], next_ctr
+
+    try:
+        bucket_name_out = output_uri.split("/")[2]
+        blob_name_out = "/".join(output_uri.split("/")[3:])
+        blob_out = storage_client.bucket(bucket_name_out).blob(blob_name_out)
+
+        # Retry logic for download
+        max_retries = 5
+        json_content = None
+        for attempt in range(max_retries):
+            try:
+                json_content = blob_out.download_as_text()
+                break
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    time.sleep(1 * (2**attempt))
+                else:
+                    print(f"Failed to download transcript: {e}")
+
+        if json_content:
+            transcript_json = json.loads(json_content)
+            results_list = transcript_json.get("results", [])
+            transcript_text, srt_entries, next_ctr = _process_alternatives(
+                results_list, offset_seconds, srt_counter_start
+            )
+
+            # Cleanup output blob
+            try:
+                blob_out.delete()
+            except Exception:
+                pass
+
+    except Exception as e:
+        print(f"Error processing GCS output: {e}")
+
+    return transcript_text, srt_entries, next_ctr
+
+
+def _process_alternatives(
+    results_list: List[Any], current_offset_sec: float, current_srt_idx: int
+) -> Tuple[str, List[str], int]:
+    """Helper to process a list of transcript results into text and SRT entries."""
+    full_text_parts = []
+    srt_entries = []
+    srt_counter = current_srt_idx
+
+    for result in results_list:
+        alternatives = (
+            result.get("alternatives", [])
+            if isinstance(result, dict)
+            else (result.alternatives if hasattr(result, "alternatives") else [])
+        )
+        if not alternatives:
+            continue
+
+        alt = alternatives[0]
+        transcript_part = (
+            alt.get("transcript", "") if isinstance(alt, dict) else alt.transcript
+        )
+        full_text_parts.append(transcript_part)
+
+        words = (
+            alt.get("words", [])
+            if isinstance(alt, dict)
+            else (alt.words if hasattr(alt, "words") else [])
+        )
+
+        current_segment_words = []
+        current_segment_len = 0
+
+        for word_info in words:
+            word = (
+                word_info.get("word", "")
+                if isinstance(word_info, dict)
+                else word_info.word
+            )
+            start_raw = (
+                word_info.get("startOffset", "0s")
+                if isinstance(word_info, dict)
+                else (
+                    word_info.start_offset
+                    if hasattr(word_info, "start_offset")
+                    else "0s"
+                )
+            )
+            end_raw = (
+                word_info.get("endOffset", "0s")
+                if isinstance(word_info, dict)
+                else (
+                    word_info.end_offset if hasattr(word_info, "end_offset") else "0s"
+                )
+            )
+
+            start_sec = _parse_gcp_time(str(start_raw)) + current_offset_sec
+            end_sec = _parse_gcp_time(str(end_raw)) + current_offset_sec
+
+            current_segment_words.append((word, start_sec, end_sec))
+            current_segment_len += len(word) + 1
+
+            if (
+                word.endswith(".")
+                or word.endswith("?")
+                or word.endswith("!")
+                or current_segment_len > 80
+            ):
+                if current_segment_words:
+                    seg_text = " ".join([w[0] for w in current_segment_words])
+                    seg_start = _format_srt_time(current_segment_words[0][1])
+                    seg_end = _format_srt_time(current_segment_words[-1][2])
+
+                    srt_entries.append(
+                        f"{srt_counter}\n{seg_start} --> {seg_end}\n{seg_text}\n"
+                    )
+                    srt_counter += 1
+                    current_segment_words = []
+                    current_segment_len = 0
+
+        # Flush remaining
+        if current_segment_words:
+            seg_text = " ".join([w[0] for w in current_segment_words])
+            seg_start = _format_srt_time(current_segment_words[0][1])
+            seg_end = _format_srt_time(current_segment_words[-1][2])
+            srt_entries.append(
+                f"{srt_counter}\n{seg_start} --> {seg_end}\n{seg_text}\n"
+            )
+            srt_counter += 1
+
+    return " ".join(full_text_parts), srt_entries, srt_counter
+
+
 def _transcribe_gcp(
     model_name: str,
     audio_path: str,
@@ -444,13 +632,17 @@ def _transcribe_gcp(
     Requires 'YTD_GCS_BUCKET_NAME' env var for temporary storage.
     """
     try:
+        import static_ffmpeg
         from google.api_core.client_options import ClientOptions
         from google.cloud import speech_v2, storage
         from google.cloud.speech_v2.types import cloud_speech
+
+        static_ffmpeg.add_paths()
     except ImportError:
         return (
-            "Error: google-cloud-speech and google-cloud-storage are required "
-            "for GCP models. Install with `pip install '.[gcp]'`",
+            "Error: google-cloud-speech, google-cloud-storage, and "
+            "static-ffmpeg are required for GCP models. "
+            "Install with `pip install '.[gcp,video]'`",
             "",
             0,
             0,
@@ -467,13 +659,10 @@ def _transcribe_gcp(
             0,
         )
 
-    # Extract model ID (e.g. gcp-chirp3 -> chirp_3 or just pass as is if mapped?)
     actual_model = model_name.replace("gcp-", "").replace("-", "_")
     if actual_model == "chirp3":
-        actual_model = "chirp_3"  # specific fix based on user example
+        actual_model = "chirp_3"
 
-    # Determine location
-    # Chirp models are often regional (e.g. us-central1), not global.
     location = os.environ.get("GOOGLE_CLOUD_LOCATION")
     if not location:
         if "chirp" in actual_model:
@@ -481,58 +670,200 @@ def _transcribe_gcp(
         else:
             location = "global"
 
-    # Check if we can use inline output (video < 60 mins)
-    use_inline = False
-    if duration_seconds is not None and duration_seconds < 3600:
-        use_inline = True
+    CHUNK_SIZE_SEC = 900  # 15 minutes
+    should_chunk = duration_seconds and duration_seconds > 1800
+
+    storage_client = storage.Client(project=project_id)
+    bucket = storage_client.bucket(bucket_name)
+
+    client_options = None
+    if location != "global":
+        api_endpoint = f"{location}-speech.googleapis.com"
+        client_options = ClientOptions(api_endpoint=api_endpoint)
+
+    client = speech_v2.SpeechClient(client_options=client_options)
+
+    if language == "en":
+        language = "en-US"
+
+    decoding_config = cloud_speech.RecognitionConfig(
+        auto_decoding_config=cloud_speech.AutoDetectDecodingConfig(),
+        language_codes=[language],
+        model=actual_model,
+    )
+    decoding_config.features = speech_v2.RecognitionFeatures(
+        enable_word_time_offsets=True,
+        enable_automatic_punctuation=True,
+    )
+
+    full_transcript_parts = []
+    full_srt_entries = []
+    total_in_tok = 0
+    total_out_tok = 0
+
+    if should_chunk:
         print(
-            f"Video is under 60 minutes ({duration_seconds}s), using inline response."
+            f"Audio is long ({duration_seconds}s). "
+            "Chunking and processing in parallel..."
+        )
+        assert duration_seconds is not None
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            num_chunks = int((duration_seconds + CHUNK_SIZE_SEC - 1) // CHUNK_SIZE_SEC)
+            chunk_files = []
+
+            # 1. Create Chunks (locally)
+            for i in range(num_chunks):
+                start_offset = i * CHUNK_SIZE_SEC
+                # Use .flac for better quality/reliability with STT
+                chunk_path = os.path.join(temp_dir, f"chunk_{i:03d}.flac")
+
+                cmd = [
+                    "ffmpeg",
+                    "-ss",
+                    str(start_offset),
+                    "-t",
+                    str(CHUNK_SIZE_SEC),
+                    "-i",
+                    audio_path,
+                    "-c:a",
+                    "flac",
+                    "-ac",
+                    "1",
+                    "-ar",
+                    "44100",
+                    "-loglevel",
+                    "error",
+                    chunk_path,
+                ]
+                try:
+                    subprocess.run(cmd, check=True)
+                    chunk_files.append((i, chunk_path, start_offset))
+                except subprocess.CalledProcessError as e:
+                    print(f"Warning: Failed to create chunk {i}: {e}")
+
+            print(
+                f"Created {len(chunk_files)} chunks. "
+                "Uploading and submitting batches..."
+            )
+
+            # 2. Upload Chunks and Prepare Batches
+            # Max files per request is typically limited (e.g. 5 or 15).
+            # We'll batch requests to be safe.
+            FILES_PER_BATCH = 5
+
+            # Map gcs_uri -> (chunk_index, chunk_offset, blob_object)
+            chunk_map = {}
+
+            for i, local_path, offset in chunk_files:
+                blob_name = f"temp/ytd_chunk_{uuid.uuid4()}.flac"
+                blob = bucket.blob(blob_name)
+                blob.upload_from_filename(local_path)
+                gcs_uri = f"gs://{bucket_name}/{blob_name}"
+                chunk_map[gcs_uri] = (i, offset, blob)
+
+            # 3. Submit Batches
+            sorted_uris = sorted(chunk_map.keys(), key=lambda k: chunk_map[k][0])
+            all_results_map = {}  # uri -> (text, srt_entries)
+
+            # Process in batches
+            for b_idx in range(0, len(sorted_uris), FILES_PER_BATCH):
+                batch_uris = sorted_uris[b_idx : b_idx + FILES_PER_BATCH]
+                print(
+                    f"Submitting batch {b_idx // FILES_PER_BATCH + 1} "
+                    f"({len(batch_uris)} files)..."
+                )
+
+                batch_files_metadata = [
+                    speech_v2.BatchRecognizeFileMetadata(uri=u) for u in batch_uris
+                ]
+
+                # Use GCS output config for reliability
+                output_bucket_uri = f"gs://{bucket_name}/transcripts/"
+                recognition_output_config = speech_v2.RecognitionOutputConfig(
+                    gcs_output_config=speech_v2.GcsOutputConfig(uri=output_bucket_uri),
+                )
+
+                request = speech_v2.BatchRecognizeRequest(
+                    recognizer=f"projects/{project_id}/locations/{location}/recognizers/_",
+                    config=decoding_config,
+                    files=batch_files_metadata,
+                    recognition_output_config=recognition_output_config,
+                )
+
+                operation = client.batch_recognize(request=request)
+
+                # Wait for this batch to complete
+                # (We could parallelize batches too, but simple batching is usually
+                # fast enough)
+                print("Waiting for batch completion...")
+                response = operation.result()
+
+                # Process results for this batch
+                for uri, result in response.results.items():
+                    if uri in chunk_map:
+                        idx, offset, _ = chunk_map[uri]
+                        all_results_map[uri] = result
+
+            # 4. Stitch Results
+            # Sort by chunk index to ensure order
+            sorted_results = sorted(
+                all_results_map.items(), key=lambda item: chunk_map[item[0]][0]
+            )
+
+            srt_counter = 1
+            for uri, result in sorted_results:
+                idx, offset, blob = chunk_map[uri]
+
+                t_text, t_srt_entries, next_ctr = _process_gcp_batch_result(
+                    result, storage_client, offset, srt_counter
+                )
+
+                # Check for usage metadata in batch result if available
+                # Speech V2 BatchRecognizeResponse metadata is at the top level usually
+                # but can be per-file in some versions/configs.
+                # For now we'll rely on the fact that if it's there, we should sum it.
+                if hasattr(result, "metadata") and result.metadata:
+                    total_in_tok += getattr(result.metadata, "prompt_token_count", 0)
+                    total_out_tok += getattr(
+                        result.metadata, "candidates_token_count", 0
+                    )
+
+                if t_text:
+                    full_transcript_parts.append(t_text)
+                if t_srt_entries:
+                    full_srt_entries.extend(t_srt_entries)
+
+                srt_counter = next_ctr
+
+                # Cleanup Input Blob
+                try:
+                    blob.delete()
+                except Exception:
+                    pass
+
+        return (
+            " ".join(full_transcript_parts),
+            "\n".join(full_srt_entries),
+            total_in_tok,
+            total_out_tok,
         )
 
-    # 1. Upload to GCS
-    try:
-        storage_client = storage.Client(project=project_id)
-        bucket = storage_client.bucket(bucket_name)
+    else:
+        # Non-chunked (single file)
+        use_inline = False
+        if duration_seconds is not None and duration_seconds < 3600:
+            use_inline = True
+
         blob_name = f"temp/ytd_audio_{uuid.uuid4()}.m4a"
         blob = bucket.blob(blob_name)
 
-        print(
-            f"Uploading audio to gs://{bucket_name}/{blob_name}...",
-            flush=True,
-        )
-        blob.upload_from_filename(audio_path)
-        print(f"Uploaded audio to gs://{bucket_name}/{blob_name}")
+        try:
+            blob.upload_from_filename(audio_path)
+        except Exception as e:
+            return f"Error uploading to GCS: {e}", "", 0, 0
+
         gcs_uri = f"gs://{bucket_name}/{blob_name}"
-    except Exception as e:
-        return f"Error uploading to GCS: {e}", "", 0, 0
-
-    transcript_text = ""
-
-    try:
-        # 2. Transcribe
-        client_options = None
-        if location != "global":
-            api_endpoint = f"{location}-speech.googleapis.com"
-            client_options = ClientOptions(api_endpoint=api_endpoint)
-
-        # Instantiates a client
-        client = speech_v2.SpeechClient(client_options=client_options)
-
-        # Map 'en' to 'en-US' for GCP V2 if needed
-        if language == "en":
-            language = "en-US"
-
-        config = cloud_speech.RecognitionConfig(
-            auto_decoding_config=cloud_speech.AutoDetectDecodingConfig(),
-            language_codes=[language],
-            model=actual_model,
-        )
-
-        # Always enable word time offsets since we return both text and SRT
-        config.features = speech_v2.RecognitionFeatures(
-            enable_word_time_offsets=True,
-            enable_automatic_punctuation=True,
-        )
 
         file_metadata = speech_v2.BatchRecognizeFileMetadata(uri=gcs_uri)
 
@@ -541,265 +872,40 @@ def _transcribe_gcp(
                 inline_response_config=speech_v2.InlineOutputConfig(),
             )
         else:
-            output_bucket_uri = gcs_uri.rsplit("/", 1)[0] + "/transcripts/"
+            output_bucket_uri = f"gs://{bucket_name}/transcripts/"
             recognition_output_config = speech_v2.RecognitionOutputConfig(
                 gcs_output_config=speech_v2.GcsOutputConfig(uri=output_bucket_uri),
             )
 
         request = speech_v2.BatchRecognizeRequest(
             recognizer=f"projects/{project_id}/locations/{location}/recognizers/_",
-            config=config,
+            config=decoding_config,
             files=[file_metadata],
             recognition_output_config=recognition_output_config,
         )
 
-        print(f"Starting transcription with model: {model_name}...")
+        print(f"Starting transcription for {gcs_uri}...", flush=True)
         operation = client.batch_recognize(request=request)
-
-        # Poll logic
-        start_time = time.time()
-        while not operation.done():
-            elapsed = int(time.time() - start_time)
-            print(
-                f"Transcript processing... ({elapsed}s)   ",
-                end="\r",
-                flush=True,
-            )
-            time.sleep(5)
-        print(
-            f"Transcript processing... ({int(time.time() - start_time)}s) Done.",
-            flush=True,
-        )
-
         response = operation.result()
 
-        # Helper for SRT formatting
-        def format_time(seconds_str):
-            if not seconds_str:
-                return "00:00:00,000"
-            total_seconds = float(seconds_str.replace("s", ""))
-            hours = int(total_seconds // 3600)
-            minutes = int((total_seconds % 3600) // 60)
-            seconds = int(total_seconds % 60)
-            milliseconds = int((total_seconds * 1000) % 1000)
-            return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
+        t_text = ""
+        t_srt = ""
 
-        # Helper to process results (list of dicts or objects from alternatives)
-        def process_alternatives(
-            results_list,
-        ) -> Tuple[str, List[str]]:
-            full_text_parts = []
-            srt_entries = []
-            srt_counter = 1
-
-            for result in results_list:
-                alternatives = (
-                    result.get("alternatives", [])
-                    if isinstance(result, dict)
-                    else (
-                        result.alternatives if hasattr(result, "alternatives") else []
-                    )
-                )
-                if not alternatives:
-                    continue
-                # Handle both dict and object
-                alt = alternatives[0]
-                transcript_part = (
-                    alt.get("transcript", "")
-                    if isinstance(alt, dict)
-                    else alt.transcript
-                )
-                full_text_parts.append(transcript_part)
-
-                # Always process words for SRT generation
-                words = (
-                    alt.get("words", [])
-                    if isinstance(alt, dict)
-                    else (alt.words if hasattr(alt, "words") else [])
-                )
-                current_segment_words = []
-                current_segment_len = 0
-
-                for word_info in words:
-                    word = (
-                        word_info.get("word", "")
-                        if isinstance(word_info, dict)
-                        else word_info.word
-                    )
-                    start = (
-                        word_info.get("startOffset", "0s")
-                        if isinstance(word_info, dict)
-                        else (
-                            word_info.start_offset
-                            if hasattr(word_info, "start_offset")
-                            else "0s"
-                        )
-                    )
-                    # Handle Duration object or string with 's' suffix
-                    start = str(start)
-
-                    end = (
-                        word_info.get("endOffset", "0s")
-                        if isinstance(word_info, dict)
-                        else (
-                            word_info.end_offset
-                            if hasattr(word_info, "end_offset")
-                            else "0s"
-                        )
-                    )
-                    end = str(end)
-
-                    current_segment_words.append((word, start, end))
-                    current_segment_len += len(word) + 1
-
-                    if (
-                        word.endswith(".")
-                        or word.endswith("?")
-                        or word.endswith("!")
-                        or current_segment_len > 80
-                    ):
-                        if current_segment_words:
-                            seg_text = " ".join([w[0] for w in current_segment_words])
-                            seg_start = format_time(current_segment_words[0][1])
-                            seg_end = format_time(current_segment_words[-1][2])
-
-                            srt_entries.append(
-                                f"{srt_counter}\n"
-                                f"{seg_start} --> {seg_end}\n"
-                                f"{seg_text}\n"
-                            )
-                            srt_counter += 1
-                            current_segment_words = []
-                            current_segment_len = 0
-
-                # Flush remaining
-                if current_segment_words:
-                    seg_text = " ".join([w[0] for w in current_segment_words])
-                    seg_start = format_time(current_segment_words[0][1])
-                    seg_end = format_time(current_segment_words[-1][2])
-                    srt_entries.append(
-                        f"{srt_counter}\n{seg_start} --> {seg_end}\n{seg_text}\n"
-                    )
-                    srt_counter += 1
-
-            return " ".join(full_text_parts), srt_entries
-
-        if use_inline:
-            # Inline results are in response.results[gcs_uri].inline_result.transcript
-            # response.results is a Map<str, BatchRecognizeFileResult>
-            if gcs_uri in response.results:
-                batch_result = response.results[gcs_uri]
-                if batch_result.inline_result and batch_result.inline_result.transcript:
-                    # This is a BatchRecognizeResults object (protobuf)
-                    # results field inside transcript object
-                    results_list = batch_result.inline_result.transcript.results
-                    transcript_text, srt_entries = process_alternatives(results_list)
-                    srt_content = "\n".join(srt_entries)
-                    return transcript_text, srt_content, 0, 0
-                else:
-                    return f"Error: No inline result found for {gcs_uri}", "", 0, 0
-            else:
-                return f"Error: No result found for {gcs_uri}", "", 0, 0
-
-        # 3. Process GCS Output (Legacy/Long Videos)
-        # GCP V2 BatchRecognize with GcsOutputConfig writes a JSON file.
-        # We need to find the output URI from the response.
         if gcs_uri in response.results:
-            batch_result = response.results[gcs_uri]
+            result = response.results[gcs_uri]
+            t_text, t_srt_entries, _ = _process_gcp_batch_result(
+                result, storage_client, 0.0, 1
+            )
+            t_srt = "\n".join(t_srt_entries)
+        else:
+            t_text = f"Error: No result found for {gcs_uri}"
 
-            # Check for errors first
-            if batch_result.error and batch_result.error.code != 0:
-                error_msg = batch_result.error.message or "Unknown error"
-                return (
-                    f"Error from Speech API: {error_msg} "
-                    f"(code: {batch_result.error.code})",
-                    "",
-                    0,
-                    0,
-                )
-
-            output_uri = batch_result.uri
-            if not output_uri:
-                return (
-                    f"Error: No output URI found in batch result for {gcs_uri}",
-                    "",
-                    0,
-                    0,
-                )
-            # Read the JSON from GCS with retries for eventual consistency
-            try:
-                # output_uri is like gs://bucket/temp/transcripts/ytd_audio_uuid_transcript_....json
-                bucket_name_out = output_uri.split("/")[2]
-                blob_name_out = "/".join(output_uri.split("/")[3:])
-                blob_out = storage_client.bucket(bucket_name_out).blob(blob_name_out)
-
-                print(f"Downloading transcript from {output_uri}...", flush=True)
-
-                # Increased retries and delay for GCS eventual consistency
-                max_retries = 10
-                retry_delay = 5
-                json_content = None
-                last_err = None
-
-                for attempt in range(max_retries):
-                    try:
-                        json_content = blob_out.download_as_text()
-                        break
-                    except Exception as e:
-                        last_err = e
-                        if attempt < max_retries - 1:
-                            wait_time = min(
-                                retry_delay * (2**attempt), 60
-                            )  # exponential backoff capped at 60s
-                            print(
-                                f"GCS download attempt {attempt + 1}/"
-                                f"{max_retries} failed: {e}. "
-                                f"Retrying in {wait_time}s..."
-                            )
-                            time.sleep(wait_time)
-                        else:
-                            print(
-                                f"GCS download attempt {attempt + 1}/"
-                                f"{max_retries} failed: {e}. "
-                                "No more retries."
-                            )
-
-                if json_content is None:
-                    return (
-                        f"Error downloading transcript from GCS: {last_err}",
-                        "",
-                        0,
-                        0,
-                    )
-
-                print("Processing transcript JSON...", flush=True)
-                transcript_json = json.loads(json_content)
-
-                results_list = transcript_json.get("results", [])
-                transcript_text, srt_entries = process_alternatives(results_list)
-
-                # Cleanup the output JSON
-                try:
-                    blob_out.delete()
-                except Exception:
-                    pass
-
-                srt_content = "\n".join(srt_entries)
-                return transcript_text, srt_content, 0, 0
-
-            except Exception as e:
-                return f"Error parsing GCS transcript JSON: {e}", "", 0, 0
-
-    except Exception as e:
-        return f"Error during transcription: {e}", "", 0, 0
-    finally:
-        # 3. Cleanup GCS
         try:
             blob.delete()
         except Exception:
             pass
 
-    return transcript_text, "", 0, 0
+        return t_text, t_srt, 0, 0
 
 
 def generate_summary(

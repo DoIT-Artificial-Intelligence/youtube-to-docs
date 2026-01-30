@@ -20,6 +20,7 @@ from youtube_transcript_api import (
 def extract_audio(
     video_id: str,
     output_dir: str,
+    ext: str = "m4a",
 ) -> Optional[str]:
     """Extracts audio from a YouTube video using yt-dlp."""
     try:
@@ -38,22 +39,33 @@ def extract_audio(
     os.makedirs(output_dir, exist_ok=True)
 
     ydl_opts: Dict[str, Any] = {
-        "format": "bestaudio[ext=m4a]",
+        "format": f"bestaudio[ext={ext}]/bestaudio",
         "outtmpl": os.path.join(output_dir, "%(id)s.%(ext)s"),
         "quiet": True,
         "no_warnings": True,
+        "postprocessors": [
+            {
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": ext,
+                "preferredquality": "192",
+            }
+        ],
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             if info:
-                # The filename returned by prepare_filename should have the
-                # correct extension
+                # The filename returned by prepare_filename might not reflect
+                # post-processing
+                # So we construct it manually based on expectation
                 filename = ydl.prepare_filename(info)
-                # Ensure .m4a extension
                 base, _ = os.path.splitext(filename)
-                return os.path.abspath(f"{base}.m4a")
+                final_path = os.path.abspath(f"{base}.{ext}")
+                if os.path.exists(final_path):
+                    return final_path
+                # Fallback if yt-dlp didn't rename it as expected (rare)
+                return os.path.abspath(filename)
     except Exception as e:
         print(f"Error extracting audio for {video_id}: {e}")
     return None
