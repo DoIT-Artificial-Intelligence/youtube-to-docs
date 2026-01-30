@@ -192,7 +192,9 @@ class GoogleDriveStorage(Storage):
                 try:
                     creds.refresh(Request())
                 except RefreshError as e:
-                    rprint(f"[yellow]Warning: Could not refresh Google token: {e}[/yellow]")
+                    rprint(
+                        f"[yellow]Warning: Could not refresh Google token: {e}[/yellow]"
+                    )
                     rprint("[cyan]Triggering new authentication flow...[/cyan]")
                     creds = None
 
