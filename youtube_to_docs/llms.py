@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import time
@@ -453,6 +454,7 @@ def _transcribe_gcp(
         blob = bucket.blob(blob_name)
 
         blob.upload_from_filename(audio_path)
+        print(f"Uploaded audio to gs://{bucket_name}/{blob_name}")
         gcs_uri = f"gs://{bucket_name}/{blob_name}"
     except Exception as e:
         return f"Error uploading to GCS: {e}", 0, 0
@@ -506,9 +508,12 @@ def _transcribe_gcp(
         operation = client.batch_recognize(request=request)
 
         # Poll logic
+        start_time = time.time()
         while not operation.done():
-            print("Transcript processing...", end="\r")
+            elapsed = int(time.time() - start_time)
+            print(f"Transcript processing... ({elapsed}s)", end="\r")
             time.sleep(5)
+        print(f"Transcript processing... ({int(time.time() - start_time)}s) Done.")
 
         response = operation.result()
 
@@ -520,16 +525,36 @@ def _transcribe_gcp(
             output_uri = batch_result.uri
             if not output_uri:
                 return f"Error: No output URI found in batch result for {gcs_uri}", 0, 0
-
-            # Read the JSON from GCS
+            # Read the JSON from GCS with retries for eventual consistency
             try:
                 # output_uri is like gs://bucket/temp/transcripts/ytd_audio_uuid_transcript_....json
-                import json
-
                 bucket_name_out = output_uri.split("/")[2]
                 blob_name_out = "/".join(output_uri.split("/")[3:])
                 blob_out = storage_client.bucket(bucket_name_out).blob(blob_name_out)
-                json_content = blob_out.download_as_text()
+
+                print(f"Downloading transcript from {output_uri}...")
+
+                max_retries = 3
+                retry_delay = 2
+                json_content = None
+                last_err = None
+
+                for attempt in range(max_retries):
+                    try:
+                        json_content = blob_out.download_as_text()
+                        break
+                    except Exception as e:
+                        last_err = e
+                        if attempt < max_retries - 1:
+                            print(
+                                f"GCS download attempt {attempt + 1} failed: {e}. "
+                                f"Retrying in {retry_delay}s..."
+                            )
+                            time.sleep(retry_delay)
+
+                if json_content is None:
+                    return f"Error downloading transcript from GCS: {last_err}", 0, 0
+
                 transcript_json = json.loads(json_content)
 
                 # Full text accumulator

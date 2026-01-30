@@ -17,7 +17,10 @@ from youtube_transcript_api import (
 )
 
 
-def extract_audio(video_id: str, output_dir: str) -> Optional[str]:
+def extract_audio(
+    video_id: str,
+    output_dir: str,
+) -> Optional[str]:
     """Extracts audio from a YouTube video using yt-dlp."""
     try:
         import static_ffmpeg
@@ -34,7 +37,7 @@ def extract_audio(video_id: str, output_dir: str) -> Optional[str]:
     url = f"https://www.youtube.com/watch?v={video_id}"
     os.makedirs(output_dir, exist_ok=True)
 
-    ydl_opts = {
+    ydl_opts: Dict[str, Any] = {
         "format": "bestaudio[ext=m4a]",
         "outtmpl": os.path.join(output_dir, "%(id)s.%(ext)s"),
         "quiet": True,

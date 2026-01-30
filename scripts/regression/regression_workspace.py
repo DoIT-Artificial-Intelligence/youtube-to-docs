@@ -1,3 +1,8 @@
+"""
+Run with:
+uv run --extra workspace --extra gcp python scripts/regression/regression_workspace.py
+"""
+
 import sys
 
 from regression_core import (

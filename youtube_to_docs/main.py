@@ -444,7 +444,10 @@ def main(args_list: list[str] | None = None) -> None:
             else:
                 # Need to extract
                 rprint(f"Extracting audio for {transcript_arg}...")
-                local_audio_path = extract_audio(video_id, local_audio_dir)
+                local_audio_path = extract_audio(
+                    video_id,
+                    local_audio_dir,
+                )
                 if local_audio_path:
                     # Upload to storage
                     target_audio_path = os.path.join(audio_dir, f"{video_id}.m4a")

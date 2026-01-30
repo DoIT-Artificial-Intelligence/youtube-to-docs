@@ -1,3 +1,8 @@
+"""
+Run with:
+uv run --extra gcp --extra aws python scripts/regression/regression_gcp_tts.py
+"""
+
 from regression_core import (
     clear_artifacts,
     run_regression,
@@ -11,7 +16,7 @@ def main():
     # 1. Clear Artifacts
     clear_artifacts()
 
-    # 2. Run Regression with Gemini Pro model and gcp-chirp3 TTS
+    # Run Regression with Gemini Pro model and gcp-chirp3 TTS
     model = "gemini-3-pro-preview"
     transcript_model = "youtube"  # Use YouTube transcripts
     infographic_model = None  # No infographic for this test

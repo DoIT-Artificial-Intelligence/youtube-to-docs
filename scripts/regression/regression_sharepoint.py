@@ -1,3 +1,8 @@
+"""
+Run with:
+uv run --extra m365 --extra azure python scripts/regression/regression_sharepoint.py
+"""
+
 import sys
 
 from regression_core import (

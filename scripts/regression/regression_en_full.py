@@ -1,3 +1,9 @@
+"""
+Run with:
+uv run --extra audio --extra video --extra gcp \\
+    python scripts/regression/regression_en_full.py
+"""
+
 import sys
 
 from regression_core import (

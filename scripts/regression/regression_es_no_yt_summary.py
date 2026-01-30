@@ -1,3 +1,8 @@
+"""
+Run with:
+uv run --extra gcp python scripts/regression/regression_es_no_yt_summary.py
+"""
+
 import sys
 
 from regression_core import (

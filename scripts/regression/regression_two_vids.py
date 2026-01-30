@@ -1,3 +1,8 @@
+"""
+Run with:
+uv run --extra gcp python scripts/regression/regression_two_vids.py
+"""
+
 import regression_core
 
 # Override the VIDEO_ID in the core module

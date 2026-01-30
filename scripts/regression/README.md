@@ -71,15 +71,11 @@ uv run --extra gcp python scripts/regression/regression_two_vids_verbose.py
 
 or
 
-```bash
-# GCP STT (Chirp) tests
-uv run --extra gcp python scripts/regression/regression_gcp_stt.py
-```
+### Scripted Regressions
 
-or
+These are standalone Python scripts that test specific components or model families.
 
 ```bash
 # GCP TTS (Chirp3) with AWS Bedrock summarization
 uv run --extra gcp --extra aws python scripts/regression/regression_gcp_tts.py
 ```
-
