@@ -62,18 +62,35 @@ class TestGCPSTT(unittest.TestCase):
             mock_result = MagicMock()
             mock_op.result.return_value = mock_result
 
+            # Mock Storage for transcript JSON
+            mock_storage_client = MagicMock()
+            mock_storage_module.Client.return_value = mock_storage_client
+            mock_bucket = MagicMock()
+            mock_storage_client.bucket.return_value = mock_bucket
+            mock_blob = MagicMock()
+            mock_bucket.blob.return_value = mock_blob
+
             # Mock Batch Result
             mock_batch_result = MagicMock()
-            # Mock transcript structure
-            mock_transcript_obj = MagicMock()
-            mock_batch_result.transcript = mock_transcript_obj
+            mock_batch_result.uri = (
+                "gs://test-bucket/temp/transcripts/ytd_audio_1234_transcript.json"
+            )
 
-            mock_res_item = MagicMock()
-            mock_transcript_obj.results = [mock_res_item]
-
-            mock_alt = MagicMock()
-            mock_res_item.alternatives = [mock_alt]
-            mock_alt.transcript = "Test Transcript"
+            # Setup transcript JSON content
+            mock_json_content = """
+            {
+              "results": [
+                {
+                  "alternatives": [
+                    {
+                      "transcript": "Test Transcript"
+                    }
+                  ]
+                }
+              ]
+            }
+            """
+            mock_blob.download_as_text.return_value = mock_json_content
 
             # Setup results dict with EXPECTED key
             mock_result.results = {

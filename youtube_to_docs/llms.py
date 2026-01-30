@@ -491,12 +491,14 @@ def _transcribe_gcp(
 
         file_metadata = speech_v2.BatchRecognizeFileMetadata(uri=gcs_uri)
 
+        output_bucket_uri = gcs_uri.rsplit("/", 1)[0] + "/transcripts/"
+
         request = speech_v2.BatchRecognizeRequest(
             recognizer=f"projects/{project_id}/locations/{location}/recognizers/_",
             config=config,
             files=[file_metadata],
             recognition_output_config=speech_v2.RecognitionOutputConfig(
-                inline_response_config=speech_v2.InlineOutputConfig(),
+                gcs_output_config=speech_v2.GcsOutputConfig(uri=output_bucket_uri),
             ),
         )
 
@@ -510,52 +512,75 @@ def _transcribe_gcp(
 
         response = operation.result()
 
+        # 3. Process GCS Output
+        # GCP V2 BatchRecognize with GcsOutputConfig writes a JSON file.
+        # We need to find the output URI from the response.
         if gcs_uri in response.results:
             batch_result = response.results[gcs_uri]
-            if batch_result.transcript and batch_result.transcript.results:
-                results = batch_result.transcript.results
+            output_uri = batch_result.uri
+            if not output_uri:
+                return f"Error: No output URI found in batch result for {gcs_uri}", 0, 0
+
+            # Read the JSON from GCS
+            try:
+                # output_uri is like gs://bucket/temp/transcripts/ytd_audio_uuid_transcript_....json
+                import json
+
+                bucket_name_out = output_uri.split("/")[2]
+                blob_name_out = "/".join(output_uri.split("/")[3:])
+                blob_out = storage_client.bucket(bucket_name_out).blob(blob_name_out)
+                json_content = blob_out.download_as_text()
+                transcript_json = json.loads(json_content)
 
                 # Full text accumulator
                 full_text_parts = []
-
                 # SRT accumulator
                 srt_entries = []
                 srt_counter = 1
 
                 # Helper for SRT formatting
-                def format_time(timedelta_obj):
-                    total_seconds = timedelta_obj.total_seconds()
+                def format_time(seconds_str):
+                    if not seconds_str:
+                        return "00:00:00,000"
+                    total_seconds = float(seconds_str.replace("s", ""))
                     hours = int(total_seconds // 3600)
                     minutes = int((total_seconds % 3600) // 60)
                     seconds = int(total_seconds % 60)
                     milliseconds = int((total_seconds * 1000) % 1000)
                     return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
 
-                for result in results:
-                    alt = result.alternatives[0]
-                    full_text_parts.append(alt.transcript)
+                # The JSON structure for BatchRecognize V2 results is:
+                # { "results": [ { "alternatives": [ { "transcript": "...",
+                #   "words": [...] } ] } ] }
+                results = transcript_json.get("results", [])
 
-                    if srt and hasattr(alt, "words"):
-                        words = alt.words
+                for result in results:
+                    alternatives = result.get("alternatives", [])
+                    if not alternatives:
+                        continue
+                    alt = alternatives[0]
+                    transcript_part = alt.get("transcript", "")
+                    full_text_parts.append(transcript_part)
+
+                    if srt and "words" in alt:
+                        words = alt["words"]
                         current_segment_words = []
                         current_segment_len = 0
 
                         for word_info in words:
-                            word = word_info.word
-                            start = word_info.start_offset
-                            end = word_info.end_offset
+                            word = word_info.get("word", "")
+                            start = word_info.get("startOffset", "0s")
+                            end = word_info.get("endOffset", "0s")
 
                             current_segment_words.append((word, start, end))
                             current_segment_len += len(word) + 1
 
-                            # Break segment on punctuation or length
                             if (
                                 word.endswith(".")
                                 or word.endswith("?")
                                 or word.endswith("!")
                                 or current_segment_len > 80
                             ):
-                                # Flush segment
                                 if current_segment_words:
                                     seg_text = " ".join(
                                         [w[0] for w in current_segment_words]
@@ -586,19 +611,19 @@ def _transcribe_gcp(
 
                 transcript_text = " ".join(full_text_parts)
 
-                if srt:
-                    return "\n".join(srt_entries), 0, 0  # Return SRT string
+                # Cleanup the output JSON
+                try:
+                    blob_out.delete()
+                except Exception:
+                    pass
 
-            else:
-                # Check for errors
-                if batch_result.error:
-                    return (
-                        f"Error from BatchRecognize: {batch_result.error.message}",
-                        0,
-                        0,
-                    )
-        else:
-            return "Error: Result not found in response", 0, 0
+                if srt:
+                    return "\n".join(srt_entries), 0, 0
+
+                return transcript_text, 0, 0
+
+            except Exception as e:
+                return f"Error parsing GCS transcript JSON: {e}", 0, 0
 
     except Exception as e:
         return f"Error during transcription: {e}", 0, 0
