@@ -2064,7 +2064,7 @@ wheels = [
 
 [[package]]
 name = "youtube-to-docs"
-version = "0.0.61"
+version = "0.0.62"
 source = { editable = "." }
 dependencies = [
     { name = "google-api-python-client" },

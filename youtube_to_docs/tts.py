@@ -21,12 +21,66 @@ def wave_file(filename, pcm, channels=1, rate=24000, sample_width=2):
         wf.writeframes(pcm)
 
 
+def _chunk_text_by_bytes(text: str, max_bytes: int = 5000) -> List[str]:
+    """Helper to chunk text into pieces below the byte limit."""
+    if not text:
+        return []
+
+    text_bytes = text.encode("utf-8")
+    if len(text_bytes) <= max_bytes:
+        return [text]
+
+    chunks = []
+    # Split by sentences if possible
+    sentences = re.split(r"(?<=[.!?]) +", text)
+    current_chunk = ""
+
+    for s in sentences:
+        # If adding this sentence exceeds limit
+        if len((current_chunk + " " + s).encode("utf-8")) > max_bytes:
+            if current_chunk:
+                chunks.append(current_chunk.strip())
+                current_chunk = s
+            else:
+                # Sentence itself is too long, split by words
+                words = s.split(" ")
+                for w in words:
+                    if len((current_chunk + " " + w).encode("utf-8")) > max_bytes:
+                        if current_chunk:
+                            chunks.append(current_chunk.strip())
+                            current_chunk = w
+                        else:
+                            # Word too long (rare), split by bytes safely
+                            w_bytes = w.encode("utf-8")
+                            while len(w_bytes) > max_bytes:
+                                split_point = max_bytes
+                                while split_point > 0:
+                                    try:
+                                        part = w_bytes[:split_point].decode("utf-8")
+                                        break
+                                    except UnicodeDecodeError:
+                                        split_point -= 1
+                                chunks.append(part)
+                                w_bytes = w_bytes[len(part.encode("utf-8")) :]
+                            current_chunk = w_bytes.decode("utf-8")
+                    else:
+                        current_chunk = (current_chunk + " " + w).strip()
+        else:
+            current_chunk = (current_chunk + " " + s).strip()
+
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+
+    return chunks
+
+
 def generate_speech_gcp(
     text: str, voice_name: str, language_code: Optional[str] = None
 ) -> bytes:
     """
     Generates speech from text using Google Cloud Text-to-Speech API.
     Returns raw PCM audio bytes (LINEAR16 format, 24kHz, mono).
+    Handles text longer than 5000 bytes by chunking and concatenating results.
     """
     try:
         from google.cloud import texttospeech
@@ -39,8 +93,6 @@ def generate_speech_gcp(
 
     try:
         client = texttospeech.TextToSpeechClient()
-
-        input_text = texttospeech.SynthesisInput(text=text)
 
         # Build the voice name from language code and voice name
         # e.g., language_code="en-US", voice_name="Kore" -> "en-US-Chirp3-HD-Kore"
@@ -60,13 +112,35 @@ def generate_speech_gcp(
             sample_rate_hertz=24000,
         )
 
-        response = client.synthesize_speech(
-            input=input_text,
-            voice=voice,
-            audio_config=audio_config,
-        )
+        text_bytes = text.encode("utf-8")
+        if len(text_bytes) <= 5000:
+            input_text = texttospeech.SynthesisInput(text=text)
+            response = client.synthesize_speech(
+                input=input_text,
+                voice=voice,
+                audio_config=audio_config,
+            )
+            return response.audio_content
+        else:
+            # GCP TTS has a 5000 byte limit for synthesize_speech.
+            # We chunk the text and concatenate the PCM results.
+            rprint(
+                f"[yellow]Text is long ({len(text_bytes)} bytes). "
+                "Chunking for GCP TTS...[/yellow]"
+            )
+            chunks = _chunk_text_by_bytes(text, 4800)
+            all_audio = b""
+            for i, chunk in enumerate(chunks):
+                rprint(f"  Synthesizing chunk {i + 1}/{len(chunks)}...")
+                input_text = texttospeech.SynthesisInput(text=chunk)
+                response = client.synthesize_speech(
+                    input=input_text,
+                    voice=voice,
+                    audio_config=audio_config,
+                )
+                all_audio += response.audio_content
 
-        return response.audio_content
+            return all_audio
 
     except Exception as e:
         print(f"Error generating speech with GCP TTS: {e}")

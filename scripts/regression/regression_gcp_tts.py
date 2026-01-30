@@ -1,6 +1,6 @@
 """
 Run with:
-uv run --extra gcp --extra aws python scripts/regression/regression_gcp_tts.py
+uv run --extra all python scripts/regression/regression_gcp_tts.py
 """
 
 from regression_core import (
