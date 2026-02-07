@@ -842,11 +842,21 @@ def _transcribe_gcp(
                 except Exception:
                     pass
 
+        # Calculate duration-based cost (represented as pseudo-tokens for main.py)
+        # 1,000,000 pseudo-tokens = 1 minute of audio
+        # Split 50/50 between input and output
+        pseudo_in_tok = 0
+        pseudo_out_tok = 0
+        if duration_seconds:
+            total_pseudo = int(duration_seconds * (1_000_000 / 60))
+            pseudo_in_tok = total_pseudo // 2
+            pseudo_out_tok = total_pseudo - pseudo_in_tok
+
         return (
             " ".join(full_transcript_parts),
             "\n".join(full_srt_entries),
-            total_in_tok,
-            total_out_tok,
+            pseudo_in_tok,
+            pseudo_out_tok,
         )
 
     else:
@@ -905,7 +915,17 @@ def _transcribe_gcp(
         except Exception:
             pass
 
-        return t_text, t_srt, 0, 0
+        # Calculate duration-based cost (represented as pseudo-tokens for main.py)
+        # 1,000,000 pseudo-tokens = 1 minute of audio
+        # Split 50/50 between input and output
+        pseudo_in_tok = 0
+        pseudo_out_tok = 0
+        if duration_seconds:
+            total_pseudo = int(duration_seconds * (1_000_000 / 60))
+            pseudo_in_tok = total_pseudo // 2
+            pseudo_out_tok = total_pseudo - pseudo_in_tok
+
+        return t_text, t_srt, pseudo_in_tok, pseudo_out_tok
 
 
 def generate_summary(
