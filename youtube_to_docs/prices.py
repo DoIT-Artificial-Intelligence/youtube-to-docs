@@ -1,7 +1,7 @@
 # Taken from https://www.llm-prices.com/
 # Moving to here until PRs are review e.g. https://github.com/simonw/llm-prices/pull/48
 PRICES = {
-    "updated_at": "2025-12-29",
+    "updated_at": "2026-02-06",
     "prices": [
         {
             "id": "amazon-nova-micro",
@@ -164,6 +164,22 @@ PRICES = {
             "input_cached": None,
         },
         {
+            "id": "claude-opus-4.6",
+            "vendor": "anthropic",
+            "name": "Claude Opus 4.6 \u2264200k",
+            "input": 5,
+            "output": 25,
+            "input_cached": None,
+        },
+        {
+            "id": "claude-opus-4.6-200k",
+            "vendor": "anthropic",
+            "name": "Claude Opus 4.6 >200k",
+            "input": 10,
+            "output": 37.5,
+            "input_cached": None,
+        },
+        {
             "id": "gemini-2.5-pro-preview-03-25",
             "vendor": "google",
             "name": "Gemini 2.5 Pro Preview \u2264200k",
@@ -183,7 +199,7 @@ PRICES = {
             "id": "gemini-2.0-flash-lite",
             "vendor": "google",
             "name": "Gemini 2.0 Flash Lite",
-            "input": 0.075,
+            "input": 0.08,
             "output": 0.3,
             "input_cached": None,
         },
@@ -308,6 +324,30 @@ PRICES = {
             "input_cached": None,
         },
         {
+            "id": "gemini-2.5-flash-thinking",
+            "vendor": "google",
+            "name": "Gemini 2.5 Flash Thinking",
+            "input": 0.3,
+            "output": 2.5,
+            "input_cached": None,
+        },
+        {
+            "id": "gemini-2.5-flash-lite-thinking",
+            "vendor": "google",
+            "name": "Gemini 2.5 Flash-Lite Thinking",
+            "input": 0.1,
+            "output": 0.4,
+            "input_cached": None,
+        },
+        {
+            "id": "gemini-3-flash-preview-thinking",
+            "vendor": "google",
+            "name": "Gemini 3 Flash Preview Thinking",
+            "input": 0.5,
+            "output": 3.0,
+            "input_cached": None,
+        },
+        {
             "id": "gemini-2.5-flash-preview-tts",
             "vendor": "google",
             "name": "Gemini 2.5 Flash Preview TTS",
@@ -415,9 +455,33 @@ PRICES = {
             "id": "o3",
             "vendor": "openai",
             "name": "o3",
-            "input": 10,
-            "output": 40,
+            "input": 2,
+            "output": 8,
             "input_cached": 0.5,
+        },
+        {
+            "id": "gpt-5.3-codex",
+            "vendor": "openai",
+            "name": "GPT-5.3 Codex",
+            "input": 1.25,
+            "output": 10.0,
+            "input_cached": None,
+        },
+        {
+            "id": "codex-mini-latest",
+            "vendor": "openai",
+            "name": "Codex Mini Latest",
+            "input": 1.5,
+            "output": 6.0,
+            "input_cached": None,
+        },
+        {
+            "id": "gpt-5.3",
+            "vendor": "openai",
+            "name": "GPT-5.3 (Preview)",
+            "input": 1.5,
+            "output": 7.5,
+            "input_cached": None,
         },
         {
             "id": "o4-mini",
