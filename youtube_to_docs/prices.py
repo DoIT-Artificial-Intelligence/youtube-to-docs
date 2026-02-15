@@ -622,7 +622,7 @@ PRICES = {
         {
             "id": "chirp_3",
             "vendor": "google",
-            "name": "Chirp 3 (STT)*",
+            "name": "GCP Chirp 3 (STT)*",
             # $0.016 per minute ~ $0.96 per hour.
             # 1M tokens ≈ 5000 minutes => $80.00
             # Splitting cost 50/50 between input and output tokens for comparison.
@@ -639,6 +639,17 @@ PRICES = {
             # Splitting cost 50/50 between input and output tokens for comparison.
             "input": 32.0,
             "output": 32.0,
+            "input_cached": None,
+        },
+        {
+            "id": "aws-transcribe",
+            "vendor": "amazon",
+            "name": "AWS Transcribe*",
+            # $0.024 per minute => $1.44 per hour.
+            # 1M tokens ≈ 5000 minutes => $120.00
+            # Splitting cost 50/50 between input and output tokens for comparison.
+            "input": 60.0,
+            "output": 60.0,
             "input_cached": None,
         },
         {

@@ -8,27 +8,34 @@ Compare the pricing of various Large Language Models. Prices are shown in USD pe
 >
 > - **Audio/Character Pricing**: Models priced by minute or character are converted to "per 1M tokens" assuming ~4 chars/token or ~200 tokens/minute. The estimated cost is split 50/50 between input and output for comparison.
 
+<input type="text" id="pricingSearch" placeholder="🔍 Search models or vendors..." style="width: 100%; padding: 12px 16px; margin-bottom: 24px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; box-sizing: border-box;">
+
 <div class="pricing-container">
-    <canvas id="pricingChart" style="width: 100%; height: 400px; margin-bottom: 30px;"></canvas>
-    
-    <input type="text" id="pricingSearch" placeholder="Search models or vendors..." style="width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px;">
-    
+    <div style="width: 100%; height: 450px; margin-bottom: 8px; position: relative;">
+        <canvas id="pricingChart"></canvas>
+        <button id="resetZoom" onclick="if(chartInstance)chartInstance.resetZoom()" style="position:absolute;top:8px;right:8px;padding:4px 12px;font-size:12px;cursor:pointer;border:1px solid #ccc;border-radius:4px;background:#fff;color:#666;">Reset Zoom</button>
+    </div>
+    <div id="chartLegend"></div>
+
     <table id="pricingTable" style="width: 100%; border-collapse: collapse;">
         <thead>
             <tr style="background-color: var(--md-primary-fg-color); color: var(--md-primary-bg-color);">
-                <th onclick="sortTable(0)" style="cursor: pointer; padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Name</th>
-                <th onclick="sortTable(1)" style="cursor: pointer; padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Vendor</th>
-                <th onclick="sortTable(2)" style="cursor: pointer; padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Input ($/1M)</th>
-                <th onclick="sortTable(3)" style="cursor: pointer; padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Output ($/1M)</th>
+                <th onclick="sortTable(0)" style="cursor: pointer; padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Name ⇅</th>
+                <th onclick="sortTable(1)" style="cursor: pointer; padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Vendor ⇅</th>
+                <th onclick="sortTable(2)" style="cursor: pointer; padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Input ($/1M) ⇅</th>
+                <th onclick="sortTable(3)" style="cursor: pointer; padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Output ($/1M) ⇅</th>
             </tr>
         </thead>
         <tbody id="pricingBody">
             <!-- Data will be populated by JS -->
         </tbody>
     </table>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
 <script>
 const pricingData = {
     "updated_at": "2026-02-06",
@@ -110,11 +117,15 @@ const pricingData = {
         {"id": "imagen-4-ultra", "vendor": "google", "name": "Imagen 4 Ultra*", "input": 30.0, "output": 30.0},
         {"id": "imagen-4.0-ultra-generate-001", "vendor": "google", "name": "Imagen 4.0 Ultra Generate 001*", "input": 30.0, "output": 30.0},
         {"id": "imagen-4.0-fast-generate-001", "vendor": "google", "name": "Imagen 4.0 Fast Generate 001*", "input": 10.0, "output": 10.0},
-        {"id": "chirp_3", "vendor": "google", "name": "Chirp 3 (STT)*", "input": 40.0, "output": 40.0},
+        {"id": "chirp_3", "vendor": "google", "name": "GCP Chirp 3 (STT)*", "input": 40.0, "output": 40.0},
         {"id": "aws-polly", "vendor": "amazon", "name": "AWS Polly*", "input": 32.0, "output": 32.0},
+        {"id": "aws-transcribe", "vendor": "amazon", "name": "AWS Transcribe*", "input": 60.0, "output": 60.0},
         {"id": "gcp-chirp3-tts", "vendor": "google", "name": "GCP Chirp 3 (TTS)*", "input": 32.0, "output": 32.0}
     ]
 };
+
+// Track the currently displayed (filtered + sorted) data
+let currentData = [...pricingData.prices];
 
 function populateTable(data) {
     const body = document.getElementById('pricingBody');
@@ -131,36 +142,49 @@ function populateTable(data) {
     });
 }
 
-function filterTable() {
+function getModelType(item) {
+    const n = item.name.toLowerCase();
+    if (n.includes('image') || n.includes('canvas') || n.includes('imagen')) return 'image';
+    if (n.includes('tts') || n.includes('polly')) return 'speech';
+    if (n.includes('stt') || n.includes('transcribe')) return 'transcription';
+    return 'text';
+}
+
+function getFilteredData() {
     const searchTerm = document.getElementById('pricingSearch').value.toLowerCase();
-    const filtered = pricingData.prices.filter(item => 
-        item.name.toLowerCase().includes(searchTerm) || 
+    return pricingData.prices.filter(item =>
+        item.name.toLowerCase().includes(searchTerm) ||
         item.vendor.toLowerCase().includes(searchTerm) ||
-        item.id.toLowerCase().includes(searchTerm)
+        item.id.toLowerCase().includes(searchTerm) ||
+        getModelType(item).includes(searchTerm)
     );
-    populateTable(filtered);
-    updateChart(filtered);
+}
+
+function filterTable() {
+    currentData = getFilteredData();
+    populateTable(currentData);
+    renderChart(currentData);
 }
 
 let sortOrder = [1, 1, 1, 1];
 function sortTable(columnIndex) {
-    const headerRow = document.querySelector('#pricingTable thead tr');
     const propertyMap = ['name', 'vendor', 'input', 'output'];
     const property = propertyMap[columnIndex];
-    
-    pricingData.prices.sort((a, b) => {
+
+    currentData.sort((a, b) => {
         let valA = a[property];
         let valB = b[property];
-        
+
         if (typeof valA === 'string') {
             return valA.localeCompare(valB) * sortOrder[columnIndex];
         } else {
             return (valA - valB) * sortOrder[columnIndex];
         }
     });
-    
+
     sortOrder[columnIndex] *= -1;
-    filterTable(); // Re-render table
+    populateTable(currentData);
+    renderChart(currentData);
 }
 
 // Chart.js Visualization
@@ -168,24 +192,25 @@ let chartInstance = null;
 
 function renderChart(data) {
     const ctx = document.getElementById('pricingChart').getContext('2d');
-    
-    // Prepare data for scatter plot
+
     // Shapes: Google=Circle, AWS=Triangle, OpenAI=Rect, Anthropic=Diamond
     // Colors: Text=Blue, Image=Red, Transcription=Green, Speech=Purple
-    
-    const datasets = data.map(item => {
-        let pointStyle = 'circle';
-        if (item.vendor === 'amazon') pointStyle = 'triangle';
-        else if (item.vendor === 'openai') pointStyle = 'rect';
-        else if (item.vendor === 'anthropic') pointStyle = 'rectRot'; // Diamond-ish
 
-        let color = '#2196F3'; // Blue (Text default)
+    const datasets = data.map(item => {
+        // Color by vendor
+        let color = '#4285F4'; // Google blue
+        if (item.vendor === 'amazon') color = '#FF9900'; // Amazon orange
+        else if (item.vendor === 'openai') color = '#10A37F'; // OpenAI green
+        else if (item.vendor === 'anthropic') color = '#D97706'; // Anthropic amber
+
+        // Shape by type
+        let pointStyle = 'circle'; // Text default
         if (item.name.toLowerCase().includes('image') || item.name.toLowerCase().includes('canvas') || item.name.toLowerCase().includes('imagen')) {
-            color = '#F44336'; // Red
-        } else if (item.name.toLowerCase().includes('stt') || item.name.toLowerCase().includes('chirp')) {
-            color = '#4CAF50'; // Green
+            pointStyle = 'star';
         } else if (item.name.toLowerCase().includes('tts') || item.name.toLowerCase().includes('polly')) {
-            color = '#9C27B0'; // Purple
+            pointStyle = 'rectRot'; // Diamond
+        } else if (item.name.toLowerCase().includes('stt') || item.name.toLowerCase().includes('transcribe')) {
+            pointStyle = 'triangle';
         }
 
         return {
@@ -220,11 +245,26 @@ function renderChart(data) {
                     }
                 },
                 legend: {
-                    display: false // Hide legend as there are too many individual points
+                    display: false
                 },
                 title: {
                     display: true,
                     text: 'Model Pricing: Input vs Output Cost ($ per 1M tokens)'
+                },
+                zoom: {
+                    pan: {
+                        enabled: true,
+                        mode: 'xy'
+                    },
+                    zoom: {
+                        wheel: {
+                            enabled: true
+                        },
+                        pinch: {
+                            enabled: true
+                        },
+                        mode: 'xy'
+                    }
                 }
             },
             scales: {
@@ -249,11 +289,39 @@ function renderChart(data) {
     });
 }
 
-function updateChart(filteredData) {
-    renderChart(filteredData);
+function buildLegend() {
+    const el = document.getElementById('chartLegend');
+    const vendorItems = [
+        {color: '#4285F4', label: 'Google'},
+        {color: '#FF9900', label: 'Amazon'},
+        {color: '#10A37F', label: 'OpenAI'},
+        {color: '#D97706', label: 'Anthropic'}
+    ];
+    const typeItems = [
+        {symbol: '●', label: 'Text'},
+        {symbol: '✦', label: 'Image'},
+        {symbol: '▲', label: 'Transcription'},
+        {symbol: '◆', label: 'Speech'}
+    ];
+    let html = '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:20px;margin-bottom:8px;font-size:14px;">';
+    html += '<strong style="color:#666">Vendor:</strong> ';
+    vendorItems.forEach(v => { html += `<span style="color:${v.color}">■ ${v.label}</span>`; });
+    html += '</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:20px;margin-bottom:24px;font-size:14px;">';
+    html += '<strong style="color:#666">Type:</strong> ';
+    typeItems.forEach(t => { html += `<span>${t.symbol} ${t.label}</span>`; });
+    html += '<span style="color:#999;margin-left:12px;font-style:italic">(scroll/pinch to zoom, drag to pan)</span>';
+    html += '</div>';
+    el.innerHTML = html;
 }
 
+// Double-click to reset zoom
+document.getElementById('pricingChart').addEventListener('dblclick', function() {
+    if (chartInstance) chartInstance.resetZoom();
+});
+
 document.getElementById('pricingSearch').addEventListener('input', filterTable);
+buildLegend();
 populateTable(pricingData.prices);
 renderChart(pricingData.prices);
 </script>
