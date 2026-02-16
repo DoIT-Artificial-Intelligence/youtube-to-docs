@@ -78,6 +78,7 @@ exclude = [
     "docs*",
     "scripts*",
     "commands*",
+    "notebooks*",
     "youtube-to-docs-artifacts*",
     "summary-files*",
     "transcript-files*",
