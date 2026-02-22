@@ -1,6 +1,12 @@
-from typing import Optional, Tuple
+import os
+from typing import Any, Optional, Tuple
 
 from youtube_to_docs.llms import _query_llm
+
+try:
+    import boto3
+except ImportError:
+    boto3: Any = None
 
 
 def parse_translate_arg(translate_arg: str) -> Tuple[str, str]:
@@ -10,6 +16,7 @@ def parse_translate_arg(translate_arg: str) -> Tuple[str, str]:
       "gemini-3-flash-preview-es"         -> ("gemini-3-flash-preview", "es")
       "bedrock-nova-2-lite-v1-fr"         -> ("bedrock-nova-2-lite-v1", "fr")
       "gemini-3-flash-preview-zh"         -> ("gemini-3-flash-preview", "zh")
+      "aws-translate-es"                  -> ("aws-translate", "es")
 
     Returns (model_name, language_code).
     """
@@ -17,9 +24,71 @@ def parse_translate_arg(translate_arg: str) -> Tuple[str, str]:
     if len(parts) != 2:
         raise ValueError(
             f"Invalid --translate format: '{translate_arg}'. "
-            "Expected '{model}-{language}' e.g. 'gemini-3-flash-preview-es'."
+            "Expected '{model}-{language}' e.g. 'gemini-3-flash-preview-es' "
+            "or 'aws-translate-es'."
         )
     return parts[0], parts[1]
+
+
+_AWS_TRANSLATE_BYTE_LIMIT = 10_000
+
+
+def _chunk_text(text: str, max_bytes: int = _AWS_TRANSLATE_BYTE_LIMIT) -> list[str]:
+    """Split text into chunks that each fit within max_bytes (UTF-8 encoded).
+
+    Splits on blank lines first, then on single newlines, to keep logical
+    blocks (e.g. SRT entries, paragraphs) together wherever possible.
+    """
+    chunks: list[str] = []
+    current_lines: list[str] = []
+    current_bytes = 0
+
+    for line in text.splitlines(keepends=True):
+        line_bytes = len(line.encode("utf-8"))
+        if current_bytes + line_bytes > max_bytes and current_lines:
+            chunks.append("".join(current_lines))
+            current_lines = []
+            current_bytes = 0
+        current_lines.append(line)
+        current_bytes += line_bytes
+
+    if current_lines:
+        chunks.append("".join(current_lines))
+
+    return chunks
+
+
+def _translate_aws(text: str, target_language: str) -> Tuple[str, int, int]:
+    """Translate text using AWS Translate.
+
+    Automatically splits input into chunks to respect the 10,000-byte per-request
+    limit, then joins the translated chunks.
+
+    Uses boto3 default credential chain (env vars, ~/.aws/credentials, IAM role, etc.).
+    Returns (translated_text, 0, 0) — AWS Translate does not report token counts.
+    """
+    if boto3 is None:
+        return (
+            "Error: boto3 is required for AWS Translate. "
+            "Install with `pip install boto3`",
+            0,
+            0,
+        )
+
+    region = os.environ.get("AWS_REGION", "us-east-1")
+    client = boto3.client("translate", region_name=region)
+
+    chunks = _chunk_text(text)
+    translated_chunks: list[str] = []
+    for chunk in chunks:
+        response = client.translate_text(
+            Text=chunk,
+            SourceLanguageCode="en",
+            TargetLanguageCode=target_language,
+        )
+        translated_chunks.append(response["TranslatedText"])
+
+    return "".join(translated_chunks), 0, 0
 
 
 def translate_text(
@@ -29,8 +98,14 @@ def translate_text(
 ) -> Tuple[str, int, int]:
     """Translate text to target_language using model_name.
 
+    If model_name is 'aws-translate', uses the AWS Translate service directly.
+    Otherwise, uses the specified LLM via _query_llm.
+
     Returns (translated_text, input_tokens, output_tokens).
     """
+    if model_name == "aws-translate":
+        return _translate_aws(text, target_language)
+
     prompt = (
         f"Please translate the following text to {target_language}. "
         "Return only the translated text without any preamble or explanation."

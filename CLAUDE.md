@@ -18,7 +18,7 @@ Here are the following args for the tool:
 - **infographic_model**: (Optional) The image model to use for generating an infographic (e.g., 'gemini-2.5-flash-image' or 'gemini-3-pro-image-preview').
 - **alt_text_model**: (Optional) The LLM model to use for generating multimodal alt text for the infographic. Defaults to the summary model.
 - **no_youtube_summary**: (Optional) If `True`, skips generating a secondary summary from the YouTube transcript when using an AI model for the primary transcript.
-- **translate**: (Optional) Translate all outputs to a target language. Format: `{model}-{language}` (e.g., 'gemini-3-flash-preview-es', 'bedrock-nova-2-lite-v1-fr'). Defaults to English only.
+- **translate**: (Optional) Translate all outputs to a target language. Format: `{model}-{language}` (e.g., 'gemini-3-flash-preview-es', 'bedrock-nova-2-lite-v1-fr', 'aws-translate-es'). Use `aws-translate` to use the AWS Translate service directly instead of an LLM. Defaults to English only.
 - **combine_infographic_audio**: (Optional) If `True`, combines the infographic and audio summary into a video file (MP4). Requires `tts_model` and `infographic_model`.
 - **all_suite**: (Optional) Shortcut to use a specific model suite for everything (e.g. 'gemini-flash', 'gemini-pro', 'gemini-flash-pro-image', 'gcp-pro').
 - **verbose**: (Optional) If `True`, enables verbose output.
@@ -57,7 +57,7 @@ Here are the following args for the tool:
       - Generate an audio summary (needs `tts_model`).
       - Create a video summary (needs `combine_infographic_audio`, `tts_model`, and `infographic_model`).
       - Use a specific AI model for transcription (needs `transcript_source`).
-      - Translate to other languages (needs `translate`, format: `{model}-{language}` e.g. `gemini-3-flash-preview-es`).
+      - Translate to other languages (needs `translate`, format: `{model}-{language}` e.g. `gemini-3-flash-preview-es` or `aws-translate-es`).
 4.  **Artifact Storage**: Note that granular textual artifacts are saved to:
     - `tag-files/`: AI-generated tags.
     - `one-sentence-summary-files/`: One-sentence summaries.

@@ -1,7 +1,7 @@
 # Taken from https://www.llm-prices.com/
 # Moving to here until PRs are review e.g. https://github.com/simonw/llm-prices/pull/48
 PRICES = {
-    "updated_at": "2026-02-06",
+    "updated_at": "2026-02-22",
     "prices": [
         {
             "id": "amazon-nova-micro",
@@ -679,6 +679,17 @@ PRICES = {
             "output": 32.0,
             "input_cached": None,
         },
+        {
+            "id": "aws-translate",
+            "vendor": "amazon",
+            "name": "AWS Translate*",
+            # $15.00 per 1 million characters (standard translation).
+            # 1M tokens ≈ 4M characters => $60.00
+            # Splitting cost 50/50 between input and output tokens for comparison.
+            "input": 30.0,
+            "output": 30.0,
+            "input_cached": None,
+        },
     ],
     "aliases": {
         "claude-haiku-4-5": "claude-4.5-haiku",
@@ -690,5 +701,6 @@ PRICES = {
         "nova-premier": "amazon-nova-premier",
         "bedrock-nova-lite-v1": "amazon-nova-lite",
         "gcp-chirp3": "chirp_3",
+        "aws-translate": "aws-translate",
     },
 }

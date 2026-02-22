@@ -9,10 +9,13 @@ Please process the YouTube video at $ARGUMENTS using the `youtube-to-docs:proces
   - If "gemini flash" or "flash" is mentioned, set `all_suite='gemini-flash'`.
   - If "gemini pro" or "pro" is mentioned (or if no model is specified), set `all_suite='gemini-pro'`.
   - If "gcp" is mentioned, set `all_suite='gcp-pro'`.
-- Check for language keywords:
-  - If "spanish" or "es" is mentioned, set `translate='gemini-3-flash-preview-es'`.
-  - If "french" or "fr" is mentioned, set `translate='gemini-3-flash-preview-fr'`.
+- Check for language keywords (combine with translate provider below):
+  - If "spanish" or "es" is mentioned, use language code `es`.
+  - If "french" or "fr" is mentioned, use language code `fr`.
   - If no language is specified, omit `translate` (defaults to English only).
+- Check for translate provider keywords (only relevant when a language is specified):
+  - If "aws translate" or "aws-translate" is mentioned, set `translate='aws-translate-{lang}'` (e.g. `aws-translate-es`).
+  - Otherwise default to `translate='gemini-3-flash-preview-{lang}'` (e.g. `gemini-3-flash-preview-es`).
 - Set the following additional parameters:
   - `verbose=True`
   - `combine_infographic_audio=True`

@@ -177,7 +177,8 @@ def main(args_list: list[str] | None = None) -> None:
         help=(
             "Translate LLM outputs to a target language after generating in English. "
             "Format: `{model}-{language}` e.g. `gemini-3-flash-preview-es` \n"
-            "or `bedrock-nova-2-lite-v1-fr`\n"
+            "or `bedrock-nova-2-lite-v1-fr` or `aws-translate-es`\n"
+            "Use `aws-translate` to use the AWS Translate service instead of an LLM. "
             "All summaries, Q&A, tags, and one-sentence summaries are generated in "
             "English first, then translated using the specified model and language."
         ),

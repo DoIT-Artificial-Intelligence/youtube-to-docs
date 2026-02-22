@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from youtube_to_docs.translate import (
+    _translate_aws,
     parse_translate_arg,
     process_translate,
     translate_text,
@@ -37,6 +38,16 @@ class TestParseTranslateArg(unittest.TestCase):
                 self.assertEqual(model, expected_model)
                 self.assertEqual(lang, expected_lang)
 
+    def test_aws_translate(self):
+        model, lang = parse_translate_arg("aws-translate-es")
+        self.assertEqual(model, "aws-translate")
+        self.assertEqual(lang, "es")
+
+    def test_aws_translate_fr(self):
+        model, lang = parse_translate_arg("aws-translate-fr")
+        self.assertEqual(model, "aws-translate")
+        self.assertEqual(lang, "fr")
+
     def test_invalid_no_dash(self):
         with self.assertRaises(ValueError):
             parse_translate_arg("nodashhere")
@@ -44,6 +55,39 @@ class TestParseTranslateArg(unittest.TestCase):
     def test_invalid_empty(self):
         with self.assertRaises(ValueError):
             parse_translate_arg("")
+
+
+class TestTranslateAws(unittest.TestCase):
+    @patch("youtube_to_docs.translate.boto3")
+    def test_calls_aws_translate(self, mock_boto3):
+        mock_client = MagicMock()
+        mock_boto3.client.return_value = mock_client
+        mock_client.translate_text.return_value = {"TranslatedText": "Hola mundo"}
+
+        result, in_tok, out_tok = _translate_aws("Hello world", "es")
+
+        self.assertEqual(result, "Hola mundo")
+        self.assertEqual(in_tok, 0)
+        self.assertEqual(out_tok, 0)
+        mock_boto3.client.assert_called_once_with("translate", region_name="us-east-1")
+        mock_client.translate_text.assert_called_once_with(
+            Text="Hello world",
+            SourceLanguageCode="en",
+            TargetLanguageCode="es",
+        )
+
+    @patch("youtube_to_docs.translate.boto3")
+    def test_uses_aws_region_env(self, mock_boto3):
+        import os
+
+        mock_client = MagicMock()
+        mock_boto3.client.return_value = mock_client
+        mock_client.translate_text.return_value = {"TranslatedText": "Bonjour"}
+
+        with patch.dict(os.environ, {"AWS_REGION": "eu-west-1"}):
+            _translate_aws("Hello", "fr")
+
+        mock_boto3.client.assert_called_once_with("translate", region_name="eu-west-1")
 
 
 class TestTranslateText(unittest.TestCase):
@@ -79,6 +123,24 @@ class TestTranslateText(unittest.TestCase):
         result = translate_text("some-model", "some text", "de")
 
         self.assertEqual(result, ("translated", 100, 50))
+
+    @patch("youtube_to_docs.translate._translate_aws")
+    def test_routes_to_aws_translate(self, mock_aws):
+        mock_aws.return_value = ("Hola", 0, 0)
+
+        result = translate_text("aws-translate", "Hello", "es")
+
+        self.assertEqual(result, ("Hola", 0, 0))
+        mock_aws.assert_called_once_with("Hello", "es")
+
+    @patch("youtube_to_docs.translate._translate_aws")
+    @patch("youtube_to_docs.translate._query_llm")
+    def test_does_not_call_llm_for_aws_translate(self, mock_query, mock_aws):
+        mock_aws.return_value = ("Hola", 0, 0)
+
+        translate_text("aws-translate", "Hello", "es")
+
+        mock_query.assert_not_called()
 
 
 class TestProcessTranslate(unittest.TestCase):

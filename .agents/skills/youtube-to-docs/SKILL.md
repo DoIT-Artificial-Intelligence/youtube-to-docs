@@ -60,7 +60,7 @@ Use this when the user asks for "everything", a "kitchen sink" run, or a "video 
     *   `all_suite`: Shortcut to set models (`'gemini-flash'` or `'gemini-pro'`).
     *   `combine_infographic_audio`: Set to `True` to create the final video (Requires `video` extra).
     *   `verbose`: Set to `True` for detailed logging.
-    *   `translate`: Translate all outputs to a target language. Format: `{model}-{language}` e.g. `gemini-3-flash-preview-es`.
+    *   `translate`: Translate all outputs to a target language. Format: `{model}-{language}` e.g. `gemini-3-flash-preview-es`, or `aws-translate-{language}` e.g. `aws-translate-es` to use AWS Translate directly.
 *   **Model Selection Strategy**:
     *   **Pro (Default)**: `all_suite='gemini-pro'` (best for video quality).
     *   **Flash**: `all_suite='gemini-flash'` (faster).
@@ -93,7 +93,7 @@ Use this when the user specifies particular models or output locations.
 | `tts_model` | Model for text-to-speech audio. | `gcp` | `gemini-2.5-flash-preview-tts-Kore`, `gcp-chirp3-Kore` |
 | `all_suite` | Shortcut to apply a suite of models. | `gcp`, `audio`, `video` | `gemini-pro`, `gemini-flash` |
 | `combine_infographic_audio` | Boolean. If True, creates an MP4 video. | `video` | `True` |
-| `translate` | Translate all outputs to a target language. Format: `{model}-{language}`. | - | `gemini-3-flash-preview-es`, `gemini-3-flash-preview-fr` |
+| `translate` | Translate all outputs to a target language. Format: `{model}-{language}` or `aws-translate-{language}`. | - | `gemini-3-flash-preview-es`, `aws-translate-es` |
 | `output_file` | Destination for the CSV report. | `workspace` / `m365` | `workspace`, `sharepoint` |
 | `transcript_source` | Source for transcript (default: 'youtube'). | `audio`, `gcp` (for Chirp) | `gemini-3-flash-preview`, `gcp-chirp3` |
 

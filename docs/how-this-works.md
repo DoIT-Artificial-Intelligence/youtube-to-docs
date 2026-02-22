@@ -46,14 +46,14 @@ For each video, the specified model performs three distinct tasks:
     *   **Output**: A comma-separated string of tags.
 
 4.  **Translation Support**:
-    *   The `--translate {model}-{language}` argument enables multilingual output (e.g., `--translate gemini-3-flash-preview-es`).
+    *   The `--translate {model}-{language}` argument enables multilingual output (e.g., `--translate gemini-3-flash-preview-es`). Use `aws-translate-{language}` (e.g., `--translate aws-translate-es`) to use the AWS Translate service directly instead of an LLM. Large texts are automatically chunked to respect AWS Translate's 10,000 byte per-request limit.
     *   All content is generated in English first, then the tool iterates over the target language:
         1.  **Transcript**: Tries to fetch a native YouTube transcript in the target language. Falls back to translating the English transcript using the specified model.
         2.  **SRT**: The SRT file is also translated alongside the transcript.
         3.  **LLM outputs**: Summaries, one-sentence summaries, Q&A, and tags are generated fresh from the translated transcript using the same model.
         4.  **Infographic & TTS**: When `-i` or `--tts` are also set, assets are produced in both English and the target language.
         5.  **Video**: When `--combine-infographic-audio` is also set, one video is produced per language.
-    *   File names use `({model}-{language})` (e.g., `(gemini-3-flash-preview-es)`) to identify the translation source. CSV column headers use the shorter `(lang)` suffix (e.g., `(es)`).
+    *   File names use `({model}-{language})` (e.g., `(gemini-3-flash-preview-es)` or `(aws-translate-es)`) to identify the translation source. CSV column headers use the shorter `(lang)` suffix (e.g., `(es)`).
 
 ### 5. Multimodal Generation
 Beyond text, the tool creates audio and visual assets:

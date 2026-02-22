@@ -3,34 +3,101 @@
 Compare the pricing of various Large Language Models. Prices are shown in USD per 1M tokens.
 
 > [!NOTE]
-> Prices last updated on **2026-02-06**. All values are per 1 million tokens unless otherwise specified.
-> required for non-token based models (marked with \*):
+> Prices last updated on **2026-02-22**. All values are per 1 million tokens unless otherwise specified.
+> Non-token-based models are marked with \* and converted as follows:
 >
-> - **Audio/Character Pricing**: Models priced by minute or character are converted to "per 1M tokens" assuming ~4 chars/token or ~200 tokens/minute. The estimated cost is split 50/50 between input and output for comparison.
+> - **Character-based** (TTS, Translation): $X per 1M chars → assume ~4 chars/token → multiply by 4. Cost split 50/50 input/output.
+> - **Minute-based** (STT, Transcription): $X per minute → assume ~200 tokens/minute → multiply by 5000. Cost split 50/50 input/output.
+>
+> Search supports type keywords: `text`, `image`, `speech`, `transcription`, `translate`.
 
-<input type="text" id="pricingSearch" placeholder="🔍 Search models or vendors..." style="width: 100%; padding: 12px 16px; margin-bottom: 24px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; box-sizing: border-box;">
+<style>
+#pricingSearch {
+    width: 100%; padding: 10px 14px; margin-bottom: 6px;
+    border: 1px solid var(--md-default-fg-color--lightest, #ddd);
+    border-radius: 6px; font-size: 15px; box-sizing: border-box;
+    background: var(--md-default-bg-color, #fff);
+    color: var(--md-default-fg-color, #333);
+    transition: border-color 0.15s;
+}
+#pricingSearch:focus { outline: none; border-color: var(--md-primary-fg-color, #4285F4); }
+.pricing-result-count {
+    font-size: 12px; color: var(--md-default-fg-color--light, #888);
+    margin-bottom: 16px; text-align: right;
+}
+.pricing-chart-wrap { width: 100%; height: 420px; margin-bottom: 6px; position: relative; }
+.pricing-chart-btns { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
+.pricing-chart-btn {
+    padding: 3px 10px; font-size: 11px; cursor: pointer;
+    border: 1px solid var(--md-default-fg-color--lightest, #ccc);
+    border-radius: 4px;
+    background: var(--md-default-bg-color, #fff);
+    color: var(--md-default-fg-color--light, #666);
+    transition: background 0.15s, color 0.15s;
+}
+.pricing-chart-btn:hover, .pricing-chart-btn.active {
+    background: var(--md-primary-fg-color, #4285F4);
+    color: #fff; border-color: transparent;
+}
+#pricingTable { width: 100%; border-collapse: collapse; font-size: 14px; }
+#pricingTable thead tr {
+    background-color: var(--md-primary-fg-color);
+    color: var(--md-primary-bg-color);
+}
+#pricingTable th {
+    padding: 10px 12px; text-align: left;
+    border-bottom: 2px solid var(--md-default-fg-color--lightest, #ddd);
+    cursor: pointer; user-select: none; white-space: nowrap;
+    font-weight: 600; letter-spacing: 0.02em;
+    transition: opacity 0.1s;
+}
+#pricingTable th:hover { opacity: 0.85; }
+#pricingTable td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--md-default-fg-color--lightest, #eee);
+    vertical-align: middle;
+}
+#pricingTable tbody tr:hover td { background: var(--md-code-bg-color, #f5f5f5); }
+#pricingTable tbody tr:last-child td { border-bottom: none; }
+.price-cell { font-variant-numeric: tabular-nums; font-family: 'Courier New', monospace; }
+.vendor-chip {
+    display: inline-block; padding: 2px 8px; border-radius: 99px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase; white-space: nowrap;
+    border: 1.5px solid currentColor; opacity: 0.85;
+}
+.empty-state {
+    text-align: center; padding: 40px 20px;
+    color: var(--md-default-fg-color--light, #999); font-style: italic;
+}
+</style>
+
+<input type="text" id="pricingSearch" placeholder="🔍 Search models, vendors, or type (text / image / speech / transcription / translate)…">
+<div class="pricing-result-count" id="resultCount"></div>
 
 <div class="pricing-container">
-    <div style="width: 100%; height: 450px; margin-bottom: 8px; position: relative;">
+    <div class="pricing-chart-wrap">
         <canvas id="pricingChart"></canvas>
-        <button id="resetZoom" onclick="if(chartInstance)chartInstance.resetZoom()" style="position:absolute;top:8px;right:8px;padding:4px 12px;font-size:12px;cursor:pointer;border:1px solid #ccc;border-radius:4px;background:#fff;color:#666;">Reset Zoom</button>
+        <div class="pricing-chart-btns">
+            <button class="pricing-chart-btn" id="logToggle" onclick="toggleScale()">Log scale</button>
+            <button class="pricing-chart-btn" id="resetZoom" onclick="if(chartInstance)chartInstance.resetZoom()">Reset zoom</button>
+        </div>
     </div>
     <div id="chartLegend"></div>
 
-    <table id="pricingTable" style="width: 100%; border-collapse: collapse;">
+    <table id="pricingTable">
         <thead>
-            <tr style="background-color: var(--md-primary-fg-color); color: var(--md-primary-bg-color);">
-                <th onclick="sortTable(0)" style="cursor: pointer; padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Name ⇅</th>
-                <th onclick="sortTable(1)" style="cursor: pointer; padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Vendor ⇅</th>
-                <th onclick="sortTable(2)" style="cursor: pointer; padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Input ($/1M) ⇅</th>
-                <th onclick="sortTable(3)" style="cursor: pointer; padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Output ($/1M) ⇅</th>
+            <tr>
+                <th id="th-0" onclick="sortTable(0)">Name</th>
+                <th id="th-1" onclick="sortTable(1)">Vendor</th>
+                <th id="th-2" onclick="sortTable(2)">Input $/1M</th>
+                <th id="th-3" onclick="sortTable(3)">Output $/1M</th>
             </tr>
         </thead>
         <tbody id="pricingBody">
             <!-- Data will be populated by JS -->
         </tbody>
     </table>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -38,7 +105,7 @@ Compare the pricing of various Large Language Models. Prices are shown in USD pe
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
 <script>
 const pricingData = {
-    "updated_at": "2026-02-06",
+    "updated_at": "2026-02-22",
     "prices": [
         {"id": "amazon-nova-micro", "vendor": "amazon", "name": "Amazon Nova Micro", "input": 0.035, "output": 0.14},
         {"id": "amazon-nova-lite", "vendor": "amazon", "name": "Amazon Nova Lite", "input": 0.06, "output": 0.24},
@@ -122,70 +189,132 @@ const pricingData = {
         {"id": "chirp_3", "vendor": "google", "name": "GCP Chirp 3 (STT)*", "input": 40.0, "output": 40.0},
         {"id": "aws-polly", "vendor": "amazon", "name": "AWS Polly*", "input": 32.0, "output": 32.0},
         {"id": "aws-transcribe", "vendor": "amazon", "name": "AWS Transcribe*", "input": 60.0, "output": 60.0},
-        {"id": "gcp-chirp3-tts", "vendor": "google", "name": "GCP Chirp 3 (TTS)*", "input": 32.0, "output": 32.0}
+        {"id": "gcp-chirp3-tts", "vendor": "google", "name": "GCP Chirp 3 (TTS)*", "input": 32.0, "output": 32.0},
+        {"id": "aws-translate", "vendor": "amazon", "name": "AWS Translate*", "input": 30.0, "output": 30.0}
     ]
 };
 
 // Track the currently displayed (filtered + sorted) data
 let currentData = [...pricingData.prices];
+// Active type filter set by clicking legend type items (null = show all)
+let activeTypeFilter = null;
+// Log scale toggle
+let useLogScale = false;
+// Sort state
+let sortCol = -1, sortDir = 1;
+
+const VENDOR_COLORS = {
+    'google':    '#4285F4',
+    'amazon':    '#FF9900',
+    'openai':    '#10A37F',
+    'anthropic': '#D97706'
+};
+
+function formatPrice(val) {
+    if (val === 0) return '$0';
+    if (val < 0.1)  return '$' + val.toFixed(4).replace(/\.?0+$/, '');
+    if (val < 1)    return '$' + val.toFixed(3).replace(/\.?0+$/, '');
+    if (val < 10)   return '$' + val.toFixed(2).replace(/\.?0+$/, '');
+    if (val < 100)  return '$' + val.toFixed(1).replace(/\.?0+$/, '');
+    return '$' + Math.round(val);
+}
 
 function populateTable(data) {
     const body = document.getElementById('pricingBody');
     body.innerHTML = '';
+    if (data.length === 0) {
+        body.innerHTML = '<tr><td colspan="4" class="empty-state">No models match your search.</td></tr>';
+        return;
+    }
     data.forEach(item => {
+        const color = VENDOR_COLORS[item.vendor] || '#888';
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td style="padding: 12px; border-bottom: 1px solid #eee;">${item.name}</td>
-            <td style="padding: 12px; border-bottom: 1px solid #eee;">${item.vendor}</td>
-            <td style="padding: 12px; border-bottom: 1px solid #eee;">$${item.input}</td>
-            <td style="padding: 12px; border-bottom: 1px solid #eee;">$${item.output}</td>
+            <td>${item.name}</td>
+            <td><span class="vendor-chip" style="color:${color};border-color:${color}">${item.vendor}</span></td>
+            <td class="price-cell">${formatPrice(item.input)}</td>
+            <td class="price-cell">${formatPrice(item.output)}</td>
         `;
         body.appendChild(row);
     });
 }
 
+function updateResultCount(data) {
+    const el = document.getElementById('resultCount');
+    const total = pricingData.prices.length;
+    el.textContent = data.length === total
+        ? `${total} models`
+        : `${data.length} of ${total} models`;
+}
+
 function getModelType(item) {
     const n = item.name.toLowerCase();
+    const id = item.id.toLowerCase();
     if (n.includes('image') || n.includes('canvas') || n.includes('imagen')) return 'image';
     if (n.includes('tts') || n.includes('polly')) return 'speech';
     if (n.includes('stt') || n.includes('transcribe')) return 'transcription';
+    if (n.includes('translate') || id.includes('translate')) return 'translate';
     return 'text';
 }
 
 function getFilteredData() {
     const searchTerm = document.getElementById('pricingSearch').value.toLowerCase();
-    return pricingData.prices.filter(item =>
-        item.name.toLowerCase().includes(searchTerm) ||
-        item.vendor.toLowerCase().includes(searchTerm) ||
-        item.id.toLowerCase().includes(searchTerm) ||
-        getModelType(item).includes(searchTerm)
-    );
+    return pricingData.prices.filter(item => {
+        const matchesSearch = !searchTerm ||
+            item.name.toLowerCase().includes(searchTerm) ||
+            item.vendor.toLowerCase().includes(searchTerm) ||
+            item.id.toLowerCase().includes(searchTerm) ||
+            getModelType(item).includes(searchTerm);
+        const matchesType = !activeTypeFilter || getModelType(item) === activeTypeFilter;
+        return matchesSearch && matchesType;
+    });
 }
 
 function filterTable() {
     currentData = getFilteredData();
     populateTable(currentData);
+    updateResultCount(currentData);
     renderChart(currentData);
 }
 
-let sortOrder = [1, 1, 1, 1];
+function toggleTypeFilter(type) {
+    activeTypeFilter = activeTypeFilter === type ? null : type;
+    filterTable();
+    buildLegend();
+}
+
 function sortTable(columnIndex) {
     const propertyMap = ['name', 'vendor', 'input', 'output'];
     const property = propertyMap[columnIndex];
 
-    currentData.sort((a, b) => {
-        let valA = a[property];
-        let valB = b[property];
+    if (sortCol === columnIndex) {
+        sortDir *= -1;
+    } else {
+        sortCol = columnIndex;
+        sortDir = 1;
+    }
 
-        if (typeof valA === 'string') {
-            return valA.localeCompare(valB) * sortOrder[columnIndex];
-        } else {
-            return (valA - valB) * sortOrder[columnIndex];
-        }
+    currentData.sort((a, b) => {
+        const valA = a[property], valB = b[property];
+        return (typeof valA === 'string' ? valA.localeCompare(valB) : valA - valB) * sortDir;
     });
 
-    sortOrder[columnIndex] *= -1;
+    // Update header arrows
+    for (let i = 0; i < 4; i++) {
+        const th = document.getElementById('th-' + i);
+        const labels = ['Name', 'Vendor', 'Input $/1M', 'Output $/1M'];
+        th.textContent = labels[i] + (i === sortCol ? (sortDir === 1 ? ' ↑' : ' ↓') : '');
+    }
+
     populateTable(currentData);
+    renderChart(currentData);
+}
+
+function toggleScale() {
+    useLogScale = !useLogScale;
+    const btn = document.getElementById('logToggle');
+    btn.classList.toggle('active', useLogScale);
+    btn.textContent = useLogScale ? 'Linear scale' : 'Log scale';
     renderChart(currentData);
 }
 
@@ -195,96 +324,75 @@ let chartInstance = null;
 function renderChart(data) {
     const ctx = document.getElementById('pricingChart').getContext('2d');
 
-    // Shapes: Google=Circle, AWS=Triangle, OpenAI=Rect, Anthropic=Diamond
-    // Colors: Text=Blue, Image=Red, Transcription=Green, Speech=Purple
-
     const datasets = data.map(item => {
-        // Color by vendor
-        let color = '#4285F4'; // Google blue
-        if (item.vendor === 'amazon') color = '#FF9900'; // Amazon orange
-        else if (item.vendor === 'openai') color = '#10A37F'; // OpenAI green
-        else if (item.vendor === 'anthropic') color = '#D97706'; // Anthropic amber
-
-        // Shape by type
-        let pointStyle = 'circle'; // Text default
-        if (item.name.toLowerCase().includes('image') || item.name.toLowerCase().includes('canvas') || item.name.toLowerCase().includes('imagen')) {
-            pointStyle = 'star';
-        } else if (item.name.toLowerCase().includes('tts') || item.name.toLowerCase().includes('polly')) {
-            pointStyle = 'rectRot'; // Diamond
-        } else if (item.name.toLowerCase().includes('stt') || item.name.toLowerCase().includes('transcribe')) {
-            pointStyle = 'triangle';
-        }
+        const color = VENDOR_COLORS[item.vendor] || '#888';
+        const modelType = getModelType(item);
+        let pointStyle = 'circle';
+        if (modelType === 'image') pointStyle = 'star';
+        else if (modelType === 'speech') pointStyle = 'rectRot';
+        else if (modelType === 'transcription') pointStyle = 'triangle';
+        else if (modelType === 'translate') pointStyle = 'crossRot';
 
         return {
             label: item.name,
             data: [{x: item.input, y: item.output}],
-            backgroundColor: color,
+            backgroundColor: color + 'cc',
             borderColor: color,
+            borderWidth: 1.5,
             pointStyle: pointStyle,
             pointRadius: 6,
-            pointHoverRadius: 8
+            pointHoverRadius: 9
         };
     });
 
-    if (chartInstance) {
-        chartInstance.destroy();
-    }
+    if (chartInstance) chartInstance.destroy();
+
+    const scaleType = useLogScale ? 'logarithmic' : 'linear';
 
     chartInstance = new Chart(ctx, {
         type: 'scatter',
-        data: {
-            datasets: datasets
-        },
+        data: { datasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
                 tooltip: {
+                    backgroundColor: 'rgba(20,20,20,0.9)',
+                    titleColor: '#fff',
+                    bodyColor: '#ccc',
+                    padding: 10,
+                    cornerRadius: 6,
                     callbacks: {
-                        label: function(context) {
-                            return context.dataset.label + ': Input $' + context.raw.x + ', Output $' + context.raw.y;
-                        }
+                        label: ctx => `${ctx.dataset.label}`,
+                        afterLabel: ctx => `  Input: ${formatPrice(ctx.raw.x)}  ·  Output: ${formatPrice(ctx.raw.y)}`
                     }
                 },
-                legend: {
-                    display: false
-                },
+                legend: { display: false },
                 title: {
                     display: true,
-                    text: 'Model Pricing: Input vs Output Cost ($ per 1M tokens)'
+                    text: 'Input vs Output cost ($ per 1M tokens)',
+                    color: 'var(--md-default-fg-color--light, #666)',
+                    font: { size: 13, weight: 'normal' },
+                    padding: { bottom: 12 }
                 },
                 zoom: {
-                    pan: {
-                        enabled: true,
-                        mode: 'xy'
-                    },
-                    zoom: {
-                        wheel: {
-                            enabled: true
-                        },
-                        pinch: {
-                            enabled: true
-                        },
-                        mode: 'xy'
-                    }
+                    pan: { enabled: true, mode: 'xy' },
+                    zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }
                 }
             },
             scales: {
                 x: {
-                    type: 'linear',
+                    type: scaleType,
                     position: 'bottom',
-                    title: {
-                        display: true,
-                        text: 'Input Cost ($)'
-                    },
-                    beginAtZero: true
+                    title: { display: true, text: 'Input ($/1M tokens)', color: 'var(--md-default-fg-color--light, #666)' },
+                    grid: { color: 'rgba(128,128,128,0.12)' },
+                    ...(useLogScale ? {} : { beginAtZero: true })
                 },
                 y: {
-                    title: {
-                        display: true,
-                        text: 'Output Cost ($)'
-                    },
-                    beginAtZero: true
+                    type: scaleType,
+                    title: { display: true, text: 'Output ($/1M tokens)', color: 'var(--md-default-fg-color--light, #666)' },
+                    grid: { color: 'rgba(128,128,128,0.12)' },
+                    ...(useLogScale ? {} : { beginAtZero: true })
                 }
             }
         }
@@ -300,18 +408,26 @@ function buildLegend() {
         {color: '#D97706', label: 'Anthropic'}
     ];
     const typeItems = [
-        {symbol: '●', label: 'Text'},
-        {symbol: '✦', label: 'Image'},
-        {symbol: '▲', label: 'Transcription'},
-        {symbol: '◆', label: 'Speech'}
+        {symbol: '●', label: 'Text',          type: 'text'},
+        {symbol: '★', label: 'Image',         type: 'image'},
+        {symbol: '▲', label: 'Transcription', type: 'transcription'},
+        {symbol: '◆', label: 'Speech',        type: 'speech'},
+        {symbol: '✕', label: 'Translate',     type: 'translate'}
     ];
     let html = '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:20px;margin-bottom:8px;font-size:14px;">';
     html += '<strong style="color:#666">Vendor:</strong> ';
-    vendorItems.forEach(v => { html += `<span style="color:${v.color}">■ ${v.label}</span>`; });
+    vendorItems.forEach(v => { html += `<span style="color:${v.color}">${v.label}</span>`; });
     html += '</div>';
     html += '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:20px;margin-bottom:24px;font-size:14px;">';
     html += '<strong style="color:#666">Type:</strong> ';
-    typeItems.forEach(t => { html += `<span>${t.symbol} ${t.label}</span>`; });
+    typeItems.forEach(t => {
+        const isActive = activeTypeFilter === t.type;
+        const style = `cursor:pointer;padding:2px 8px;border-radius:4px;user-select:none;${isActive ? 'background:#e0e0e0;font-weight:bold;' : ''}`;
+        html += `<span style="${style}" onclick="toggleTypeFilter('${t.type}')" title="Click to filter">${t.symbol} ${t.label}</span>`;
+    });
+    if (activeTypeFilter) {
+        html += `<span style="color:#666;margin-left:8px;font-style:italic;cursor:pointer;" onclick="toggleTypeFilter(activeTypeFilter)">✕ clear filter</span>`;
+    }
     html += '<span style="color:#999;margin-left:12px;font-style:italic">(scroll/pinch to zoom, drag to pan)</span>';
     html += '</div>';
     el.innerHTML = html;
@@ -325,5 +441,6 @@ document.getElementById('pricingChart').addEventListener('dblclick', function() 
 document.getElementById('pricingSearch').addEventListener('input', filterTable);
 buildLegend();
 populateTable(pricingData.prices);
+updateResultCount(pricingData.prices);
 renderChart(pricingData.prices);
 </script>
