@@ -56,4 +56,10 @@ Install as a Claude Code plugin:
 /plugin marketplace add DoIT-Artificial-Intelligence/youtube-to-docs
 ```
 
+Install as an MCP server for Claude Code:
+
+```bash
+claude mcp add youtube-to-docs -- uvx --with "youtube-to-docs[all]" python -m youtube_to_docs.mcp_server
+```
+
 *Created with the help of AI. All artifacts have been checked and work as expected.*

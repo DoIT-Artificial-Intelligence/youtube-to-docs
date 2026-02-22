@@ -21,7 +21,13 @@
       "homepage": "https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs",
       "repository": "https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs",
       "license": "MIT",
-      "keywords": ["youtube", "transcript", "summary", "infographic", "audio", "tts"]
+      "keywords": ["youtube", "transcript", "summary", "infographic", "audio", "tts"],
+      "skills": [
+        ".claude/skills/ytt",
+        ".claude/skills/infographic",
+        ".claude/skills/ks",
+        ".claude/skills/youtube-to-docs"
+      ]
     }
   ]
 }
