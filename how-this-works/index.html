@@ -783,7 +783,7 @@
 <li>
 <p><strong>Translation Support</strong>:</p>
 <ul>
-<li>The <code>--translate {model}-{language}</code> argument enables multilingual output (e.g., <code>--translate gemini-3-flash-preview-es</code>). Use <code>aws-translate-{language}</code> (e.g., <code>--translate aws-translate-es</code>) to use the AWS Translate service directly instead of an LLM. Large texts are automatically chunked to respect AWS Translate's 10,000 byte per-request limit.</li>
+<li>The <code>--translate {model}-{language}</code> argument enables multilingual output (e.g., <code>--translate gemini-3-flash-preview-es</code>). Use <code>aws-translate-{language}</code> (e.g., <code>--translate aws-translate-es</code>) to use the AWS Translate service directly, or <code>gcp-translate-{language}</code> (e.g., <code>--translate gcp-translate-es</code>) to use Google Cloud Translation API directly. Large texts are automatically chunked to respect per-request limits.</li>
 <li>All content is generated in English first, then the tool iterates over the target language:<ol>
 <li><strong>Transcript</strong>: Tries to fetch a native YouTube transcript in the target language. Falls back to translating the English transcript using the specified model.</li>
 <li><strong>SRT</strong>: The SRT file is also translated alongside the transcript.</li>
@@ -792,7 +792,7 @@
 <li><strong>Video</strong>: When <code>--combine-infographic-audio</code> is also set, one video is produced per language.</li>
 </ol>
 </li>
-<li>File names use <code>({model}-{language})</code> (e.g., <code>(gemini-3-flash-preview-es)</code> or <code>(aws-translate-es)</code>) to identify the translation source. CSV column headers use the shorter <code>(lang)</code> suffix (e.g., <code>(es)</code>).</li>
+<li>File names use <code>({model}-{language})</code> (e.g., <code>(gemini-3-flash-preview-es)</code>, <code>(aws-translate-es)</code>, or <code>(gcp-translate-es)</code>) to identify the translation source. CSV column headers use the shorter <code>(lang)</code> suffix (e.g., <code>(es)</code>).</li>
 </ul>
 </li>
 </ol>

@@ -1406,9 +1406,9 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>-tr</code>, <code>--translate</code></td>
-<td style="text-align: left;">Translate all outputs to a target language after generating in English. Format: <code>{model}-{language}</code> e.g. <code>gemini-3-flash-preview-es</code>, or <code>aws-translate-{language}</code> to use the AWS Translate service directly (e.g. <code>aws-translate-es</code>). The tool first tries to fetch a native YouTube transcript in the target language; if unavailable, it translates the English transcript. Summaries, Q&amp;A, tags, one-sentence summaries, transcripts, and SRT files are all translated. When combined with <code>--tts</code> or <code>--infographic</code>, assets are produced in both English and the target language.</td>
+<td style="text-align: left;">Translate all outputs to a target language after generating in English. Format: <code>{model}-{language}</code> e.g. <code>gemini-3-flash-preview-es</code>, or <code>aws-translate-{language}</code> / <code>gcp-translate-{language}</code> to use AWS Translate or Google Cloud Translation directly (e.g. <code>aws-translate-es</code>, <code>gcp-translate-es</code>). The tool first tries to fetch a native YouTube transcript in the target language; if unavailable, it translates the English transcript. Summaries, Q&amp;A, tags, one-sentence summaries, transcripts, and SRT files are all translated. When combined with <code>--tts</code> or <code>--infographic</code>, assets are produced in both English and the target language.</td>
 <td style="text-align: left;"><code>None</code></td>
-<td style="text-align: left;"><code>-tr gemini-3-flash-preview-es</code>, <code>-tr aws-translate-es</code></td>
+<td style="text-align: left;"><code>-tr gemini-3-flash-preview-es</code>, <code>-tr aws-translate-es</code>, <code>-tr gcp-translate-es</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>-cia</code>, <code>--combine-infographic-audio</code></td>
