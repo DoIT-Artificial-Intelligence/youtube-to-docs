@@ -1,0 +1,17 @@
+{
+  "name": "youtube-to-docs",
+  "version": "1.0.0",
+  "description": "Convert YouTube videos into structured docs, summaries, audio, and visual assets for easier discovery.",
+  "author": {
+    "name": "DoIT Artificial Intelligence"
+  },
+  "homepage": "https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs",
+  "repository": "https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs",
+  "license": "MIT",
+  "keywords": ["youtube", "transcript", "summary", "infographic", "audio", "tts", "video"],
+  "commands": [
+    "./commands/ytt.md",
+    "./commands/infographic.md",
+    "./commands/ks.md"
+  ]
+}
