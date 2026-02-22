@@ -32,7 +32,6 @@ def main():
         None,  # transcript_model
         None,  # infographic_model
         None,  # tts_model
-        language="en",
         output_target="sharepoint",
         all_gemini_arg=None,
     )
@@ -43,7 +42,6 @@ def main():
         None,
         None,
         None,
-        language="en",
         output_target="sharepoint",
         all_gemini_arg=None,
     )

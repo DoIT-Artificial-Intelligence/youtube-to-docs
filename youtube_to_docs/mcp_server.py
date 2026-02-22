@@ -18,7 +18,7 @@ def process_video(
     infographic_model: str | None = None,
     alt_text_model: str | None = None,
     no_youtube_summary: bool = False,
-    languages: str = "en",
+    translate: str | None = None,
     combine_infographic_audio: bool = False,
     all_suite: str | None = None,
     verbose: bool = False,
@@ -52,8 +52,11 @@ def process_video(
             infographic. Defaults to the summary model.
         no_youtube_summary: If True, skips generating a secondary summary from the
             YouTube transcript when using an AI model for the primary transcript.
-        languages: The target language(s) (e.g., 'es', 'fr', 'en'). Defaults to 'en'.
-            Can be a comma-separated list.
+        translate: Translate all outputs to a target language after generating in
+            English. Format: `{model}-{language}` e.g. `gemini-3-flash-preview-es`
+            or `bedrock-nova-2-lite-v1-fr`. When set, summaries, Q&A, tags, transcripts,
+            and SRT files are all translated. TTS and infographics are generated in
+            both English and the target language.
         combine_infographic_audio: If True, combines the infographic and audio summary
             into a video file. Requires both tts_model and infographic_model.
         all_suite: Shortcut to use a specific model suite for everything.
@@ -66,9 +69,10 @@ def process_video(
         output_file,
         "--transcript",
         transcript_source,
-        "--language",
-        languages,
     ]
+
+    if translate:
+        args.extend(["--translate", translate])
 
     if model:
         args.extend(["--model", model])

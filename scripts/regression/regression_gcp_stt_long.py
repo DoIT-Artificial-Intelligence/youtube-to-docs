@@ -34,7 +34,6 @@ def main():
         transcript_model,
         infographic_model,
         tts_model,
-        language="en",
         no_youtube_summary=True,  # Skip YT summary to save time/tokens
         verbose=True,
     )
@@ -45,7 +44,6 @@ def main():
         transcript_model,
         infographic_model,
         tts_model,
-        language="en",
         no_youtube_summary=True,
     )
 

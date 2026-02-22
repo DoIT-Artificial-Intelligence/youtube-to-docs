@@ -45,10 +45,15 @@ For each video, the specified model performs three distinct tasks:
     *   **Task**: Generate up to 5 comma-separated tags for the transcript.
     *   **Output**: A comma-separated string of tags.
 
-4.  **Multi-Language Support**:
-    *   The tool supports processing videos in multiple languages via the `--language` argument.
-    *   It iterates through each requested language, fetching or generating transcripts, summaries, Q&A, and infographics for that specific language.
-    *   File names and column headers are suffixed with the language code (e.g., `(es)`) to keep assets organized.
+4.  **Translation Support**:
+    *   The `--translate {model}-{language}` argument enables multilingual output (e.g., `--translate gemini-3-flash-preview-es`).
+    *   All content is generated in English first, then the tool iterates over the target language:
+        1.  **Transcript**: Tries to fetch a native YouTube transcript in the target language. Falls back to translating the English transcript using the specified model.
+        2.  **SRT**: The SRT file is also translated alongside the transcript.
+        3.  **LLM outputs**: Summaries, one-sentence summaries, Q&A, and tags are generated fresh from the translated transcript using the same model.
+        4.  **Infographic & TTS**: When `-i` or `--tts` are also set, assets are produced in both English and the target language.
+        5.  **Video**: When `--combine-infographic-audio` is also set, one video is produced per language.
+    *   File names use `({model}-{language})` (e.g., `(gemini-3-flash-preview-es)`) to identify the translation source. CSV column headers use the shorter `(lang)` suffix (e.g., `(es)`).
 
 ### 5. Multimodal Generation
 Beyond text, the tool creates audio and visual assets:

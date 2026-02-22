@@ -30,7 +30,6 @@ def main():
         transcript_model,
         infographic_model,
         tts_model,
-        language="en",
         no_youtube_summary=False,
     )
 
@@ -40,7 +39,6 @@ def main():
         transcript_model,
         infographic_model,
         tts_model,
-        language="en",
         no_youtube_summary=False,
     )
 

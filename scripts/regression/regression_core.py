@@ -83,16 +83,18 @@ def run_regression(
     transcript_model: Optional[str],
     infographic_model: Optional[str],
     tts_model: Optional[str],
-    language: str = "en",
+    translate: Optional[str] = None,
     no_youtube_summary: bool = False,
     output_target: Optional[str] = None,
     all_gemini_arg: Optional[str] = None,
     verbose: bool = False,
+    combine_info_audio: bool = False,
 ):
     """Runs the full regression suite for a single video."""
+    translate_lang = translate.rsplit("-", 1)[1] if translate else None
     print(
         f"\n--- Running Regression with Model: {model} "
-        f"(Lang: {language}, NYS: {no_youtube_summary}) ---"
+        f"(Translate: {translate_lang or 'none'}, NYS: {no_youtube_summary}) ---"
     )
 
     if output_target is None:
@@ -113,8 +115,10 @@ def run_regression(
         cmd.extend(["-i", infographic_model])
     if tts_model:
         cmd.extend(["--tts", tts_model])
+    if translate:
+        cmd.extend(["--translate", translate])
 
-    cmd.extend(["-l", language, "-o", output_target])
+    cmd.extend(["-o", output_target])
 
     if no_youtube_summary:
         cmd.append("-nys")
@@ -124,6 +128,9 @@ def run_regression(
 
     if verbose:
         cmd.append("--verbose")
+
+    if combine_info_audio:
+        cmd.append("-cia")
 
     print(f"Executing: {' '.join(cmd)}")
     result = subprocess.run(cmd, capture_output=False)
@@ -140,15 +147,17 @@ def verify_output(
     transcript_model: Optional[str],
     infographic_model: Optional[str],
     tts_model: Optional[str],
-    language: str = "en",
+    translate: Optional[str] = None,
     no_youtube_summary: bool = False,
     output_target: Optional[str] = None,
     all_gemini_arg: Optional[str] = None,
     verbose: bool = False,
+    combine_info_audio: bool = False,
 ):
     """Verifies that the output CSV exists and contains expected columns and files."""
+    translate_lang = translate.rsplit("-", 1)[1] if translate else None
     print(
-        f"\n--- Verifying Output (Lang: {language}, "
+        f"\n--- Verifying Output (Translate: {translate_lang or 'none'}, "
         f"NYS: {no_youtube_summary}, All: {all_gemini_arg}) ---"
     )
 
@@ -221,9 +230,8 @@ def verify_output(
 
         norm_m = normalize_model_name(m_to_norm)
         norm_t = normalize_model_name(t_to_norm)
-        col_suffix = f" ({language})" if language != "en" else ""
 
-        # Base columns
+        # Base columns — primary content is always English (no suffix)
         expected_columns = [
             "URL",
             "Title",
@@ -232,8 +240,8 @@ def verify_output(
             "Channel",
             "Tags",
             "Duration",
-            f"Transcript characters from youtube{col_suffix}",
-            "Transcript File youtube generated",  # English fallback
+            "Transcript characters from youtube",
+            "Transcript File youtube generated",
         ]
 
         if transcript_model != "youtube":
@@ -243,12 +251,12 @@ def verify_output(
         if transcript_model != "youtube":
             expected_columns.extend(
                 [
-                    f"Transcript characters from {transcript_model}{col_suffix}",
-                    f"Transcript File {transcript_model} generated{col_suffix}",
+                    f"Transcript characters from {transcript_model}",
+                    f"Transcript File {transcript_model} generated",
                 ]
             )
             if verbose:
-                expected_columns.append(f"{norm_t} STT cost{col_suffix} ($)")
+                expected_columns.append(f"{norm_t} STT cost ($)")
 
         # Summarization/QA/Speaker columns
         sources = [transcript_model]
@@ -257,31 +265,29 @@ def verify_output(
 
         for source in sources:
             source_cols = [
-                f"Summary Text {model} from {source}{col_suffix}",
-                f"Summary File {model} from {source}{col_suffix}",
-                f"QA Text {model} from {source}{col_suffix}",
-                f"QA File {model} from {source}{col_suffix}",
-                f"Speakers {model} from {source}",  # No suffix
-                f"Speakers File {model} from {source}",  # No suffix
-                f"One Sentence Summary {model} from {source}{col_suffix}",
+                f"Summary Text {model} from {source}",
+                f"Summary File {model} from {source}",
+                f"QA Text {model} from {source}",
+                f"QA File {model} from {source}",
+                f"Speakers {model} from {source}",
+                f"Speakers File {model} from {source}",
+                f"One Sentence Summary {model} from {source}",
             ]
 
             if verbose:
                 source_cols.extend(
                     [
-                        f"{norm_m} summary cost from {source}{col_suffix} ($)",
-                        f"{norm_m} QA cost from {source}{col_suffix} ($)",
+                        f"{norm_m} summary cost from {source} ($)",
+                        f"{norm_m} QA cost from {source} ($)",
                         f"{norm_m} Speaker extraction cost from {source} ($)",
-                        f"{norm_m} one sentence summary cost from "
-                        f"{source}{col_suffix} ($)",
+                        f"{norm_m} one sentence summary cost from {source} ($)",
                     ]
                 )
 
             expected_columns.extend(source_cols)
 
             if infographic_model:
-                # m_name in main.py is the summary text column key without prefix
-                m_name = f"{model} from {source}{col_suffix}"
+                m_name = f"{model} from {source}"
                 expected_columns.append(
                     f"Summary Infographic File {m_name} {infographic_model}",
                 )
@@ -292,9 +298,34 @@ def verify_output(
 
             if tts_model:
                 expected_columns.append(
-                    f"Summary Audio File {model} from {source}{col_suffix} "
-                    f"{tts_model} File"
+                    f"Summary Audio File {model} from {source} {tts_model} File"
                 )
+
+        # Translated columns (added by --translate)
+        translated_expected = []
+        if translate_lang and model:
+            trans_suffix = f" ({translate_lang})"
+            for source in sources:
+                translated_expected.extend(
+                    [
+                        f"Summary Text {model} from {source}{trans_suffix}",
+                        f"Summary File {model} from {source}{trans_suffix}",
+                        f"One Sentence Summary {model} from {source}{trans_suffix}",
+                        f"QA Text {model} from {source}{trans_suffix}",
+                        f"QA File {model} from {source}{trans_suffix}",
+                        f"Tags {transcript_model} {model} model{trans_suffix}",
+                    ]
+                )
+                if infographic_model:
+                    m_name_trans = f"{model} from {source}{trans_suffix}"
+                    translated_expected.append(
+                        f"Summary Infographic File {m_name_trans} {infographic_model}"
+                    )
+                if tts_model:
+                    translated_expected.append(
+                        f"Summary Audio File {model} from {source}{trans_suffix} "
+                        f"{tts_model} File"
+                    )
 
         missing_cols = []
         for col in expected_columns:
@@ -311,10 +342,36 @@ def verify_output(
             f"{len(expected_columns)} expected columns."
         )
 
-        # Check files exist
-        file_cols = [
-            c for c in df.columns if "File" in c or "Infographic" in c or "Audio" in c
-        ]
+        missing_translated = []
+        for col in translated_expected:
+            if col not in df.columns:
+                missing_translated.append(col)
+
+        if missing_translated:
+            print(f"Error: Missing translated columns: {missing_translated}")
+            print(f"Available columns: {df.columns}")
+            sys.exit(1)
+
+        if translated_expected:
+            print(
+                f"Verified {len(translated_expected)} translated"
+                f" ({translate_lang}) columns."
+            )
+
+        # Check video columns when -cia was used
+        if combine_info_audio:
+            video_expected = ["Video File"]
+            if translate_lang:
+                video_expected.append(f"Video File ({translate_lang})")
+            missing_video = [c for c in video_expected if c not in df.columns]
+            if missing_video:
+                print(f"Error: Missing video columns: {missing_video}")
+                print(f"Available columns: {df.columns}")
+                sys.exit(1)
+            print(f"Verified {len(video_expected)} video column(s).")
+
+        # Check files exist (only columns that store paths, not text content)
+        file_cols = [c for c in df.columns if "File" in c or "Audio" in c]
         for col in file_cols:
             for val in df[col]:
                 if val and isinstance(val, str) and not val.startswith("http"):

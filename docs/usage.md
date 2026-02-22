@@ -138,8 +138,8 @@ youtube-to-docs
 | `-i`, `--infographic`| The image model to use for generating a visual summary. Supports models from Google (Gemini, Imagen), AWS Bedrock (Titan, Nova Canvas), and Azure Foundry. | `None` | `--infographic gemini-2.5-flash-image` |
 | `--alt-text-model` | The LLM model to use for generating multimodal alt text for the infographic. Defaults to the summary model. | `None` | `--alt-text-model gemini-3-flash-preview` |
 | `-nys`, `--no-youtube-summary` | If set, skips generating a secondary summary from the YouTube transcript when using an AI model for the primary transcript. | `False` | `--no-youtube-summary` |
-| `-l`, `--language` | The target language(s) (e.g. 'es', 'fr', 'en'). Can be a comma-separated list. Default is 'en'. | `en` | `-l es,fr` |
-| `-cia`, `--combine-infographic-audio` | Combine the infographic and audio summary into a video file (MP4). Requires both `--tts` and `--infographic` to be effective. | `False` | `--combine-infographic-audio` |
+| `-tr`, `--translate` | Translate all outputs to a target language after generating in English. Format: `{model}-{language}` (same pattern as `--tts`). The tool first tries to fetch a native YouTube transcript in the target language; if unavailable, it translates the English transcript. Summaries, Q&A, tags, one-sentence summaries, transcripts, and SRT files are all translated. When combined with `--tts` or `--infographic`, assets are produced in both English and the target language. | `None` | `-tr gemini-3-flash-preview-es` |
+| `-cia`, `--combine-infographic-audio` | Combine the infographic and audio summary into a video file (MP4). Requires both `--tts` and `--infographic` to be effective. When used with `--translate`, one video is created per language. | `False` | `--combine-infographic-audio` |
 | `--all` | Shortcut to use a specific model suite for everything. Supported: `'gemini-flash'`, `'gemini-pro'`, `'gemini-flash-pro-image'`, `'gcp-pro'`. Sets models for summary, TTS, and infographic, and enables `--no-youtube-summary`. | `None` | `--all gemini-flash` |
 | `--verbose` | Enable verbose output. | `False` | `--verbose` |
 
@@ -180,6 +180,16 @@ youtube-to-docs atmGAHYpf_c --infographic bedrock-titan-image-generator-v2:0
 youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-2.5-flash-image --combine-infographic-audio
 ```
 
+**8. Translate all outputs to Spanish:**
+```bash
+youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview -tr gemini-3-flash-preview-es
+```
+
+**9. Full multilingual pipeline — English + Spanish summaries, audio, infographics, and videos:**
+```bash
+youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview -tr gemini-3-flash-preview-es --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-2.5-flash-image --combine-infographic-audio
+```
+
 ## CSV Column Reference
 
 The output CSV file contains a variety of columns depending on the arguments provided. Below is a reference of the possible columns:
@@ -208,7 +218,8 @@ The output CSV file contains a variety of columns depending on the arguments pro
 *   **Summary Infographic File {model} {infographic_model}**: Path to the generated infographic image.
 *   **Summary Infographic Alt Text File {model} {infographic_model}**: Path to the generated alt text file.
 *   **Summary Audio File {model} {tts_model} File**: Path to the generated TTS audio file. Suffix `(lang)` added for non-English.
-*   **Video File**: Path to the generated MP4 video combining the infographic and audio.
+*   **Video File**: Path to the generated MP4 video combining the English infographic and audio.
+*   **Video File (lang)**: Path to the translated language video (e.g., `Video File (es)`). Only present when `--translate` and `--combine-infographic-audio` are both used.
 
 ### AI Outputs & Costs
 *   **Speakers {model}**: The extracted list of speakers and their roles.

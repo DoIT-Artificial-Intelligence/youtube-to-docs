@@ -37,13 +37,15 @@ def main():
     selected_model = get_default_model(available_models)
     print(f"\nUsing model: {selected_model}")
 
+    translate_arg = "gemini-3.1-pro-preview-es"
+
     # 4. Run Regression with Workspace Target
     run_regression(
         None,  # model will be set by all_gemini_arg
         None,  # transcript_model
         None,  # infographic_model
         None,  # tts_model
-        language="es",
+        translate=translate_arg,
         output_target=folder_id,
         all_gemini_arg="gemini-pro",
     )
@@ -54,7 +56,7 @@ def main():
         None,
         None,
         None,
-        language="es",
+        translate=translate_arg,
         output_target=folder_id,
         all_gemini_arg="gemini-pro",
     )
