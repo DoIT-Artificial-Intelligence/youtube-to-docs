@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "youtube-to-docs": {
+      "command": "uv",
+      "args": [
+        "--project",
+        "${workspaceFolder}",
+        "run",
+        "--all-extras",
+        "python",
+        "-m",
+        "youtube_to_docs.mcp_server"
+      ]
+    }
+  }
+}

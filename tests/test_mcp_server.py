@@ -15,8 +15,6 @@ def test_process_video_defaults():
             "youtube-to-docs-artifacts/youtube-docs.csv",
             "--transcript",
             "youtube",
-            "--language",
-            "en",
         ]
 
         mock_main.assert_called_once_with(expected_args)
@@ -35,7 +33,7 @@ def test_process_video_all_args():
             tts_model="tts-1",
             infographic_model="imagen",
             no_youtube_summary=True,
-            languages="es,fr",
+            translate="gemini-2.5-pro-es",
         )
 
         expected_args = [
@@ -44,8 +42,8 @@ def test_process_video_all_args():
             "custom.csv",
             "--transcript",
             "gemini-pro",
-            "--language",
-            "es,fr",
+            "--translate",
+            "gemini-2.5-pro-es",
             "--model",
             "gemini-2.5-pro",
             "--tts",
@@ -71,8 +69,6 @@ def test_process_video_all_suite():
             "youtube-to-docs-artifacts/youtube-docs.csv",
             "--transcript",
             "youtube",
-            "--language",
-            "en",
             "--all",
             "gemini-flash",
         ]

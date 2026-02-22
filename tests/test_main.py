@@ -500,8 +500,8 @@ class TestMain(unittest.TestCase):
                 self.outfile,
                 "-m",
                 "gemini-test",
-                "--language",
-                "es",
+                "--translate",
+                "gemini-test-es",
             ],
         ):
             with patch("builtins.open", mock_open()):
@@ -563,8 +563,8 @@ class TestMain(unittest.TestCase):
                 self.outfile,
                 "-m",
                 "gemini-test",
-                "--language",
-                "en,es",
+                "--translate",
+                "gemini-test-es",
             ],
         ):
             with patch("builtins.open", mock_open()):

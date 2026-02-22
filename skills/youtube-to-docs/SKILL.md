@@ -7,15 +7,15 @@ description: "Comprehensive suite for processing YouTube videos. Use this when t
 
 ## Overview
 
-This skill allows you to process YouTube videos to extract transcripts, generate AI summaries, create infographics, and even produce video summaries. You have access to the `process_video` tool which handles these operations.
+This skill allows you to process YouTube videos to extract transcripts, generate AI summaries, create infographics, and even produce video summaries. You have access to the `youtube-to-docs:process_video` tool which handles these operations.
 
 ## Requirements & Dependencies
 
-The `process_video` tool is a high-level interface that relies on several optional libraries ("extras") and system binaries to function. These are managed automatically when running via the provided MCP configuration or `uv`.
+The `youtube-to-docs:process_video` tool is a high-level interface that relies on several optional libraries ("extras") and system binaries to function. These are managed automatically when running via the provided MCP configuration or `uv`.
 
 *   **Python Libraries**: Many features (audio extraction, video generation, cloud storage) require specific extras.
 *   **System Binaries**: Features like video creation (`combine_infographic_audio`) require `ffmpeg` (handled by the `static-ffmpeg` library).
-*   **Automatic Setup**: The MCP server (configured in `gemini-extension.json` for Gemini CLI and `.mcp.json` for Claude Code) uses `uv run --all-extras` to ensure all necessary libraries are installed in a managed environment before execution.
+*   **Automatic Setup**: The MCP server (configured in `.mcp.json`) uses `uv run --all-extras` to ensure all necessary libraries are installed in a managed environment before execution.
 
 ## Workflows
 
@@ -24,7 +24,7 @@ The `process_video` tool is a high-level interface that relies on several option
 Use this when the user simply wants the text transcript of a video, without additional AI processing.
 
 *   **Goal**: Get the raw text from a YouTube video.
-*   **Tool**: `process_video`
+*   **Tool**: `youtube-to-docs:process_video`
 *   **Required Argument**: `url` (The YouTube link)
 *   **Defaults**: By default, `process_video` fetches the transcript from YouTube.
 *   **Example Prompt**: "Get the transcript for https://www.youtube.com/watch?v=..."
@@ -34,7 +34,7 @@ Use this when the user simply wants the text transcript of a video, without addi
 Use this when the user wants a visual summary or "infographic" representing the video's content.
 
 *   **Goal**: Create a visual summary (image).
-*   **Tool**: `process_video`
+*   **Tool**: `youtube-to-docs:process_video`
 *   **Required Argument**: `url` (The YouTube link)
 *   **Optional Arguments**:
     *   `infographic_model`: The image generation model to use.
@@ -54,7 +54,7 @@ Use this when the user wants a visual summary or "infographic" representing the 
 Use this when the user asks for "everything", a "kitchen sink" run, or a "video summary". This generates transcripts, text summaries, Q&A, audio summaries (TTS), infographics, and combines them into a video file.
 
 *   **Goal**: Generate all possible artifacts, including a video file.
-*   **Tool**: `process_video`
+*   **Tool**: `youtube-to-docs:process_video`
 *   **Required Argument**: `url` (The YouTube link)
 *   **Optional Arguments**:
     *   `all_suite`: Shortcut to set models (`'gemini-flash'` or `'gemini-pro'`).
@@ -80,9 +80,9 @@ Use this when the user specifies particular models or output locations.
 *   **Transcription Source**:
     *   Default is YouTube captions.
     *   To use AI for transcription (STT), set `transcript_source` to a model name (e.g., `'gemini-3-flash-preview'` or `'gcp-chirp3'`).
-    *   **Note**: `gcp-` models require `GOOGLE_CLOUD_PROJECT` and optional `YTD_GCS_BUCKET_NAME` environment variables.
+    *   **Note**: `gcp-` models require `PROJECT_ID` and optional `YTD_GCS_BUCKET_NAME` environment variables.
 
-## Tool Reference: `process_video`
+## Tool Reference: `youtube-to-docs:process_video`
 
 | Argument | Description | Required Extra | Examples |
 | :--- | :--- | :--- | :--- |
@@ -100,20 +100,20 @@ Use this when the user specifies particular models or output locations.
 ## Examples
 
 **User**: "Get me a transcript of this video."
-**Action**: Call `process_video(url='...')`
+**Action**: Call `youtube-to-docs:process_video(url='...')`
 
 **User**: "Make an infographic for this video using Gemini Pro."
-**Action**: Call `process_video(url='...', model='gemini-3.1-pro-preview', infographic_model='gemini-3-pro-image-preview')`
+**Action**: Call `youtube-to-docs:process_video(url='...', model='gemini-3.1-pro-preview', infographic_model='gemini-3-pro-image-preview')`
 
 **User**: "Do a kitchen sink run on this video in Spanish."
-**Action**: Call `process_video(url='...', all_suite='gemini-pro', combine_infographic_audio=True, verbose=True, translate='gemini-3-flash-preview-es')`
+**Action**: Call `youtube-to-docs:process_video(url='...', all_suite='gemini-pro', combine_infographic_audio=True, verbose=True, translate='gemini-3-flash-preview-es')`
 
 **User**: "Summarize this playlist and save it to Drive."
-**Action**: Call `process_video(url='PL...', model='gemini-3-flash-preview', output_file='workspace')`
+**Action**: Call `youtube-to-docs:process_video(url='PL...', model='gemini-3-flash-preview', output_file='workspace')`
 
 ## Development & CLI Usage
 
-While this skill primarily uses the `process_video` tool, you can also run the underlying CLI manually for testing or development.
+While this skill primarily uses the `youtube-to-docs:process_video` tool, you can also run the underlying CLI manually for testing or development.
 
 **Note on CLI Syntax**: The video URL/ID is a **positional** argument and is **required**. Do NOT use `--url`.
 
@@ -136,7 +136,7 @@ uv run youtube-to-docs B0x2I_doX9o -m gemini-3-flash-preview -tr gemini-3-flash-
 See `docs/usage.md` for full documentation and `docs/development.md` for setup details.
 
 **MCP Configuration:**
-The MCP server definition is located in `gemini-extension.json` (Gemini CLI) and `.mcp.json` (Claude Code). It is explicitly configured to use `uv` with `--all-extras` to ensure the correct environment and dependencies are used:
+The MCP server definition is located in `.mcp.json`. It is explicitly configured to use `uv` with `--all-extras` to ensure the correct environment and dependencies are used:
 
 ```json
 "command": "uv",

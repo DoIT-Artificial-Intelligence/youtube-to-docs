@@ -36,6 +36,7 @@ from youtube_to_docs.transcript import (
     get_youtube_service,
     resolve_video_ids,
 )
+from youtube_to_docs.translate import parse_translate_arg, translate_text
 from youtube_to_docs.tts import process_tts
 from youtube_to_docs.utils import (
     format_clickable_path,
@@ -132,7 +133,9 @@ def main(args_list: list[str] | None = None) -> None:
         "--tts",
         default=None,
         help=(
-            "The TTS model and voice to use. "
+            "Generate an audio file for each summary by reading it aloud with a "
+            "text-to-speech model. When used with --translate, audio is also "
+            "generated for the translated summaries in the target language. \n"
             "Format: `{model}-{voice}` e.g. `gemini-2.5-flash-preview-tts-Kore` \n"
             "or `gemini-2.5-pro-preview-tts-Kore` \n"
             "GCP Cloud TTS: `gcp-chirp3` or `gcp-chirp3-{voice}` "
@@ -168,10 +171,16 @@ def main(args_list: list[str] | None = None) -> None:
         ),
     )
     parser.add_argument(
-        "-l",
-        "--language",
-        default="en",
-        help=("The target language (e.g. `es`, `fr`, `en`). Default is `en`."),
+        "-tr",
+        "--translate",
+        default=None,
+        help=(
+            "Translate LLM outputs to a target language after generating in English. "
+            "Format: `{model}-{language}` e.g. `gemini-3-flash-preview-es` \n"
+            "or `bedrock-nova-2-lite-v1-fr`\n"
+            "All summaries, Q&A, tags, and one-sentence summaries are generated in "
+            "English first, then translated using the specified model and language."
+        ),
     )
     parser.add_argument(
         "-cia",
@@ -245,11 +254,18 @@ def main(args_list: list[str] | None = None) -> None:
     infographic_arg = args.infographic
     alt_text_model_arg = args.alt_text_model
     no_youtube_summary = args.no_youtube_summary
-    language_arg = args.language
+    translate_arg = args.translate
 
     combine_info_audio = args.combine_infographic_audio
     model_names = model_names_arg.split(",") if model_names_arg else []
-    languages = language_arg.split(",") if language_arg else ["en"]
+    translate_model = None
+    translate_lang = None
+    if translate_arg:
+        translate_model, translate_lang = parse_translate_arg(translate_arg)
+
+    languages = ["en"]
+    if translate_lang:
+        languages.append(translate_lang)
 
     youtube_service = get_youtube_service()
 
@@ -329,7 +345,8 @@ def main(args_list: list[str] | None = None) -> None:
 
     if model_names:
         vprint(f"Summarizing using models: {model_names}")
-    vprint(f"Target Languages: {languages}")
+    if translate_model and translate_lang:
+        vprint(f"Translation: {translate_model} -> {translate_lang}")
 
     rows = []
 
@@ -493,7 +510,10 @@ def main(args_list: list[str] | None = None) -> None:
             rprint(f"--- Processing Language: {language} ---")
 
             col_suffix = f" ({language})" if language != "en" else ""
-            lang_str = f" ({language})" if language != "en" else ""
+            if language != "en" and translate_model:
+                lang_str = f" ({translate_model}-{language})"
+            else:
+                lang_str = f" ({language})" if language != "en" else ""
 
             col_youtube = f"Transcript File youtube generated{col_suffix}"
             col_human = f"Transcript File human generated{col_suffix}"
@@ -594,24 +614,21 @@ def main(args_list: list[str] | None = None) -> None:
                     youtube_transcript
                 )
             elif language != "en":
-                # Fallback to English transcript if available
+                # For non-English: get English transcript, then translate it
+                en_transcript = ""
                 en_path = row.get("Transcript File human generated") or row.get(
                     "Transcript File youtube generated"
                 )
                 if en_path and storage.exists(str(en_path)):
-                    youtube_transcript = storage.read_text(str(en_path))
-                    vprint(
-                        "Using existing English transcript as fallback for "
-                        f"{language} processing."
-                    )
+                    en_transcript = storage.read_text(str(en_path))
+                    vprint(f"Loaded English transcript for {language} translation.")
                 else:
-                    # Try fetching English fresh
+                    # Fetch English transcript fresh
                     en_result = fetch_transcript(video_id, language="en")
                     if en_result:
-                        youtube_transcript, en_is_generated, _ = en_result
+                        en_transcript, en_is_generated, _ = en_result
                         vprint(
-                            f"Fetched English transcript as fallback for {language} "
-                            "processing."
+                            f"Fetched English transcript for {language} translation."
                         )
                         # Save English transcript if missing
                         if not row.get(
@@ -624,13 +641,12 @@ def main(args_list: list[str] | None = None) -> None:
                             )
                             filename = f"{prefix}{video_id} - {safe_title}.txt"
                             target_path = os.path.join(transcripts_dir, filename)
-
                             try:
                                 saved_path = storage.write_text(
-                                    target_path, youtube_transcript
+                                    target_path, en_transcript
                                 )
                                 rprint(
-                                    f"Saved fallback English transcript: "
+                                    f"Saved English transcript: "
                                     f"{format_clickable_path(saved_path)}"
                                 )
                                 if en_is_generated:
@@ -640,7 +656,78 @@ def main(args_list: list[str] | None = None) -> None:
                                 else:
                                     row["Transcript File human generated"] = saved_path
                             except Exception as e:
-                                print(f"Error writing fallback English transcript: {e}")
+                                print(f"Error writing English transcript: {e}")
+
+                if en_transcript and translate_model:
+                    # Translate English transcript to target language
+                    col_translated = f"Transcript File translated{col_suffix}"
+                    if row.get(col_translated) and storage.exists(
+                        str(row[col_translated])
+                    ):
+                        youtube_transcript = storage.read_text(str(row[col_translated]))
+                        vprint(f"Loaded existing translated transcript ({language}).")
+                    else:
+                        rprint(
+                            f"Translating transcript to {language} "
+                            f"using {translate_model}..."
+                        )
+                        youtube_transcript, _, _ = translate_text(
+                            translate_model, en_transcript, language
+                        )
+                        filename = (
+                            f"youtube translated {translate_model}-{language}"
+                            f" - {video_id} - {safe_title}.txt"
+                        )
+                        target_path = os.path.join(transcripts_dir, filename)
+                        try:
+                            saved_path = storage.write_text(
+                                target_path, youtube_transcript
+                            )
+                            rprint(
+                                f"Saved translated transcript ({language}): "
+                                f"{format_clickable_path(saved_path)}"
+                            )
+                            row[col_translated] = saved_path
+                        except Exception as e:
+                            print(f"Error writing translated transcript: {e}")
+
+                        # Translate SRT
+                        en_srt = ""
+                        en_srt_path = row.get("SRT File youtube")
+                        if en_srt_path and storage.exists(str(en_srt_path)):
+                            en_srt = storage.read_text(str(en_srt_path))
+                        if en_srt and not row.get(col_srt):
+                            rprint(
+                                f"Translating SRT to {language} "
+                                f"using {translate_model}..."
+                            )
+                            translated_srt, _, _ = translate_text(
+                                translate_model, en_srt, language
+                            )
+                            srt_filename = (
+                                f"youtube translated {translate_model}-{language}"
+                                f" - {video_id} - {safe_title}.srt"
+                            )
+                            srt_target_path = os.path.join(srt_dir, srt_filename)
+                            try:
+                                saved_srt_path = storage.write_text(
+                                    srt_target_path, translated_srt
+                                )
+                                rprint(
+                                    f"Saved translated SRT ({language}): "
+                                    f"{format_clickable_path(saved_srt_path)}"
+                                )
+                                row[col_srt] = saved_srt_path
+                                srt_content = translated_srt
+                            except Exception as e:
+                                print(f"Error writing translated SRT: {e}")
+                elif en_transcript:
+                    # No translation model — use English as-is
+                    youtube_transcript = en_transcript
+                    vprint(
+                        f"Using English transcript as fallback for {language} "
+                        "processing (no translation model set)."
+                    )
 
                 if youtube_transcript:
                     row[f"Transcript characters from youtube{col_suffix}"] = len(
@@ -693,82 +780,165 @@ def main(args_list: list[str] | None = None) -> None:
                         ai_srt_content = storage.read_text(expected_ai_srt_path)
                         row[ai_srt_col] = expected_ai_srt_path
 
-                # If no existing AI transcript, generate it
+                # If no existing AI transcript, generate or translate it
                 if not ai_transcript:
-                    audio_input_path = (
-                        local_audio_path
-                        if local_audio_path and os.path.exists(local_audio_path)
-                        else None
-                    )
+                    if language != "en" and translate_model:
+                        # Translate English AI transcript instead of re-running STT
+                        en_ai_col = f"Transcript File {transcript_arg} generated"
+                        en_ai_path = row.get(en_ai_col)
+                        en_ai_text = ""
+                        if (
+                            en_ai_path
+                            and isinstance(en_ai_path, str)
+                            and storage.exists(en_ai_path)
+                        ):
+                            en_ai_text = storage.read_text(en_ai_path)
 
-                    if not audio_input_path and audio_file_path:
-                        # Try to get it locally via storage abstraction
-                        vprint(f"Retrieving audio file locally: {audio_file_path}")
-                        audio_input_path = storage.get_local_file(
-                            audio_file_path, download_dir=local_audio_dir
-                        )
+                        if en_ai_text:
+                            rprint(
+                                f"Translating AI transcript to {language} "
+                                f"using {translate_model}..."
+                            )
+                            ai_transcript, _, _ = translate_text(
+                                translate_model, en_ai_text, language
+                            )
+                            filename = (
+                                f"{transcript_arg} translated "
+                                f"{translate_model}-{language}"
+                                f" - {video_id} - {safe_title}.txt"
+                            )
+                            target_path = os.path.join(transcripts_dir, filename)
+                            try:
+                                saved_path = storage.write_text(
+                                    target_path, ai_transcript
+                                )
+                                rprint(
+                                    f"Saved translated AI transcript ({language}): "
+                                    f"{format_clickable_path(saved_path)}"
+                                )
+                                row[ai_col] = saved_path
+                            except Exception as e:
+                                print(f"Error writing translated AI transcript: {e}")
 
-                    if not audio_input_path:
-                        print(f"Error: Audio file not found for STT: {audio_file_path}")
+                            # Translate AI SRT
+                            en_ai_srt_col = f"SRT File {transcript_arg}"
+                            en_ai_srt_path = row.get(en_ai_srt_col)
+                            en_ai_srt = ""
+                            if en_ai_srt_path and storage.exists(str(en_ai_srt_path)):
+                                en_ai_srt = storage.read_text(str(en_ai_srt_path))
+                            if en_ai_srt and not row.get(ai_srt_col):
+                                rprint(
+                                    f"Translating AI SRT to {language} "
+                                    f"using {translate_model}..."
+                                )
+                                translated_ai_srt, _, _ = translate_text(
+                                    translate_model, en_ai_srt, language
+                                )
+                                srt_filename = (
+                                    f"{transcript_arg} translated "
+                                    f"{translate_model}-{language}"
+                                    f" - {video_id} - {safe_title}.srt"
+                                )
+                                srt_target_path = os.path.join(srt_dir, srt_filename)
+                                try:
+                                    saved_srt_path = storage.write_text(
+                                        srt_target_path, translated_ai_srt
+                                    )
+                                    rprint(
+                                        f"Saved translated AI SRT ({language}): "
+                                        f"{format_clickable_path(saved_srt_path)}"
+                                    )
+                                    row[ai_srt_col] = saved_srt_path
+                                    ai_srt_content = translated_ai_srt
+                                except Exception as e:
+                                    print(f"Error writing translated AI SRT: {e}")
+                        else:
+                            vprint(
+                                f"English AI transcript not found for translation "
+                                f"({transcript_arg})."
+                            )
                     else:
-                        vprint(
-                            f"Generating transcript using model: {transcript_arg} "
-                            f"({language})..."
+                        # Run STT for English (or when no translate model)
+                        audio_input_path = (
+                            local_audio_path
+                            if local_audio_path and os.path.exists(local_audio_path)
+                            else None
                         )
 
-                        # Use single call for GCP models (returns both text + SRT)
-                        if transcript_arg.startswith("gcp-"):
-                            ai_transcript, ai_srt_content, stt_in, stt_out = (
-                                generate_transcript_with_srt(
+                        if not audio_input_path and audio_file_path:
+                            # Try to get it locally via storage abstraction
+                            vprint(f"Retrieving audio file locally: {audio_file_path}")
+                            audio_input_path = storage.get_local_file(
+                                audio_file_path, download_dir=local_audio_dir
+                            )
+
+                        if not audio_input_path:
+                            print(
+                                "Error: Audio file not found for STT: "
+                                f"{audio_file_path}"
+                            )
+                        else:
+                            vprint(
+                                f"Generating transcript using model: {transcript_arg} "
+                                f"({language})..."
+                            )
+
+                            # Use single call for GCP models (returns both text + SRT)
+                            if transcript_arg.startswith("gcp-"):
+                                ai_transcript, ai_srt_content, stt_in, stt_out = (
+                                    generate_transcript_with_srt(
+                                        transcript_arg,
+                                        audio_input_path,
+                                        url,
+                                        language=language,
+                                        duration_seconds=video_duration_seconds,
+                                    )
+                                )
+                            else:
+                                # For Gemini/other models, still need two calls
+                                ai_transcript, stt_in, stt_out = generate_transcript(
                                     transcript_arg,
                                     audio_input_path,
                                     url,
                                     language=language,
                                     duration_seconds=video_duration_seconds,
                                 )
-                            )
-                        else:
-                            # For Gemini/other models, still need two calls
-                            ai_transcript, stt_in, stt_out = generate_transcript(
-                                transcript_arg,
-                                audio_input_path,
-                                url,
-                                language=language,
-                                duration_seconds=video_duration_seconds,
-                            )
-                            ai_srt_content, _, _ = generate_transcript(
-                                transcript_arg,
-                                audio_input_path,
-                                url,
-                                language=language,
-                                srt=True,
-                                duration_seconds=video_duration_seconds,
-                            )
+                                ai_srt_content, _, _ = generate_transcript(
+                                    transcript_arg,
+                                    audio_input_path,
+                                    url,
+                                    language=language,
+                                    srt=True,
+                                    duration_seconds=video_duration_seconds,
+                                )
 
-                        # Save AI transcript
-                        prefix = f"{transcript_arg} generated{lang_str} - "
-                        filename = f"{prefix}{video_id} - {safe_title}.txt"
-                        srt_filename = f"{prefix}{video_id} - {safe_title}.srt"
-                        target_path = os.path.join(transcripts_dir, filename)
-                        srt_target_path = os.path.join(srt_dir, srt_filename)
+                            # Save AI transcript
+                            prefix = f"{transcript_arg} generated{lang_str} - "
+                            filename = f"{prefix}{video_id} - {safe_title}.txt"
+                            srt_filename = f"{prefix}{video_id} - {safe_title}.srt"
+                            target_path = os.path.join(transcripts_dir, filename)
+                            srt_target_path = os.path.join(srt_dir, srt_filename)
 
-                        try:
-                            saved_path = storage.write_text(target_path, ai_transcript)
-                            rprint(
-                                "Saved AI transcript: "
-                                f"{format_clickable_path(saved_path)}"
-                            )
-                            row[ai_col] = saved_path
+                            try:
+                                saved_path = storage.write_text(
+                                    target_path, ai_transcript
+                                )
+                                rprint(
+                                    "Saved AI transcript: "
+                                    f"{format_clickable_path(saved_path)}"
+                                )
+                                row[ai_col] = saved_path
 
-                            saved_srt_path = storage.write_text(
-                                srt_target_path, ai_srt_content
-                            )
-                            rprint(
-                                f"Saved AI SRT: {format_clickable_path(saved_srt_path)}"
-                            )
-                            row[ai_srt_col] = saved_srt_path
-                        except Exception as e:
-                            print(f"Error writing AI transcript/SRT: {e}")
+                                saved_srt_path = storage.write_text(
+                                    srt_target_path, ai_srt_content
+                                )
+                                rprint(
+                                    f"Saved AI SRT: "
+                                    f"{format_clickable_path(saved_srt_path)}"
+                                )
+                                row[ai_srt_col] = saved_srt_path
+                            except Exception as e:
+                                print(f"Error writing AI transcript/SRT: {e}")
 
                         # Calculate STT Cost
                         if verbose:
