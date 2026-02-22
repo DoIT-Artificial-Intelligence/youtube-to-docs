@@ -741,10 +741,10 @@ let useLogScale = false;
 let sortCol = -1, sortDir = 1;
 
 const VENDOR_COLORS = {
-    'google':    '#4285F4',
-    'amazon':    '#FF9900',
-    'openai':    '#10A37F',
-    'anthropic': '#D97706'
+    'google':    '#8B5CF6',
+    'amazon':    '#FFB800',
+    'openai':    '#1A1A1A',
+    'anthropic': '#E8511A'
 };
 
 function formatPrice(val) {
@@ -939,10 +939,10 @@ function renderChart(data) {
 function buildLegend() {
     const el = document.getElementById('chartLegend');
     const vendorItems = [
-        {color: '#4285F4', label: 'Google'},
-        {color: '#FF9900', label: 'Amazon'},
-        {color: '#10A37F', label: 'OpenAI'},
-        {color: '#D97706', label: 'Anthropic'}
+        {color: '#8B5CF6', label: 'Google'},
+        {color: '#FFB800', label: 'Amazon'},
+        {color: '#1A1A1A', label: 'OpenAI'},
+        {color: '#E8511A', label: 'Anthropic'}
     ];
     const typeItems = [
         {symbol: '●', label: 'Text',          type: 'text'},
