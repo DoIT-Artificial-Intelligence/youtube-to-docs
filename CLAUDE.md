@@ -1,6 +1,6 @@
-# YouTube to Docs Extension
+# YouTube to Docs Plugin
 
-This extension provides an MCP server to process YouTube videos using the `youtube-to-docs` library.
+This plugin provides an MCP server to process YouTube videos using the `youtube-to-docs` library.
 
 ## Tools
 
@@ -39,12 +39,12 @@ Here are the following args for the tool:
         - Summary/Transcript: `bedrock-nova-2-lite-v1`
         - TTS: `aws-polly-Ruth`
         - Infographic: `gemini-2.5-flash-image` (fallback)
-2.  **Slash Commands**:
-    - `/ytt <url>`: Fetches only the YouTube transcript (uses `ytt.toml`).
-    - `/infographic <url> <family>`: Generates an infographic and summary.
+2.  **Skills**:
+    - `/youtube-to-docs:ytt <url>`: Fetches only the YouTube transcript.
+    - `/youtube-to-docs:infographic <url> <family>`: Generates an infographic and summary.
       - `<family>` can be "gemini flash" or "gemini pro".
       - Defaults to Flash summary (`gemini-3-flash-preview`) with relevant image model.
-    - `/ks <url> <family> <language>`: Kitchen Sink - generates everything and combines into a video.
+    - `/youtube-to-docs:ks <url> <family> <language>`: Kitchen Sink - generates everything and combines into a video.
       - `<family>` can be "gemini flash" or "gemini pro". Defaults to "gemini pro".
       - `<language>` can be "spanish", "french", etc. Defaults to "en".
       - Equivalent to `youtube_to_docs --all gemini-pro --verbose --combine-infographic-audio`.

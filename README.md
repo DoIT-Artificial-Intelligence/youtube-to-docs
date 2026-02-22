@@ -50,4 +50,10 @@ Install as a Gemini CLI extension:
 gemini extensions install https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs.git
 ```
 
+Install as a Claude Code plugin:
+
+```bash
+/plugin marketplace add DoIT-Artificial-Intelligence/youtube-to-docs
+```
+
 *Created with the help of AI. All artifacts have been checked and work as expected.*
