@@ -54,6 +54,7 @@ Install as a Claude Code plugin:
 
 ```bash
 /plugin marketplace add DoIT-Artificial-Intelligence/youtube-to-docs
+/plugin install youtube-to-docs@youtube-to-docs
 ```
 
 Install as an MCP server for Claude Code:
