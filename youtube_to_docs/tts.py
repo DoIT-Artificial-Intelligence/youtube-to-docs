@@ -364,15 +364,20 @@ def process_tts(
 
     for col in summary_file_cols:
         # Extract language from column name: e.g. "... (es)" -> "es"
+        # Or "... (aws-translate-es)" -> "aws-translate-es"
         col_lang = "en"
-        lang_code = None
+        lang_code = "en-US"
         if "(" in col and col.endswith(")"):
-            code = col.split("(")[-1].strip(")")
-            col_lang = code
-            lang_code = lang_map.get(code, "en-US")  # Default to en-US if unknown
+            full_code = col.split("(")[-1].strip(")")
+            col_lang = full_code
+
+            # Extract the actual language part (last part after hyphen if present)
+            # e.g., "aws-translate-es" -> "es"
+            actual_lang = full_code.split("-")[-1] if "-" in full_code else full_code
+            lang_code = lang_map.get(actual_lang, "en-US")
         else:
             col_lang = "en"
-            lang_code = "en-US"  # Default for columns without language suffix
+            lang_code = "en-US"
 
         if languages and col_lang not in languages:
             continue

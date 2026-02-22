@@ -1113,13 +1113,12 @@ def generate_summary(
     transcript: str,
     video_title: str,
     url: str,
-    language: str = "en",
 ) -> Tuple[str, int, int]:
     """Generates a summary and returns (summary_text, input_tokens, output_tokens)."""
     prompt = (
         f"I have included a transcript for {url} ({video_title})"
         "\n\n"
-        f"Can you please summarize this in {language}?"
+        "Can you please summarize this?"
         "\n\n"
         f"{transcript}"
     )
@@ -1129,11 +1128,10 @@ def generate_summary(
 def generate_one_sentence_summary(
     model_name: str,
     summary_text: str,
-    language: str = "en",
 ) -> Tuple[str, int, int]:
     """Generates a one sentence summary from the provided summary text."""
     prompt = (
-        f"Can you please summarize the following text into one sentence in {language}?"
+        "Can you please summarize the following text into one sentence?"
         "\n\n"
         f"{summary_text}"
     )
@@ -1172,7 +1170,6 @@ def generate_qa(
     transcript: str,
     speakers: str,
     url: str,
-    language: str = "en",
     timing_reference: Optional[str] = None,
 ) -> Tuple[str, int, int]:
     """
@@ -1182,8 +1179,7 @@ def generate_qa(
     prompt = (
         "I have included a transcript (which might be in SRT format with timestamps)."
         "\n\n"
-        "Can you please extract the questions and answers from the transcript "
-        f"in {language}?"
+        "Can you please extract the questions and answers from the transcript?"
         "\n\n"
         "The output should be a markdown table like:"
         "\n\n"
@@ -1229,9 +1225,7 @@ def generate_qa(
     return response_text, input_tokens, output_tokens
 
 
-def generate_tags(
-    model_name: str, summary_text: str, language: str = "en"
-) -> Tuple[str, int, int]:
+def generate_tags(model_name: str, summary_text: str) -> Tuple[str, int, int]:
     """
     Generates up to 5 comma-separated tags for the provided summary.
     Returns (tags_string, input_tokens, output_tokens).
@@ -1239,8 +1233,7 @@ def generate_tags(
     prompt = (
         "I have included a summary."
         "\n\n"
-        f"Can you please generate up to 5 comma-separated tags for this summary in "
-        f"{language}? "
+        "Can you please generate up to 5 comma-separated tags for this summary? "
         "Each tag can be one or more words. "
         "Return ONLY the comma-separated tags string without any introductory or "
         "concluding text."
@@ -1253,7 +1246,6 @@ def generate_tags(
 def generate_alt_text(
     model_name: str,
     image_bytes: bytes,
-    language: str = "en",
 ) -> Tuple[str, int, int]:
     """
     Generates alt text for an infographic based on the generated image.
@@ -1263,8 +1255,7 @@ def generate_alt_text(
         model_name = "bedrock-" + model_name
 
     prompt = (
-        f"Please provide a descriptive alt text for this infographic "
-        f"in {language}. "
+        "Please provide a descriptive alt text for this infographic. "
         "The alt text should describe the visual layout and key information "
         "presented, making it accessible for someone who cannot see the image. "
         "Start the response immediately with the alt text."

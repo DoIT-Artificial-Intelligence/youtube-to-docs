@@ -43,7 +43,7 @@ def main():
         None,  # transcript_model
         None,  # infographic_model
         None,  # tts_model
-        language="es",
+        language="gemini-es",
         output_target=folder_id,
         all_gemini_arg="gemini-pro",
     )
@@ -54,7 +54,7 @@ def main():
         None,
         None,
         None,
-        language="es",
+        language="gemini-es",
         output_target=folder_id,
         all_gemini_arg="gemini-pro",
     )

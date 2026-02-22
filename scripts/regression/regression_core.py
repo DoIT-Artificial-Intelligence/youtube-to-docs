@@ -10,6 +10,8 @@ import polars as pl
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
+from youtube_to_docs.translator import parse_language_arg
+
 # Configuration
 VIDEO_ID = "B0x2I_doX9o"
 ARTIFACTS_DIR = "youtube-to-docs-test"
@@ -221,9 +223,16 @@ def verify_output(
 
         norm_m = normalize_model_name(m_to_norm)
         norm_t = normalize_model_name(t_to_norm)
-        col_suffix = f" ({language})" if language != "en" else ""
 
-        # Base columns
+        # Parse language(s)
+        target_trans = []
+        if language != "en":
+            for lang_arg in language.split(","):
+                method, lang_code = parse_language_arg(lang_arg)
+                if lang_code != "en":
+                    target_trans.append((method, lang_code))
+
+        # Base columns (always English)
         expected_columns = [
             "URL",
             "Title",
@@ -232,23 +241,30 @@ def verify_output(
             "Channel",
             "Tags",
             "Duration",
-            f"Transcript characters from youtube{col_suffix}",
-            "Transcript File youtube generated",  # English fallback
+            "Transcript characters from youtube",
+            "Transcript File youtube generated",
         ]
 
         if transcript_model != "youtube":
             expected_columns.append("Audio File")
 
-        # Transcript columns
+        # Transcript columns (always English)
         if transcript_model != "youtube":
             expected_columns.extend(
                 [
-                    f"Transcript characters from {transcript_model}{col_suffix}",
-                    f"Transcript File {transcript_model} generated{col_suffix}",
+                    f"Transcript characters from {transcript_model}",
+                    f"Transcript File {transcript_model} generated",
+                    f"SRT File {transcript_model} generated",
                 ]
             )
             if verbose:
-                expected_columns.append(f"{norm_t} STT cost{col_suffix} ($)")
+                expected_columns.append(f"{norm_t} STT cost ($)")
+        else:
+             # youtube source columns
+             expected_columns.extend([
+                 "Transcript File youtube generated",
+                 "SRT File youtube",
+             ])
 
         # Summarization/QA/Speaker columns
         sources = [transcript_model]
@@ -256,32 +272,57 @@ def verify_output(
             sources.append("youtube")
 
         for source in sources:
+            # English outputs
             source_cols = [
-                f"Summary Text {model} from {source}{col_suffix}",
-                f"Summary File {model} from {source}{col_suffix}",
-                f"QA Text {model} from {source}{col_suffix}",
-                f"QA File {model} from {source}{col_suffix}",
-                f"Speakers {model} from {source}",  # No suffix
-                f"Speakers File {model} from {source}",  # No suffix
-                f"One Sentence Summary {model} from {source}{col_suffix}",
+                f"Summary Text {model} from {source}",
+                f"Summary File {model} from {source}",
+                f"QA Text {model} from {source}",
+                f"QA File {model} from {source}",
+                f"Speakers {model} from {source}",
+                f"Speakers File {model} from {source}",
+                f"One Sentence Summary {model} from {source}",
             ]
 
             if verbose:
                 source_cols.extend(
                     [
-                        f"{norm_m} summary cost from {source}{col_suffix} ($)",
-                        f"{norm_m} QA cost from {source}{col_suffix} ($)",
+                        f"{norm_m} summary cost from {source} ($)",
+                        f"{norm_m} QA cost from {source} ($)",
                         f"{norm_m} Speaker extraction cost from {source} ($)",
-                        f"{norm_m} one sentence summary cost from "
-                        f"{source}{col_suffix} ($)",
+                        f"{norm_m} one sentence summary cost from {source} ($)",
                     ]
                 )
 
             expected_columns.extend(source_cols)
 
+            # Translation outputs
+            for method, lang_code in target_trans:
+                suffix = f"({method}-{lang_code})"
+                trans_cols = [
+                    f"Summary Text {model} from {source} {suffix}",
+                    f"Summary File {model} from {source} {suffix}",
+                    f"QA Text {model} from {source} {suffix}",
+                    f"QA File {model} from {source} {suffix}",
+                    f"Speakers {model} from {source} {suffix}",
+                    f"Speakers File {model} from {source} {suffix}",
+                    f"One Sentence Summary {model} from {source} {suffix}",
+                    f"One Sentence Summary File {model} from {source} {suffix}",
+                ]
+                
+                # Transcript translations (only once per source)
+                if model == model_names[0]:
+                    prefix = f"{source} generated" if source == "youtube" else f"{source} generated"
+                    # Transcript File translate
+                    trans_cols.append(f"Transcript File {source} generated {suffix}")
+                    # SRT File translate
+                    srt_col = "SRT File youtube" if source == "youtube" else f"SRT File {source} generated"
+                    trans_cols.append(f"{srt_col} {suffix}")
+
+                expected_columns.extend(trans_cols)
+
             if infographic_model:
-                # m_name in main.py is the summary text column key without prefix
-                m_name = f"{model} from {source}{col_suffix}"
+                # English Infographic
+                m_name = f"{model} from {source}"
                 expected_columns.append(
                     f"Summary Infographic File {m_name} {infographic_model}",
                 )
@@ -290,11 +331,29 @@ def verify_output(
                         f"Summary Infographic Cost {m_name} {infographic_model} ($)"
                     )
 
+                # Translation Infographic (Alt Text)
+                for method, lang_code in target_trans:
+                    suffix = f"({method}-{lang_code})"
+                    expected_columns.append(
+                        f"Summary Infographic Alt Text {m_name} {infographic_model} {suffix}"
+                    )
+                    # Note: Infographic Alt Text Path is not currently translated
+                    # expected_columns.append(
+                    #     f"Infographic Alt Text Path {m_name} {infographic_model} {suffix}"
+                    # )
+
             if tts_model:
+                # English TTS
                 expected_columns.append(
-                    f"Summary Audio File {model} from {source}{col_suffix} "
-                    f"{tts_model} File"
+                    f"Summary Audio File {model} from {source} {tts_model} File"
                 )
+                # Translation TTS
+                for method, lang_code in target_trans:
+                    suffix = f"({method}-{lang_code})"
+                    expected_columns.append(
+                        f"Summary Audio File {model} from {source} {suffix} "
+                        f"{tts_model} File"
+                    )
 
         missing_cols = []
         for col in expected_columns:
@@ -313,7 +372,10 @@ def verify_output(
 
         # Check files exist
         file_cols = [
-            c for c in df.columns if "File" in c or "Infographic" in c or "Audio" in c
+            c
+            for c in df.columns
+            if ("File" in c or "Infographic" in c or "Audio" in c)
+            and "Alt Text" not in c
         ]
         for col in file_cols:
             for val in df[col]:

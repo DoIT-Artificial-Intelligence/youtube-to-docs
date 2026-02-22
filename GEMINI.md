@@ -19,6 +19,8 @@ Here are the following args for the tool:
 - **alt_text_model**: (Optional) The LLM model to use for generating multimodal alt text for the infographic. Defaults to the summary model.
 - **no_youtube_summary**: (Optional) If `True`, skips generating a secondary summary from the YouTube transcript when using an AI model for the primary transcript.
 - **languages**: (Optional) Target language(s) (e.g., 'es', 'fr', 'en'). Defaults to 'en'.
+  Format: '{model}-{language}' (e.g., 'gemini-3.1-pro-preview-es' or 'aws-translate-fr').
+  All text is generated in English first, then translated as a post-processing step.
 - **combine_infographic_audio**: (Optional) If `True`, combines the infographic and audio summary into a video file (MP4). Requires `tts_model` and `infographic_model`.
 - **all_suite**: (Optional) Shortcut to use a specific model suite for everything (e.g. 'gemini-flash', 'gemini-pro', 'gemini-flash-pro-image', 'gcp-pro').
 - **verbose**: (Optional) If `True`, enables verbose output.
@@ -67,3 +69,4 @@ Here are the following args for the tool:
     - These are linked as columns in the output CSV.
 5.  **Timestamp Accuracy**: The server automatically cross-references YouTube SRT timestamps when generating AI Q&A to ensure pinpoint accuracy for "Timestamp URL" links.
 6.  **Execute**: Call `process_video` with the gathered parameters.
+7.  **Translation Logic**: Note that all AI generation (summaries, QA, tags, alt text) occurs in English first. If non-English languages are requested via the `{model}-{language}` format, the English output is translated as a post-processing step and saved in new columns (e.g., `Summary Text (aws-translate-es)`).

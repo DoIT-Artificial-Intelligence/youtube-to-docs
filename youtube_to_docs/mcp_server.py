@@ -53,7 +53,8 @@ def process_video(
         no_youtube_summary: If True, skips generating a secondary summary from the
             YouTube transcript when using an AI model for the primary transcript.
         languages: The target language(s) (e.g., 'es', 'fr', 'en'). Defaults to 'en'.
-            Can be a comma-separated list.
+            Format: '{model}-{language}' (e.g., 'gemini-3.1-pro-preview-es' or
+            'aws-translate-fr'). Can be a comma-separated list.
         combine_infographic_audio: If True, combines the infographic and audio summary
             into a video file. Requires both tts_model and infographic_model.
         all_suite: Shortcut to use a specific model suite for everything.

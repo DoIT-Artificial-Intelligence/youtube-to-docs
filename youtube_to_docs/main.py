@@ -36,6 +36,10 @@ from youtube_to_docs.transcript import (
     get_youtube_service,
     resolve_video_ids,
 )
+from youtube_to_docs.translator import (
+    parse_language_arg,
+    translate_text,
+)
 from youtube_to_docs.tts import process_tts
 from youtube_to_docs.utils import (
     format_clickable_path,
@@ -170,8 +174,18 @@ def main(args_list: list[str] | None = None) -> None:
     parser.add_argument(
         "-l",
         "--language",
-        default="en",
-        help=("The target language (e.g. `es`, `fr`, `en`). Default is `en`."),
+        default=None,
+        help=(
+            "The target language(s) for translation. "
+            "Format: `{model}-{language_code}` \n"
+            "Examples: \n"
+            "`gemini-3-flash-preview-es` (LLM translation to Spanish)\n"
+            "`aws-translate-fr` (AWS Translate to French)\n"
+            "`bedrock-claude-haiku-4-5-20251001-v1-de` (Bedrock LLM to German)\n"
+            "Can be a comma-separated list (e.g., "
+            "`gemini-3-flash-preview-es,aws-translate-fr`).\n"
+            "All text is first generated in English, then translated."
+        ),
     )
     parser.add_argument(
         "-cia",
@@ -249,7 +263,18 @@ def main(args_list: list[str] | None = None) -> None:
 
     combine_info_audio = args.combine_infographic_audio
     model_names = model_names_arg.split(",") if model_names_arg else []
-    languages = language_arg.split(",") if language_arg else ["en"]
+    # Parse language args into (translation_model, language_code) tuples
+    if language_arg:
+        raw_languages = language_arg.split(",")
+        parsed_languages = [parse_language_arg(l) for l in raw_languages]
+    else:
+        parsed_languages = []  # No translation requested
+
+    # For TTS, we need to know all possible language suffixes
+    tts_languages = ["en"]
+    for method, lang in parsed_languages:
+        if lang != "en":
+            tts_languages.append(f"{method}-{lang}")
 
     youtube_service = get_youtube_service()
 
@@ -329,7 +354,8 @@ def main(args_list: list[str] | None = None) -> None:
 
     if model_names:
         vprint(f"Summarizing using models: {model_names}")
-    vprint(f"Target Languages: {languages}")
+    if parsed_languages:
+        vprint(f"Translation targets: {parsed_languages}")
 
     rows = []
 
@@ -488,1276 +514,1362 @@ def main(args_list: list[str] | None = None) -> None:
                     row["Audio File"] = uploaded_path_or_link
                     audio_file_path = uploaded_path_or_link
 
-        # --- Language Dependent Logic ---
-        for language in languages:
-            rprint(f"--- Processing Language: {language} ---")
+        # --- Transcript Fetching (always English) ---
+        language = "en"
+        col_suffix = ""
+        lang_str = ""
 
-            col_suffix = f" ({language})" if language != "en" else ""
-            lang_str = f" ({language})" if language != "en" else ""
+        col_youtube = "Transcript File youtube generated"
+        col_human = "Transcript File human generated"
+        col_srt = "SRT File youtube"
 
-            col_youtube = f"Transcript File youtube generated{col_suffix}"
-            col_human = f"Transcript File human generated{col_suffix}"
-            col_srt = f"SRT File youtube{col_suffix}"
+        # --- YouTube Transcript Fetching ---
+        youtube_transcript = ""
+        is_generated = False
+        srt_content = ""
 
-            # --- YouTube Transcript Fetching ---
-            youtube_transcript = ""
-            is_generated = False
-            srt_content = ""
+        # Check storage if not in row
+        if not row.get(col_youtube) and not row.get(col_human):
+            gen_path = os.path.join(
+                transcripts_dir,
+                f"youtube generated{lang_str} - {video_id} - {safe_title}.txt",
+            )
+            human_path = os.path.join(
+                transcripts_dir,
+                f"human generated{lang_str} - {video_id} - {safe_title}.txt",
+            )
+            if storage.exists(human_path):
+                row[col_human] = human_path
+            elif storage.exists(gen_path):
+                row[col_youtube] = gen_path
 
-            # Check storage if not in row
-            if not row.get(col_youtube) and not row.get(col_human):
-                gen_path = os.path.join(
-                    transcripts_dir,
-                    f"youtube generated{lang_str} - {video_id} - {safe_title}.txt",
+        # Load from row
+        if row.get(col_youtube):
+            path = row[col_youtube]
+            if path and storage.exists(str(path)):
+                youtube_transcript = storage.read_text(str(path))
+                is_generated = True
+        elif row.get(col_human):
+            path = row[col_human]
+            if path and storage.exists(str(path)):
+                youtube_transcript = storage.read_text(str(path))
+                is_generated = False
+
+        # Load SRT if available
+        if youtube_transcript and row.get(col_srt):
+            srt_path = row[col_srt]
+            if srt_path and storage.exists(str(srt_path)):
+                srt_content = storage.read_text(str(srt_path))
+        elif youtube_transcript and not srt_content:
+            # Try to find it on disk
+            expected_srt_path = os.path.join(
+                srt_dir,
+                f"{'youtube' if is_generated else 'human'} generated{lang_str} - "
+                f"{video_id} - {safe_title}.srt",
+            )
+            if storage.exists(expected_srt_path):
+                srt_content = storage.read_text(expected_srt_path)
+                row[col_srt] = expected_srt_path
+
+        # If no existing transcript, fetch from YouTube
+        if not youtube_transcript:
+            result = fetch_transcript(video_id, language=language)
+            if result:
+                youtube_transcript, is_generated, transcript_data = result
+                prefix = (
+                    f"youtube generated{lang_str} - "
+                    if is_generated
+                    else f"human generated{lang_str} - "
                 )
-                human_path = os.path.join(
-                    transcripts_dir,
-                    f"human generated{lang_str} - {video_id} - {safe_title}.txt",
-                )
-                if storage.exists(human_path):
-                    row[col_human] = human_path
-                elif storage.exists(gen_path):
-                    row[col_youtube] = gen_path
+                filename = f"{prefix}{video_id} - {safe_title}.txt"
+                srt_filename = f"{prefix}{video_id} - {safe_title}.srt"
+                # Relative path for storage
+                target_path = os.path.join(transcripts_dir, filename)
+                srt_target_path = os.path.join(srt_dir, srt_filename)
 
-            # Load from row
-            if row.get(col_youtube):
-                path = row[col_youtube]
-                if path and storage.exists(str(path)):
-                    youtube_transcript = storage.read_text(str(path))
-                    is_generated = True
-            elif row.get(col_human):
-                path = row[col_human]
-                if path and storage.exists(str(path)):
-                    youtube_transcript = storage.read_text(str(path))
-                    is_generated = False
-
-            # Load SRT if available
-            if youtube_transcript and row.get(col_srt):
-                srt_path = row[col_srt]
-                if srt_path and storage.exists(str(srt_path)):
-                    srt_content = storage.read_text(str(srt_path))
-            elif youtube_transcript and not srt_content:
-                # Try to find it on disk
-                expected_srt_path = os.path.join(
-                    srt_dir,
-                    f"{'youtube' if is_generated else 'human'} generated{lang_str} - "
-                    f"{video_id} - {safe_title}.srt",
-                )
-                if storage.exists(expected_srt_path):
-                    srt_content = storage.read_text(expected_srt_path)
-                    row[col_srt] = expected_srt_path
-
-            # If no existing transcript, fetch from YouTube
-            if not youtube_transcript:
-                result = fetch_transcript(video_id, language=language)
-                if result:
-                    youtube_transcript, is_generated, transcript_data = result
-                    prefix = (
-                        f"youtube generated{lang_str} - "
-                        if is_generated
-                        else f"human generated{lang_str} - "
+                try:
+                    saved_path = storage.write_text(target_path, youtube_transcript)
+                    rprint(
+                        f"Saved YouTube transcript ({language}): "
+                        f"{format_clickable_path(saved_path)}"
                     )
-                    filename = f"{prefix}{video_id} - {safe_title}.txt"
-                    srt_filename = f"{prefix}{video_id} - {safe_title}.srt"
-                    # Relative path for storage
-                    target_path = os.path.join(transcripts_dir, filename)
-                    srt_target_path = os.path.join(srt_dir, srt_filename)
+                    # Update row with YouTube transcript info
+                    if is_generated:
+                        row[col_youtube] = saved_path
+                    else:
+                        row[col_human] = saved_path
 
-                    try:
-                        saved_path = storage.write_text(target_path, youtube_transcript)
-                        rprint(
-                            f"Saved YouTube transcript ({language}): "
-                            f"{format_clickable_path(saved_path)}"
-                        )
-                        # Update row with YouTube transcript info
-                        if is_generated:
-                            row[col_youtube] = saved_path
-                        else:
-                            row[col_human] = saved_path
+                    # Save SRT
+                    srt_content = format_as_srt(transcript_data)
+                    saved_srt_path = storage.write_text(srt_target_path, srt_content)
+                    rprint(
+                        f"Saved YouTube SRT: {format_clickable_path(saved_srt_path)}"
+                    )
+                    row[col_srt] = saved_srt_path
+                except Exception as e:
+                    print(f"Error writing YouTube transcript/SRT: {e}")
 
-                        # Save SRT
-                        srt_content = format_as_srt(transcript_data)
-                        saved_srt_path = storage.write_text(
-                            srt_target_path, srt_content
+        # Update character counts
+        if youtube_transcript:
+            row[f"Transcript characters from youtube{col_suffix}"] = len(
+                youtube_transcript
+            )
+        elif language != "en":
+            # Fallback to English transcript if available
+            en_path = row.get("Transcript File human generated") or row.get(
+                "Transcript File youtube generated"
+            )
+            if en_path and storage.exists(str(en_path)):
+                youtube_transcript = storage.read_text(str(en_path))
+                vprint(
+                    "Using existing English transcript as fallback for "
+                    f"{language} processing."
+                )
+            else:
+                # Try fetching English fresh
+                en_result = fetch_transcript(video_id, language="en")
+                if en_result:
+                    youtube_transcript, en_is_generated, _ = en_result
+                    vprint(
+                        f"Fetched English transcript as fallback for {language} "
+                        "processing."
+                    )
+                    # Save English transcript if missing
+                    if not row.get("Transcript File human generated") and not row.get(
+                        "Transcript File youtube generated"
+                    ):
+                        prefix = (
+                            "youtube generated - "
+                            if en_is_generated
+                            else "human generated - "
                         )
-                        rprint(
-                            "Saved YouTube SRT: "
-                            f"{format_clickable_path(saved_srt_path)}"
-                        )
-                        row[col_srt] = saved_srt_path
-                    except Exception as e:
-                        print(f"Error writing YouTube transcript/SRT: {e}")
+                        filename = f"{prefix}{video_id} - {safe_title}.txt"
+                        target_path = os.path.join(transcripts_dir, filename)
 
-            # Update character counts
+                        try:
+                            saved_path = storage.write_text(
+                                target_path, youtube_transcript
+                            )
+                            rprint(
+                                f"Saved fallback English transcript: "
+                                f"{format_clickable_path(saved_path)}"
+                            )
+                            if en_is_generated:
+                                row["Transcript File youtube generated"] = saved_path
+                            else:
+                                row["Transcript File human generated"] = saved_path
+                        except Exception as e:
+                            print(f"Error writing fallback English transcript: {e}")
+
             if youtube_transcript:
                 row[f"Transcript characters from youtube{col_suffix}"] = len(
                     youtube_transcript
                 )
-            elif language != "en":
-                # Fallback to English transcript if available
-                en_path = row.get("Transcript File human generated") or row.get(
-                    "Transcript File youtube generated"
+
+        # --- AI Transcript Generation (if requested) ---
+        ai_transcript = ""
+        ai_srt_content = ""
+        srt_transcript = ""
+        stt_cost = float("nan")
+        transcript = youtube_transcript  # Default to YouTube transcript
+
+        if transcript_arg != "youtube":
+            ai_col = f"Transcript File {transcript_arg} generated{col_suffix}"
+            ai_srt_col = f"SRT File {transcript_arg}{col_suffix}"
+            stt_cost_col = (
+                f"{normalize_model_name(transcript_arg)} STT cost{col_suffix} ($)"
+            )
+
+            # Check storage if not in row
+            if not row.get(ai_col):
+                expected_ai_path = os.path.join(
+                    transcripts_dir,
+                    f"{transcript_arg} generated{lang_str} - "
+                    f"{video_id} - {safe_title}.txt",
                 )
-                if en_path and storage.exists(str(en_path)):
-                    youtube_transcript = storage.read_text(str(en_path))
-                    vprint(
-                        "Using existing English transcript as fallback for "
-                        f"{language} processing."
+                if storage.exists(expected_ai_path):
+                    row[ai_col] = expected_ai_path
+
+            # Check row for AI transcript
+            if row.get(ai_col):
+                path = row[ai_col]
+                if path and storage.exists(str(path)):
+                    ai_transcript = storage.read_text(str(path))
+
+            # Load AI SRT if available
+            if ai_transcript and row.get(ai_srt_col):
+                srt_path = row[ai_srt_col]
+                if srt_path and storage.exists(str(srt_path)):
+                    ai_srt_content = storage.read_text(str(srt_path))
+            elif ai_transcript and not ai_srt_content:
+                # Try to find it on disk
+                expected_ai_srt_path = os.path.join(
+                    srt_dir,
+                    f"{transcript_arg} generated{lang_str} - "
+                    f"{video_id} - {safe_title}.srt",
+                )
+                if storage.exists(expected_ai_srt_path):
+                    ai_srt_content = storage.read_text(expected_ai_srt_path)
+                    row[ai_srt_col] = expected_ai_srt_path
+
+            # If no existing AI transcript, generate it
+            if not ai_transcript:
+                audio_input_path = (
+                    local_audio_path
+                    if local_audio_path and os.path.exists(local_audio_path)
+                    else None
+                )
+
+                if not audio_input_path and audio_file_path:
+                    # Try to get it locally via storage abstraction
+                    vprint(f"Retrieving audio file locally: {audio_file_path}")
+                    audio_input_path = storage.get_local_file(
+                        audio_file_path, download_dir=local_audio_dir
                     )
+
+                if not audio_input_path:
+                    print(f"Error: Audio file not found for STT: {audio_file_path}")
                 else:
-                    # Try fetching English fresh
-                    en_result = fetch_transcript(video_id, language="en")
-                    if en_result:
-                        youtube_transcript, en_is_generated, _ = en_result
-                        vprint(
-                            f"Fetched English transcript as fallback for {language} "
-                            "processing."
-                        )
-                        # Save English transcript if missing
-                        if not row.get(
-                            "Transcript File human generated"
-                        ) and not row.get("Transcript File youtube generated"):
-                            prefix = (
-                                "youtube generated - "
-                                if en_is_generated
-                                else "human generated - "
+                    vprint(
+                        f"Generating transcript using model: {transcript_arg} "
+                        f"({language})..."
+                    )
+
+                    # Use single call for GCP models (returns both text + SRT)
+                    if transcript_arg.startswith("gcp-"):
+                        ai_transcript, ai_srt_content, stt_in, stt_out = (
+                            generate_transcript_with_srt(
+                                transcript_arg,
+                                audio_input_path,
+                                url,
+                                language=language,
+                                duration_seconds=video_duration_seconds,
                             )
-                            filename = f"{prefix}{video_id} - {safe_title}.txt"
-                            target_path = os.path.join(transcripts_dir, filename)
-
-                            try:
-                                saved_path = storage.write_text(
-                                    target_path, youtube_transcript
-                                )
-                                rprint(
-                                    f"Saved fallback English transcript: "
-                                    f"{format_clickable_path(saved_path)}"
-                                )
-                                if en_is_generated:
-                                    row["Transcript File youtube generated"] = (
-                                        saved_path
-                                    )
-                                else:
-                                    row["Transcript File human generated"] = saved_path
-                            except Exception as e:
-                                print(f"Error writing fallback English transcript: {e}")
-
-                if youtube_transcript:
-                    row[f"Transcript characters from youtube{col_suffix}"] = len(
-                        youtube_transcript
-                    )
-
-            # --- AI Transcript Generation (if requested) ---
-            ai_transcript = ""
-            ai_srt_content = ""
-            srt_transcript = ""
-            stt_cost = float("nan")
-            transcript = youtube_transcript  # Default to YouTube transcript
-
-            if transcript_arg != "youtube":
-                ai_col = f"Transcript File {transcript_arg} generated{col_suffix}"
-                ai_srt_col = f"SRT File {transcript_arg}{col_suffix}"
-                stt_cost_col = (
-                    f"{normalize_model_name(transcript_arg)} STT cost{col_suffix} ($)"
-                )
-
-                # Check storage if not in row
-                if not row.get(ai_col):
-                    expected_ai_path = os.path.join(
-                        transcripts_dir,
-                        f"{transcript_arg} generated{lang_str} - "
-                        f"{video_id} - {safe_title}.txt",
-                    )
-                    if storage.exists(expected_ai_path):
-                        row[ai_col] = expected_ai_path
-
-                # Check row for AI transcript
-                if row.get(ai_col):
-                    path = row[ai_col]
-                    if path and storage.exists(str(path)):
-                        ai_transcript = storage.read_text(str(path))
-
-                # Load AI SRT if available
-                if ai_transcript and row.get(ai_srt_col):
-                    srt_path = row[ai_srt_col]
-                    if srt_path and storage.exists(str(srt_path)):
-                        ai_srt_content = storage.read_text(str(srt_path))
-                elif ai_transcript and not ai_srt_content:
-                    # Try to find it on disk
-                    expected_ai_srt_path = os.path.join(
-                        srt_dir,
-                        f"{transcript_arg} generated{lang_str} - "
-                        f"{video_id} - {safe_title}.srt",
-                    )
-                    if storage.exists(expected_ai_srt_path):
-                        ai_srt_content = storage.read_text(expected_ai_srt_path)
-                        row[ai_srt_col] = expected_ai_srt_path
-
-                # If no existing AI transcript, generate it
-                if not ai_transcript:
-                    audio_input_path = (
-                        local_audio_path
-                        if local_audio_path and os.path.exists(local_audio_path)
-                        else None
-                    )
-
-                    if not audio_input_path and audio_file_path:
-                        # Try to get it locally via storage abstraction
-                        vprint(f"Retrieving audio file locally: {audio_file_path}")
-                        audio_input_path = storage.get_local_file(
-                            audio_file_path, download_dir=local_audio_dir
                         )
-
-                    if not audio_input_path:
-                        print(f"Error: Audio file not found for STT: {audio_file_path}")
                     else:
-                        vprint(
-                            f"Generating transcript using model: {transcript_arg} "
-                            f"({language})..."
+                        # For Gemini/other models, still need two calls
+                        ai_transcript, stt_in, stt_out = generate_transcript(
+                            transcript_arg,
+                            audio_input_path,
+                            url,
+                            language=language,
+                            duration_seconds=video_duration_seconds,
+                        )
+                        ai_srt_content, _, _ = generate_transcript(
+                            transcript_arg,
+                            audio_input_path,
+                            url,
+                            language=language,
+                            srt=True,
+                            duration_seconds=video_duration_seconds,
                         )
 
-                        # Use single call for GCP models (returns both text + SRT)
-                        if transcript_arg.startswith("gcp-"):
-                            ai_transcript, ai_srt_content, stt_in, stt_out = (
-                                generate_transcript_with_srt(
-                                    transcript_arg,
-                                    audio_input_path,
-                                    url,
-                                    language=language,
-                                    duration_seconds=video_duration_seconds,
-                                )
-                            )
-                        else:
-                            # For Gemini/other models, still need two calls
-                            ai_transcript, stt_in, stt_out = generate_transcript(
-                                transcript_arg,
-                                audio_input_path,
-                                url,
-                                language=language,
-                                duration_seconds=video_duration_seconds,
-                            )
-                            ai_srt_content, _, _ = generate_transcript(
-                                transcript_arg,
-                                audio_input_path,
-                                url,
-                                language=language,
-                                srt=True,
-                                duration_seconds=video_duration_seconds,
-                            )
+                    # Save AI transcript
+                    prefix = f"{transcript_arg} generated{lang_str} - "
+                    filename = f"{prefix}{video_id} - {safe_title}.txt"
+                    srt_filename = f"{prefix}{video_id} - {safe_title}.srt"
+                    target_path = os.path.join(transcripts_dir, filename)
+                    srt_target_path = os.path.join(srt_dir, srt_filename)
 
-                        # Save AI transcript
-                        prefix = f"{transcript_arg} generated{lang_str} - "
-                        filename = f"{prefix}{video_id} - {safe_title}.txt"
-                        srt_filename = f"{prefix}{video_id} - {safe_title}.srt"
-                        target_path = os.path.join(transcripts_dir, filename)
-                        srt_target_path = os.path.join(srt_dir, srt_filename)
+                    try:
+                        saved_path = storage.write_text(target_path, ai_transcript)
+                        rprint(
+                            f"Saved AI transcript: {format_clickable_path(saved_path)}"
+                        )
+                        row[ai_col] = saved_path
 
-                        try:
-                            saved_path = storage.write_text(target_path, ai_transcript)
-                            rprint(
-                                "Saved AI transcript: "
-                                f"{format_clickable_path(saved_path)}"
-                            )
-                            row[ai_col] = saved_path
+                        saved_srt_path = storage.write_text(
+                            srt_target_path, ai_srt_content
+                        )
+                        rprint(f"Saved AI SRT: {format_clickable_path(saved_srt_path)}")
+                        row[ai_srt_col] = saved_srt_path
+                    except Exception as e:
+                        print(f"Error writing AI transcript/SRT: {e}")
 
-                            saved_srt_path = storage.write_text(
-                                srt_target_path, ai_srt_content
-                            )
-                            rprint(
-                                f"Saved AI SRT: {format_clickable_path(saved_srt_path)}"
-                            )
-                            row[ai_srt_col] = saved_srt_path
-                        except Exception as e:
-                            print(f"Error writing AI transcript/SRT: {e}")
+                    # Calculate STT Cost
+                    if verbose:
+                        input_price, output_price = get_model_pricing(transcript_arg)
+                        if input_price is not None and output_price is not None:
+                            stt_cost = (stt_in / 1_000_000) * input_price + (
+                                stt_out / 1_000_000
+                            ) * output_price
+                            row[stt_cost_col] = round(stt_cost, 2)
+                            vprint(f"STT cost: ${row[stt_cost_col]:.2f}")
 
-                        # Calculate STT Cost
-                        if verbose:
-                            input_price, output_price = get_model_pricing(
-                                transcript_arg
-                            )
-                            if input_price is not None and output_price is not None:
-                                stt_cost = (stt_in / 1_000_000) * input_price + (
-                                    stt_out / 1_000_000
-                                ) * output_price
-                                row[stt_cost_col] = round(stt_cost, 2)
-                                vprint(f"STT cost: ${row[stt_cost_col]:.2f}")
+        # If AI transcript exists (either found or generated),
+        # use it for summaries
+        if ai_transcript:
+            transcript = ai_transcript
+            # Use SRT for Q&A if available
+            srt_transcript = ai_srt_content if ai_srt_content else transcript
+        else:
+            transcript = youtube_transcript
+            srt_transcript = srt_content if srt_content else transcript
 
-            # If AI transcript exists (either found or generated),
-            # use it for summaries
-            if ai_transcript:
-                transcript = ai_transcript
-                # Use SRT for Q&A if available
-                srt_transcript = ai_srt_content if ai_srt_content else transcript
-            else:
-                transcript = youtube_transcript
-                srt_transcript = srt_content if srt_content else transcript
+        if transcript_arg != "youtube":
+            row[f"Transcript characters from {transcript_arg}{col_suffix}"] = len(
+                ai_transcript
+            )
 
-            if transcript_arg != "youtube":
-                row[f"Transcript characters from {transcript_arg}{col_suffix}"] = len(
-                    ai_transcript
+        if not transcript:
+            vprint(
+                f"No transcript (YouTube or AI) available for {video_id} "
+                f"({language}). Skipping further processing for this language."
+            )
+            continue
+
+        # Summarize for each requested model
+        for model_name in model_names:
+            summary_col_name = (
+                f"Summary Text {model_name} from {transcript_arg}{col_suffix}"
+            )
+            summary_file_col_name = (
+                f"Summary File {model_name} from {transcript_arg}{col_suffix}"
+            )
+            speakers_col_name = f"Speakers {model_name} from {transcript_arg}"
+            speakers_file_col_name = f"Speakers File {model_name} from {transcript_arg}"
+            summary_cost_col_name = (
+                f"{normalize_model_name(model_name)} "
+                f"summary cost from {transcript_arg}{col_suffix} ($)"
+            )
+            speaker_cost_col_name = (
+                f"{normalize_model_name(model_name)} "
+                f"Speaker extraction cost from {transcript_arg} ($)"
+            )
+
+            # Speaker Extraction
+            speakers_text = ""
+            speakers_input = 0
+            speakers_output = 0
+            speaker_cost = float("nan")
+
+            # Check disk for speakers file
+            if not row.get(speakers_file_col_name):
+                speakers_filename = (
+                    f"{model_name} - {video_id} - {safe_title} - "
+                    f"speakers (from {transcript_arg}).txt"
                 )
+                expected_path = os.path.join(speakers_dir, speakers_filename)
+                if storage.exists(expected_path):
+                    row[speakers_file_col_name] = expected_path
 
-            if not transcript:
-                vprint(
-                    f"No transcript (YouTube or AI) available for {video_id} "
-                    f"({language}). Skipping further processing for this language."
-                )
-                continue
+            # Load speakers from file/row
+            if row.get(speakers_file_col_name):
+                path = row[speakers_file_col_name]
+                if path and storage.exists(str(path)):
+                    speakers_text = storage.read_text(str(path))
+                    row[speakers_col_name] = speakers_text
+            elif row.get(speakers_col_name):
+                speakers_text = row[speakers_col_name]
 
-            # Summarize for each requested model
-            for model_name in model_names:
-                summary_col_name = (
-                    f"Summary Text {model_name} from {transcript_arg}{col_suffix}"
-                )
-                summary_file_col_name = (
-                    f"Summary File {model_name} from {transcript_arg}{col_suffix}"
-                )
-                speakers_col_name = f"Speakers {model_name} from {transcript_arg}"
-                speakers_file_col_name = (
-                    f"Speakers File {model_name} from {transcript_arg}"
-                )
-                summary_cost_col_name = (
-                    f"{normalize_model_name(model_name)} "
-                    f"summary cost from {transcript_arg}{col_suffix} ($)"
-                )
-                speaker_cost_col_name = (
-                    f"{normalize_model_name(model_name)} "
-                    f"Speaker extraction cost from {transcript_arg} ($)"
-                )
+            if not speakers_text:
+                # For speaker extraction, try to use English transcript if available
+                speaker_source_transcript = transcript
+                if language != "en":
+                    en_path = row.get("Transcript File human generated") or row.get(
+                        "Transcript File youtube generated"
+                    )
+                    if en_path and storage.exists(str(en_path)):
+                        speaker_source_transcript = storage.read_text(str(en_path))
+                        vprint(
+                            "Using English transcript for speaker extraction "
+                            f"({model_name})."
+                        )
+                    rprint(f"Extracting speakers using model: {model_name}")
 
-                # Speaker Extraction
-                speakers_text = ""
-                speakers_input = 0
-                speakers_output = 0
-                speaker_cost = float("nan")
+                speakers_text, speakers_input, speakers_output = extract_speakers(
+                    model_name, speaker_source_transcript
+                )
+                row[speakers_col_name] = speakers_text
+                if (
+                    speakers_text.strip() == "nan"
+                    or speakers_text.strip() == 'float("nan")'
+                ):
+                    row[speakers_col_name] = float("nan")
 
-                # Check disk for speakers file
-                if not row.get(speakers_file_col_name):
+                # Save Speakers File
+                if speakers_text and not isinstance(row[speakers_col_name], float):
                     speakers_filename = (
                         f"{model_name} - {video_id} - {safe_title} - "
                         f"speakers (from {transcript_arg}).txt"
                     )
-                    expected_path = os.path.join(speakers_dir, speakers_filename)
-                    if storage.exists(expected_path):
-                        row[speakers_file_col_name] = expected_path
+                    target_path = os.path.join(speakers_dir, speakers_filename)
+                    try:
+                        saved_path = storage.write_text(target_path, speakers_text)
+                        rprint(f"Saved speakers: {format_clickable_path(saved_path)}")
+                        row[speakers_file_col_name] = saved_path
+                    except Exception as e:
+                        print(f"Error writing speakers file: {e}")
 
-                # Load speakers from file/row
-                if row.get(speakers_file_col_name):
-                    path = row[speakers_file_col_name]
-                    if path and storage.exists(str(path)):
-                        speakers_text = storage.read_text(str(path))
-                        row[speakers_col_name] = speakers_text
-                elif row.get(speakers_col_name):
-                    speakers_text = row[speakers_col_name]
+                # Calculate Speaker Cost immediately
+                if verbose:
+                    input_price, output_price = get_model_pricing(model_name)
+                    if input_price is not None and output_price is not None:
+                        speaker_cost = (speakers_input / 1_000_000) * input_price + (
+                            speakers_output / 1_000_000
+                        ) * output_price
+                        row[speaker_cost_col_name] = round(speaker_cost, 2)
+                        vprint(f"Speaker extraction cost: ${speaker_cost:.2f}")
 
-                if not speakers_text:
-                    # For speaker extraction, try to use English transcript if available
-                    speaker_source_transcript = transcript
-                    if language != "en":
-                        en_path = row.get("Transcript File human generated") or row.get(
-                            "Transcript File youtube generated"
-                        )
-                        if en_path and storage.exists(str(en_path)):
-                            speaker_source_transcript = storage.read_text(str(en_path))
-                            vprint(
-                                "Using English transcript for speaker extraction "
-                                f"({model_name})."
-                            )
-                        rprint(f"Extracting speakers using model: {model_name}")
+            # QA Generation
+            qa_col_name = f"QA Text {model_name} from {transcript_arg}{col_suffix}"
+            qa_file_col_name = f"QA File {model_name} from {transcript_arg}{col_suffix}"
+            qa_cost_col_name = (
+                f"{normalize_model_name(model_name)} QA cost from "
+                f"{transcript_arg}{col_suffix} ($)"
+            )
 
-                    speakers_text, speakers_input, speakers_output = extract_speakers(
-                        model_name, speaker_source_transcript
-                    )
-                    row[speakers_col_name] = speakers_text
-                    if (
-                        speakers_text.strip() == "nan"
-                        or speakers_text.strip() == 'float("nan")'
-                    ):
-                        row[speakers_col_name] = float("nan")
+            # Determine the best transcript for QA (prefer SRT for timestamps)
+            qa_transcript_to_use = srt_transcript if srt_transcript else transcript
 
-                    # Save Speakers File
-                    if speakers_text and not isinstance(row[speakers_col_name], float):
-                        speakers_filename = (
-                            f"{model_name} - {video_id} - {safe_title} - "
-                            f"speakers (from {transcript_arg}).txt"
-                        )
-                        target_path = os.path.join(speakers_dir, speakers_filename)
-                        try:
-                            saved_path = storage.write_text(target_path, speakers_text)
-                            rprint(
-                                f"Saved speakers: {format_clickable_path(saved_path)}"
-                            )
-                            row[speakers_file_col_name] = saved_path
-                        except Exception as e:
-                            print(f"Error writing speakers file: {e}")
-
-                    # Calculate Speaker Cost immediately
-                    if verbose:
-                        input_price, output_price = get_model_pricing(model_name)
-                        if input_price is not None and output_price is not None:
-                            speaker_cost = (
-                                speakers_input / 1_000_000
-                            ) * input_price + (
-                                speakers_output / 1_000_000
-                            ) * output_price
-                            row[speaker_cost_col_name] = round(speaker_cost, 2)
-                            vprint(f"Speaker extraction cost: ${speaker_cost:.2f}")
-
-                # QA Generation
-                qa_col_name = f"QA Text {model_name} from {transcript_arg}{col_suffix}"
-                qa_file_col_name = (
-                    f"QA File {model_name} from {transcript_arg}{col_suffix}"
+            # Check disk for QA file
+            if not row.get(qa_file_col_name):
+                qa_filename = (
+                    f"{model_name} - {video_id} - {safe_title} - "
+                    f"qa (from {transcript_arg}){lang_str}.md"
                 )
-                qa_cost_col_name = (
-                    f"{normalize_model_name(model_name)} QA cost from "
-                    f"{transcript_arg}{col_suffix} ($)"
+                expected_path = os.path.join(qa_dir, qa_filename)
+                if storage.exists(expected_path):
+                    row[qa_file_col_name] = expected_path
+
+            # Load QA from file/row
+            if row.get(qa_file_col_name):
+                path = row[qa_file_col_name]
+                if path and storage.exists(str(path)):
+                    row[qa_col_name] = storage.read_text(str(path))
+
+            if not row.get(qa_col_name):
+                rprint(f"Generating Q&A using model: {model_name}")
+
+                qa_text, qa_input, qa_output = generate_qa(
+                    model_name,
+                    qa_transcript_to_use,
+                    speakers_text,
+                    url,
+                    timing_reference=srt_content
+                    if transcript_arg != "youtube"
+                    else None,
                 )
+                row[qa_col_name] = qa_text
 
-                # Determine the best transcript for QA (prefer SRT for timestamps)
-                qa_transcript_to_use = srt_transcript if srt_transcript else transcript
+                if qa_text.strip() == "nan" or qa_text.strip() == 'float("nan")':
+                    row[qa_col_name] = float("nan")
 
-                # Check disk for QA file
-                if not row.get(qa_file_col_name):
+                # Save QA File
+                if qa_text and not isinstance(row[qa_col_name], float):
                     qa_filename = (
                         f"{model_name} - {video_id} - {safe_title} - "
                         f"qa (from {transcript_arg}){lang_str}.md"
                     )
-                    expected_path = os.path.join(qa_dir, qa_filename)
-                    if storage.exists(expected_path):
-                        row[qa_file_col_name] = expected_path
+                    target_path = os.path.join(qa_dir, qa_filename)
+                    try:
+                        saved_path = storage.write_text(target_path, qa_text)
+                        rprint(f"Saved Q&A: {format_clickable_path(saved_path)}")
+                        row[qa_file_col_name] = saved_path
+                    except Exception as e:
+                        print(f"Error writing Q&A file: {e}")
 
-                # Load QA from file/row
-                if row.get(qa_file_col_name):
-                    path = row[qa_file_col_name]
-                    if path and storage.exists(str(path)):
-                        row[qa_col_name] = storage.read_text(str(path))
+                # Calculate QA Cost
+                if verbose:
+                    input_price, output_price = get_model_pricing(model_name)
+                    if input_price is not None and output_price is not None:
+                        # QA input tokens include the speaker text provided in
+                        # the prompt
+                        qa_cost = (qa_input / 1_000_000) * input_price + (
+                            qa_output / 1_000_000
+                        ) * output_price
+                        qa_cost = round(qa_cost, 2)
+                        row[qa_cost_col_name] = qa_cost
+                        vprint(f"Q&A cost: ${qa_cost:.2f}")
 
-                if not row.get(qa_col_name):
-                    rprint(f"Generating Q&A using model: {model_name} ({language})")
-
-                    qa_text, qa_input, qa_output = generate_qa(
-                        model_name,
-                        qa_transcript_to_use,
-                        speakers_text,
-                        url,
-                        language=language,
-                        timing_reference=srt_content
-                        if transcript_arg != "youtube"
-                        else None,
+            # Check if we already have it in the row (from existing_row
+            # or just loaded)
+            if summary_col_name in row and row[summary_col_name]:
+                # Check if cost is missing and backfill if possible
+                if (
+                    summary_cost_col_name not in row
+                    or row[summary_cost_col_name] is None
+                    or (
+                        isinstance(row[summary_cost_col_name], float)
+                        and row[summary_cost_col_name] != row[summary_cost_col_name]
                     )
-                    row[qa_col_name] = qa_text
-
-                    if qa_text.strip() == "nan" or qa_text.strip() == 'float("nan")':
-                        row[qa_col_name] = float("nan")
-
-                    # Save QA File
-                    if qa_text and not isinstance(row[qa_col_name], float):
-                        qa_filename = (
-                            f"{model_name} - {video_id} - {safe_title} - "
-                            f"qa (from {transcript_arg}){lang_str}.md"
-                        )
-                        target_path = os.path.join(qa_dir, qa_filename)
-                        try:
-                            saved_path = storage.write_text(target_path, qa_text)
-                            rprint(f"Saved Q&A: {format_clickable_path(saved_path)}")
-                            row[qa_file_col_name] = saved_path
-                        except Exception as e:
-                            print(f"Error writing Q&A file: {e}")
-
-                    # Calculate QA Cost
+                ):  # Check for NaN
                     if verbose:
+                        vprint(f"Backfilling cost for model: {model_name}")
                         input_price, output_price = get_model_pricing(model_name)
                         if input_price is not None and output_price is not None:
-                            # QA input tokens include the speaker text provided in
-                            # the prompt
-                            qa_cost = (qa_input / 1_000_000) * input_price + (
-                                qa_output / 1_000_000
+                            # Estimate tokens: ~4 chars per token
+                            est_input_tokens = len(transcript) / 4
+                            est_output_tokens = len(row[summary_col_name]) / 4
+                            summary_cost = (
+                                est_input_tokens / 1_000_000
+                            ) * input_price + (
+                                est_output_tokens / 1_000_000
                             ) * output_price
-                            qa_cost = round(qa_cost, 2)
-                            row[qa_cost_col_name] = qa_cost
-                            vprint(f"Q&A cost: ${qa_cost:.2f}")
 
-                # Check if we already have it in the row (from existing_row
-                # or just loaded)
-                if summary_col_name in row and row[summary_col_name]:
-                    # Check if cost is missing and backfill if possible
-                    if (
-                        summary_cost_col_name not in row
-                        or row[summary_cost_col_name] is None
-                        or (
-                            isinstance(row[summary_cost_col_name], float)
-                            and row[summary_cost_col_name] != row[summary_cost_col_name]
-                        )
-                    ):  # Check for NaN
-                        if verbose:
-                            vprint(f"Backfilling cost for model: {model_name}")
-                            input_price, output_price = get_model_pricing(model_name)
-                            if input_price is not None and output_price is not None:
-                                # Estimate tokens: ~4 chars per token
-                                est_input_tokens = len(transcript) / 4
-                                est_output_tokens = len(row[summary_col_name]) / 4
-                                summary_cost = (
-                                    est_input_tokens / 1_000_000
-                                ) * input_price + (
-                                    est_output_tokens / 1_000_000
-                                ) * output_price
-
-                                # Add speaker cost if we just generated them or
-                                # can backfill it
-                                if speakers_input > 0 or speakers_output > 0:
-                                    s_cost = (
-                                        speakers_input / 1_000_000
-                                    ) * input_price + (
-                                        speakers_output / 1_000_000
-                                    ) * output_price
-                                    summary_cost += s_cost
-                                elif speaker_cost_col_name in row and not (
-                                    isinstance(row[speaker_cost_col_name], float)
-                                    and row[speaker_cost_col_name]
-                                    != row[speaker_cost_col_name]
-                                ):
-                                    summary_cost += row[speaker_cost_col_name]
-
-                                summary_cost = round(summary_cost, 2)
-                                row[summary_cost_col_name] = summary_cost
-                                vprint(f"Estimated summary cost: ${summary_cost:.2f}")
-                    elif speakers_input > 0 or speakers_output > 0:
-                        # Cost exists, but we generated speakers. Add that cost.
-                        if verbose:
-                            input_price, output_price = get_model_pricing(model_name)
-                            if input_price is not None and output_price is not None:
+                            # Add speaker cost if we just generated them or
+                            # can backfill it
+                            if speakers_input > 0 or speakers_output > 0:
                                 s_cost = (speakers_input / 1_000_000) * input_price + (
                                     speakers_output / 1_000_000
                                 ) * output_price
-                                current_cost = row[summary_cost_col_name]
-                                row[summary_cost_col_name] = round(
-                                    current_cost + s_cost, 2
-                                )
-                                vprint(
-                                    "Updated cost with speakers: "
-                                    f"${row[summary_cost_col_name]:.2f}"
-                                )
-                    continue
+                                summary_cost += s_cost
+                            elif speaker_cost_col_name in row and not (
+                                isinstance(row[speaker_cost_col_name], float)
+                                and row[speaker_cost_col_name]
+                                != row[speaker_cost_col_name]
+                            ):
+                                summary_cost += row[speaker_cost_col_name]
 
-                # Check disk for summary file
-                if not row.get(summary_file_col_name):
+                            summary_cost = round(summary_cost, 2)
+                            row[summary_cost_col_name] = summary_cost
+                            vprint(f"Estimated summary cost: ${summary_cost:.2f}")
+                elif speakers_input > 0 or speakers_output > 0:
+                    # Cost exists, but we generated speakers. Add that cost.
+                    if verbose:
+                        input_price, output_price = get_model_pricing(model_name)
+                        if input_price is not None and output_price is not None:
+                            s_cost = (speakers_input / 1_000_000) * input_price + (
+                                speakers_output / 1_000_000
+                            ) * output_price
+                            current_cost = row[summary_cost_col_name]
+                            row[summary_cost_col_name] = round(current_cost + s_cost, 2)
+                            vprint(
+                                "Updated cost with speakers: "
+                                f"${row[summary_cost_col_name]:.2f}"
+                            )
+                continue
+
+            # Check disk for summary file
+            if not row.get(summary_file_col_name):
+                summary_filename = (
+                    f"{model_name} - {video_id} - {safe_title} - "
+                    f"summary (from {transcript_arg}){lang_str}.md"
+                )
+                expected_path = os.path.join(summaries_dir, summary_filename)
+                if storage.exists(expected_path):
+                    row[summary_file_col_name] = expected_path
+
+            # Load Summary from file/row
+            if row.get(summary_file_col_name):
+                path = row[summary_file_col_name]
+                if path:
+                    # We try to read.
+                    try:
+                        row[summary_col_name] = storage.read_text(str(path))
+                    except Exception as e:
+                        print(f"Warning: Failed to read summary file {path}: {e}")
+
+            if not row.get(summary_col_name):
+                rprint(f"Summarizing using model: {model_name}")
+
+                summary_text, input_tokens, output_tokens = generate_summary(
+                    model_name, transcript, video_title, url
+                )
+
+                summary_cost = float("nan")
+                if verbose:
+                    input_price, output_price = get_model_pricing(model_name)
+                    if input_price is not None and output_price is not None:
+                        # Add speaker tokens
+                        total_input = input_tokens + speakers_input
+                        total_output = output_tokens + speakers_output
+
+                        summary_cost = (total_input / 1_000_000) * input_price + (
+                            total_output / 1_000_000
+                        ) * output_price
+                        summary_cost = round(summary_cost, 2)
+                        vprint(f"Summary cost: ${summary_cost:.2f}")
+                        row[summary_cost_col_name] = summary_cost
+
+                summary_full_path = ""
+                if summaries_dir and summary_text:
                     summary_filename = (
                         f"{model_name} - {video_id} - {safe_title} - "
                         f"summary (from {transcript_arg}){lang_str}.md"
                     )
-                    expected_path = os.path.join(summaries_dir, summary_filename)
-                    if storage.exists(expected_path):
-                        row[summary_file_col_name] = expected_path
+                    target_path = os.path.join(summaries_dir, summary_filename)
+                    try:
+                        summary_full_path = storage.write_text(
+                            target_path, summary_text
+                        )
+                        rprint(
+                            f"Saved summary: {format_clickable_path(summary_full_path)}"
+                        )
+                    except Exception as e:
+                        print(f"Error writing summary: {e}")
 
-                # Load Summary from file/row
-                if row.get(summary_file_col_name):
-                    path = row[summary_file_col_name]
-                    if path:
-                        # We try to read.
-                        try:
-                            row[summary_col_name] = storage.read_text(str(path))
-                        except Exception as e:
-                            print(f"Warning: Failed to read summary file {path}: {e}")
+                row[summary_file_col_name] = summary_full_path
+                row[summary_col_name] = summary_text
 
-                if not row.get(summary_col_name):
-                    rprint(f"Summarizing using model: {model_name} ({language})")
+            # One Sentence Summary Generation
+            one_sentence_col_name = (
+                f"One Sentence Summary {model_name} from {transcript_arg}{col_suffix}"
+            )
+            one_sentence_cost_col_name = (
+                f"{normalize_model_name(model_name)} one sentence summary cost "
+                f"from {transcript_arg}{col_suffix} ($)"
+            )
 
-                    summary_text, input_tokens, output_tokens = generate_summary(
-                        model_name, transcript, video_title, url, language=language
+            if row.get(summary_col_name) and not row.get(one_sentence_col_name):
+                vprint(f"Generating one sentence summary using model: {model_name}")
+                (
+                    one_sentence_text,
+                    os_input,
+                    os_output,
+                ) = generate_one_sentence_summary(model_name, row[summary_col_name])
+                row[one_sentence_col_name] = one_sentence_text
+
+                # Save One Sentence Summary File
+                if one_sentence_text and one_sentence_summaries_dir:
+                    os_filename = (
+                        f"{model_name} - {video_id} - {safe_title} - "
+                        f"one-sentence-summary (from {transcript_arg}){lang_str}.md"
                     )
+                    target_path = os.path.join(one_sentence_summaries_dir, os_filename)
+                    try:
+                        os_full_path = storage.write_text(
+                            target_path, one_sentence_text
+                        )
+                        rprint(
+                            "Saved one sentence summary: "
+                            f"{format_clickable_path(os_full_path)}"
+                        )
+                        os_col = (
+                            f"One Sentence Summary File {model_name} from "
+                            f"{transcript_arg}{col_suffix}"
+                        )
+                        row[os_col] = os_full_path
+                    except Exception as e:
+                        print(f"Error writing one sentence summary: {e}")
 
-                    summary_cost = float("nan")
+                # Cost
+                if verbose:
+                    input_price, output_price = get_model_pricing(model_name)
+                    if input_price is not None and output_price is not None:
+                        cost = (os_input / 1_000_000) * input_price + (
+                            os_output / 1_000_000
+                        ) * output_price
+                        cost = round(cost, 2)
+                        row[one_sentence_cost_col_name] = cost
+                        vprint(f"One sentence summary cost: ${cost:.2f}")
+
+            # Tag Generation
+            tags_col_name = f"Tags {transcript_arg} {model_name} model{col_suffix}"
+            tags_cost_col_name = (
+                f"{normalize_model_name(model_name)} "
+                f"tags cost from {transcript_arg}{col_suffix} ($)"
+            )
+
+            if not row.get(tags_col_name) and row.get(summary_col_name):
+                summary_for_tags = row[summary_col_name]
+                rprint(f"Generating tags using model: {model_name}")
+
+                tags_text, tags_input, tags_output = generate_tags(
+                    model_name, summary_for_tags
+                )
+
+                # Ensure no more than 5 tags
+                tag_list = [t.strip() for t in tags_text.split(",") if t.strip()]
+                if len(tag_list) > 5:
+                    tag_list = tag_list[:5]
+                row[tags_col_name] = ", ".join(tag_list)
+
+                if tags_text.strip() == "nan" or tags_text.strip() == 'float("nan")':
+                    row[tags_col_name] = float("nan")
+
+                # Calculate Tags Cost
+                if verbose:
+                    input_price, output_price = get_model_pricing(model_name)
+                    if input_price is not None and output_price is not None:
+                        tags_cost = (tags_input / 1_000_000) * input_price + (
+                            tags_output / 1_000_000
+                        ) * output_price
+                        row[tags_cost_col_name] = tags_cost
+                        vprint(f"Tags cost: ${tags_cost:.2f}")
+
+                # Save Tags File
+                if row.get(tags_col_name) and tags_dir:
+                    tags_val = row[tags_col_name]
+                    if isinstance(tags_val, str) and tags_val != 'float("nan")':
+                        tags_filename = (
+                            f"{model_name} - {video_id} - {safe_title} - "
+                            f"tags (from {transcript_arg}){lang_str}.txt"
+                        )
+                        target_path = os.path.join(tags_dir, tags_filename)
+                        try:
+                            tags_full_path = storage.write_text(target_path, tags_val)
+                            rprint(
+                                f"Saved tags: {format_clickable_path(tags_full_path)}"
+                            )
+                            tags_file_col = (
+                                f"Tags File {transcript_arg} {model_name} "
+                                f"model{col_suffix}"
+                            )
+                            row[tags_file_col] = tags_full_path
+                        except Exception as e:
+                            print(f"Error writing tags: {e}")
+
+            # --- Secondary Speaker Extraction from YouTube (if applicable) ---
+            yt_speakers_text = 'float("nan")'
+            yt_speakers_input = 0
+            yt_speakers_output = 0
+
+            if (
+                transcript_arg != "youtube"
+                and youtube_transcript
+                and not no_youtube_summary
+            ):
+                yt_speakers_col_name = f"Speakers {model_name} from youtube"
+                yt_speakers_file_col_name = f"Speakers File {model_name} from youtube"
+                yt_speaker_cost_col_name = (
+                    f"{normalize_model_name(model_name)} "
+                    f"Speaker extraction cost from youtube ($)"
+                )
+
+                # Check disk for YT speakers file
+                if not row.get(yt_speakers_file_col_name):
+                    yt_speakers_filename = (
+                        f"{model_name} - {video_id} - {safe_title} - "
+                        f"speakers (from youtube).txt"
+                    )
+                    expected_path = os.path.join(speakers_dir, yt_speakers_filename)
+                    if storage.exists(expected_path):
+                        row[yt_speakers_file_col_name] = expected_path
+
+                # Load YT speakers from file/row
+                if row.get(yt_speakers_file_col_name):
+                    path = row[yt_speakers_file_col_name]
+                    if path and storage.exists(str(path)):
+                        try:
+                            yt_speakers_text = storage.read_text(str(path))
+                            row[yt_speakers_col_name] = yt_speakers_text
+                        except Exception as e:
+                            vprint(
+                                "Warning: Failed to read YouTube speakers file "
+                                f"{path}: {e}"
+                            )
+
+                elif row.get(yt_speakers_col_name):
+                    yt_speakers_text = row[yt_speakers_col_name]
+
+                # Generate if missing (checking specifically if it is 'float("nan")'
+                # default or actual text)
+                if yt_speakers_text == 'float("nan")' and (
+                    not row.get(yt_speakers_col_name)
+                ):
+                    # Try to use English transcript for YT speaker extraction
+                    # if available
+                    yt_speaker_source_transcript = youtube_transcript
+                    if language != "en":
+                        en_path = row.get("Transcript File human generated") or row.get(
+                            "Transcript File youtube generated"
+                        )
+                        if en_path and os.path.exists(str(en_path)):
+                            with open(str(en_path), "r", encoding="utf-8") as f:
+                                yt_speaker_source_transcript = f.read()
+                                vprint(
+                                    "Using English transcript for YouTube speaker "
+                                    f"extraction ({model_name})."
+                                )
+                    rprint(
+                        f"Extracting speakers using model: {model_name} "
+                        "(Source: YouTube Transcript)"
+                    )
+                    (
+                        yt_speakers_text,
+                        yt_speakers_input,
+                        yt_speakers_output,
+                    ) = extract_speakers(model_name, yt_speaker_source_transcript)
+
+                    row[yt_speakers_col_name] = yt_speakers_text
+                    if (
+                        yt_speakers_text.strip() == "nan"
+                        or yt_speakers_text.strip() == 'float("nan")'
+                    ):
+                        row[yt_speakers_col_name] = float("nan")
+
+                    # Save YouTube Speakers File
+                    if yt_speakers_text and not isinstance(
+                        row[yt_speakers_col_name], float
+                    ):
+                        yt_speakers_filename = (
+                            f"{model_name} - {video_id} - {safe_title} - "
+                            f"speakers (from youtube).txt"
+                        )
+                        target_path = os.path.join(speakers_dir, yt_speakers_filename)
+
+                        try:
+                            saved_path = storage.write_text(
+                                target_path, yt_speakers_text
+                            )
+                            rprint(f"Saved YouTube speakers: {yt_speakers_filename}")
+                            row[yt_speakers_file_col_name] = saved_path
+                        except Exception as e:
+                            print(f"Error writing YouTube speakers file: {e}")
+
+                    # Calculate YouTube Speaker Cost
                     if verbose:
                         input_price, output_price = get_model_pricing(model_name)
                         if input_price is not None and output_price is not None:
-                            # Add speaker tokens
-                            total_input = input_tokens + speakers_input
-                            total_output = output_tokens + speakers_output
-
-                            summary_cost = (total_input / 1_000_000) * input_price + (
-                                total_output / 1_000_000
+                            yt_speaker_cost = (
+                                yt_speakers_input / 1_000_000
+                            ) * input_price + (
+                                yt_speakers_output / 1_000_000
                             ) * output_price
-                            summary_cost = round(summary_cost, 2)
-                            vprint(f"Summary cost: ${summary_cost:.2f}")
-                            row[summary_cost_col_name] = summary_cost
+                            yt_speaker_cost = round(yt_speaker_cost, 2)
+                            row[yt_speaker_cost_col_name] = yt_speaker_cost
+                            vprint(
+                                "YouTube Speaker extraction cost: "
+                                f"${yt_speaker_cost:.2f}"
+                            )
 
-                    summary_full_path = ""
-                    if summaries_dir and summary_text:
-                        summary_filename = (
-                            f"{model_name} - {video_id} - {safe_title} - "
-                            f"summary (from {transcript_arg}){lang_str}.md"
-                        )
-                        target_path = os.path.join(summaries_dir, summary_filename)
+            # --- Secondary Q&A from YouTube (if applicable) ---
+            if (
+                transcript_arg != "youtube"
+                and youtube_transcript
+                and not no_youtube_summary
+            ):
+                yt_qa_col_name = f"QA Text {model_name} from youtube{col_suffix}"
+                yt_qa_file_col_name = f"QA File {model_name} from youtube{col_suffix}"
+                yt_qa_cost_col_name = (
+                    f"{normalize_model_name(model_name)} QA cost from "
+                    f"youtube{col_suffix} ($)"
+                )
+
+                # Check disk for YT QA file
+                if not row.get(yt_qa_file_col_name):
+                    qa_filename = (
+                        f"{model_name} - {video_id} - {safe_title} - "
+                        f"qa (from youtube){lang_str}.md"
+                    )
+                    expected_path = os.path.join(qa_dir, qa_filename)
+                    if storage.exists(expected_path):
+                        row[yt_qa_file_col_name] = expected_path
+
+                # Load YT QA from file/row
+                if row.get(yt_qa_file_col_name):
+                    path = row[yt_qa_file_col_name]
+                    if path:
                         try:
-                            summary_full_path = storage.write_text(
-                                target_path, summary_text
+                            row[yt_qa_col_name] = storage.read_text(str(path))
+                        except Exception as e:
+                            vprint(
+                                f"Warning: Failed to read YouTube Q&A file {path}: {e}"
+                            )
+                if not row.get(yt_qa_col_name):
+                    rprint(
+                        f"Generating Q&A using model: {model_name} "
+                        "(Source: YouTube Transcript)"
+                    )
+                    yt_qa_text, yt_qa_in, yt_qa_out = generate_qa(
+                        model_name,
+                        youtube_transcript,
+                        yt_speakers_text,
+                        url,
+                    )
+
+                    row[yt_qa_col_name] = yt_qa_text
+                    if (
+                        yt_qa_text.strip() == "nan"
+                        or yt_qa_text.strip() == 'float("nan")'
+                    ):
+                        row[yt_qa_col_name] = float("nan")
+
+                    yt_qa_cost = float("nan")
+                    if verbose:
+                        input_price, output_price = get_model_pricing(model_name)
+                        if input_price is not None and output_price is not None:
+                            # Pure QA cost
+                            cost = (yt_qa_in / 1_000_000) * input_price + (
+                                yt_qa_out / 1_000_000
+                            ) * output_price
+                            yt_qa_cost = round(cost, 2)
+                            vprint(f"YouTube Q&A cost: ${yt_qa_cost:.2f}")
+                            row[yt_qa_cost_col_name] = yt_qa_cost
+
+                    yt_qa_full_path = ""
+                    if row[yt_qa_col_name] and not isinstance(
+                        row[yt_qa_col_name], float
+                    ):
+                        qa_filename = (
+                            f"{model_name} - {video_id} - {safe_title} - "
+                            f"qa (from youtube){lang_str}.md"
+                        )
+                        target_path = os.path.join(qa_dir, qa_filename)
+
+                        try:
+                            yt_qa_full_path = storage.write_text(
+                                target_path, row[yt_qa_col_name]
                             )
                             rprint(
-                                "Saved summary: "
-                                f"{format_clickable_path(summary_full_path)}"
+                                f"Saved YouTube Q&A: "
+                                f"{format_clickable_path(yt_qa_full_path)}"
                             )
                         except Exception as e:
-                            print(f"Error writing summary: {e}")
+                            print(f"Error writing YouTube Q&A: {e}")
 
-                    row[summary_file_col_name] = summary_full_path
-                    row[summary_col_name] = summary_text
+                    row[yt_qa_file_col_name] = yt_qa_full_path
 
-                # One Sentence Summary Generation
-                one_sentence_col_name = (
-                    f"One Sentence Summary {model_name} from "
-                    f"{transcript_arg}{col_suffix}"
+            # --- Secondary Summary from YouTube (if applicable) ---
+            if (
+                transcript_arg != "youtube"
+                and youtube_transcript
+                and not no_youtube_summary
+            ):
+                yt_sum_col_name = f"Summary Text {model_name} from youtube{col_suffix}"
+                yt_sum_file_col_name = (
+                    f"Summary File {model_name} from youtube{col_suffix}"
                 )
-                one_sentence_cost_col_name = (
-                    f"{normalize_model_name(model_name)} one sentence summary cost "
-                    f"from {transcript_arg}{col_suffix} ($)"
+                yt_sum_cost_col_name = (
+                    f"{normalize_model_name(model_name)} summary cost from "
+                    f"youtube{col_suffix} ($)"
                 )
 
-                if row.get(summary_col_name) and not row.get(one_sentence_col_name):
-                    vprint(
-                        f"Generating one sentence summary using model: {model_name} "
-                        f"({language})"
+                # Check disk for YT Summary file
+                if not row.get(yt_sum_file_col_name):
+                    summary_filename = (
+                        f"{model_name} - {video_id} - {safe_title} - "
+                        f"summary (from youtube){lang_str}.md"
+                    )
+                    expected_path = os.path.join(summaries_dir, summary_filename)
+                    if storage.exists(expected_path):
+                        row[yt_sum_file_col_name] = expected_path
+
+                # Load YT Summary from file/row
+                if row.get(yt_sum_file_col_name):
+                    path = row[yt_sum_file_col_name]
+                    if path:
+                        try:
+                            row[yt_sum_col_name] = storage.read_text(str(path))
+                        except Exception as e:
+                            vprint(
+                                "Warning: Failed to read YouTube summary file "
+                                f"{path}: {e}"
+                            )
+
+                if not row.get(yt_sum_col_name):
+                    rprint(
+                        f"Generating summary using model: {model_name} "
+                        "(Source: YouTube Transcript)"
                     )
                     (
-                        one_sentence_text,
-                        os_input,
-                        os_output,
-                    ) = generate_one_sentence_summary(
-                        model_name, row[summary_col_name], language=language
+                        yt_summary_text,
+                        yt_input_tokens,
+                        yt_output_tokens,
+                    ) = generate_summary(
+                        model_name,
+                        youtube_transcript,
+                        video_title,
+                        url,
                     )
-                    row[one_sentence_col_name] = one_sentence_text
 
-                    # Save One Sentence Summary File
-                    if one_sentence_text and one_sentence_summaries_dir:
+                    yt_summary_cost = float("nan")
+                    if verbose:
+                        input_price, output_price = get_model_pricing(model_name)
+                        if input_price is not None and output_price is not None:
+                            # We don't include speaker tokens here
+                            # as we didn't extract
+                            # speakers from the YouTube transcript
+                            # specifically for this
+                            # summary.
+                            # If we wanted to be precise,
+                            # we'd need to extract speakers
+                            # from YT transcript too.
+                            # For now, just the summary cost.
+                            cost = (yt_input_tokens / 1_000_000) * input_price + (
+                                yt_output_tokens / 1_000_000
+                            ) * output_price
+                            yt_summary_cost = round(cost, 2)
+                            vprint(f"YouTube Summary cost: ${yt_summary_cost:.2f}")
+                            row[yt_sum_cost_col_name] = yt_summary_cost
+
+                    yt_summary_full_path = ""
+                    if summaries_dir and yt_summary_text:
+                        summary_filename = (
+                            f"{model_name} - {video_id} - {safe_title} - "
+                            f"summary (from youtube){lang_str}.md"
+                        )
+                        target_path = os.path.join(summaries_dir, summary_filename)
+
+                        try:
+                            yt_summary_full_path = storage.write_text(
+                                target_path, yt_summary_text
+                            )
+                            rprint(
+                                f"Saved YouTube summary: "
+                                f"{format_clickable_path(yt_summary_full_path)}"
+                            )
+                        except Exception as e:
+                            print(f"Error writing YouTube summary: {e}")
+
+                    row[yt_sum_file_col_name] = yt_summary_full_path
+                    row[yt_sum_col_name] = yt_summary_text
+
+                # One Sentence Summary for YouTube Summary
+                yt_one_sentence_col_name = (
+                    f"One Sentence Summary {model_name} from youtube{col_suffix}"
+                )
+                yt_one_sentence_cost_col_name = (
+                    f"{normalize_model_name(model_name)} one sentence summary "
+                    f"cost from youtube{col_suffix} ($)"
+                )
+
+                if row.get(yt_sum_col_name) and not row.get(yt_one_sentence_col_name):
+                    rprint(
+                        "Generating one sentence summary using model: "
+                        f"{model_name} (Source: YouTube Transcript)"
+                    )
+                    (
+                        yt_one_sentence_text,
+                        yt_os_input,
+                        yt_os_output,
+                    ) = generate_one_sentence_summary(model_name, row[yt_sum_col_name])
+                    row[yt_one_sentence_col_name] = yt_one_sentence_text
+
+                    # Cost
+                    if verbose:
+                        input_price, output_price = get_model_pricing(model_name)
+                        if input_price is not None and output_price is not None:
+                            cost = (yt_os_input / 1_000_000) * input_price + (
+                                yt_os_output / 1_000_000
+                            ) * output_price
+                            cost = round(cost, 2)
+                            row[yt_one_sentence_cost_col_name] = cost
+                            vprint(f"YouTube one sentence summary cost: ${cost:.2f}")
+
+                    # Save YT One Sentence Summary File
+                    if yt_one_sentence_text and one_sentence_summaries_dir:
                         os_filename = (
                             f"{model_name} - {video_id} - {safe_title} - "
-                            f"one-sentence-summary (from {transcript_arg}){lang_str}.md"
+                            f"one-sentence-summary (from youtube){lang_str}.md"
                         )
                         target_path = os.path.join(
                             one_sentence_summaries_dir, os_filename
                         )
                         try:
                             os_full_path = storage.write_text(
-                                target_path, one_sentence_text
+                                target_path, yt_one_sentence_text
                             )
                             rprint(
-                                "Saved one sentence summary: "
+                                "Saved YouTube one sentence summary: "
                                 f"{format_clickable_path(os_full_path)}"
                             )
                             os_col = (
                                 f"One Sentence Summary File {model_name} from "
-                                f"{transcript_arg}{col_suffix}"
+                                f"youtube{col_suffix}"
                             )
                             row[os_col] = os_full_path
                         except Exception as e:
-                            print(f"Error writing one sentence summary: {e}")
+                            print(f"Error writing YouTube one sentence summary: {e}")
 
-                    # Cost
-                    if verbose:
-                        input_price, output_price = get_model_pricing(model_name)
-                        if input_price is not None and output_price is not None:
-                            cost = (os_input / 1_000_000) * input_price + (
-                                os_output / 1_000_000
-                            ) * output_price
-                            cost = round(cost, 2)
-                            row[one_sentence_cost_col_name] = cost
-                            vprint(f"One sentence summary cost: ${cost:.2f}")
+        # Infographic Generation
+        summary_targets = []
+        if infographic_arg:
+            # Target ALL summaries in the row (both existing and newly created)
+            # This includes normal summaries and "from youtube" summaries
+            # Target English summaries in the row
+            for k in list(row.keys()):
+                if k.startswith("Summary Text ") and row[k]:
+                    # Only target English (no suffix)
+                    if k.endswith(")"):
+                        continue
 
-                # Tag Generation
-                tags_col_name = f"Tags {transcript_arg} {model_name} model{col_suffix}"
-                tags_cost_col_name = (
-                    f"{normalize_model_name(model_name)} "
-                    f"tags cost from {transcript_arg}{col_suffix} ($)"
+                    m_name = k[len("Summary Text ") :]
+                    summary_targets.append((k, m_name, row[k]))
+
+        for sum_col, m_name, s_text in summary_targets:
+            if not s_text:
+                continue
+
+            info_col = f"Summary Infographic File {m_name} {infographic_arg}"
+            alt_text_col = f"Summary Infographic Alt Text {m_name} {infographic_arg}"
+            alt_text_file_col = f"Infographic Alt Text Path {m_name} {infographic_arg}"
+
+            # 1. Check if both already exist in row
+            if row.get(info_col) and row.get(alt_text_col):
+                continue
+
+            # 2. Check disk for infographic
+            infographic_filename = (
+                f"{m_name} - {infographic_arg} - {video_id} - "
+                f"{safe_title} - infographic.png"
+            )
+            expected_path = os.path.join(infographics_dir, infographic_filename)
+
+            image_bytes = None
+            if storage.exists(expected_path):
+                row[info_col] = expected_path
+                # If we need alt text, we need the bytes
+                if not row.get(alt_text_col):
+                    vprint(
+                        "Loading existing infographic for alt text: "
+                        f"{format_clickable_path(expected_path)}"
+                    )
+                    image_bytes = storage.read_bytes(expected_path)
+            else:
+                # 3. Generate infographic if it doesn't exist on disk
+                summary_file_path = row.get(f"Summary File {m_name}", "")
+                summary_filename = (
+                    storage.get_name(summary_file_path)
+                    if summary_file_path
+                    else "unknown file"
                 )
-
-                if not row.get(tags_col_name) and row.get(summary_col_name):
-                    summary_for_tags = row[summary_col_name]
-                    rprint(f"Generating tags using model: {model_name} ({language})")
-
-                    tags_text, tags_input, tags_output = generate_tags(
-                        model_name, summary_for_tags, language=language
-                    )
-
-                    # Ensure no more than 5 tags
-                    tag_list = [t.strip() for t in tags_text.split(",") if t.strip()]
-                    if len(tag_list) > 5:
-                        tag_list = tag_list[:5]
-                    row[tags_col_name] = ", ".join(tag_list)
-
-                    if (
-                        tags_text.strip() == "nan"
-                        or tags_text.strip() == 'float("nan")'
-                    ):
-                        row[tags_col_name] = float("nan")
-
-                    # Calculate Tags Cost
-                    if verbose:
-                        input_price, output_price = get_model_pricing(model_name)
-                        if input_price is not None and output_price is not None:
-                            tags_cost = (tags_input / 1_000_000) * input_price + (
-                                tags_output / 1_000_000
-                            ) * output_price
-                            row[tags_cost_col_name] = tags_cost
-                            vprint(f"Tags cost: ${tags_cost:.2f}")
-
-                    # Save Tags File
-                    if row.get(tags_col_name) and tags_dir:
-                        tags_val = row[tags_col_name]
-                        if isinstance(tags_val, str) and tags_val != 'float("nan")':
-                            tags_filename = (
-                                f"{model_name} - {video_id} - {safe_title} - "
-                                f"tags (from {transcript_arg}){lang_str}.txt"
-                            )
-                            target_path = os.path.join(tags_dir, tags_filename)
-                            try:
-                                tags_full_path = storage.write_text(
-                                    target_path, tags_val
-                                )
-                                rprint(
-                                    "Saved tags: "
-                                    f"{format_clickable_path(tags_full_path)}"
-                                )
-                                tags_file_col = (
-                                    f"Tags File {transcript_arg} {model_name} "
-                                    f"model{col_suffix}"
-                                )
-                                row[tags_file_col] = tags_full_path
-                            except Exception as e:
-                                print(f"Error writing tags: {e}")
-
-                # --- Secondary Speaker Extraction from YouTube (if applicable) ---
-                yt_speakers_text = 'float("nan")'
-                yt_speakers_input = 0
-                yt_speakers_output = 0
-
-                if (
-                    transcript_arg != "youtube"
-                    and youtube_transcript
-                    and not no_youtube_summary
-                ):
-                    yt_speakers_col_name = f"Speakers {model_name} from youtube"
-                    yt_speakers_file_col_name = (
-                        f"Speakers File {model_name} from youtube"
-                    )
-                    yt_speaker_cost_col_name = (
-                        f"{normalize_model_name(model_name)} "
-                        f"Speaker extraction cost from youtube ($)"
-                    )
-
-                    # Check disk for YT speakers file
-                    if not row.get(yt_speakers_file_col_name):
-                        yt_speakers_filename = (
-                            f"{model_name} - {video_id} - {safe_title} - "
-                            f"speakers (from youtube).txt"
-                        )
-                        expected_path = os.path.join(speakers_dir, yt_speakers_filename)
-                        if storage.exists(expected_path):
-                            row[yt_speakers_file_col_name] = expected_path
-
-                    # Load YT speakers from file/row
-                    if row.get(yt_speakers_file_col_name):
-                        path = row[yt_speakers_file_col_name]
-                        if path and storage.exists(str(path)):
-                            try:
-                                yt_speakers_text = storage.read_text(str(path))
-                                row[yt_speakers_col_name] = yt_speakers_text
-                            except Exception as e:
-                                vprint(
-                                    "Warning: Failed to read YouTube speakers file "
-                                    f"{path}: {e}"
-                                )
-
-                    elif row.get(yt_speakers_col_name):
-                        yt_speakers_text = row[yt_speakers_col_name]
-
-                    # Generate if missing (checking specifically if it is 'float("nan")'
-                    # default or actual text)
-                    if yt_speakers_text == 'float("nan")' and (
-                        not row.get(yt_speakers_col_name)
-                    ):
-                        # Try to use English transcript for YT speaker extraction
-                        # if available
-                        yt_speaker_source_transcript = youtube_transcript
-                        if language != "en":
-                            en_path = row.get(
-                                "Transcript File human generated"
-                            ) or row.get("Transcript File youtube generated")
-                            if en_path and os.path.exists(str(en_path)):
-                                with open(str(en_path), "r", encoding="utf-8") as f:
-                                    yt_speaker_source_transcript = f.read()
-                                    vprint(
-                                        "Using English transcript for YouTube speaker "
-                                        f"extraction ({model_name})."
-                                    )
+                rprint(
+                    f"Generating infographic using model {infographic_arg} "
+                    f"from {summary_filename}"
+                )
+                image_bytes, input_tokens, output_tokens = generate_infographic(
+                    infographic_arg, s_text, video_title
+                )
+                if image_bytes:
+                    try:
+                        saved_path = storage.write_bytes(expected_path, image_bytes)
                         rprint(
-                            f"Extracting speakers using model: {model_name} "
-                            "(Source: YouTube Transcript)"
+                            f"Saved infographic: {format_clickable_path(saved_path)}"
                         )
-                        (
-                            yt_speakers_text,
-                            yt_speakers_input,
-                            yt_speakers_output,
-                        ) = extract_speakers(model_name, yt_speaker_source_transcript)
+                        row[info_col] = saved_path
 
-                        row[yt_speakers_col_name] = yt_speakers_text
-                        if (
-                            yt_speakers_text.strip() == "nan"
-                            or yt_speakers_text.strip() == 'float("nan")'
-                        ):
-                            row[yt_speakers_col_name] = float("nan")
-
-                        # Save YouTube Speakers File
-                        if yt_speakers_text and not isinstance(
-                            row[yt_speakers_col_name], float
-                        ):
-                            yt_speakers_filename = (
-                                f"{model_name} - {video_id} - {safe_title} - "
-                                f"speakers (from youtube).txt"
-                            )
-                            target_path = os.path.join(
-                                speakers_dir, yt_speakers_filename
-                            )
-
-                            try:
-                                saved_path = storage.write_text(
-                                    target_path, yt_speakers_text
-                                )
-                                rprint(
-                                    f"Saved YouTube speakers: {yt_speakers_filename}"
-                                )
-                                row[yt_speakers_file_col_name] = saved_path
-                            except Exception as e:
-                                print(f"Error writing YouTube speakers file: {e}")
-
-                        # Calculate YouTube Speaker Cost
-                        if verbose:
-                            input_price, output_price = get_model_pricing(model_name)
-                            if input_price is not None and output_price is not None:
-                                yt_speaker_cost = (
-                                    yt_speakers_input / 1_000_000
-                                ) * input_price + (
-                                    yt_speakers_output / 1_000_000
-                                ) * output_price
-                                yt_speaker_cost = round(yt_speaker_cost, 2)
-                                row[yt_speaker_cost_col_name] = yt_speaker_cost
-                                vprint(
-                                    "YouTube Speaker extraction cost: "
-                                    f"${yt_speaker_cost:.2f}"
-                                )
-
-                # --- Secondary Q&A from YouTube (if applicable) ---
-                if (
-                    transcript_arg != "youtube"
-                    and youtube_transcript
-                    and not no_youtube_summary
-                ):
-                    yt_qa_col_name = f"QA Text {model_name} from youtube{col_suffix}"
-                    yt_qa_file_col_name = (
-                        f"QA File {model_name} from youtube{col_suffix}"
-                    )
-                    yt_qa_cost_col_name = (
-                        f"{normalize_model_name(model_name)} QA cost from "
-                        f"youtube{col_suffix} ($)"
-                    )
-
-                    # Check disk for YT QA file
-                    if not row.get(yt_qa_file_col_name):
-                        qa_filename = (
-                            f"{model_name} - {video_id} - {safe_title} - "
-                            f"qa (from youtube){lang_str}.md"
-                        )
-                        expected_path = os.path.join(qa_dir, qa_filename)
-                        if storage.exists(expected_path):
-                            row[yt_qa_file_col_name] = expected_path
-
-                    # Load YT QA from file/row
-                    if row.get(yt_qa_file_col_name):
-                        path = row[yt_qa_file_col_name]
-                        if path:
-                            try:
-                                row[yt_qa_col_name] = storage.read_text(str(path))
-                            except Exception as e:
-                                vprint(
-                                    "Warning: Failed to read YouTube Q&A file "
-                                    f"{path}: {e}"
-                                )
-                    if not row.get(yt_qa_col_name):
-                        rprint(
-                            f"Generating Q&A using model: {model_name} "
-                            "(Source: YouTube Transcript)"
-                        )
-                        yt_qa_text, yt_qa_in, yt_qa_out = generate_qa(
-                            model_name,
-                            youtube_transcript,
-                            yt_speakers_text,
-                            url,
-                            language=language,
-                        )
-
-                        row[yt_qa_col_name] = yt_qa_text
-                        if (
-                            yt_qa_text.strip() == "nan"
-                            or yt_qa_text.strip() == 'float("nan")'
-                        ):
-                            row[yt_qa_col_name] = float("nan")
-
-                        yt_qa_cost = float("nan")
-                        if verbose:
-                            input_price, output_price = get_model_pricing(model_name)
-                            if input_price is not None and output_price is not None:
-                                # Pure QA cost
-                                cost = (yt_qa_in / 1_000_000) * input_price + (
-                                    yt_qa_out / 1_000_000
-                                ) * output_price
-                                yt_qa_cost = round(cost, 2)
-                                vprint(f"YouTube Q&A cost: ${yt_qa_cost:.2f}")
-                                row[yt_qa_cost_col_name] = yt_qa_cost
-
-                        yt_qa_full_path = ""
-                        if row[yt_qa_col_name] and not isinstance(
-                            row[yt_qa_col_name], float
-                        ):
-                            qa_filename = (
-                                f"{model_name} - {video_id} - {safe_title} - "
-                                f"qa (from youtube){lang_str}.md"
-                            )
-                            target_path = os.path.join(qa_dir, qa_filename)
-
-                            try:
-                                yt_qa_full_path = storage.write_text(
-                                    target_path, row[yt_qa_col_name]
-                                )
-                                rprint(
-                                    f"Saved YouTube Q&A: "
-                                    f"{format_clickable_path(yt_qa_full_path)}"
-                                )
-                            except Exception as e:
-                                print(f"Error writing YouTube Q&A: {e}")
-
-                        row[yt_qa_file_col_name] = yt_qa_full_path
-
-                # --- Secondary Summary from YouTube (if applicable) ---
-                if (
-                    transcript_arg != "youtube"
-                    and youtube_transcript
-                    and not no_youtube_summary
-                ):
-                    yt_sum_col_name = (
-                        f"Summary Text {model_name} from youtube{col_suffix}"
-                    )
-                    yt_sum_file_col_name = (
-                        f"Summary File {model_name} from youtube{col_suffix}"
-                    )
-                    yt_sum_cost_col_name = (
-                        f"{normalize_model_name(model_name)} summary cost from "
-                        f"youtube{col_suffix} ($)"
-                    )
-
-                    # Check disk for YT Summary file
-                    if not row.get(yt_sum_file_col_name):
-                        summary_filename = (
-                            f"{model_name} - {video_id} - {safe_title} - "
-                            f"summary (from youtube){lang_str}.md"
-                        )
-                        expected_path = os.path.join(summaries_dir, summary_filename)
-                        if storage.exists(expected_path):
-                            row[yt_sum_file_col_name] = expected_path
-
-                    # Load YT Summary from file/row
-                    if row.get(yt_sum_file_col_name):
-                        path = row[yt_sum_file_col_name]
-                        if path:
-                            try:
-                                row[yt_sum_col_name] = storage.read_text(str(path))
-                            except Exception as e:
-                                vprint(
-                                    "Warning: Failed to read YouTube summary file "
-                                    f"{path}: {e}"
-                                )
-
-                    if not row.get(yt_sum_col_name):
-                        rprint(
-                            f"Generating summary using model: {model_name} "
-                            "(Source: YouTube Transcript)"
-                        )
-                        (
-                            yt_summary_text,
-                            yt_input_tokens,
-                            yt_output_tokens,
-                        ) = generate_summary(
-                            model_name,
-                            youtube_transcript,
-                            video_title,
-                            url,
-                            language=language,
-                        )
-
-                        yt_summary_cost = float("nan")
-                        if verbose:
-                            input_price, output_price = get_model_pricing(model_name)
-                            if input_price is not None and output_price is not None:
-                                # We don't include speaker tokens here
-                                # as we didn't extract
-                                # speakers from the YouTube transcript
-                                # specifically for this
-                                # summary.
-                                # If we wanted to be precise,
-                                # we'd need to extract speakers
-                                # from YT transcript too.
-                                # For now, just the summary cost.
-                                cost = (yt_input_tokens / 1_000_000) * input_price + (
-                                    yt_output_tokens / 1_000_000
-                                ) * output_price
-                                yt_summary_cost = round(cost, 2)
-                                vprint(f"YouTube Summary cost: ${yt_summary_cost:.2f}")
-                                row[yt_sum_cost_col_name] = yt_summary_cost
-
-                        yt_summary_full_path = ""
-                        if summaries_dir and yt_summary_text:
-                            summary_filename = (
-                                f"{model_name} - {video_id} - {safe_title} - "
-                                f"summary (from youtube){lang_str}.md"
-                            )
-                            target_path = os.path.join(summaries_dir, summary_filename)
-
-                            try:
-                                yt_summary_full_path = storage.write_text(
-                                    target_path, yt_summary_text
-                                )
-                                rprint(
-                                    f"Saved YouTube summary: "
-                                    f"{format_clickable_path(yt_summary_full_path)}"
-                                )
-                            except Exception as e:
-                                print(f"Error writing YouTube summary: {e}")
-
-                        row[yt_sum_file_col_name] = yt_summary_full_path
-                        row[yt_sum_col_name] = yt_summary_text
-
-                    # One Sentence Summary for YouTube Summary
-                    yt_one_sentence_col_name = (
-                        f"One Sentence Summary {model_name} from youtube{col_suffix}"
-                    )
-                    yt_one_sentence_cost_col_name = (
-                        f"{normalize_model_name(model_name)} one sentence summary "
-                        f"cost from youtube{col_suffix} ($)"
-                    )
-
-                    if row.get(yt_sum_col_name) and not row.get(
-                        yt_one_sentence_col_name
-                    ):
-                        rprint(
-                            "Generating one sentence summary using model: "
-                            f"{model_name} (Source: YouTube Transcript)"
-                        )
-                        (
-                            yt_one_sentence_text,
-                            yt_os_input,
-                            yt_os_output,
-                        ) = generate_one_sentence_summary(
-                            model_name, row[yt_sum_col_name], language=language
-                        )
-                        row[yt_one_sentence_col_name] = yt_one_sentence_text
-
-                        # Cost
-                        if verbose:
-                            input_price, output_price = get_model_pricing(model_name)
-                            if input_price is not None and output_price is not None:
-                                cost = (yt_os_input / 1_000_000) * input_price + (
-                                    yt_os_output / 1_000_000
-                                ) * output_price
-                                cost = round(cost, 2)
-                                row[yt_one_sentence_cost_col_name] = cost
-                                vprint(
-                                    f"YouTube one sentence summary cost: ${cost:.2f}"
-                                )
-
-                        # Save YT One Sentence Summary File
-                        if yt_one_sentence_text and one_sentence_summaries_dir:
-                            os_filename = (
-                                f"{model_name} - {video_id} - {safe_title} - "
-                                f"one-sentence-summary (from youtube){lang_str}.md"
-                            )
-                            target_path = os.path.join(
-                                one_sentence_summaries_dir, os_filename
-                            )
-                            try:
-                                os_full_path = storage.write_text(
-                                    target_path, yt_one_sentence_text
-                                )
-                                rprint(
-                                    "Saved YouTube one sentence summary: "
-                                    f"{format_clickable_path(os_full_path)}"
-                                )
-                                os_col = (
-                                    f"One Sentence Summary File {model_name} from "
-                                    f"youtube{col_suffix}"
-                                )
-                                row[os_col] = os_full_path
-                            except Exception as e:
-                                print(
-                                    f"Error writing YouTube one sentence summary: {e}"
-                                )
-
-            # Infographic Generation
-            if infographic_arg:
-                summary_targets = []
-
-                # Target ALL summaries in the row (both existing and newly created)
-                # This includes normal summaries and "from youtube" summaries
-                for k in list(row.keys()):
-                    if k.startswith("Summary Text ") and row[k]:
-                        # Check language
-                        if language != "en" and not k.endswith(f" ({language})"):
-                            continue
-                        if language == "en" and k.endswith(")"):
-                            # Skip other languages
-                            continue
-
-                        m_name = k[len("Summary Text ") :]
-                        # m_name might be "gemini-2.0-flash" or
-                        # "gemini-2.0-flash from youtube"
-                        # or "gemini-2.0-flash (es)" or
-                        # "gemini-2.0-flash from youtube (es)"
-
-                        summary_targets.append((k, m_name, row[k]))
-
-                for sum_col, m_name, s_text in summary_targets:
-                    if not s_text:
-                        continue
-
-                    info_col = f"Summary Infographic File {m_name} {infographic_arg}"
-
-                    alt_text_col = (
-                        f"Summary Infographic Alt Text {m_name} {infographic_arg}"
-                    )
-                    alt_text_file_col = (
-                        f"Infographic Alt Text Path {m_name} {infographic_arg}"
-                    )
-
-                    # 1. Check if both already exist in row
-                    if row.get(info_col) and row.get(alt_text_col):
-                        continue
-
-                    # 2. Check disk for infographic
-                    safe_title = re.sub(r"[\\/*?:\"<>|]", "_", video_title).replace(
-                        "\n", " "
-                    )
-                    safe_title = safe_title.replace("\r", "")
-
-                    infographic_filename = (
-                        f"{m_name} - {infographic_arg} - {video_id} - "
-                        f"{safe_title} - infographic.png"
-                    )
-                    expected_path = os.path.join(infographics_dir, infographic_filename)
-
-                    image_bytes = None
-                    if storage.exists(expected_path):
-                        row[info_col] = expected_path
-                        # If we need alt text, we need the bytes
-                        if not row.get(alt_text_col):
-                            vprint(
-                                "Loading existing infographic for alt text: "
-                                f"{format_clickable_path(expected_path)}"
-                            )
-                            image_bytes = storage.read_bytes(expected_path)
-                    else:
-                        # 3. Generate infographic if it doesn't exist on disk
-                        summary_file_path = row.get(f"Summary File {m_name}", "")
-                        summary_filename = (
-                            storage.get_name(summary_file_path)
-                            if summary_file_path
-                            else "unknown file"
-                        )
-                        rprint(
-                            f"Generating infographic using model {infographic_arg} "
-                            f"from {summary_filename}"
-                        )
-                        image_bytes, input_tokens, output_tokens = generate_infographic(
-                            infographic_arg, s_text, video_title, language=language
-                        )
-                        if image_bytes:
-                            try:
-                                saved_path = storage.write_bytes(
-                                    expected_path, image_bytes
-                                )
-                                rprint(
-                                    "Saved infographic: "
-                                    f"{format_clickable_path(saved_path)}"
-                                )
-                                row[info_col] = saved_path
-
-                                # Calculate Infographic Cost
-                                if verbose:
-                                    input_price, output_price = get_model_pricing(
-                                        infographic_arg
-                                    )
-                                    if (
-                                        input_price is not None
-                                        and output_price is not None
-                                    ):
-                                        cost = (
-                                            input_tokens / 1_000_000
-                                        ) * input_price + (
-                                            output_tokens / 1_000_000
-                                        ) * output_price
-                                        cost = round(cost, 2)
-                                        cost_col = (
-                                            f"Summary Infographic Cost {m_name} "
-                                            f"{infographic_arg} ($)"
-                                        )
-                                        row[cost_col] = cost
-                                        vprint(f"Infographic cost: ${cost:.2f}")
-
-                            except Exception as e:
-                                print(f"Error writing infographic: {e}")
-
-                    # 4. Alt Text Generation
-                    if image_bytes and not row.get(alt_text_col):
-                        alt_text_model = (
-                            alt_text_model_arg or model_name
-                        )  # model_name is the current summary model
-                        rprint(
-                            "Generating multimodal alt text using model: "
-                            f"{alt_text_model}"
-                        )
-                        alt_text, at_input, at_output = generate_alt_text(
-                            alt_text_model, image_bytes, language=language
-                        )
-                        row[alt_text_col] = alt_text
-
-                        # Save Alt Text File
-                        if alt_text and not alt_text.startswith("Error"):
-                            alt_text_filename = (
-                                f"{m_name} - {infographic_arg} - {video_id} - "
-                                f"{safe_title} - alt-text.md"
-                            )
-                            target_path = os.path.join(alt_text_dir, alt_text_filename)
-                            try:
-                                saved_path = storage.write_text(target_path, alt_text)
-                                rprint(
-                                    "Saved alt text: "
-                                    f"{format_clickable_path(saved_path)}"
-                                )
-                                row[alt_text_file_col] = saved_path
-                            except Exception as e:
-                                print(f"Error writing alt text: {e}")
-
-                        # Cost
+                        # Calculate Infographic Cost
                         if verbose:
                             input_price, output_price = get_model_pricing(
-                                alt_text_model
+                                infographic_arg
                             )
                             if input_price is not None and output_price is not None:
-                                at_cost = (at_input / 1_000_000) * input_price + (
-                                    at_output / 1_000_000
+                                cost = (input_tokens / 1_000_000) * input_price + (
+                                    output_tokens / 1_000_000
                                 ) * output_price
-                                at_cost = round(at_cost, 2)
-                                at_cost_col = (
-                                    "Summary Infographic Alt Text Cost "
-                                    f"{m_name} {infographic_arg} ($)"
+                                cost = round(cost, 2)
+                                cost_col = (
+                                    f"Summary Infographic Cost {m_name} "
+                                    f"{infographic_arg} ($)"
                                 )
-                                row[at_cost_col] = at_cost
-                                vprint(f"Alt text cost: ${at_cost:.2f}")
+                                row[cost_col] = cost
+                                vprint(f"Infographic cost: ${cost:.2f}")
+
+                    except Exception as e:
+                        print(f"Error writing infographic: {e}")
+
+            # 4. Alt Text Generation
+            if image_bytes and not row.get(alt_text_col):
+                alt_text_model = alt_text_model_arg or next(iter(model_names))
+                rprint(f"Generating multimodal alt text using model: {alt_text_model}")
+                alt_text, at_input, at_output = generate_alt_text(
+                    alt_text_model, image_bytes
+                )
+                row[alt_text_col] = alt_text
+
+                # Save Alt Text File
+                if alt_text and not alt_text.startswith("Error"):
+                    alt_text_filename = (
+                        f"{m_name} - {infographic_arg} - {video_id} - "
+                        f"{safe_title} - alt-text.md"
+                    )
+                    target_path = os.path.join(alt_text_dir, alt_text_filename)
+                    try:
+                        saved_path = storage.write_text(target_path, alt_text)
+                        rprint(f"Saved alt text: {format_clickable_path(saved_path)}")
+                        row[alt_text_file_col] = saved_path
+                    except Exception as e:
+                        print(f"Error writing alt text: {e}")
+
+                # Cost
+                if verbose:
+                    input_price, output_price = get_model_pricing(alt_text_model)
+                    if input_price is not None and output_price is not None:
+                        at_cost = (at_input / 1_000_000) * input_price + (
+                            at_output / 1_000_000
+                        ) * output_price
+                        at_cost = round(at_cost, 2)
+                        at_cost_col = (
+                            "Summary Infographic Alt Text Cost "
+                            f"{m_name} {infographic_arg} ($)"
+                        )
+                        row[at_cost_col] = at_cost
+                        vprint(f"Alt text cost: ${at_cost:.2f}")
+
+        # --- Post-Processing Translation ---
+        if parsed_languages:
+            rprint("[bold blue]Post-Processing Translations...[/bold blue]")
+            for method, lang_code in parsed_languages:
+                if lang_code == "en":
+                    continue
+
+                rprint(f"Translating to {lang_code} using {method}...")
+
+                # --- 1. First Check for Native YouTube Translation (Efficiency) ---
+                native_transcript = None
+                native_srt = None
+                try:
+                    # fetch_transcript returns (text, is_generated, List[Dict])
+                    result = fetch_transcript(video_id, language=lang_code)
+                    if result:
+                        native_transcript, _, transcript_data = result
+                        native_srt = format_as_srt(transcript_data)
+                        vprint(f"Found native YouTube translation for {lang_code}.")
+                except Exception as e:
+                    vprint(f"Native YouTube translation not available for {lang_code}: {e}")
+
+                # Identify all columns that need translation
+                # We translate: Summary Text, One Sentence Summary, QA Text, Tags,
+                # Infographic Alt Text, Transcripts, SRTs, Speakers
+                cols_to_translate = []
+                for k in list(row.keys()):
+                    # Only translate English columns (no bracketed suffix)
+                    if any(
+                        prefix in k
+                        for prefix in [
+                             "Summary Text",
+                             "One Sentence Summary",
+                             "QA Text",
+                             "Tags",
+                             "Summary Infographic Alt Text",
+                             "Transcript File",
+                             "SRT File",
+                             "Speakers",
+                        ]
+                    ):
+                        if not k.endswith(")") and not k.endswith("($)"):
+                            # Filter out costs, but allow File columns for transcripts/speakers
+                            if "Cost" not in k and "characters from" not in k:
+                                # We allow File columns here because we'll handle reading them.
+                                cols_to_translate.append(k)
+
+                for col in cols_to_translate:
+                    translation_suffix = f"({method}-{lang_code})"
+                    translated_col = f"{col} {translation_suffix}"
+
+                    # 1. Determine if we are translating a file path or direct text
+                    text_to_translate = None
+                    is_file_col = "File" in col or "SRT File" in col
+                    is_srt = "SRT File" in col
+                    is_transcript = "Transcript File" in col
+
+                    # 2. Check for native content first if applicable
+                    translated_text = None
+                    if is_transcript and native_transcript:
+                        translated_text = native_transcript
+                    elif is_srt and native_srt:
+                        translated_text = native_srt
+
+                    if not translated_text:
+                        # Fall back to LLM/Service translation
+                        if is_file_col:
+                            # Read content from existing file
+                            original_file_path = row[col]
+                            if original_file_path and storage.exists(original_file_path):
+                                text_to_translate = storage.read_text(original_file_path)
+                        else:
+                            # Use text directly from column
+                            text_to_translate = row.get(col)
+
+                        if (
+                            text_to_translate
+                            and isinstance(text_to_translate, str)
+                            and text_to_translate.lower() != "nan"
+                        ):
+                            # 3. Translate via LLM/Service
+                            vprint(f"Translating column: {col} -> {translated_col}")
+                            try:
+                                translation_prompt_extra = ""
+                                if is_srt:
+                                    # Hint for LLM to preserve timestamps
+                                    translation_prompt_extra = "\n\n(IMPORTANT: PRESERVE SRT TIMESTAMPS EXACTLY)"
+                                
+                                translated_text, in_t, out_t = translate_text(
+                                    text_to_translate + translation_prompt_extra, 
+                                    method, 
+                                    lang_code
+                                )
+                            except Exception as e:
+                                rprint(
+                                    f"[red]Error translating {col} to {lang_code}: "
+                                    f"{e}[/red]"
+                                )
+                                continue
+
+                    # 4. Save result
+                    if translated_text:
+                        if is_file_col:
+                            # Save translated content to a new file
+                            original_file_path = row[col]
+                            base_name = os.path.basename(original_file_path)
+                            name_part, ext_part = os.path.splitext(base_name)
+                            translated_filename = (
+                                f"{name_part} ({method}-{lang_code}){ext_part}"
+                            )
+
+                            # Determine directory
+                            target_dir = None
+                            if "Summary File" in col:
+                                target_dir = summaries_dir
+                            elif "One Sentence Summary File" in col:
+                                target_dir = one_sentence_summaries_dir
+                            elif "QA File" in col:
+                                target_dir = qa_dir
+                            elif "Tags File" in col:
+                                target_dir = tags_dir
+                            elif "Transcript File" in col:
+                                target_dir = transcripts_dir
+                            elif "SRT File" in col:
+                                target_dir = srt_dir
+                            elif "Speakers File" in col:
+                                target_dir = speaker_extraction_dir
+                            
+                            if target_dir:
+                                target_path = os.path.join(target_dir, translated_filename)
+                                try:
+                                    saved_path = storage.write_text(target_path, translated_text)
+                                    row[translated_col] = saved_path
+                                    vprint(f"Saved translated file: {saved_path}")
+                                except Exception as fe:
+                                    print(f"Error writing translated file {target_path}: {fe}")
+                        else:
+                            # Handle plain text columns
+                            row[translated_col] = translated_text
+                            
+                            # If this text column has a corresponding File column that hasn't been translated yet,
+                            # create the translated file version too.
+                            file_key = None
+                            if "Summary Text" in col:
+                                file_key = col.replace("Summary Text", "Summary File")
+                            elif "One Sentence Summary" in col:
+                                file_key = col.replace(
+                                    "One Sentence Summary", "One Sentence Summary File"
+                                )
+                            elif "QA Text" in col:
+                                file_key = col.replace("QA Text", "QA File")
+                            elif "Tags" in col:
+                                file_key = f"{col} File"
+                            elif "Speakers" in col:
+                                file_key = f"{col} File"
+
+                            if file_key and row.get(file_key) and not row.get(f"{file_key} {translation_suffix}"):
+                                original_file_path = row[file_key]
+                                translated_file_col = f"{file_key} {translation_suffix}"
+                                
+                                base_name = os.path.basename(original_file_path)
+                                name_part, ext_part = os.path.splitext(base_name)
+                                translated_filename = (
+                                    f"{name_part} ({method}-{lang_code}){ext_part}"
+                                )
+                                
+                                target_dir = None
+                                if "Summary File" in file_key: target_dir = summaries_dir
+                                elif "One Sentence Summary File" in file_key: target_dir = one_sentence_summaries_dir
+                                elif "QA File" in file_key: target_dir = qa_dir
+                                elif "Tags File" in file_key: target_dir = tags_dir
+                                elif "Transcript File" in file_key: target_dir = transcripts_dir
+                                elif "SRT File" in file_key: target_dir = srt_dir
+                                elif "Speakers File" in file_key: target_dir = speaker_extraction_dir
+
+                                if target_dir:
+                                    target_path = os.path.join(target_dir, translated_filename)
+                                    try:
+                                        saved_path = storage.write_text(target_path, translated_text)
+                                        row[translated_file_col] = saved_path
+                                    except Exception as fe:
+                                        print(f"Error writing translated file {target_path}: {fe}")
 
         if not verbose:
             oss = next(
@@ -1856,7 +1968,7 @@ def main(args_list: list[str] | None = None) -> None:
             # TTS will scan all columns, so it should pick up the new
             # language columns too
             final_df = process_tts(
-                final_df, tts_arg, storage, base_dir, languages=languages
+                final_df, tts_arg, storage, base_dir, languages=tts_languages
             )
             should_save = True
 

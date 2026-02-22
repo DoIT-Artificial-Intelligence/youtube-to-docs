@@ -463,10 +463,12 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_summary")
     @patch("youtube_to_docs.main.generate_tags")
+    @patch("youtube_to_docs.main.translate_text")
     @patch("os.makedirs")
     def test_translation_columns(
         self,
         mock_makedirs,
+        mock_translate,
         mock_gen_tags,
         mock_gen_summary,
         mock_get_pricing,
@@ -487,9 +489,10 @@ class TestMain(unittest.TestCase):
             "url1",
             60.0,
         )
-        mock_fetch_trans.return_value = ("Transcripción 1", False, "")
-        mock_gen_summary.return_value = ("Resumen 1", 100, 50)
+        mock_fetch_trans.return_value = ("Transcript 1", False, "")
+        mock_gen_summary.return_value = ("Summary 1", 100, 50)
         mock_get_pricing.return_value = (0.0, 0.0)
+        mock_translate.return_value = "Resumen 1"
 
         with patch(
             "sys.argv",
@@ -511,13 +514,13 @@ class TestMain(unittest.TestCase):
         df = pl.read_csv(self.outfile)
         self.assertEqual(len(df), 1)
         self.assertEqual(df[0, "URL"], "https://www.youtube.com/watch?v=vid1")
-        # Column names should have (es)
+        # Column names should have (gemini-es) because 'es' defaults to 'gemini'
         self.assertEqual(
-            df[0, "Summary Text gemini-test from youtube (es)"], "Resumen 1"
+            df[0, "Summary Text gemini-test from youtube (gemini-es)"], "Resumen 1"
         )
-        self.assertIn("Summary File gemini-test from youtube (es)", df.columns)
-        self.assertIn("Transcript File human generated (es)", df.columns)
-        self.assertIn("Transcript characters from youtube (es)", df.columns)
+        self.assertIn("Summary File gemini-test from youtube (gemini-es)", df.columns)
+        # Transcript fetching is still English by default
+        self.assertIn("Transcript File human generated", df.columns)
 
     @patch("youtube_to_docs.main.get_youtube_service")
     @patch("youtube_to_docs.main.resolve_video_ids")
@@ -526,10 +529,12 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.get_model_pricing")
     @patch("youtube_to_docs.main.generate_summary")
     @patch("youtube_to_docs.main.generate_tags")
+    @patch("youtube_to_docs.main.translate_text")
     @patch("os.makedirs")
     def test_multiple_languages(
         self,
         mock_makedirs,
+        mock_translate,
         mock_gen_tags,
         mock_gen_summary,
         mock_get_pricing,
@@ -553,6 +558,7 @@ class TestMain(unittest.TestCase):
         mock_fetch_trans.return_value = ("Transcript", False, "")
         mock_gen_summary.return_value = ("Summary", 100, 50)
         mock_get_pricing.return_value = (0.0, 0.0)
+        mock_translate.return_value = "Summary Translated"
 
         with patch(
             "sys.argv",
@@ -578,8 +584,9 @@ class TestMain(unittest.TestCase):
         self.assertIn("Transcript File human generated", df.columns)
 
         # Check ES columns
-        self.assertIn("Summary Text gemini-test from youtube (es)", df.columns)
-        self.assertIn("Transcript File human generated (es)", df.columns)
+        self.assertIn("Summary Text gemini-test from youtube (gemini-es)", df.columns)
+        # Note: We only translate outputs, not the raw transcript anymore
+        # (unless it's an AI transcript, but fetch_transcript is mocked)
 
     @patch("youtube_to_docs.main.get_youtube_service")
     @patch("youtube_to_docs.main.resolve_video_ids")

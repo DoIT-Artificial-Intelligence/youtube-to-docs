@@ -1,6 +1,6 @@
 """
 Run with:
-uv run --extra gcp python scripts/regression/regression_es_no_yt_summary.py
+uv run --extra all python scripts/regression/regression_es_no_yt_summary.py
 """
 
 import sys
@@ -40,7 +40,7 @@ def main():
         transcript_model,
         infographic_model,
         tts_model,
-        language="es",
+        language="gemini-es",
         no_youtube_summary=True,
     )
 
@@ -50,7 +50,7 @@ def main():
         transcript_model,
         infographic_model,
         tts_model,
-        language="es",
+        language="gemini-es",
         no_youtube_summary=True,
     )
 
