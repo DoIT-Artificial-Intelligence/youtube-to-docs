@@ -15,6 +15,7 @@ Please process the YouTube video at $ARGUMENTS using the `youtube-to-docs:proces
   - If no language is specified, omit `translate` (defaults to English only).
 - Check for translate provider keywords (only relevant when a language is specified):
   - If "aws translate" or "aws-translate" is mentioned, set `translate='aws-translate-{lang}'` (e.g. `aws-translate-es`).
+  - If "gcp translate" or "gcp-translate" is mentioned, set `translate='gcp-translate-{lang}'` (e.g. `gcp-translate-es`).
   - Otherwise default to `translate='gemini-3-flash-preview-{lang}'` (e.g. `gemini-3-flash-preview-es`).
 - Set the following additional parameters:
   - `verbose=True`

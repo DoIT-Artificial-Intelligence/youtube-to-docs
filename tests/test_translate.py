@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 
 from youtube_to_docs.translate import (
     _translate_aws,
+    _translate_gcp,
     parse_translate_arg,
     process_translate,
     translate_text,
@@ -48,6 +49,16 @@ class TestParseTranslateArg(unittest.TestCase):
         self.assertEqual(model, "aws-translate")
         self.assertEqual(lang, "fr")
 
+    def test_gcp_translate(self):
+        model, lang = parse_translate_arg("gcp-translate-es")
+        self.assertEqual(model, "gcp-translate")
+        self.assertEqual(lang, "es")
+
+    def test_gcp_translate_fr(self):
+        model, lang = parse_translate_arg("gcp-translate-fr")
+        self.assertEqual(model, "gcp-translate")
+        self.assertEqual(lang, "fr")
+
     def test_invalid_no_dash(self):
         with self.assertRaises(ValueError):
             parse_translate_arg("nodashhere")
@@ -88,6 +99,57 @@ class TestTranslateAws(unittest.TestCase):
             _translate_aws("Hello", "fr")
 
         mock_boto3.client.assert_called_once_with("translate", region_name="eu-west-1")
+
+
+class TestTranslateGcp(unittest.TestCase):
+    @patch("youtube_to_docs.translate.google_translate")
+    def test_calls_gcp_translate(self, mock_google_translate):
+        mock_client = MagicMock()
+        mock_google_translate.Client.return_value = mock_client
+        mock_client.translate.return_value = {"translatedText": "Hola mundo"}
+
+        result, in_tok, out_tok = _translate_gcp("Hello world", "es")
+
+        self.assertEqual(result, "Hola mundo")
+        self.assertEqual(in_tok, 0)
+        self.assertEqual(out_tok, 0)
+        mock_google_translate.Client.assert_called_once_with()
+        mock_client.translate.assert_called_once_with(
+            "Hello world",
+            target_language="es",
+            source_language="en",
+            format_="text",
+        )
+
+    @patch("youtube_to_docs.translate.google_translate")
+    def test_joins_translated_chunks(self, mock_google_translate):
+        mock_client = MagicMock()
+        mock_google_translate.Client.return_value = mock_client
+        # Return different text per call to verify chunk joining
+        mock_client.translate.side_effect = [
+            {"translatedText": "Hola"},
+            {"translatedText": " mundo"},
+        ]
+
+        # Force two chunks by using a tiny max_bytes
+        from youtube_to_docs import translate as translate_mod
+
+        original_limit = translate_mod._GCP_TRANSLATE_CHAR_LIMIT
+        translate_mod._GCP_TRANSLATE_CHAR_LIMIT = 5
+        try:
+            result, _, _ = _translate_gcp("Hello\nworld", "es")
+        finally:
+            translate_mod._GCP_TRANSLATE_CHAR_LIMIT = original_limit
+
+        self.assertEqual(result, "Hola mundo")
+
+    @patch("youtube_to_docs.translate.google_translate", None)
+    def test_returns_error_when_library_missing(self):
+        result, in_tok, out_tok = _translate_gcp("Hello", "es")
+
+        self.assertIn("google-cloud-translate", result)
+        self.assertEqual(in_tok, 0)
+        self.assertEqual(out_tok, 0)
 
 
 class TestTranslateText(unittest.TestCase):
@@ -139,6 +201,24 @@ class TestTranslateText(unittest.TestCase):
         mock_aws.return_value = ("Hola", 0, 0)
 
         translate_text("aws-translate", "Hello", "es")
+
+        mock_query.assert_not_called()
+
+    @patch("youtube_to_docs.translate._translate_gcp")
+    def test_routes_to_gcp_translate(self, mock_gcp):
+        mock_gcp.return_value = ("Hola", 0, 0)
+
+        result = translate_text("gcp-translate", "Hello", "es")
+
+        self.assertEqual(result, ("Hola", 0, 0))
+        mock_gcp.assert_called_once_with("Hello", "es")
+
+    @patch("youtube_to_docs.translate._translate_gcp")
+    @patch("youtube_to_docs.translate._query_llm")
+    def test_does_not_call_llm_for_gcp_translate(self, mock_query, mock_gcp):
+        mock_gcp.return_value = ("Hola", 0, 0)
+
+        translate_text("gcp-translate", "Hello", "es")
 
         mock_query.assert_not_called()
 

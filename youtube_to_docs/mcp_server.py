@@ -54,10 +54,11 @@ def process_video(
             YouTube transcript when using an AI model for the primary transcript.
         translate: Translate all outputs to a target language after generating in
             English. Format: `{model}-{language}` e.g. `gemini-3-flash-preview-es`,
-            `bedrock-nova-2-lite-v1-fr`, or `aws-translate-es`. Use `aws-translate`
-            to use the AWS Translate service instead of an LLM. When set, summaries,
-            Q&A, tags, transcripts, and SRT files are all translated. TTS and
-            infographics are generated in both English and the target language.
+            `bedrock-nova-2-lite-v1-fr`, `aws-translate-es`, or `gcp-translate-es`.
+            Use `aws-translate` to use the AWS Translate service, or `gcp-translate`
+            to use Google Cloud Translation API, instead of an LLM. When set,
+            summaries, Q&A, tags, transcripts, and SRT files are all translated. TTS
+            and infographics are generated in both English and the target language.
         combine_infographic_audio: If True, combines the infographic and audio summary
             into a video file. Requires both tts_model and infographic_model.
         all_suite: Shortcut to use a specific model suite for everything.

@@ -45,6 +45,7 @@ gcp = [
     "google-cloud-speech>=2.29.0",
     "google-cloud-storage",
     "google-cloud-texttospeech",
+    "google-cloud-translate>=3.0.0",
 ]
 workspace = [
     "google-auth-oauthlib",

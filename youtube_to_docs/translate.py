@@ -8,6 +8,11 @@ try:
 except ImportError:
     boto3: Any = None
 
+try:
+    from google.cloud import translate_v2 as google_translate
+except ImportError:
+    google_translate: Any = None
+
 
 def parse_translate_arg(translate_arg: str) -> Tuple[str, str]:
     """Parse a --translate argument in the format `{model}-{language}`.
@@ -17,6 +22,7 @@ def parse_translate_arg(translate_arg: str) -> Tuple[str, str]:
       "bedrock-nova-2-lite-v1-fr"         -> ("bedrock-nova-2-lite-v1", "fr")
       "gemini-3-flash-preview-zh"         -> ("gemini-3-flash-preview", "zh")
       "aws-translate-es"                  -> ("aws-translate", "es")
+      "gcp-translate-es"                  -> ("gcp-translate", "es")
 
     Returns (model_name, language_code).
     """
@@ -24,8 +30,8 @@ def parse_translate_arg(translate_arg: str) -> Tuple[str, str]:
     if len(parts) != 2:
         raise ValueError(
             f"Invalid --translate format: '{translate_arg}'. "
-            "Expected '{model}-{language}' e.g. 'gemini-3-flash-preview-es' "
-            "or 'aws-translate-es'."
+            "Expected '{model}-{language}' e.g. 'gemini-3-flash-preview-es', "
+            "'aws-translate-es', or 'gcp-translate-es'."
         )
     return parts[0], parts[1]
 
@@ -91,6 +97,44 @@ def _translate_aws(text: str, target_language: str) -> Tuple[str, int, int]:
     return "".join(translated_chunks), 0, 0
 
 
+_GCP_TRANSLATE_CHAR_LIMIT: int = 25_000
+
+
+def _translate_gcp(text: str, target_language: str) -> Tuple[str, int, int]:
+    """Translate text using Google Cloud Translation API (v2/Basic).
+
+    Automatically splits input into chunks to respect the 30,000-character
+    per-request limit, then joins the translated chunks.
+
+    Uses Application Default Credentials (ADC): set GOOGLE_APPLICATION_CREDENTIALS
+    to a service account key file, or authenticate via `gcloud auth application-default
+    login`.
+    Returns (translated_text, 0, 0) — Cloud Translation does not report token counts.
+    """
+    if google_translate is None:
+        return (
+            "Error: google-cloud-translate is required for GCP Translate. "
+            "Install with `pip install google-cloud-translate`",
+            0,
+            0,
+        )
+
+    client = google_translate.Client()
+
+    chunks = _chunk_text(text, max_bytes=_GCP_TRANSLATE_CHAR_LIMIT)
+    translated_chunks: list[str] = []
+    for chunk in chunks:
+        result = client.translate(
+            chunk,
+            target_language=target_language,
+            source_language="en",
+            format_="text",
+        )
+        translated_chunks.append(result["translatedText"])
+
+    return "".join(translated_chunks), 0, 0
+
+
 def translate_text(
     model_name: str,
     text: str,
@@ -99,12 +143,16 @@ def translate_text(
     """Translate text to target_language using model_name.
 
     If model_name is 'aws-translate', uses the AWS Translate service directly.
+    If model_name is 'gcp-translate', uses Google Cloud Translation API directly.
     Otherwise, uses the specified LLM via _query_llm.
 
     Returns (translated_text, input_tokens, output_tokens).
     """
     if model_name == "aws-translate":
         return _translate_aws(text, target_language)
+
+    if model_name == "gcp-translate":
+        return _translate_gcp(text, target_language)
 
     prompt = (
         f"Please translate the following text to {target_language}. "

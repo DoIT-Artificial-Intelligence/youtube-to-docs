@@ -534,6 +534,24 @@ wheels = [
 ]
 
 [[package]]
+name = "google-cloud-translate"
+version = "3.24.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "google-api-core", extra = ["grpc"] },
+    { name = "google-auth" },
+    { name = "google-cloud-core" },
+    { name = "grpc-google-iam-v1" },
+    { name = "grpcio" },
+    { name = "proto-plus" },
+    { name = "protobuf" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9a/76/4acb671860b86a18aedd94413577e8e66813daadf00cbcc92fd64e022cf0/google_cloud_translate-3.24.0.tar.gz", hash = "sha256:2f3b8b90f8cdaf63a435d18e63b21c3650de31fc4f858623f2d0d69be0cd3e9a", size = 274482, upload-time = "2026-01-15T13:05:11.681Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/58/b5/42e9fbc5086ff0d270118f46b5822fc4bb09c30510d5b615b71fbb5bfd98/google_cloud_translate-3.24.0-py3-none-any.whl", hash = "sha256:a4000f01ab51ff790913c3f40425e118e2632e7cd1589ae0401d19e6b355aedb", size = 209351, upload-time = "2026-01-15T13:03:06.868Z" },
+]
+
+[[package]]
 name = "google-crc32c"
 version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -599,6 +617,25 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e5/7b/adfd75544c415c487b33061fe7ae526165241c1ea133f9a9125a56b39fd8/googleapis_common_protos-1.72.0.tar.gz", hash = "sha256:e55a601c1b32b52d7a3e65f43563e2aa61bcd737998ee672ac9b951cd49319f5", size = 147433, upload-time = "2025-11-06T18:29:24.087Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c4/ab/09169d5a4612a5f92490806649ac8d41e3ec9129c636754575b3553f4ea4/googleapis_common_protos-1.72.0-py3-none-any.whl", hash = "sha256:4299c5a82d5ae1a9702ada957347726b167f9f8d1fc352477702a1e851ff4038", size = 297515, upload-time = "2025-11-06T18:29:13.14Z" },
+]
+
+[package.optional-dependencies]
+grpc = [
+    { name = "grpcio" },
+]
+
+[[package]]
+name = "grpc-google-iam-v1"
+version = "0.14.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "googleapis-common-protos", extra = ["grpc"] },
+    { name = "grpcio" },
+    { name = "protobuf" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/76/1e/1011451679a983f2f5c6771a1682542ecb027776762ad031fd0d7129164b/grpc_google_iam_v1-0.14.3.tar.gz", hash = "sha256:879ac4ef33136c5491a6300e27575a9ec760f6cdf9a2518798c1b8977a5dc389", size = 23745, upload-time = "2025-10-15T21:14:53.318Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4a/bd/330a1bbdb1afe0b96311249e699b6dc9cfc17916394fd4503ac5aca2514b/grpc_google_iam_v1-0.14.3-py3-none-any.whl", hash = "sha256:7a7f697e017a067206a3dfef44e4c634a34d3dee135fe7d7a4613fe3e59217e6", size = 32690, upload-time = "2025-10-15T21:14:51.72Z" },
 ]
 
 [[package]]
@@ -2152,6 +2189,7 @@ all = [
     { name = "google-cloud-speech" },
     { name = "google-cloud-storage" },
     { name = "google-cloud-texttospeech" },
+    { name = "google-cloud-translate" },
     { name = "google-genai" },
     { name = "msal" },
     { name = "openai" },
@@ -2175,6 +2213,7 @@ gcp = [
     { name = "google-cloud-speech" },
     { name = "google-cloud-storage" },
     { name = "google-cloud-texttospeech" },
+    { name = "google-cloud-translate" },
     { name = "google-genai" },
 ]
 m365 = [
@@ -2215,6 +2254,7 @@ requires-dist = [
     { name = "google-cloud-speech", marker = "extra == 'gcp'", specifier = ">=2.29.0" },
     { name = "google-cloud-storage", marker = "extra == 'gcp'" },
     { name = "google-cloud-texttospeech", marker = "extra == 'gcp'" },
+    { name = "google-cloud-translate", marker = "extra == 'gcp'", specifier = ">=3.0.0" },
     { name = "google-genai", marker = "extra == 'gcp'" },
     { name = "isodate", specifier = ">=0.7.2" },
     { name = "mcp", specifier = ">=1.26.0" },

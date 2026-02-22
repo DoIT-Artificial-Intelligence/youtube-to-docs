@@ -706,6 +706,17 @@ PRICES = {
             "output": 30.0,
             "input_cached": None,
         },
+        {
+            "id": "gcp-translate",
+            "vendor": "google",
+            "name": "GCP Cloud Translation*",
+            # $20.00 per 1 million characters (Basic/Advanced NMT).
+            # 1M tokens ≈ 4M characters => $80.00
+            # Splitting cost 50/50 between input and output tokens for comparison.
+            "input": 40.0,
+            "output": 40.0,
+            "input_cached": None,
+        },
     ],
     "aliases": {
         "claude-haiku-4-5": "claude-4.5-haiku",
@@ -718,5 +729,6 @@ PRICES = {
         "bedrock-nova-lite-v1": "amazon-nova-lite",
         "gcp-chirp3": "chirp_3",
         "aws-translate": "aws-translate",
+        "gcp-translate": "gcp-translate",
     },
 }
