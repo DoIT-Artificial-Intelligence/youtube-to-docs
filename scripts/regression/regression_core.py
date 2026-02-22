@@ -159,8 +159,8 @@ def verify_output(
         tts_model = "gemini-2.5-flash-preview-tts-Kore"
         no_youtube_summary = True
     elif all_gemini_arg == "gemini-pro":
-        model = "gemini-3-pro-preview"
-        transcript_model = transcript_model or "gemini-3-pro-preview"
+        model = "gemini-3.1-pro-preview"
+        transcript_model = transcript_model or "gemini-3.1-pro-preview"
         infographic_model = "gemini-3-pro-image-preview"
         tts_model = "gemini-2.5-pro-preview-tts-Kore"
         no_youtube_summary = True

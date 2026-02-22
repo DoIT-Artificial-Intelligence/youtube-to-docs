@@ -17,7 +17,7 @@ def main():
     clear_artifacts()
 
     # Run Regression with Gemini Pro model and gcp-chirp3 TTS
-    model = "gemini-3-pro-preview"
+    model = "gemini-3.1-pro-preview"
     transcript_model = "youtube"  # Use YouTube transcripts
     infographic_model = None  # No infographic for this test
     tts_model = "gcp-chirp3"

@@ -71,6 +71,8 @@ const pricingData = {
         {"id": "gemini-2.5-flash-preview-09-2025", "vendor": "google", "name": "Gemini 2.5 Flash Preview (09-2025)", "input": 0.3, "output": 2.5},
         {"id": "gemini-2.5-pro", "vendor": "google", "name": "Gemini 2.5 Pro \u2264200k", "input": 1.25, "output": 10},
         {"id": "gemini-2.5-pro-200k", "vendor": "google", "name": "Gemini 2.5 Pro >200k", "input": 2.5, "output": 15},
+        {"id": "gemini-3.1-pro-preview", "vendor": "google", "name": "Gemini 3.1 Pro \u2264200k", "input": 2, "output": 12},
+        {"id": "gemini-3.1-pro-preview-200k", "vendor": "google", "name": "Gemini 3.1 Pro >200k", "input": 4, "output": 18},
         {"id": "gemini-3-pro-preview", "vendor": "google", "name": "Gemini 3 Pro \u2264200k", "input": 2, "output": 12},
         {"id": "gemini-3-pro-preview-200k", "vendor": "google", "name": "Gemini 3 Pro >200k", "input": 4, "output": 18},
         {"id": "gemini-3-flash-preview", "vendor": "google", "name": "Gemini 3 Flash Preview", "input": 0.5, "output": 3},

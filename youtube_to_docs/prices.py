@@ -252,6 +252,22 @@ PRICES = {
             "input_cached": 0.25,
         },
         {
+            "id": "gemini-3.1-pro-preview",
+            "vendor": "google",
+            "name": "Gemini 3.1 Pro \u2264200k",
+            "input": 2,
+            "output": 12,
+            "input_cached": None,
+        },
+        {
+            "id": "gemini-3.1-pro-preview-200k",
+            "vendor": "google",
+            "name": "Gemini 3.1 Pro >200k",
+            "input": 4,
+            "output": 18,
+            "input_cached": None,
+        },
+        {
             "id": "gemini-3-pro-preview",
             "vendor": "google",
             "name": "Gemini 3 Pro \u2264200k",

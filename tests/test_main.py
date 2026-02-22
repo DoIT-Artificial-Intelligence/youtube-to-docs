@@ -749,10 +749,10 @@ class TestMain(unittest.TestCase):
         ):
             main.main()
 
-        # Check if generate_summary was called with gemini-3-pro-preview
+        # Check if generate_summary was called with gemini-3.1-pro-preview
         mock_gen_summary.assert_called()
         any_pro_summary = any(
-            call.args[0] == "gemini-3-pro-preview"
+            call.args[0] == "gemini-3.1-pro-preview"
             for call in mock_gen_summary.call_args_list
         )
         self.assertTrue(any_pro_summary)

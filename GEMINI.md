@@ -32,7 +32,7 @@ Here are the following args for the tool:
         - TTS: `gemini-2.5-flash-preview-tts-Kore`
         - Infographic: `gemini-2.5-flash-image`
       - "gemini pro" -> **Pro**:
-        - Summary/Transcript: `gemini-3-pro-preview`
+        - Summary/Transcript: `gemini-3.1-pro-preview`
         - TTS: `gemini-2.5-pro-preview-tts-Kore`
         - Infographic: `gemini-3-pro-image-preview`
       - "aws" -> **AWS**:

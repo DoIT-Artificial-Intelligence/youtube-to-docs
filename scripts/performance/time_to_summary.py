@@ -20,7 +20,7 @@ MODELS = [
     "bedrock-claude-sonnet-4-5-20250929-v1",
     "bedrock-claude-opus-4-5-20251101-v1",
     "gemini-3-flash-preview",
-    "gemini-3-pro-preview",
+    "gemini-3.1-pro-preview",
     "vertex-gemini-2.5-flash",
     "vertex-gemini-2.5-pro",
     "vertex-claude-haiku-4-5@20251001",

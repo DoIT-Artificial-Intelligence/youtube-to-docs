@@ -41,7 +41,7 @@ Use this when the user wants a visual summary or "infographic" representing the 
     *   `model`: The text model for summarization (required context for the image).
 *   **Model Selection Strategy**:
     *   **Pro (Default/High Quality)**: Use if "gemini pro" is requested or no preference is stated.
-        *   `model='gemini-3-pro-preview'`
+        *   `model='gemini-3.1-pro-preview'`
         *   `infographic_model='gemini-3-pro-image-preview'`
     *   **Flash (Speed/Cost)**: Use if "gemini flash" is requested.
         *   `model='gemini-3-flash-preview'`
@@ -103,7 +103,7 @@ Use this when the user specifies particular models or output locations.
 **Action**: Call `process_video(url='...')`
 
 **User**: "Make an infographic for this video using Gemini Pro."
-**Action**: Call `process_video(url='...', model='gemini-3-pro-preview', infographic_model='gemini-3-pro-image-preview')`
+**Action**: Call `process_video(url='...', model='gemini-3.1-pro-preview', infographic_model='gemini-3-pro-image-preview')`
 
 **User**: "Do a kitchen sink run on this video in Spanish."
 **Action**: Call `process_video(url='...', all_suite='gemini-pro', combine_infographic_audio=True, verbose=True, languages='es')`

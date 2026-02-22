@@ -5,7 +5,7 @@ prompt = """Please process the YouTube video at {{args}} using the `process_vide
 - Identify the YouTube URL or ID from the arguments.
 - Check for model keywords:
     - If "gemini flash" or "flash" is mentioned, set `all_suite='gemini-flash'`.
-    - If "gemini pro" or "pro" is mentioned (or if no model is specified), set `all_suite='gemini-pro'`.
+    - If "gemini pro" or "pro" is mentioned (or if no model is specified), set `all_suite='gemini-pro'`. (Runs `gemini-3.1-pro-preview`)
     - If "gcp" is mentioned, set `all_suite='gcp-pro'`.
 - Check for language keywords:
     - If "spanish" or "es" is mentioned, set `languages='es'`.

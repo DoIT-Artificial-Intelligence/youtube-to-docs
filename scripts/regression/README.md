@@ -16,7 +16,7 @@ This directory contains regression tests for the `youtube-to-docs` tool.
 - **[regression_two_vids.py](regression_two_vids.py)**: Processes two videos (`B0x2I_doX9o,Cu27fBy-kHQ`) with `gemini-3-flash-preview` and no YouTube summary (`-nys`).
 - **[regression_two_vids_verbose.py](regression_two_vids_verbose.py)**: Same as above but with verbose output enabled.
 - **[regression_gcp_stt.py](regression_gcp_stt.py)**: Tests GCP Speech-to-Text V2 (`gcp-chirp3`) integration. Requires `GOOGLE_CLOUD_PROJECT` and optional `YTD_GCS_BUCKET_NAME` env vars.
-- **[regression_gcp_tts.py](regression_gcp_tts.py)**: Tests GCP Cloud Text-to-Speech (`gcp-chirp3`) with Gemini Pro summarization (`gemini-3-pro-preview`). Requires `GEMINI_API_KEY` env var.
+- **[regression_gcp_tts.py](regression_gcp_tts.py)**: Tests GCP Cloud Text-to-Speech (`gcp-chirp3`) with Gemini Pro summarization (`gemini-3.1-pro-preview`). Requires `GEMINI_API_KEY` env var.
 - **[regression_aws_polly.py](regression_aws_polly.py)**: Tests AWS Polly TTS (`aws-polly`) with AWS Bedrock summarization (`bedrock-nova-2-lite-v1`). Requires `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION` (or configured credentials).
 
 ## Usage
