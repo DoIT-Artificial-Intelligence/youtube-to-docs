@@ -781,11 +781,18 @@
 </ul>
 </li>
 <li>
-<p><strong>Multi-Language Support</strong>:</p>
+<p><strong>Translation Support</strong>:</p>
 <ul>
-<li>The tool supports processing videos in multiple languages via the <code>--language</code> argument.</li>
-<li>It iterates through each requested language, fetching or generating transcripts, summaries, Q&amp;A, and infographics for that specific language.</li>
-<li>File names and column headers are suffixed with the language code (e.g., <code>(es)</code>) to keep assets organized.</li>
+<li>The <code>--translate {model}-{language}</code> argument enables multilingual output (e.g., <code>--translate gemini-3-flash-preview-es</code>).</li>
+<li>All content is generated in English first, then the tool iterates over the target language:<ol>
+<li><strong>Transcript</strong>: Tries to fetch a native YouTube transcript in the target language. Falls back to translating the English transcript using the specified model.</li>
+<li><strong>SRT</strong>: The SRT file is also translated alongside the transcript.</li>
+<li><strong>LLM outputs</strong>: Summaries, one-sentence summaries, Q&amp;A, and tags are generated fresh from the translated transcript using the same model.</li>
+<li><strong>Infographic &amp; TTS</strong>: When <code>-i</code> or <code>--tts</code> are also set, assets are produced in both English and the target language.</li>
+<li><strong>Video</strong>: When <code>--combine-infographic-audio</code> is also set, one video is produced per language.</li>
+</ol>
+</li>
+<li>File names use <code>({model}-{language})</code> (e.g., <code>(gemini-3-flash-preview-es)</code>) to identify the translation source. CSV column headers use the shorter <code>(lang)</code> suffix (e.g., <code>(es)</code>).</li>
 </ul>
 </li>
 </ol>

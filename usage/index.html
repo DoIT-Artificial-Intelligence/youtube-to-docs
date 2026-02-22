@@ -1405,14 +1405,14 @@
 <td style="text-align: left;"><code>--no-youtube-summary</code></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>-l</code>, <code>--language</code></td>
-<td style="text-align: left;">The target language(s) (e.g. 'es', 'fr', 'en'). Can be a comma-separated list. Default is 'en'.</td>
-<td style="text-align: left;"><code>en</code></td>
-<td style="text-align: left;"><code>-l es,fr</code></td>
+<td style="text-align: left;"><code>-tr</code>, <code>--translate</code></td>
+<td style="text-align: left;">Translate all outputs to a target language after generating in English. Format: <code>{model}-{language}</code> (same pattern as <code>--tts</code>). The tool first tries to fetch a native YouTube transcript in the target language; if unavailable, it translates the English transcript. Summaries, Q&amp;A, tags, one-sentence summaries, transcripts, and SRT files are all translated. When combined with <code>--tts</code> or <code>--infographic</code>, assets are produced in both English and the target language.</td>
+<td style="text-align: left;"><code>None</code></td>
+<td style="text-align: left;"><code>-tr gemini-3-flash-preview-es</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>-cia</code>, <code>--combine-infographic-audio</code></td>
-<td style="text-align: left;">Combine the infographic and audio summary into a video file (MP4). Requires both <code>--tts</code> and <code>--infographic</code> to be effective.</td>
+<td style="text-align: left;">Combine the infographic and audio summary into a video file (MP4). Requires both <code>--tts</code> and <code>--infographic</code> to be effective. When used with <code>--translate</code>, one video is created per language.</td>
 <td style="text-align: left;"><code>False</code></td>
 <td style="text-align: left;"><code>--combine-infographic-audio</code></td>
 </tr>
@@ -1452,6 +1452,12 @@
 <p><strong>7. Create a Video (Infographic + Audio Summary):</strong>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview<span class="w"> </span>--tts<span class="w"> </span>gemini-2.5-flash-preview-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-2.5-flash-image<span class="w"> </span>--combine-infographic-audio
 </code></pre></div></p>
+<p><strong>8. Translate all outputs to Spanish:</strong>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview<span class="w"> </span>-tr<span class="w"> </span>gemini-3-flash-preview-es
+</code></pre></div></p>
+<p><strong>9. Full multilingual pipeline — English + Spanish summaries, audio, infographics, and videos:</strong>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview<span class="w"> </span>-tr<span class="w"> </span>gemini-3-flash-preview-es<span class="w"> </span>--tts<span class="w"> </span>gemini-2.5-flash-preview-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-2.5-flash-image<span class="w"> </span>--combine-infographic-audio
+</code></pre></div></p>
 <h2 id="csv-column-reference">CSV Column Reference</h2>
 <p>The output CSV file contains a variety of columns depending on the arguments provided. Below is a reference of the possible columns:</p>
 <h3 id="base-metadata">Base Metadata</h3>
@@ -1480,7 +1486,8 @@
 <li><strong>Summary Infographic File {model} {infographic_model}</strong>: Path to the generated infographic image.</li>
 <li><strong>Summary Infographic Alt Text File {model} {infographic_model}</strong>: Path to the generated alt text file.</li>
 <li><strong>Summary Audio File {model} {tts_model} File</strong>: Path to the generated TTS audio file. Suffix <code>(lang)</code> added for non-English.</li>
-<li><strong>Video File</strong>: Path to the generated MP4 video combining the infographic and audio.</li>
+<li><strong>Video File</strong>: Path to the generated MP4 video combining the English infographic and audio.</li>
+<li><strong>Video File (lang)</strong>: Path to the translated language video (e.g., <code>Video File (es)</code>). Only present when <code>--translate</code> and <code>--combine-infographic-audio</code> are both used.</li>
 </ul>
 <h3 id="ai-outputs-costs">AI Outputs &amp; Costs</h3>
 <ul>
@@ -1520,14 +1527,14 @@
 </blockquote>
 <p>The agent will prompt you for any necessary details (like the model to use) and then execute the tool.</p>
 <h3 id="install-as-a-gemini-cli-extension">Install as a Gemini CLI extension</h3>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>gemini<span class="w"> </span>extensions<span class="w"> </span>install<span class="w"> </span>https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs.git
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>gemini<span class="w"> </span>extensions<span class="w"> </span>install<span class="w"> </span>https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs.git
 </code></pre></div>
 <h2 id="library-usage">Library Usage</h2>
 <p>While primarily a CLI, you can import core functions for custom workflows.</p>
-<div class="language-python highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">youtube_to_docs.transcript</span><span class="w"> </span><span class="kn">import</span> <span class="n">fetch_transcript</span>
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="n">video_id</span> <span class="o">=</span> <span class="s2">&quot;atmGAHYpf_c&quot;</span>
-<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="n">transcript</span><span class="p">,</span> <span class="n">is_generated</span> <span class="o">=</span> <span class="n">fetch_transcript</span><span class="p">(</span><span class="n">video_id</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">youtube_to_docs.transcript</span><span class="w"> </span><span class="kn">import</span> <span class="n">fetch_transcript</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="n">video_id</span> <span class="o">=</span> <span class="s2">&quot;atmGAHYpf_c&quot;</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="n">transcript</span><span class="p">,</span> <span class="n">is_generated</span> <span class="o">=</span> <span class="n">fetch_transcript</span><span class="p">(</span><span class="n">video_id</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="why-use-youtube-to-docs">Why use <code>youtube-to-docs</code>?</h2>
 <p>You might find other tools that download YouTube transcripts, but <code>youtube-to-docs</code> distinguishes itself in several ways:</p>
