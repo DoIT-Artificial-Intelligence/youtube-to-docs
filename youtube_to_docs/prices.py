@@ -140,6 +140,22 @@ PRICES = {
             "input_cached": None,
         },
         {
+            "id": "claude-sonnet-4.6",
+            "vendor": "anthropic",
+            "name": "Claude Sonnet 4.6 \u2264200k",
+            "input": 3,
+            "output": 15,
+            "input_cached": None,
+        },
+        {
+            "id": "claude-sonnet-4.6-200k",
+            "vendor": "anthropic",
+            "name": "Claude Sonnet 4.6 >200k",
+            "input": 6,
+            "output": 22.5,
+            "input_cached": None,
+        },
+        {
             "id": "claude-opus-4",
             "vendor": "anthropic",
             "name": "Claude Opus 4",

@@ -124,6 +124,8 @@ const pricingData = {
         {"id": "claude-4.5-haiku", "vendor": "anthropic", "name": "Claude 4.5 Haiku", "input": 1, "output": 5},
         {"id": "claude-sonnet-4.5", "vendor": "anthropic", "name": "Claude Sonnet 4 and 4.5 \u2264200k", "input": 3, "output": 15},
         {"id": "claude-sonnet-4.5-200k", "vendor": "anthropic", "name": "Claude Sonnet 4 and 4.5 >200k", "input": 6, "output": 22.5},
+        {"id": "claude-sonnet-4.6", "vendor": "anthropic", "name": "Claude Sonnet 4.6 \u2264200k", "input": 3, "output": 15},
+        {"id": "claude-sonnet-4.6-200k", "vendor": "anthropic", "name": "Claude Sonnet 4.6 >200k", "input": 6, "output": 22.5},
         {"id": "claude-opus-4", "vendor": "anthropic", "name": "Claude Opus 4", "input": 15, "output": 75},
         {"id": "claude-opus-4-1", "vendor": "anthropic", "name": "Claude Opus 4.1", "input": 15, "output": 75},
         {"id": "claude-opus-4-5", "vendor": "anthropic", "name": "Claude Opus 4.5", "input": 5, "output": 25},
