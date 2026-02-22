@@ -7,11 +7,5 @@
   },
   "homepage": "https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs",
   "repository": "https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs",
-  "license": "MIT",
-  "skills": [
-    ".claude/skills/ytt",
-    ".claude/skills/infographic",
-    ".claude/skills/ks",
-    ".claude/skills/youtube-to-docs"
-  ]
+  "license": "MIT"
 }
