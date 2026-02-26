@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 from youtube_to_docs.translate import (
     _translate_aws,
     _translate_gcp,
+    parse_suggest_captions_arg,
     parse_translate_arg,
     process_translate,
     translate_text,
@@ -443,6 +444,65 @@ class TestProcessTranslate(unittest.TestCase):
         self.assertIn(f"Summary File {model} from {transcript_arg} (es)", result)
         self.assertIn(f"QA File {model} from {transcript_arg} (es)", result)
         self.assertIn(f"Tags File {transcript_arg} {model} model (es)", result)
+
+
+class TestParseSuggestCaptionsArg(unittest.TestCase):
+    def test_model_only_no_source(self):
+        model, source = parse_suggest_captions_arg("gemini-3-flash-preview")
+        self.assertEqual(model, "gemini-3-flash-preview")
+        self.assertIsNone(source)
+
+    def test_model_with_youtube_source(self):
+        model, source = parse_suggest_captions_arg("gemini-3-flash-preview-youtube")
+        self.assertEqual(model, "gemini-3-flash-preview")
+        self.assertEqual(source, "youtube")
+
+    def test_model_with_gcp_source(self):
+        model, source = parse_suggest_captions_arg("gemini-3-flash-preview-gcp-chirp3")
+        self.assertEqual(model, "gemini-3-flash-preview")
+        self.assertEqual(source, "gcp-chirp3")
+
+    def test_model_with_aws_source(self):
+        model, source = parse_suggest_captions_arg(
+            "gemini-3-flash-preview-aws-transcribe"
+        )
+        self.assertEqual(model, "gemini-3-flash-preview")
+        self.assertEqual(source, "aws-transcribe")
+
+    def test_bedrock_model_with_youtube_source(self):
+        model, source = parse_suggest_captions_arg("bedrock-nova-2-lite-v1-youtube")
+        self.assertEqual(model, "bedrock-nova-2-lite-v1")
+        self.assertEqual(source, "youtube")
+
+    def test_bedrock_model_with_gemini_source(self):
+        model, source = parse_suggest_captions_arg(
+            "bedrock-nova-2-lite-v1-gemini-3-flash-preview"
+        )
+        self.assertEqual(model, "bedrock-nova-2-lite-v1")
+        self.assertEqual(source, "gemini-3-flash-preview")
+
+    def test_bedrock_model_only(self):
+        model, source = parse_suggest_captions_arg("bedrock-nova-2-lite-v1")
+        self.assertEqual(model, "bedrock-nova-2-lite-v1")
+        self.assertIsNone(source)
+
+    def test_vertex_source(self):
+        model, source = parse_suggest_captions_arg(
+            "gemini-3-flash-preview-vertex-gemini-pro"
+        )
+        self.assertEqual(model, "gemini-3-flash-preview")
+        self.assertEqual(source, "vertex-gemini-pro")
+
+    def test_various_model_only_cases(self):
+        cases = [
+            "gemini-3.1-pro-preview",
+            "foundry-gpt-5-mini",
+        ]
+        for arg in cases:
+            with self.subTest(arg=arg):
+                model, source = parse_suggest_captions_arg(arg)
+                self.assertEqual(model, arg)
+                self.assertIsNone(source)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 import os
 from typing import Any, Optional, Tuple
 
+from youtube_to_docs.constants import KNOWN_SRT_SOURCE_PREFIXES
 from youtube_to_docs.llms import _query_llm
 
 try:
@@ -34,6 +35,33 @@ def parse_translate_arg(translate_arg: str) -> Tuple[str, str]:
             "'aws-translate-es', or 'gcp-translate-es'."
         )
     return parts[0], parts[1]
+
+
+def parse_suggest_captions_arg(arg: str) -> Tuple[str, Optional[str]]:
+    """Parse a --suggest-corrected-captions argument in the format
+    `{model}` or `{model}-{source}`.
+
+    The source is either 'youtube' or a transcript model name
+    (e.g. 'gcp-chirp3', 'gemini-3-flash-preview'). Parsing scans
+    left-to-right for the first dash-boundary where the remaining suffix
+    is 'youtube' or begins with a known source prefix.
+
+    Examples:
+      "gemini-3-flash-preview"               -> ("gemini-3-flash-preview", None)
+      "gemini-3-flash-preview-youtube"       -> ("gemini-3-flash-preview", "youtube")
+      "gemini-3-flash-preview-gcp-chirp3"    -> ("gemini-3-flash-preview", "gcp-chirp3")
+      "bedrock-nova-2-lite-v1-youtube"       -> ("bedrock-nova-2-lite-v1", "youtube")
+
+    Returns (model_name, source_or_none).
+    """
+    parts = arg.split("-")
+    for i in range(1, len(parts)):
+        candidate_source = "-".join(parts[i:])
+        if candidate_source == "youtube" or any(
+            candidate_source.startswith(pfx) for pfx in KNOWN_SRT_SOURCE_PREFIXES
+        ):
+            return "-".join(parts[:i]), candidate_source
+    return arg, None
 
 
 _AWS_TRANSLATE_BYTE_LIMIT = 10_000

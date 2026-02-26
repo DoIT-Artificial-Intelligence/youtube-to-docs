@@ -21,6 +21,7 @@ def process_video(
     translate: str | None = None,
     combine_infographic_audio: bool = False,
     all_suite: str | None = None,
+    suggest_corrected_captions: str | None = None,
     verbose: bool = False,
 ) -> str:
     """
@@ -63,6 +64,13 @@ def process_video(
             into a video file. Requires both tts_model and infographic_model.
         all_suite: Shortcut to use a specific model suite for everything.
             e.g., 'gemini-flash', 'gemini-pro', 'gemini-flash-pro-image', or 'gcp-pro'.
+        suggest_corrected_captions: Suggest WCAG 2.1 Level AA compliant caption
+            corrections for an SRT file, per Section 508 guidance. Format:
+            `{model}` or `{model}-{source}`. Source can be 'youtube' or a transcript
+            model name (e.g., 'gcp-chirp3', 'gemini-3-flash-preview'). If source is
+            omitted, the most recent AI-generated SRT is used. Output is saved to
+            'suggested-corrected-caption-files/'. If speaker extraction has been run,
+            speaker labels are added on speaker changes.
         verbose: If True, enables verbose logging in the output.
     """
     args = [
@@ -96,6 +104,9 @@ def process_video(
 
     if all_suite:
         args.extend(["--all", all_suite])
+
+    if suggest_corrected_captions:
+        args.extend(["--suggest-corrected-captions", suggest_corrected_captions])
 
     if verbose:
         args.append("--verbose")

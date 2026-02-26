@@ -20,6 +20,7 @@ from youtube_to_docs.llms import (
     generate_transcript,
     generate_transcript_with_srt,
     get_model_pricing,
+    suggest_corrected_captions,
 )
 from youtube_to_docs.models import MODEL_SUITES
 from youtube_to_docs.storage import (
@@ -36,7 +37,11 @@ from youtube_to_docs.transcript import (
     get_youtube_service,
     resolve_video_ids,
 )
-from youtube_to_docs.translate import parse_translate_arg, translate_text
+from youtube_to_docs.translate import (
+    parse_suggest_captions_arg,
+    parse_translate_arg,
+    translate_text,
+)
 from youtube_to_docs.tts import process_tts
 from youtube_to_docs.utils import (
     format_clickable_path,
@@ -218,6 +223,37 @@ def main(args_list: list[str] | None = None) -> None:
         default=False,
         help="Enable verbose output.",
     )
+    parser.add_argument(
+        "-scc",
+        "--suggest-corrected-captions",
+        default=None,
+        help=(
+            "Suggest WCAG 2.1 Level AA compliant caption corrections for an SRT file, "
+            "per Section 508 guidance "
+            "(https://www.section508.gov/create/captions-transcripts/). \n"
+            "Fixes punctuation, capitalisation, and adds [Name] speaker labels on "
+            "speaker changes (when speaker extraction has already been run). \n"
+            "Output is saved to `suggested-corrected-caption-files/` and contains "
+            "only the changed segments (or `NO_CHANGES` if nothing needs fixing). \n\n"
+            "Format: `{model}` or `{model}-{source}` \n\n"
+            "Source rules:\n"
+            "  - Omit source → the most recent AI-generated (non-YouTube) SRT for the "
+            "video is used automatically. Useful when `-t {stt-model}` is also set.\n"
+            "  - `youtube` → use the YouTube SRT explicitly "
+            "(e.g. `-scc gemini-3-flash-preview-youtube`).\n"
+            "  - Any transcript model name → use the SRT from that STT run "
+            "(e.g. `-scc gemini-3-flash-preview-gcp-chirp3`). \n\n"
+            "If multiple AI SRTs exist in the row and you need a specific one, "
+            "always use the explicit `{model}-{source}` form. \n\n"
+            "Examples:\n"
+            "  Correct YouTube captions:       -scc gemini-3-flash-preview-youtube\n"
+            "  Correct GCP Chirp3 captions:    -scc gemini-3-flash-preview-gcp-chirp3\n"
+            "  STT + correct in one run:  "
+            "-t gcp-chirp3 -scc gemini-3-flash-preview\n"
+            "  Correct + speakers in one run:  "
+            "-m gemini-3-flash-preview -scc gemini-3-flash-preview-youtube"
+        ),
+    )
 
     args = parser.parse_args(args_list)
 
@@ -260,11 +296,18 @@ def main(args_list: list[str] | None = None) -> None:
     translate_arg = args.translate
 
     combine_info_audio = args.combine_infographic_audio
+    suggest_captions_arg = args.suggest_corrected_captions
     model_names = model_names_arg.split(",") if model_names_arg else []
     translate_model = None
     translate_lang = None
     if translate_arg:
         translate_model, translate_lang = parse_translate_arg(translate_arg)
+    suggest_captions_model = None
+    suggest_captions_source = None
+    if suggest_captions_arg:
+        suggest_captions_model, suggest_captions_source = parse_suggest_captions_arg(
+            suggest_captions_arg
+        )
 
     languages = ["en"]
     if translate_lang:
@@ -316,6 +359,7 @@ def main(args_list: list[str] | None = None) -> None:
     tags_dir = os.path.join(base_dir, "tag-files")
     alt_text_dir = os.path.join(base_dir, "infographic-alt-text")
     srt_dir = os.path.join(base_dir, "srt-files")
+    suggested_captions_dir = os.path.join(base_dir, "suggested-corrected-caption-files")
 
     # Local temp dir for processing (Audio/TTS require local files)
     local_temp_dir = "temp_processing_artifacts"
@@ -333,6 +377,7 @@ def main(args_list: list[str] | None = None) -> None:
     storage.ensure_directory(tags_dir)
     storage.ensure_directory(alt_text_dir)
     storage.ensure_directory(srt_dir)
+    storage.ensure_directory(suggested_captions_dir)
 
     # Load existing CSV if it exists
     existing_df = storage.load_dataframe(outfile_path)
@@ -1931,6 +1976,125 @@ def main(args_list: list[str] | None = None) -> None:
                                 )
                                 row[at_cost_col] = at_cost
                                 vprint(f"Alt text cost: ${at_cost:.2f}")
+
+        # --- Suggested Corrected Captions ---
+        if suggest_captions_model:
+            source_srt_content = ""
+            source_srt_description = ""
+
+            if suggest_captions_source == "youtube":
+                srt_path = row.get("SRT File youtube")
+                if srt_path and storage.exists(str(srt_path)):
+                    source_srt_content = storage.read_text(str(srt_path))
+                    source_srt_description = "youtube"
+                else:
+                    expected = os.path.join(
+                        srt_dir,
+                        f"youtube generated - {video_id} - {safe_title}.srt",
+                    )
+                    if storage.exists(expected):
+                        source_srt_content = storage.read_text(expected)
+                        source_srt_description = "youtube"
+            elif suggest_captions_source:
+                srt_col = f"SRT File {suggest_captions_source}"
+                srt_path = row.get(srt_col)
+                if srt_path and storage.exists(str(srt_path)):
+                    source_srt_content = storage.read_text(str(srt_path))
+                    source_srt_description = suggest_captions_source
+                else:
+                    expected = os.path.join(
+                        srt_dir,
+                        f"{suggest_captions_source} generated - "
+                        f"{video_id} - {safe_title}.srt",
+                    )
+                    if storage.exists(expected):
+                        source_srt_content = storage.read_text(expected)
+                        source_srt_description = suggest_captions_source
+            else:
+                # Default: most recent non-youtube AI SRT — check row columns first
+                for col_key, col_val in row.items():
+                    if (
+                        col_key.startswith("SRT File ")
+                        and "youtube" not in col_key.lower()
+                        and "translated" not in col_key.lower()
+                        and col_val
+                        and storage.exists(str(col_val))
+                    ):
+                        source_srt_content = storage.read_text(str(col_val))
+                        source_srt_description = col_key[len("SRT File ") :]
+                        break
+
+                if not source_srt_content:
+                    # Fallback: scan srt_dir on disk
+                    try:
+                        srt_candidates = [
+                            f
+                            for f in os.listdir(srt_dir)
+                            if video_id in f
+                            and not f.startswith("youtube")
+                            and "translated" not in f
+                            and f.endswith(".srt")
+                        ]
+                        if srt_candidates:
+                            srt_candidates.sort(
+                                key=lambda f: os.path.getmtime(
+                                    os.path.join(srt_dir, f)
+                                ),
+                                reverse=True,
+                            )
+                            best = os.path.join(srt_dir, srt_candidates[0])
+                            source_srt_content = storage.read_text(best)
+                            source_srt_description = srt_candidates[0].split(
+                                " generated"
+                            )[0]
+                    except Exception as e:
+                        print(f"Warning: Could not scan srt-files/: {e}")
+
+            if source_srt_content:
+                # Collect any available speakers text from the row
+                speakers_for_scc = next(
+                    (
+                        v
+                        for k, v in row.items()
+                        if k.startswith("Speakers ") and isinstance(v, str) and v
+                    ),
+                    "",
+                )
+                rprint(
+                    f"Suggesting corrected captions using {suggest_captions_model} "
+                    f"(source: {source_srt_description})..."
+                )
+                corrected_srt, scc_input, scc_output = suggest_corrected_captions(
+                    suggest_captions_model,
+                    source_srt_content,
+                    speakers_text=speakers_for_scc,
+                )
+
+                if corrected_srt and corrected_srt.strip() != "NO_CHANGES":
+                    scc_filename = (
+                        f"{suggest_captions_model} suggested corrections - "
+                        f"{video_id} - {safe_title}.srt"
+                    )
+                    scc_target = os.path.join(suggested_captions_dir, scc_filename)
+                    try:
+                        saved_scc_path = storage.write_text(scc_target, corrected_srt)
+                        rprint(
+                            "Saved suggested caption corrections: "
+                            f"{format_clickable_path(saved_scc_path)}"
+                        )
+                        row[
+                            f"Suggested Corrected Captions File "
+                            f"({suggest_captions_model})"
+                        ] = saved_scc_path
+                    except Exception as e:
+                        print(f"Error writing suggested corrections: {e}")
+                else:
+                    rprint("No caption corrections suggested.")
+            else:
+                print(
+                    f"Warning: No source SRT found for {video_id}. "
+                    "Skipping caption correction."
+                )
 
         if not verbose:
             oss = next(

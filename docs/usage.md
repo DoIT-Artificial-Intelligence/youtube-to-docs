@@ -141,6 +141,7 @@ youtube-to-docs
 | `-tr`, `--translate` | Translate all outputs to a target language after generating in English. Format: `{model}-{language}` e.g. `gemini-3-flash-preview-es`, or `aws-translate-{language}` / `gcp-translate-{language}` to use AWS Translate or Google Cloud Translation directly (e.g. `aws-translate-es`, `gcp-translate-es`). The tool first tries to fetch a native YouTube transcript in the target language; if unavailable, it translates the English transcript. Summaries, Q&A, tags, one-sentence summaries, transcripts, and SRT files are all translated. When combined with `--tts` or `--infographic`, assets are produced in both English and the target language. | `None` | `-tr gemini-3-flash-preview-es`, `-tr aws-translate-es`, `-tr gcp-translate-es` |
 | `-cia`, `--combine-infographic-audio` | Combine the infographic and audio summary into a video file (MP4). Requires both `--tts` and `--infographic` to be effective. When used with `--translate`, one video is created per language. | `False` | `--combine-infographic-audio` |
 | `--all` | Shortcut to use a specific model suite for everything. Supported: `'gemini-flash'`, `'gemini-pro'`, `'gemini-flash-pro-image'`, `'gcp-pro'`. Sets models for summary, TTS, and infographic, and enables `--no-youtube-summary`. | `None` | `--all gemini-flash` |
+| `-scc`, `--suggest-corrected-captions` | Suggest WCAG 2.1 Level AA compliant caption corrections for an SRT file, per [Section 508 guidance](https://www.section508.gov/create/captions-transcripts/). Format: `{model}` or `{model}-{source}`. See [Suggested Corrected Captions](#suggested-corrected-captions) for full source rules. | `None` | `-scc gemini-3-flash-preview-youtube` |
 | `--verbose` | Enable verbose output. | `False` | `--verbose` |
 
 ### Examples
@@ -190,6 +191,65 @@ youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview -tr gemini-3-flash-preview
 youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview -tr gemini-3-flash-preview-es --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-2.5-flash-image --combine-infographic-audio
 ```
 
+**10. Suggest corrected captions for YouTube SRT:**
+```bash
+youtube-to-docs atmGAHYpf_c -scc gemini-3-flash-preview-youtube
+```
+
+**11. Run STT and correct the generated captions in one pass:**
+```bash
+youtube-to-docs atmGAHYpf_c -t gcp-chirp3 -scc gemini-3-flash-preview
+```
+
+**12. Correct captions and add speaker labels in one pass:**
+```bash
+youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview -scc gemini-3-flash-preview-youtube
+```
+
+## Suggested Corrected Captions
+
+The `-scc` / `--suggest-corrected-captions` flag uses an LLM to suggest WCAG 2.1 Level AA compliant corrections to an existing SRT file, following [Section 508 guidance](https://www.section508.gov/create/captions-transcripts/).
+
+### What it corrects
+
+*   **Punctuation** — adds or fixes commas, periods, question marks, em dashes, and ellipses.
+*   **Capitalisation** — fixes sentence-initial capitals and proper nouns.
+*   **Filler words** — retains filler words (e.g. "uh", "um") where they aid accessible meaning.
+*   **Speaker labels** — when speaker extraction has been run (via `-m`), inserts `[Name]` at the start of each segment where the speaker changes.
+*   **Segment merging** — if a grammatically complete sentence naturally spans two consecutive segments, those segments are merged into one, using the start time of the first and the end time of the last. No new segments are ever added.
+
+### Output
+
+Corrections are saved to `suggested-corrected-caption-files/` and contain **only the changed segments** — unchanged segments are omitted. If nothing needs fixing the file contains `NO_CHANGES`. The output path is recorded in the CSV under `Suggested Corrected Captions File ({model})`.
+
+### Source argument rules
+
+The format is `-scc {model}` or `-scc {model}-{source}`.
+
+| Source | Behaviour | Example |
+| :--- | :--- | :--- |
+| Omitted | Automatically uses the most recent non-YouTube AI SRT in the row. Useful when `-t {stt-model}` is set in the same run or a prior run. | `-scc gemini-3-flash-preview` |
+| `youtube` | Uses the YouTube-generated SRT explicitly. | `-scc gemini-3-flash-preview-youtube` |
+| STT model name | Uses the SRT produced by that specific STT run. | `-scc gemini-3-flash-preview-gcp-chirp3` |
+
+> **Tip:** If you have more than one AI SRT in the row (e.g. from both `gcp-chirp3` and `aws-transcribe`), the default picks the first one found. Use the explicit `{model}-{source}` form to target a specific SRT.
+
+### Common combinations
+
+```bash
+# Correct YouTube captions only
+youtube-to-docs VIDEO_ID -scc gemini-3-flash-preview-youtube
+
+# STT with GCP Chirp3, then correct the generated captions
+youtube-to-docs VIDEO_ID -t gcp-chirp3 -scc gemini-3-flash-preview
+
+# Explicitly target the gcp-chirp3 SRT from a previous run
+youtube-to-docs VIDEO_ID -scc gemini-3-flash-preview-gcp-chirp3
+
+# Speaker extraction + caption correction in one run
+youtube-to-docs VIDEO_ID -m gemini-3-flash-preview -scc gemini-3-flash-preview-youtube
+```
+
 ## CSV Column Reference
 
 The output CSV file contains a variety of columns depending on the arguments provided. Below is a reference of the possible columns:
@@ -220,6 +280,7 @@ The output CSV file contains a variety of columns depending on the arguments pro
 *   **Summary Audio File {model} {tts_model} File**: Path to the generated TTS audio file. Suffix `(lang)` added for non-English.
 *   **Video File**: Path to the generated MP4 video combining the English infographic and audio.
 *   **Video File (lang)**: Path to the translated language video (e.g., `Video File (es)`). Only present when `--translate` and `--combine-infographic-audio` are both used.
+*   **Suggested Corrected Captions File ({model})**: Path to the suggested-corrections SRT file produced by `-scc`. Contains only the changed segments, or `NO_CHANGES` if no corrections were needed.
 
 ### AI Outputs & Costs
 *   **Speakers {model}**: The extracted list of speakers and their roles.

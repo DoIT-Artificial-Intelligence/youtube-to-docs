@@ -69,7 +69,21 @@ Use this when the user asks for "everything", a "kitchen sink" run, or a "video 
     *   "french" or "fr" -> `translate='gemini-3-flash-preview-fr'`
     *   Default -> omit `translate` (English only)
 
-### 4. Custom / Advanced Usage
+### 4. Suggested Corrected Captions (WCAG / Section 508)
+
+Use this when the user wants to improve caption quality for accessibility compliance.
+
+*   **Goal**: Generate a corrected SRT file following WCAG 2.1 Level AA and Section 508 guidelines.
+*   **Tool**: `youtube-to-docs:process_video`
+*   **Required Argument**: `url` + `suggest_corrected_captions`
+*   **Format**: `{model}` or `{model}-{source}`
+    *   `suggest_corrected_captions='gemini-3-flash-preview'` — auto-detects most recent AI SRT
+    *   `suggest_corrected_captions='gemini-3-flash-preview-youtube'` — corrects the YouTube-generated SRT
+    *   `suggest_corrected_captions='gemini-3-flash-preview-gcp-chirp3'` — corrects an STT SRT from gcp-chirp3
+*   **Output**: Diff-style SRT (changed segments only, or `NO_CHANGES`). Saved to `suggested-corrected-caption-files/`. Column: `Suggested Corrected Captions File ({model})`.
+*   **Speaker Labels**: If speaker extraction was run (`model` set), the corrected captions will include `[Name]` labels at each speaker change.
+
+### 5. Custom / Advanced Usage
 
 Use this when the user specifies particular models or output locations.
 
@@ -94,6 +108,7 @@ Use this when the user specifies particular models or output locations.
 | `all_suite` | Shortcut to apply a suite of models. | `gcp`, `audio`, `video` | `gemini-pro`, `gemini-flash` |
 | `combine_infographic_audio` | Boolean. If True, creates an MP4 video. | `video` | `True` |
 | `translate` | Translate all outputs to a target language. Format: `{model}-{language}`, `aws-translate-{language}`, or `gcp-translate-{language}`. | - | `gemini-3-flash-preview-es`, `aws-translate-es`, `gcp-translate-es` |
+| `suggest_corrected_captions` | Suggest WCAG 2.1 / Section 508 corrected captions. Format: `{model}` or `{model}-{source}`. | - | `gemini-3-flash-preview`, `gemini-3-flash-preview-youtube`, `gemini-3-flash-preview-gcp-chirp3` |
 | `output_file` | Destination for the CSV report. | `workspace` / `m365` | `workspace`, `sharepoint` |
 | `transcript_source` | Source for transcript (default: 'youtube'). | `audio`, `gcp` (for Chirp) | `gemini-3-flash-preview`, `gcp-chirp3` |
 
@@ -110,6 +125,12 @@ Use this when the user specifies particular models or output locations.
 
 **User**: "Summarize this playlist and save it to Drive."
 **Action**: Call `youtube-to-docs:process_video(url='PL...', model='gemini-3-flash-preview', output_file='workspace')`
+
+**User**: "Correct the YouTube captions for this video for accessibility."
+**Action**: Call `youtube-to-docs:process_video(url='...', suggest_corrected_captions='gemini-3-flash-preview-youtube')`
+
+**User**: "Generate corrected captions from the STT transcript."
+**Action**: Call `youtube-to-docs:process_video(url='...', transcript_source='gcp-chirp3', suggest_corrected_captions='gemini-3-flash-preview-gcp-chirp3')`
 
 ## Development & CLI Usage
 
@@ -131,6 +152,12 @@ uv run youtube-to-docs B0x2I_doX9o --all gemini-pro --verbose
 
 # Example: Translate to Spanish
 uv run youtube-to-docs B0x2I_doX9o -m gemini-3-flash-preview -tr gemini-3-flash-preview-es
+
+# Example: Suggest corrected captions from YouTube SRT
+uv run youtube-to-docs B0x2I_doX9o -scc gemini-3-flash-preview-youtube
+
+# Example: STT transcription + corrected captions in one run
+uv run youtube-to-docs B0x2I_doX9o -t gcp-chirp3 -scc gemini-3-flash-preview-gcp-chirp3
 ```
 
 See `docs/usage.md` for full documentation and `docs/development.md` for setup details.

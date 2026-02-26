@@ -88,6 +88,52 @@ def test_process_video_error():
         assert f"Error processing {url}: Processing failed" in result
 
 
+def test_process_video_suggest_corrected_captions():
+    """Test that suggest_corrected_captions is passed as a CLI arg."""
+    with patch("youtube_to_docs.mcp_server.app_main") as mock_main:
+        url = "https://www.youtube.com/watch?v=123"
+        result = process_video(
+            url=url,
+            suggest_corrected_captions="gemini-3-flash-preview-gcp-chirp3",
+        )
+
+        expected_args = [
+            url,
+            "--outfile",
+            "youtube-to-docs-artifacts/youtube-docs.csv",
+            "--transcript",
+            "youtube",
+            "--suggest-corrected-captions",
+            "gemini-3-flash-preview-gcp-chirp3",
+        ]
+
+        mock_main.assert_called_once_with(expected_args)
+        assert f"Successfully processed {url}" in result
+
+
+def test_process_video_suggest_corrected_captions_youtube_source():
+    """Test suggest_corrected_captions with explicit youtube source."""
+    with patch("youtube_to_docs.mcp_server.app_main") as mock_main:
+        url = "https://www.youtube.com/watch?v=123"
+        process_video(
+            url=url,
+            suggest_corrected_captions="gemini-3-flash-preview-youtube",
+        )
+
+        call_args = mock_main.call_args[0][0]
+        idx = call_args.index("--suggest-corrected-captions")
+        assert call_args[idx + 1] == "gemini-3-flash-preview-youtube"
+
+
+def test_process_video_suggest_corrected_captions_not_passed_when_none():
+    """Test that --suggest-corrected-captions is absent when not set."""
+    with patch("youtube_to_docs.mcp_server.app_main") as mock_main:
+        process_video(url="https://www.youtube.com/watch?v=123")
+
+        call_args = mock_main.call_args[0][0]
+        assert "--suggest-corrected-captions" not in call_args
+
+
 def test_tool_registration():
     """Verify that process_video is registered as a tool."""
     try:

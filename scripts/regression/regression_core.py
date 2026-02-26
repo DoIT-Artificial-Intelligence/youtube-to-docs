@@ -89,6 +89,7 @@ def run_regression(
     all_gemini_arg: Optional[str] = None,
     verbose: bool = False,
     combine_info_audio: bool = False,
+    suggest_corrected_captions: Optional[str] = None,
 ):
     """Runs the full regression suite for a single video."""
     translate_lang = translate.rsplit("-", 1)[1] if translate else None
@@ -131,6 +132,9 @@ def run_regression(
 
     if combine_info_audio:
         cmd.append("-cia")
+
+    if suggest_corrected_captions:
+        cmd.extend(["-scc", suggest_corrected_captions])
 
     print(f"Executing: {' '.join(cmd)}")
     result = subprocess.run(cmd, capture_output=False)
