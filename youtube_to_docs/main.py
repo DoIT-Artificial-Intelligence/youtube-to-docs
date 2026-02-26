@@ -226,6 +226,8 @@ def main(args_list: list[str] | None = None) -> None:
     parser.add_argument(
         "-scc",
         "--suggest-corrected-captions",
+        nargs="?",
+        const="gemini-3-flash-preview-youtube",
         default=None,
         help=(
             "Suggest WCAG 2.1 Level AA compliant caption corrections for an SRT file, "
@@ -256,6 +258,10 @@ def main(args_list: list[str] | None = None) -> None:
     )
 
     args = parser.parse_args(args_list)
+
+    # Default model to gemini-3-flash-preview if -scc is set but no model is provided
+    if args.suggest_corrected_captions and args.model is None:
+        args.model = "gemini-3-flash-preview"
 
     verbose = args.verbose
 
