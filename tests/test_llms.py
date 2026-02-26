@@ -169,6 +169,19 @@ class TestLLMs(unittest.TestCase):
 
 
 class TestPricing(unittest.TestCase):
+    def setUp(self):
+        self.env_patcher = patch.dict(
+            os.environ,
+            {
+                "GEMINI_API_KEY": "fake_gemini_key",
+                "AWS_BEARER_TOKEN_BEDROCK": "fake_bedrock_token",
+            },
+        )
+        self.env_patcher.start()
+
+    def tearDown(self):
+        self.env_patcher.stop()
+
     @patch(
         "youtube_to_docs.llms.PRICES",
         {"prices": [{"id": "gpt-4", "input": 30.0, "output": 60.0}]},
