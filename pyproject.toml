@@ -16,7 +16,7 @@ test = [
 
 [project]
 name = "youtube-to-docs"
-version = "0.0.71"
+version = "0.0.72"
 description = "Convert YouTube videos into structured docs, summaries, audio, and visual assets for easier discovery"
 readme = "README.md"
 requires-python = ">=3.12"
