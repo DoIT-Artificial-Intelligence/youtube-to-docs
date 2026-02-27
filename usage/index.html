@@ -1512,7 +1512,7 @@
 <td style="text-align: left;"><code>-i</code>, <code>--infographic</code></td>
 <td style="text-align: left;">The image model to use for generating a visual summary. Supports models from Google (Gemini, Imagen), AWS Bedrock (Titan, Nova Canvas), and Azure Foundry.</td>
 <td style="text-align: left;"><code>None</code></td>
-<td style="text-align: left;"><code>--infographic gemini-2.5-flash-image</code></td>
+<td style="text-align: left;"><code>--infographic gemini-3.1-flash-image-preview</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>--alt-text-model</code></td>
@@ -1572,19 +1572,19 @@
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>youtube-to-docs<span class="w"> </span>PLGKTTEqwhiHHWO-jdxM1KtzTbWo6h0Ycl<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001
 </code></pre></div></p>
 <p><strong>5. Process a Channel with Summaries, TTS, and Infographics:</strong>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>youtube-to-docs<span class="w"> </span>@mga-othercommittees6625<span class="w"> </span>-m<span class="w"> </span>vertex-claude-haiku-4-5@20251001<span class="w"> </span>--tts<span class="w"> </span>gemini-2.5-flash-preview-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-2.5-flash-image
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>youtube-to-docs<span class="w"> </span>@mga-othercommittees6625<span class="w"> </span>-m<span class="w"> </span>vertex-claude-haiku-4-5@20251001<span class="w"> </span>--tts<span class="w"> </span>gemini-2.5-flash-preview-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-3.1-flash-image-preview
 </code></pre></div></p>
 <p><strong>6. Generate an Infographic using AWS Bedrock:</strong>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>--infographic<span class="w"> </span>bedrock-titan-image-generator-v2:0
 </code></pre></div></p>
 <p><strong>7. Create a Video (Infographic + Audio Summary):</strong>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview<span class="w"> </span>--tts<span class="w"> </span>gemini-2.5-flash-preview-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-2.5-flash-image<span class="w"> </span>--combine-infographic-audio
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview<span class="w"> </span>--tts<span class="w"> </span>gemini-2.5-flash-preview-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-3.1-flash-image-preview<span class="w"> </span>--combine-infographic-audio
 </code></pre></div></p>
 <p><strong>8. Translate all outputs to Spanish:</strong>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview<span class="w"> </span>-tr<span class="w"> </span>gemini-3-flash-preview-es
 </code></pre></div></p>
 <p><strong>9. Full multilingual pipeline — English + Spanish summaries, audio, infographics, and videos:</strong>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview<span class="w"> </span>-tr<span class="w"> </span>gemini-3-flash-preview-es<span class="w"> </span>--tts<span class="w"> </span>gemini-2.5-flash-preview-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-2.5-flash-image<span class="w"> </span>--combine-infographic-audio
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview<span class="w"> </span>-tr<span class="w"> </span>gemini-3-flash-preview-es<span class="w"> </span>--tts<span class="w"> </span>gemini-2.5-flash-preview-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-3.1-flash-image-preview<span class="w"> </span>--combine-infographic-audio
 </code></pre></div></p>
 <p><strong>10. Suggest corrected captions for YouTube SRT:</strong>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-scc<span class="w"> </span>gemini-3-flash-preview-youtube
