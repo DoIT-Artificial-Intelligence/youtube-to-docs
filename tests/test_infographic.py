@@ -38,7 +38,7 @@ class TestInfographic(unittest.TestCase):
         mock_client.models.generate_content_stream.return_value = [mock_chunk]
 
         image_bytes, in_tok, out_tok = infographic.generate_infographic(
-            "gemini-2.5-flash-image", "Summary text", "Video Title"
+            "gemini-3.1-flash-image-preview", "Summary text", "Video Title"
         )
 
         self.assertEqual(image_bytes, b"fake_gemini_bytes")
@@ -111,7 +111,7 @@ class TestInfographic(unittest.TestCase):
         mock_client.models.generate_content_stream.return_value = [mock_chunk]
 
         image_bytes, in_tok, out_tok = infographic.generate_infographic(
-            "gemini-2.5-flash-image", "Summary text", "Video Title"
+            "gemini-3.1-flash-image-preview", "Summary text", "Video Title"
         )
         self.assertIsNone(image_bytes)
         self.assertEqual(in_tok, 0)

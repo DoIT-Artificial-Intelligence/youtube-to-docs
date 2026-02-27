@@ -3,7 +3,7 @@
 Compare the pricing of various Large Language Models. Prices are shown in USD per 1M tokens.
 
 > [!NOTE]
-> Prices last updated on **2026-02-22**. All values are per 1 million tokens unless otherwise specified.
+> Prices last updated on **2026-02-27**. All values are per 1 million tokens unless otherwise specified.
 > Non-token-based models are marked with \* and converted as follows:
 >
 > - **Character-based** (TTS, Translation): $X per 1M chars → assume ~4 chars/token → multiply by 4. Cost split 50/50 input/output.
@@ -98,6 +98,7 @@ Compare the pricing of various Large Language Models. Prices are shown in USD pe
             <!-- Data will be populated by JS -->
         </tbody>
     </table>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -105,7 +106,7 @@ Compare the pricing of various Large Language Models. Prices are shown in USD pe
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
 <script>
 const pricingData = {
-    "updated_at": "2026-02-22",
+    "updated_at": "2026-02-27",
     "prices": [
         {"id": "amazon-nova-micro", "vendor": "amazon", "name": "Amazon Nova Micro", "input": 0.035, "output": 0.14},
         {"id": "amazon-nova-lite", "vendor": "amazon", "name": "Amazon Nova Lite", "input": 0.06, "output": 0.24},
@@ -182,7 +183,7 @@ const pricingData = {
         {"id": "gpt-5.2", "vendor": "openai", "name": "GPT-5.2", "input": 1.75, "output": 14.0},
         {"id": "gpt-5.2-pro", "vendor": "openai", "name": "GPT-5.2 Pro", "input": 21.0, "output": 168.0},
         {"id": "gemini-3-pro-image-preview", "vendor": "google", "name": "Gemini 3 Pro Image Preview", "input": 2.0, "output": 120.0},
-        {"id": "gemini-2.5-flash-image", "vendor": "google", "name": "Gemini 2.5 Flash Image*", "input": 15.0, "output": 15.0},
+        {"id": "gemini-3.1-flash-image-preview", "vendor": "google", "name": "Gemini 3.1 Flash Image Preview*", "input": 30.0, "output": 30.0},
         {"id": "imagen-4", "vendor": "google", "name": "Imagen 4*", "input": 20.0, "output": 20.0},
         {"id": "imagen-4-fast", "vendor": "google", "name": "Imagen 4 Fast*", "input": 10.0, "output": 10.0},
         {"id": "imagen-4-ultra", "vendor": "google", "name": "Imagen 4 Ultra*", "input": 30.0, "output": 30.0},

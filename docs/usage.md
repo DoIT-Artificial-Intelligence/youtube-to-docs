@@ -135,7 +135,7 @@ youtube-to-docs
 | `-t`, `--transcript` | The transcript source to use. Can be `'youtube'` (default) to fetch existing YouTube transcripts, or an AI model name to perform STT on extracted audio (e.g. `gemini...` for Gemini API, `gcp-chirp3` for GCP Speech-to-Text V2). | `youtube` | `-t gemini-2.0-flash-exp` |
 | `-m`, `--model` | The LLM(s) to use for speaker extraction, Q&A generation, tag generation, and summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. **Can be a comma-separated list.** | `None` | `-m gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001` |
 | `--tts` | The TTS model and voice to use for generating audio summaries. Format: `{model}-{voice}`. Supports Gemini models (e.g., `gemini-2.5-flash-preview-tts-Kore`) and GCP Cloud TTS (e.g., `gcp-chirp3-Kore`). | `None` | `--tts gcp-chirp3-Kore` |
-| `-i`, `--infographic`| The image model to use for generating a visual summary. Supports models from Google (Gemini, Imagen), AWS Bedrock (Titan, Nova Canvas), and Azure Foundry. | `None` | `--infographic gemini-2.5-flash-image` |
+| `-i`, `--infographic`| The image model to use for generating a visual summary. Supports models from Google (Gemini, Imagen), AWS Bedrock (Titan, Nova Canvas), and Azure Foundry. | `None` | `--infographic gemini-3.1-flash-image-preview` |
 | `--alt-text-model` | The LLM model to use for generating multimodal alt text for the infographic. Defaults to the summary model. | `None` | `--alt-text-model gemini-3-flash-preview` |
 | `-nys`, `--no-youtube-summary` | If set, skips generating a secondary summary from the YouTube transcript when using an AI model for the primary transcript. | `False` | `--no-youtube-summary` |
 | `-tr`, `--translate` | Translate all outputs to a target language after generating in English. Format: `{model}-{language}` e.g. `gemini-3-flash-preview-es`, or `aws-translate-{language}` / `gcp-translate-{language}` to use AWS Translate or Google Cloud Translation directly (e.g. `aws-translate-es`, `gcp-translate-es`). The tool first tries to fetch a native YouTube transcript in the target language; if unavailable, it translates the English transcript. Summaries, Q&A, tags, one-sentence summaries, transcripts, and SRT files are all translated. When combined with `--tts` or `--infographic`, assets are produced in both English and the target language. | `None` | `-tr gemini-3-flash-preview-es`, `-tr aws-translate-es`, `-tr gcp-translate-es` |
@@ -168,7 +168,7 @@ youtube-to-docs PLGKTTEqwhiHHWO-jdxM1KtzTbWo6h0Ycl -m gemini-3-flash-preview,ver
 
 **5. Process a Channel with Summaries, TTS, and Infographics:**
 ```bash
-youtube-to-docs @mga-othercommittees6625 -m vertex-claude-haiku-4-5@20251001 --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-2.5-flash-image
+youtube-to-docs @mga-othercommittees6625 -m vertex-claude-haiku-4-5@20251001 --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-3.1-flash-image-preview
 ```
 
 **6. Generate an Infographic using AWS Bedrock:**
@@ -178,7 +178,7 @@ youtube-to-docs atmGAHYpf_c --infographic bedrock-titan-image-generator-v2:0
 
 **7. Create a Video (Infographic + Audio Summary):**
 ```bash
-youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-2.5-flash-image --combine-infographic-audio
+youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-3.1-flash-image-preview --combine-infographic-audio
 ```
 
 **8. Translate all outputs to Spanish:**
@@ -188,7 +188,7 @@ youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview -tr gemini-3-flash-preview
 
 **9. Full multilingual pipeline — English + Spanish summaries, audio, infographics, and videos:**
 ```bash
-youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview -tr gemini-3-flash-preview-es --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-2.5-flash-image --combine-infographic-audio
+youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview -tr gemini-3-flash-preview-es --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-3.1-flash-image-preview --combine-infographic-audio
 ```
 
 **10. Suggest corrected captions for YouTube SRT:**

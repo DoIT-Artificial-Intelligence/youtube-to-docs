@@ -168,7 +168,7 @@ def verify_output(
     if all_gemini_arg == "gemini-flash":
         model = "gemini-3-flash-preview"
         transcript_model = transcript_model or "gemini-3-flash-preview"
-        infographic_model = "gemini-2.5-flash-image"
+        infographic_model = "gemini-3.1-flash-image-preview"
         tts_model = "gemini-2.5-flash-preview-tts-Kore"
         no_youtube_summary = True
     elif all_gemini_arg == "gemini-pro":

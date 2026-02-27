@@ -33,7 +33,7 @@ def main():
 
     # 4. Run Regression
     transcript_model = "gemini-3-flash-preview"
-    infographic_model = "gemini-2.5-flash-image"
+    infographic_model = "gemini-3.1-flash-image-preview"
     tts_model = "gemini-2.5-flash-preview-tts-Kore"
 
     run_regression(

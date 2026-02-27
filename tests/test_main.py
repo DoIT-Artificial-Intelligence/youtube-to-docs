@@ -671,9 +671,11 @@ class TestMain(unittest.TestCase):
             mock_tts.call_args.args[1], "gemini-2.5-flash-preview-tts-Kore"
         )
 
-        # Check if generate_infographic was called with gemini-2.5-flash-image
+        # Check if generate_infographic was called with gemini-3.1-flash-image-preview
         mock_gen_info.assert_called()
-        self.assertEqual(mock_gen_info.call_args.args[0], "gemini-2.5-flash-image")
+        self.assertEqual(
+            mock_gen_info.call_args.args[0], "gemini-3.1-flash-image-preview"
+        )
 
     @patch("youtube_to_docs.main.get_youtube_service")
     @patch("youtube_to_docs.main.resolve_video_ids")

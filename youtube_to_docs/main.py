@@ -152,10 +152,14 @@ def main(args_list: list[str] | None = None) -> None:
     parser.add_argument(
         "-i",
         "--infographic",
+        nargs="?",
+        const="gemini-3.1-flash-image-preview",
         default=None,
         help=(
             "The image model to use for generating an infographic. "
-            "e.g. `gemini-2.5-flash-image` or `gemini-3-pro-image-preview`"
+            "If set as a flag without a value, defaults to "
+            "`gemini-3.1-flash-image-preview`. "
+            "e.g. `gemini-3.1-flash-image-preview` or `gemini-3-pro-image-preview`"
         ),
     )
     parser.add_argument(
@@ -204,7 +208,7 @@ def main(args_list: list[str] | None = None) -> None:
             "Supported values: \n"
             "`gemini-flash`: summarization (`gemini-3-flash-preview`), "
             "TTS (`gemini-2.5-flash-preview-tts-Kore`), "
-            "and Infographic (`gemini-2.5-flash-image`). \n"
+            "and Infographic (`gemini-3.1-flash-image-preview`). \n"
             "`gemini-pro`: summarization (`gemini-3.1-pro-preview`), "
             "TTS (`gemini-2.5-pro-preview-tts-Kore`), "
             "and Infographic (`gemini-3-pro-image-preview`). \n"
@@ -259,8 +263,8 @@ def main(args_list: list[str] | None = None) -> None:
 
     args = parser.parse_args(args_list)
 
-    # Default model to gemini-3-flash-preview if -scc is set but no model is provided
-    if args.suggest_corrected_captions and args.model is None:
+    # Default to gemini-3-flash-preview if -scc or -i is set without explicit -m
+    if (args.suggest_corrected_captions or args.infographic) and args.model is None:
         args.model = "gemini-3-flash-preview"
 
     verbose = args.verbose

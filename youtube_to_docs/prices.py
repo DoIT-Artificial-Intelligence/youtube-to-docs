@@ -604,11 +604,11 @@ PRICES = {
             "input_cached": None,
         },
         {
-            "id": "gemini-2.5-flash-image",
+            "id": "gemini-3.1-flash-image-preview",
             "vendor": "google",
-            "name": "Gemini 2.5 Flash Image*",
-            "input": 15.0,
-            "output": 15.0,
+            "name": "Gemini 3.1 Flash Image Preview*",
+            "input": 30.0,
+            "output": 30.0,
             "input_cached": None,
         },
         {

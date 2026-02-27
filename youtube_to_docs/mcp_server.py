@@ -48,7 +48,7 @@ def process_video(
             (e.g., 'gemini-2.5-flash-preview-tts-Kore', 'gcp-chirp3-Kore',
             'aws-polly-Ruth').
         infographic_model: The image model to use for generating an infographic
-            (e.g., 'gemini-2.5-flash-image').
+            (e.g., 'gemini-3.1-flash-image-preview').
         alt_text_model: The LLM model to use for generating alt text for the
             infographic. Defaults to the summary model.
         no_youtube_summary: If True, skips generating a secondary summary from the
