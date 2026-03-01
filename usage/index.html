@@ -1368,23 +1368,23 @@
 </table>
 <p><strong>How to use extras with <code>uvx</code>:</strong></p>
 <p>Use the <code>--with</code> flag followed by the package name and extras in brackets.</p>
-<p><strong>Example 1: Audio and Video support (Common)</strong>
+<p><strong>Example 1: Audio and Video support (Common)</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uvx<span class="w"> </span>--with<span class="w"> </span><span class="s2">&quot;youtube-to-docs[audio,video]&quot;</span><span class="w"> </span>youtube-to-docs<span class="w"> </span>...
-</code></pre></div></p>
-<p><strong>Example 2: Google Drive + Audio support</strong>
+</code></pre></div>
+<p><strong>Example 2: Google Drive + Audio support</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uvx<span class="w"> </span>--with<span class="w"> </span><span class="s2">&quot;youtube-to-docs[workspace,audio]&quot;</span><span class="w"> </span>youtube-to-docs<span class="w"> </span>...
-</code></pre></div></p>
-<p><strong>Example 3: Everything (Full feature set)</strong>
+</code></pre></div>
+<p><strong>Example 3: Everything (Full feature set)</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uvx<span class="w"> </span>--with<span class="w"> </span><span class="s2">&quot;youtube-to-docs[all]&quot;</span><span class="w"> </span>youtube-to-docs<span class="w"> </span>...
-</code></pre></div></p>
+</code></pre></div>
 <h3 id="installing-uv">Installing <code>uv</code></h3>
 <p>If you don't have <code>uv</code> installed, you can install it using the following commands:</p>
-<p><strong>macOS/Linux:</strong>
+<p><strong>macOS/Linux:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>curl<span class="w"> </span>-LsSf<span class="w"> </span>https://astral.sh/uv/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
-</code></pre></div></p>
-<p><strong>Windows:</strong>
+</code></pre></div>
+<p><strong>Windows:</strong></p>
 <div class="language-powershell highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">powershell</span> <span class="n">-ExecutionPolicy</span> <span class="n">ByPass</span> <span class="n">-c</span> <span class="s2">&quot;irm https://astral.sh/uv/install.ps1 | iex&quot;</span>
-</code></pre></div></p>
+</code></pre></div>
 <h2 id="setup">Setup</h2>
 <p>Before running the tool, ensure your environment is correctly configured with the necessary API keys and authentication files.</p>
 <h3 id="1-environment-variables">1. Environment Variables</h3>
@@ -1439,7 +1439,7 @@
 <p>If you plan to save outputs to Google Drive (<code>workspace</code>) or Microsoft SharePoint/OneDrive (<code>sharepoint</code>), you need to configure authentication files in your home directory.</p>
 <h4 id="google-drive-workspace">Google Drive (Workspace)</h4>
 <p>Create a file at <code>~/.google_client_secret.json</code> with your Google Cloud OAuth 2.0 Client Secret JSON.</p>
-<p><div class="language-json highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p">{</span>
+<div class="language-json highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p">{</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">&quot;installed&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="nt">&quot;client_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;YOUR_CLIENT_ID.apps.googleusercontent.com&quot;</span><span class="p">,</span>
 <a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="nt">&quot;project_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your-project-id&quot;</span><span class="p">,</span>
@@ -1451,16 +1451,20 @@
 <a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">  </span><span class="p">}</span>
 <a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="p">}</span>
 </code></pre></div>
-*   <strong>First Run</strong>: The tool will open a browser window to authenticate and generate a <code>~/.google_client_token.json</code> file for future non-interactive use.</p>
+<ul>
+<li><strong>First Run</strong>: The tool will open a browser window to authenticate and generate a <code>~/.google_client_token.json</code> file for future non-interactive use.</li>
+</ul>
 <h4 id="microsoft-365-sharepointonedrive">Microsoft 365 (SharePoint/OneDrive)</h4>
 <p>Create a file at <code>~/.azure_client.json</code> with your Azure App Registration details.</p>
-<p><div class="language-json highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p">{</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="nt">&quot;client_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;YOUR_CLIENT_ID&quot;</span><span class="p">,</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="nt">&quot;authority&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://login.microsoftonline.com/consumers&quot;</span>
+<div class="language-json highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">&quot;client_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;YOUR_CLIENT_ID&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">&quot;authority&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://login.microsoftonline.com/consumers&quot;</span>
 <a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="p">}</span>
 </code></pre></div>
-*   <strong>Authority</strong>: Use <code>.../consumers</code> for personal accounts or <code>.../YOUR_TENANT_ID</code> for organizational accounts.
-*   <strong>First Run</strong>: The tool will attempt to authenticate (silently or interactively) and cache the token in <code>~/.msal_token_cache.json</code>.</p>
+<ul>
+<li><strong>Authority</strong>: Use <code>.../consumers</code> for personal accounts or <code>.../YOUR_TENANT_ID</code> for organizational accounts.</li>
+<li><strong>First Run</strong>: The tool will attempt to authenticate (silently or interactively) and cache the token in <code>~/.msal_token_cache.json</code>.</li>
+</ul>
 <h2 id="command-line-interface-cli">Command Line Interface (CLI)</h2>
 <p>The main command is <code>youtube-to-docs</code>.</p>
 <h3 id="basic-usage_1">Basic Usage</h3>
@@ -1499,7 +1503,7 @@
 <tr>
 <td style="text-align: left;"><code>-m</code>, <code>--model</code></td>
 <td style="text-align: left;">The LLM(s) to use for speaker extraction, Q&amp;A generation, tag generation, and summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. <strong>Can be a comma-separated list.</strong></td>
-<td style="text-align: left;"><code>None</code></td>
+<td style="text-align: left;"><code>gemini-3-flash-preview</code></td>
 <td style="text-align: left;"><code>-m gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001</code></td>
 </tr>
 <tr>
@@ -1559,42 +1563,42 @@
 </tbody>
 </table>
 <h3 id="examples">Examples</h3>
-<p><strong>1. Summarize the default video using a single model:</strong>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>youtube-to-docs<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview
-</code></pre></div></p>
-<p><strong>2. Generate a transcript using Gemini 2.0 Flash and summarize:</strong>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>youtube-to-docs<span class="w"> </span>-t<span class="w"> </span>gemini-2.0-flash-exp<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview
-</code></pre></div></p>
-<p><strong>3. Process the default video and save to a custom CSV:</strong>
+<p><strong>1. Summarize the default video using a single model:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>youtube-to-docs
+</code></pre></div>
+<p><strong>2. Generate a transcript using Gemini 2.0 Flash and summarize (using default model):</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>youtube-to-docs<span class="w"> </span>-t<span class="w"> </span>gemini-2.0-flash-exp
+</code></pre></div>
+<p><strong>3. Process the default video and save to a custom CSV:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>youtube-to-docs<span class="w"> </span>-o<span class="w"> </span>my-docs.csv
-</code></pre></div></p>
-<p><strong>4. Summarize a Playlist using multiple models (Gemini and Vertex):</strong>
+</code></pre></div>
+<p><strong>4. Summarize a Playlist using multiple models (Gemini and Vertex):</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>youtube-to-docs<span class="w"> </span>PLGKTTEqwhiHHWO-jdxM1KtzTbWo6h0Ycl<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001
-</code></pre></div></p>
-<p><strong>5. Process a Channel with Summaries, TTS, and Infographics:</strong>
+</code></pre></div>
+<p><strong>5. Process a Channel with Summaries, TTS, and Infographics:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>youtube-to-docs<span class="w"> </span>@mga-othercommittees6625<span class="w"> </span>-m<span class="w"> </span>vertex-claude-haiku-4-5@20251001<span class="w"> </span>--tts<span class="w"> </span>gemini-2.5-flash-preview-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-3.1-flash-image-preview
-</code></pre></div></p>
-<p><strong>6. Generate an Infographic using AWS Bedrock:</strong>
+</code></pre></div>
+<p><strong>6. Generate an Infographic using AWS Bedrock:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>--infographic<span class="w"> </span>bedrock-titan-image-generator-v2:0
-</code></pre></div></p>
-<p><strong>7. Create a Video (Infographic + Audio Summary):</strong>
+</code></pre></div>
+<p><strong>7. Create a Video (Infographic + Audio Summary):</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview<span class="w"> </span>--tts<span class="w"> </span>gemini-2.5-flash-preview-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-3.1-flash-image-preview<span class="w"> </span>--combine-infographic-audio
-</code></pre></div></p>
-<p><strong>8. Translate all outputs to Spanish:</strong>
+</code></pre></div>
+<p><strong>8. Translate all outputs to Spanish:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview<span class="w"> </span>-tr<span class="w"> </span>gemini-3-flash-preview-es
-</code></pre></div></p>
-<p><strong>9. Full multilingual pipeline — English + Spanish summaries, audio, infographics, and videos:</strong>
+</code></pre></div>
+<p><strong>9. Full multilingual pipeline — English + Spanish summaries, audio, infographics, and videos:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview<span class="w"> </span>-tr<span class="w"> </span>gemini-3-flash-preview-es<span class="w"> </span>--tts<span class="w"> </span>gemini-2.5-flash-preview-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-3.1-flash-image-preview<span class="w"> </span>--combine-infographic-audio
-</code></pre></div></p>
-<p><strong>10. Suggest corrected captions for YouTube SRT:</strong>
+</code></pre></div>
+<p><strong>10. Suggest corrected captions for YouTube SRT:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-scc<span class="w"> </span>gemini-3-flash-preview-youtube
-</code></pre></div></p>
-<p><strong>11. Run STT and correct the generated captions in one pass:</strong>
+</code></pre></div>
+<p><strong>11. Run STT and correct the generated captions in one pass:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-t<span class="w"> </span>gcp-chirp3<span class="w"> </span>-scc<span class="w"> </span>gemini-3-flash-preview
-</code></pre></div></p>
-<p><strong>12. Correct captions and add speaker labels in one pass:</strong>
+</code></pre></div>
+<p><strong>12. Correct captions and add speaker labels in one pass:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3-flash-preview<span class="w"> </span>-scc<span class="w"> </span>gemini-3-flash-preview-youtube
-</code></pre></div></p>
+</code></pre></div>
 <h2 id="suggested-corrected-captions">Suggested Corrected Captions</h2>
 <p>The <code>-scc</code> / <code>--suggest-corrected-captions</code> flag uses an LLM to suggest WCAG 2.1 Level AA compliant corrections to an existing SRT file, following <a href="https://www.section508.gov/create/captions-transcripts/">Section 508 guidance</a>.</p>
 <h3 id="what-it-corrects">What it corrects</h3>
