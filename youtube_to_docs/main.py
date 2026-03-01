@@ -116,6 +116,8 @@ def main(args_list: list[str] | None = None) -> None:
     parser.add_argument(
         "-m",
         "--model",
+        nargs="?",
+        const="gemini-3-flash-preview",
         default=None,
         help=(
             "The LLM to use for speaker extraction, Q&A generation, tag generation, "
@@ -131,7 +133,7 @@ def main(args_list: list[str] | None = None) -> None:
             "`foundry-gpt-5-mini`)\n"
             "Can also be a comma-separated list of models (e.g. "
             "`gemini-3-flash-preview,bedrock-claude-haiku-4-5-20251001-v1`).\n"
-            "Defaults to `None`."
+            "Defaults to `gemini-3-flash-preview`."
         ),
     )
     parser.add_argument(
@@ -263,10 +265,6 @@ def main(args_list: list[str] | None = None) -> None:
 
     args = parser.parse_args(args_list)
 
-    # Default to gemini-3-flash-preview if -scc or -i is set without explicit -m
-    if (args.suggest_corrected_captions or args.infographic) and args.model is None:
-        args.model = "gemini-3-flash-preview"
-
     verbose = args.verbose
 
     if not verbose:
@@ -294,6 +292,10 @@ def main(args_list: list[str] | None = None) -> None:
         if args.transcript == "youtube":
             args.transcript = suite["transcript"]
         args.no_youtube_summary = True
+
+    # Final model default
+    if args.model is None:
+        args.model = "gemini-3-flash-preview"
 
     transcript_arg = args.transcript
     video_id_input = args.video_id

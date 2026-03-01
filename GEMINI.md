@@ -13,7 +13,7 @@ Here are the following args for the tool:
 - **url**: The YouTube URL, video ID, playlist ID, or comma-separated list of IDs.
 - **output_file**: (Optional) Path to save the output CSV. Defaults to `youtube-to-docs-artifacts/youtube-docs.csv`. Can be a local path, `workspace` (or `w`) for Google Drive, `sharepoint` (or `s`) for Microsoft SharePoint, or `none` (or `n`) to skip saving to a file.
 - **transcript_source**: (Optional) Source for the transcript. Defaults to 'youtube' (fetches existing). set to an AI model name (e.g., 'gemini-3-flash-preview', 'gcp-chirp3') to perform STT on extracted audio. For `gcp-` models, `YTD_GCS_BUCKET_NAME` env var is recommended.
-- **model**: (Optional) The LLM model(s) to use for summarization, Q&A, speaker extraction and tag generation (e.g., 'gemini-3-flash-preview'). Can be a comma-separated list.
+- **model**: (Optional) The LLM model(s) to use for summarization, Q&A, speaker extraction and tag generation (e.g., 'gemini-3-flash-preview'). Can be a comma-separated list. Defaults to `gemini-3-flash-preview`.
 - **tts_model**: (Optional) The TTS model and voice to use (e.g., 'gemini-2.5-flash-preview-tts-Kore', 'gemini-2.5-pro-preview-tts-Kore', 'gcp-chirp3', 'gcp-chirp3-Kore', 'aws-polly', 'aws-polly-Ruth').
 - **infographic_model**: (Optional) The image model to use for generating an infographic (e.g., 'gemini-3.1-flash-image-preview' or 'gemini-3-pro-image-preview').
 - **alt_text_model**: (Optional) The LLM model to use for generating multimodal alt text for the infographic. Defaults to the summary model.
@@ -53,10 +53,10 @@ Here are the following args for the tool:
       - `[model]` defaults to `gemini-3-flash-preview`.
       - `[source]` can be "youtube" or an STT model name (e.g. "gcp-chirp3"); omit to auto-detect.
 3.  **Clarify Parameters**:
-    - **Model**: If not specified, ask: "What model do you want to use for the summary?".
+    - **Model**: Defaults to `gemini-3-flash-preview`. If the user has a specific preference not covered by the default, ask: "What model do you want to use for the summary?".
     - **Output Location**: If not specified, ask: "Where you want the output file saved? Is the default location (youtube-to-docs-artifacts/youtube-docs.csv) okay?"
     - **Additional Features**: If appropriate, ask if they want to:
-      - Generate an infographic (needs `infographic_model`). If `-i` is used as a flag without a value (e.g. `uvx youtube-to-docs ... -i`), it defaults to `gemini-3.1-flash-image-preview` and sets the summary model to `gemini-3-flash-preview` if one isn't already specified.
+      - Generate an infographic (needs `infographic_model`). If `-i` is used as a flag without a value (e.g. `uvx youtube-to-docs ... -i`), it defaults to `gemini-3.1-flash-image-preview`.
       - Generate multimodal alt text for the infographic (uses `alt_text_model`, defaults to summary model).
       - Generate an audio summary (needs `tts_model`).
       - Create a video summary (needs `combine_infographic_audio`, `tts_model`, and `infographic_model`).

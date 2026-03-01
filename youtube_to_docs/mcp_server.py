@@ -13,7 +13,7 @@ def process_video(
     url: str,
     output_file: str = "youtube-to-docs-artifacts/youtube-docs.csv",
     transcript_source: str = "youtube",
-    model: str | None = None,
+    model: str = "gemini-3-flash-preview",
     tts_model: str | None = None,
     infographic_model: str | None = None,
     alt_text_model: str | None = None,
@@ -44,6 +44,7 @@ def process_video(
             (e.g., 'gemini-3-flash-preview') to perform STT on extracted audio.
         model: The LLM model to use for speaker extraction, Q&A, and summarization
             (e.g., 'gemini-3-flash-preview'). Can be a comma-separated list.
+            Defaults to 'gemini-3-flash-preview'.
         tts_model: The TTS model and voice to use
             (e.g., 'gemini-2.5-flash-preview-tts-Kore', 'gcp-chirp3-Kore',
             'aws-polly-Ruth').

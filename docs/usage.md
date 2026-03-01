@@ -18,32 +18,35 @@ uvx youtube-to-docs --help
 
 To keep the installation footprint small, many features are optional. You can enable them by installing specific "extras":
 
-| Extra | Description | Dependencies |
-| :--- | :--- | :--- |
-| `audio` | **Recommended.** Required for downloading audio (for TTS/transcription). | `yt-dlp` |
-| `video` | Required for generating video files (combining audio & infographic). | `static-ffmpeg` |
-| `workspace` | Required for saving to Google Drive. | `google-api-python-client`, `google-auth-oauthlib` |
-| `m365` | Required for saving to SharePoint/OneDrive. | `msal`, `fastexcel`, `xlsxwriter`, `pypandoc` |
-| `aws` | AWS Bedrock support. | None |
-| `azure` | Required if using Azure OpenAI models. | `openai` |
-| `gcp` | Required if using Google Gemini or Vertex AI models. | `google-genai`, `google-cloud-speech`, `google-cloud-storage`, `google-cloud-texttospeech` |
-| `all` | Installs all of the above. | All optional dependencies. |
+| Extra       | Description                                                              | Dependencies                                                                               |
+| :---------- | :----------------------------------------------------------------------- | :----------------------------------------------------------------------------------------- |
+| `audio`     | **Recommended.** Required for downloading audio (for TTS/transcription). | `yt-dlp`                                                                                   |
+| `video`     | Required for generating video files (combining audio & infographic).     | `static-ffmpeg`                                                                            |
+| `workspace` | Required for saving to Google Drive.                                     | `google-api-python-client`, `google-auth-oauthlib`                                         |
+| `m365`      | Required for saving to SharePoint/OneDrive.                              | `msal`, `fastexcel`, `xlsxwriter`, `pypandoc`                                              |
+| `aws`       | AWS Bedrock support.                                                     | None                                                                                       |
+| `azure`     | Required if using Azure OpenAI models.                                   | `openai`                                                                                   |
+| `gcp`       | Required if using Google Gemini or Vertex AI models.                     | `google-genai`, `google-cloud-speech`, `google-cloud-storage`, `google-cloud-texttospeech` |
+| `all`       | Installs all of the above.                                               | All optional dependencies.                                                                 |
 
 **How to use extras with `uvx`:**
 
 Use the `--with` flag followed by the package name and extras in brackets.
 
 **Example 1: Audio and Video support (Common)**
+
 ```bash
 uvx --with "youtube-to-docs[audio,video]" youtube-to-docs ...
 ```
 
 **Example 2: Google Drive + Audio support**
+
 ```bash
 uvx --with "youtube-to-docs[workspace,audio]" youtube-to-docs ...
 ```
 
 **Example 3: Everything (Full feature set)**
+
 ```bash
 uvx --with "youtube-to-docs[all]" youtube-to-docs ...
 ```
@@ -53,11 +56,13 @@ uvx --with "youtube-to-docs[all]" youtube-to-docs ...
 If you don't have `uv` installed, you can install it using the following commands:
 
 **macOS/Linux:**
+
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 **Windows:**
+
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
@@ -70,21 +75,22 @@ Before running the tool, ensure your environment is correctly configured with th
 
 Set the following environment variables based on the AI providers you intend to use.
 
-| Variable | Description | Required For |
-| :--- | :--- | :--- |
-| `YOUTUBE_DATA_API_KEY` | API key for the YouTube Data API v3. | Fetching video metadata. |
-| `GEMINI_API_KEY` | API key for Google Gemini models. | Gemini models (`-m gemini...`). |
-| `PROJECT_ID` | Google Cloud Project ID. | GCP Vertex models (`-m vertex...`), GCP STT (`-t gcp...`) and GCP TTS (`--tts gcp...`). |
-| `YTD_GCS_BUCKET_NAME` | Google Cloud Storage bucket name (write access). | GCP STT models (`-t gcp...`) for temp audio storage. |
-| `AWS_BEARER_TOKEN_BEDROCK` | AWS Bearer Token. | AWS Bedrock models (`-m bedrock...`). |
-| `AZURE_FOUNDRY_ENDPOINT` | Azure Foundry Endpoint URL. | Azure Foundry models (`-m foundry...`). |
-| `AZURE_FOUNDRY_API_KEY` | Azure Foundry API Key. | Azure Foundry models (`-m foundry...`). |
+| Variable                   | Description                                      | Required For                                                                            |
+| :------------------------- | :----------------------------------------------- | :-------------------------------------------------------------------------------------- |
+| `YOUTUBE_DATA_API_KEY`     | API key for the YouTube Data API v3.             | Fetching video metadata.                                                                |
+| `GEMINI_API_KEY`           | API key for Google Gemini models.                | Gemini models (`-m gemini...`).                                                         |
+| `PROJECT_ID`               | Google Cloud Project ID.                         | GCP Vertex models (`-m vertex...`), GCP STT (`-t gcp...`) and GCP TTS (`--tts gcp...`). |
+| `YTD_GCS_BUCKET_NAME`      | Google Cloud Storage bucket name (write access). | GCP STT models (`-t gcp...`) for temp audio storage.                                    |
+| `AWS_BEARER_TOKEN_BEDROCK` | AWS Bearer Token.                                | AWS Bedrock models (`-m bedrock...`).                                                   |
+| `AZURE_FOUNDRY_ENDPOINT`   | Azure Foundry Endpoint URL.                      | Azure Foundry models (`-m foundry...`).                                                 |
+| `AZURE_FOUNDRY_API_KEY`    | Azure Foundry API Key.                           | Azure Foundry models (`-m foundry...`).                                                 |
 
 ### 2. Storage Authentication (Optional)
 
 If you plan to save outputs to Google Drive (`workspace`) or Microsoft SharePoint/OneDrive (`sharepoint`), you need to configure authentication files in your home directory.
 
 #### Google Drive (Workspace)
+
 Create a file at `~/.google_client_secret.json` with your Google Cloud OAuth 2.0 Client Secret JSON.
 
 ```json
@@ -100,19 +106,22 @@ Create a file at `~/.google_client_secret.json` with your Google Cloud OAuth 2.0
   }
 }
 ```
-*   **First Run**: The tool will open a browser window to authenticate and generate a `~/.google_client_token.json` file for future non-interactive use.
+
+- **First Run**: The tool will open a browser window to authenticate and generate a `~/.google_client_token.json` file for future non-interactive use.
 
 #### Microsoft 365 (SharePoint/OneDrive)
+
 Create a file at `~/.azure_client.json` with your Azure App Registration details.
 
 ```json
 {
-    "client_id": "YOUR_CLIENT_ID",
-    "authority": "https://login.microsoftonline.com/consumers"
+  "client_id": "YOUR_CLIENT_ID",
+  "authority": "https://login.microsoftonline.com/consumers"
 }
 ```
-*   **Authority**: Use `.../consumers` for personal accounts or `.../YOUR_TENANT_ID` for organizational accounts.
-*   **First Run**: The tool will attempt to authenticate (silently or interactively) and cache the token in `~/.msal_token_cache.json`.
+
+- **Authority**: Use `.../consumers` for personal accounts or `.../YOUR_TENANT_ID` for organizational accounts.
+- **First Run**: The tool will attempt to authenticate (silently or interactively) and cache the token in `~/.msal_token_cache.json`.
 
 ## Command Line Interface (CLI)
 
@@ -128,80 +137,92 @@ youtube-to-docs
 
 ### Arguments
 
-| Argument | Description | Default | Example |
-| :--- | :--- | :--- | :--- |
-| `video_id` | The YouTube content to process. Can be a **YouTube URL**, **Video ID**, **Playlist ID** (starts with `PL`), **Channel Handle** (starts with `@`), or a **comma-separated list** of Video IDs. | `atmGAHYpf_c` | `youtube-to-docs @mychannel` |
-| `-o`, `--outfile` | Path to save the output CSV file. <br> - Local path: `my-data.csv` <br> - Google Workspace: `workspace` or `w` (saves to Drive folder `youtube-to-docs-artifacts`) or a specific Folder ID. <br> - SharePoint/OneDrive: `sharepoint` or `s` (saves to `youtube-to-docs-artifacts`). <br> - No-op: `none` or `n` (skips saving to a file, results are printed to the console). | `youtube-to-docs-artifacts/youtube-docs.csv` | `-o n` |
-| `-t`, `--transcript` | The transcript source to use. Can be `'youtube'` (default) to fetch existing YouTube transcripts, or an AI model name to perform STT on extracted audio (e.g. `gemini...` for Gemini API, `gcp-chirp3` for GCP Speech-to-Text V2). | `youtube` | `-t gemini-2.0-flash-exp` |
-| `-m`, `--model` | The LLM(s) to use for speaker extraction, Q&A generation, tag generation, and summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. **Can be a comma-separated list.** | `None` | `-m gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001` |
-| `--tts` | The TTS model and voice to use for generating audio summaries. Format: `{model}-{voice}`. Supports Gemini models (e.g., `gemini-2.5-flash-preview-tts-Kore`) and GCP Cloud TTS (e.g., `gcp-chirp3-Kore`). | `None` | `--tts gcp-chirp3-Kore` |
-| `-i`, `--infographic`| The image model to use for generating a visual summary. Supports models from Google (Gemini, Imagen), AWS Bedrock (Titan, Nova Canvas), and Azure Foundry. | `None` | `--infographic gemini-3.1-flash-image-preview` |
-| `--alt-text-model` | The LLM model to use for generating multimodal alt text for the infographic. Defaults to the summary model. | `None` | `--alt-text-model gemini-3-flash-preview` |
-| `-nys`, `--no-youtube-summary` | If set, skips generating a secondary summary from the YouTube transcript when using an AI model for the primary transcript. | `False` | `--no-youtube-summary` |
-| `-tr`, `--translate` | Translate all outputs to a target language after generating in English. Format: `{model}-{language}` e.g. `gemini-3-flash-preview-es`, or `aws-translate-{language}` / `gcp-translate-{language}` to use AWS Translate or Google Cloud Translation directly (e.g. `aws-translate-es`, `gcp-translate-es`). The tool first tries to fetch a native YouTube transcript in the target language; if unavailable, it translates the English transcript. Summaries, Q&A, tags, one-sentence summaries, transcripts, and SRT files are all translated. When combined with `--tts` or `--infographic`, assets are produced in both English and the target language. | `None` | `-tr gemini-3-flash-preview-es`, `-tr aws-translate-es`, `-tr gcp-translate-es` |
-| `-cia`, `--combine-infographic-audio` | Combine the infographic and audio summary into a video file (MP4). Requires both `--tts` and `--infographic` to be effective. When used with `--translate`, one video is created per language. | `False` | `--combine-infographic-audio` |
-| `--all` | Shortcut to use a specific model suite for everything. Supported: `'gemini-flash'`, `'gemini-pro'`, `'gemini-flash-pro-image'`, `'gcp-pro'`. Sets models for summary, TTS, and infographic, and enables `--no-youtube-summary`. | `None` | `--all gemini-flash` |
-| `-scc`, `--suggest-corrected-captions` | Suggest WCAG 2.1 Level AA compliant caption corrections for an SRT file, per [Section 508 guidance](https://www.section508.gov/create/captions-transcripts/). Format: `{model}` or `{model}-{source}`. See [Suggested Corrected Captions](#suggested-corrected-captions) for full source rules. | `None` | `-scc gemini-3-flash-preview-youtube` |
-| `--verbose` | Enable verbose output. | `False` | `--verbose` |
+| Argument                               | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Default                                      | Example                                                                         |
+| :------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------- | :------------------------------------------------------------------------------ |
+| `video_id`                             | The YouTube content to process. Can be a **YouTube URL**, **Video ID**, **Playlist ID** (starts with `PL`), **Channel Handle** (starts with `@`), or a **comma-separated list** of Video IDs.                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `atmGAHYpf_c`                                | `youtube-to-docs @mychannel`                                                    |
+| `-o`, `--outfile`                      | Path to save the output CSV file. <br> - Local path: `my-data.csv` <br> - Google Workspace: `workspace` or `w` (saves to Drive folder `youtube-to-docs-artifacts`) or a specific Folder ID. <br> - SharePoint/OneDrive: `sharepoint` or `s` (saves to `youtube-to-docs-artifacts`). <br> - No-op: `none` or `n` (skips saving to a file, results are printed to the console).                                                                                                                                                                                                                                                                               | `youtube-to-docs-artifacts/youtube-docs.csv` | `-o n`                                                                          |
+| `-t`, `--transcript`                   | The transcript source to use. Can be `'youtube'` (default) to fetch existing YouTube transcripts, or an AI model name to perform STT on extracted audio (e.g. `gemini...` for Gemini API, `gcp-chirp3` for GCP Speech-to-Text V2).                                                                                                                                                                                                                                                                                                                                                                                                                          | `youtube`                                    | `-t gemini-2.0-flash-exp`                                                       |
+| `-m`, `--model`                        | The LLM(s) to use for speaker extraction, Q&A generation, tag generation, and summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. **Can be a comma-separated list.**                                                                                                                                                                                                                                                                                                                                                                                                                                            | `gemini-3-flash-preview`                     | `-m gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001`                    |
+| `--tts`                                | The TTS model and voice to use for generating audio summaries. Format: `{model}-{voice}`. Supports Gemini models (e.g., `gemini-2.5-flash-preview-tts-Kore`) and GCP Cloud TTS (e.g., `gcp-chirp3-Kore`).                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `None`                                       | `--tts gcp-chirp3-Kore`                                                         |
+| `-i`, `--infographic`                  | The image model to use for generating a visual summary. Supports models from Google (Gemini, Imagen), AWS Bedrock (Titan, Nova Canvas), and Azure Foundry.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `None`                                       | `--infographic gemini-3.1-flash-image-preview`                                  |
+| `--alt-text-model`                     | The LLM model to use for generating multimodal alt text for the infographic. Defaults to the summary model.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `None`                                       | `--alt-text-model gemini-3-flash-preview`                                       |
+| `-nys`, `--no-youtube-summary`         | If set, skips generating a secondary summary from the YouTube transcript when using an AI model for the primary transcript.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `False`                                      | `--no-youtube-summary`                                                          |
+| `-tr`, `--translate`                   | Translate all outputs to a target language after generating in English. Format: `{model}-{language}` e.g. `gemini-3-flash-preview-es`, or `aws-translate-{language}` / `gcp-translate-{language}` to use AWS Translate or Google Cloud Translation directly (e.g. `aws-translate-es`, `gcp-translate-es`). The tool first tries to fetch a native YouTube transcript in the target language; if unavailable, it translates the English transcript. Summaries, Q&A, tags, one-sentence summaries, transcripts, and SRT files are all translated. When combined with `--tts` or `--infographic`, assets are produced in both English and the target language. | `None`                                       | `-tr gemini-3-flash-preview-es`, `-tr aws-translate-es`, `-tr gcp-translate-es` |
+| `-cia`, `--combine-infographic-audio`  | Combine the infographic and audio summary into a video file (MP4). Requires both `--tts` and `--infographic` to be effective. When used with `--translate`, one video is created per language.                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `False`                                      | `--combine-infographic-audio`                                                   |
+| `--all`                                | Shortcut to use a specific model suite for everything. Supported: `'gemini-flash'`, `'gemini-pro'`, `'gemini-flash-pro-image'`, `'gcp-pro'`. Sets models for summary, TTS, and infographic, and enables `--no-youtube-summary`.                                                                                                                                                                                                                                                                                                                                                                                                                             | `None`                                       | `--all gemini-flash`                                                            |
+| `-scc`, `--suggest-corrected-captions` | Suggest WCAG 2.1 Level AA compliant caption corrections for an SRT file, per [Section 508 guidance](https://www.section508.gov/create/captions-transcripts/). Format: `{model}` or `{model}-{source}`. See [Suggested Corrected Captions](#suggested-corrected-captions) for full source rules.                                                                                                                                                                                                                                                                                                                                                             | `None`                                       | `-scc gemini-3-flash-preview-youtube`                                           |
+| `--verbose`                            | Enable verbose output.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `False`                                      | `--verbose`                                                                     |
 
 ### Examples
 
 **1. Summarize the default video using a single model:**
+
 ```bash
-youtube-to-docs -m gemini-3-flash-preview
+youtube-to-docs
 ```
 
-**2. Generate a transcript using Gemini 2.0 Flash and summarize:**
+**2. Generate a transcript using Gemini 2.0 Flash and summarize (using default model):**
+
 ```bash
-youtube-to-docs -t gemini-2.0-flash-exp -m gemini-3-flash-preview
+youtube-to-docs -t gemini-2.0-flash-exp
 ```
 
 **3. Process the default video and save to a custom CSV:**
+
 ```bash
 youtube-to-docs -o my-docs.csv
 ```
 
 **4. Summarize a Playlist using multiple models (Gemini and Vertex):**
+
 ```bash
 youtube-to-docs PLGKTTEqwhiHHWO-jdxM1KtzTbWo6h0Ycl -m gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001
 ```
 
 **5. Process a Channel with Summaries, TTS, and Infographics:**
+
 ```bash
 youtube-to-docs @mga-othercommittees6625 -m vertex-claude-haiku-4-5@20251001 --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-3.1-flash-image-preview
 ```
 
 **6. Generate an Infographic using AWS Bedrock:**
+
 ```bash
 youtube-to-docs atmGAHYpf_c --infographic bedrock-titan-image-generator-v2:0
 ```
 
 **7. Create a Video (Infographic + Audio Summary):**
+
 ```bash
 youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-3.1-flash-image-preview --combine-infographic-audio
 ```
 
 **8. Translate all outputs to Spanish:**
+
 ```bash
 youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview -tr gemini-3-flash-preview-es
 ```
 
 **9. Full multilingual pipeline — English + Spanish summaries, audio, infographics, and videos:**
+
 ```bash
 youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview -tr gemini-3-flash-preview-es --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-3.1-flash-image-preview --combine-infographic-audio
 ```
 
 **10. Suggest corrected captions for YouTube SRT:**
+
 ```bash
 youtube-to-docs atmGAHYpf_c -scc gemini-3-flash-preview-youtube
 ```
 
 **11. Run STT and correct the generated captions in one pass:**
+
 ```bash
 youtube-to-docs atmGAHYpf_c -t gcp-chirp3 -scc gemini-3-flash-preview
 ```
 
 **12. Correct captions and add speaker labels in one pass:**
+
 ```bash
 youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview -scc gemini-3-flash-preview-youtube
 ```
@@ -212,11 +233,11 @@ The `-scc` / `--suggest-corrected-captions` flag uses an LLM to suggest WCAG 2.1
 
 ### What it corrects
 
-*   **Punctuation** — adds or fixes commas, periods, question marks, em dashes, and ellipses.
-*   **Capitalisation** — fixes sentence-initial capitals and proper nouns.
-*   **Filler words** — retains filler words (e.g. "uh", "um") where they aid accessible meaning.
-*   **Speaker labels** — when speaker extraction has been run (via `-m`), inserts `[Name]` at the start of each segment where the speaker changes.
-*   **Segment merging** — if a grammatically complete sentence naturally spans two consecutive segments, those segments are merged into one, using the start time of the first and the end time of the last. No new segments are ever added.
+- **Punctuation** — adds or fixes commas, periods, question marks, em dashes, and ellipses.
+- **Capitalisation** — fixes sentence-initial capitals and proper nouns.
+- **Filler words** — retains filler words (e.g. "uh", "um") where they aid accessible meaning.
+- **Speaker labels** — when speaker extraction has been run (via `-m`), inserts `[Name]` at the start of each segment where the speaker changes.
+- **Segment merging** — if a grammatically complete sentence naturally spans two consecutive segments, those segments are merged into one, using the start time of the first and the end time of the last. No new segments are ever added.
 
 ### Output
 
@@ -226,11 +247,11 @@ Corrections are saved to `suggested-corrected-caption-files/` and contain **only
 
 The format is `-scc {model}` or `-scc {model}-{source}`.
 
-| Source | Behaviour | Example |
-| :--- | :--- | :--- |
-| Omitted | Automatically uses the most recent non-YouTube AI SRT in the row. Useful when `-t {stt-model}` is set in the same run or a prior run. | `-scc gemini-3-flash-preview` |
-| `youtube` | Uses the YouTube-generated SRT explicitly. | `-scc gemini-3-flash-preview-youtube` |
-| STT model name | Uses the SRT produced by that specific STT run. | `-scc gemini-3-flash-preview-gcp-chirp3` |
+| Source         | Behaviour                                                                                                                             | Example                                  |
+| :------------- | :------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------- |
+| Omitted        | Automatically uses the most recent non-YouTube AI SRT in the row. Useful when `-t {stt-model}` is set in the same run or a prior run. | `-scc gemini-3-flash-preview`            |
+| `youtube`      | Uses the YouTube-generated SRT explicitly.                                                                                            | `-scc gemini-3-flash-preview-youtube`    |
+| STT model name | Uses the SRT produced by that specific STT run.                                                                                       | `-scc gemini-3-flash-preview-gcp-chirp3` |
 
 > **Tip:** If you have more than one AI SRT in the row (e.g. from both `gcp-chirp3` and `aws-transcribe`), the default picks the first one found. Use the explicit `{model}-{source}` form to target a specific SRT.
 
@@ -255,46 +276,49 @@ youtube-to-docs VIDEO_ID -m gemini-3-flash-preview -scc gemini-3-flash-preview-y
 The output CSV file contains a variety of columns depending on the arguments provided. Below is a reference of the possible columns:
 
 ### Base Metadata
-*   **URL**: The full YouTube video URL.
-*   **Title**: The title of the video.
-*   **Description**: The video description.
-*   **Data Published**: The date the video was published.
-*   **Channel**: The name of the YouTube channel.
-*   **Tags**: Video tags from YouTube (comma-separated).
-*   **Tags {Transcript} {Model} model**: Up to 5 AI-generated tags based on the transcript.
-*   **Duration**: The duration of the video.
-*   **Transcript characters from youtube**: The total number of characters in the YouTube transcript.
-*   **Transcript characters from {model}**: The total number of characters in the AI-generated transcript (if applicable).
-*   **Audio File**: Path to the extracted audio file (used for AI transcription).
+
+- **URL**: The full YouTube video URL.
+- **Title**: The title of the video.
+- **Description**: The video description.
+- **Data Published**: The date the video was published.
+- **Channel**: The name of the YouTube channel.
+- **Tags**: Video tags from YouTube (comma-separated).
+- **Tags {Transcript} {Model} model**: Up to 5 AI-generated tags based on the transcript.
+- **Duration**: The duration of the video.
+- **Transcript characters from youtube**: The total number of characters in the YouTube transcript.
+- **Transcript characters from {model}**: The total number of characters in the AI-generated transcript (if applicable).
+- **Audio File**: Path to the extracted audio file (used for AI transcription).
 
 ### Files
-*   **Transcript File {type}**: Path to the saved transcript file. `{type}` is either `youtube generated`, `human generated`, or `{model} generated`. Suffix `(lang)` added for non-English.
-*   **SRT File {type}**: Path to the saved SRT transcript file. Standardized timestamps for accessibility and timing.
-*   **Speakers File {model}**: Path to the saved speaker extraction text file.
-*   **QA File {model}**: Path to the saved Q&A Markdown file. Includes **Timestamp** and **Timestamp URL** (markdown hyperlink) columns. Suffix `(lang)` added for non-English.
-*   **Summary File {model}**: Path to the Markdown summary file generated by a specific model. Suffix `(lang)` added for non-English.
-*   **One Sentence Summary File {model}**: Path to the one-sentence summary file.
-*   **Tags File {model}**: Path to the AI-generated tags file.
-*   **Summary Infographic File {model} {infographic_model}**: Path to the generated infographic image.
-*   **Summary Infographic Alt Text File {model} {infographic_model}**: Path to the generated alt text file.
-*   **Summary Audio File {model} {tts_model} File**: Path to the generated TTS audio file. Suffix `(lang)` added for non-English.
-*   **Video File**: Path to the generated MP4 video combining the English infographic and audio.
-*   **Video File (lang)**: Path to the translated language video (e.g., `Video File (es)`). Only present when `--translate` and `--combine-infographic-audio` are both used.
-*   **Suggested Corrected Captions File ({model})**: Path to the suggested-corrections SRT file produced by `-scc`. Contains only the changed segments, or `NO_CHANGES` if no corrections were needed.
+
+- **Transcript File {type}**: Path to the saved transcript file. `{type}` is either `youtube generated`, `human generated`, or `{model} generated`. Suffix `(lang)` added for non-English.
+- **SRT File {type}**: Path to the saved SRT transcript file. Standardized timestamps for accessibility and timing.
+- **Speakers File {model}**: Path to the saved speaker extraction text file.
+- **QA File {model}**: Path to the saved Q&A Markdown file. Includes **Timestamp** and **Timestamp URL** (markdown hyperlink) columns. Suffix `(lang)` added for non-English.
+- **Summary File {model}**: Path to the Markdown summary file generated by a specific model. Suffix `(lang)` added for non-English.
+- **One Sentence Summary File {model}**: Path to the one-sentence summary file.
+- **Tags File {model}**: Path to the AI-generated tags file.
+- **Summary Infographic File {model} {infographic_model}**: Path to the generated infographic image.
+- **Summary Infographic Alt Text File {model} {infographic_model}**: Path to the generated alt text file.
+- **Summary Audio File {model} {tts_model} File**: Path to the generated TTS audio file. Suffix `(lang)` added for non-English.
+- **Video File**: Path to the generated MP4 video combining the English infographic and audio.
+- **Video File (lang)**: Path to the translated language video (e.g., `Video File (es)`). Only present when `--translate` and `--combine-infographic-audio` are both used.
+- **Suggested Corrected Captions File ({model})**: Path to the suggested-corrections SRT file produced by `-scc`. Contains only the changed segments, or `NO_CHANGES` if no corrections were needed.
 
 ### AI Outputs & Costs
-*   **Speakers {model}**: The extracted list of speakers and their roles.
-*   **{normalized_model} Speaker extraction cost ($)**: The estimated API cost for speaker extraction.
-*   **QA Text {model}**: The full text of the Q&A pairs (also saved to the Q&A file).
-*   **{normalized_model} QA cost ($)**: The estimated API cost for Q&A generation.
-*   **Summary Text {model}**: The full text of the summary (also saved to the summary file).
-*   **One Sentence Summary {model}**: The one-sentence summary text.
-*   **Summary Infographic Alt Text {model} {infographic_model}**: The full multimodal alt text for the infographic.
-*   **{normalized_model} summary cost ($)**: The total estimated API cost for both speaker extraction and summarization.
-*   **Summary Infographic Cost {model} {infographic_model} ($)**: The estimated API cost for infographic generation.
-*   **Summary Infographic Alt Text Cost {model} {infographic_model} ($)**: The estimated API cost for alt text generation.
-*   **{normalized_model} tags cost from {transcript} ($)**: The estimated API cost for AI tag generation.
-*   **{normalized_model} STT cost ($)**: The estimated API cost for Speech-to-Text generation.
+
+- **Speakers {model}**: The extracted list of speakers and their roles.
+- **{normalized_model} Speaker extraction cost ($)**: The estimated API cost for speaker extraction.
+- **QA Text {model}**: The full text of the Q&A pairs (also saved to the Q&A file).
+- **{normalized_model} QA cost ($)**: The estimated API cost for Q&A generation.
+- **Summary Text {model}**: The full text of the summary (also saved to the summary file).
+- **One Sentence Summary {model}**: The one-sentence summary text.
+- **Summary Infographic Alt Text {model} {infographic_model}**: The full multimodal alt text for the infographic.
+- **{normalized_model} summary cost ($)**: The total estimated API cost for both speaker extraction and summarization.
+- **Summary Infographic Cost {model} {infographic_model} ($)**: The estimated API cost for infographic generation.
+- **Summary Infographic Alt Text Cost {model} {infographic_model} ($)**: The estimated API cost for alt text generation.
+- **{normalized_model} tags cost from {transcript} ($)**: The estimated API cost for AI tag generation.
+- **{normalized_model} STT cost ($)**: The estimated API cost for Speech-to-Text generation.
 
 > **Note**: `{normalized_model}` refers to the model name with prefixes (like `vertex-`) and date suffixes removed for cleaner column headers.
 
@@ -302,10 +326,10 @@ The output CSV file contains a variety of columns depending on the arguments pro
 
 When a model is specified using the `-m` or `--model` argument, the tool automatically performs speaker extraction before generating a summary.
 
-*   **Model Matching**: The extraction uses the same model as the summary. If multiple models are provided, each will perform its own extraction.
-*   **Structured Output**: It identifies speakers and their professional titles or roles (e.g., "Speaker 1 (Senator Katie Fry Hester, Co-Chair)").
-*   **Cost Tracking**: The cost of speaker extraction is tracked separately in the `{model} Speaker extraction cost ($)` column and included in the total `{model} summary cost ($)`.
-*   **Unknowns**: If a speaker or title cannot be identified, the tool uses the placeholder `UNKNOWN`. If no speakers are detected at all, the field is set to `NaN`.
+- **Model Matching**: The extraction uses the same model as the summary. If multiple models are provided, each will perform its own extraction.
+- **Structured Output**: It identifies speakers and their professional titles or roles (e.g., "Speaker 1 (Senator Katie Fry Hester, Co-Chair)").
+- **Cost Tracking**: The cost of speaker extraction is tracked separately in the `{model} Speaker extraction cost ($)` column and included in the total `{model} summary cost ($)`.
+- **Unknowns**: If a speaker or title cannot be identified, the tool uses the placeholder `UNKNOWN`. If no speakers are detected at all, the field is set to `NaN`.
 
 ## MCP Server
 
@@ -347,23 +371,23 @@ transcript, is_generated = fetch_transcript(video_id)
 You might find other tools that download YouTube transcripts, but `youtube-to-docs` distinguishes itself in several ways:
 
 1.  **Multimodal Output**: It doesn't just stop at text.
-    *   **Summaries**: Uses state-of-the-art LLMs to create concise summaries.
-    *   **Speaker Extraction**: Automatically identifies speakers and their titles/roles from the transcript.
-    *   **Audio (TTS)**: Converts summaries into audio files, perfect for listening on the go.
-    *   **Tags**: Automatically generates up to 5 relevant tags for the video content.
-    *   **Visuals (Infographics)**: Generates AI-created infographics to visually represent the content.
-    *   **Timestamps & SRT**: Automatically generates `.srt` files and includes precision timestamps in Q&A tables, cross-referencing YouTube's own timing data for pinpoint accuracy when using AI transcripts.
-    *   **Videos**: Combines infographics and audio into a shareable video summary.
+    - **Summaries**: Uses state-of-the-art LLMs to create concise summaries.
+    - **Speaker Extraction**: Automatically identifies speakers and their titles/roles from the transcript.
+    - **Audio (TTS)**: Converts summaries into audio files, perfect for listening on the go.
+    - **Tags**: Automatically generates up to 5 relevant tags for the video content.
+    - **Visuals (Infographics)**: Generates AI-created infographics to visually represent the content.
+    - **Timestamps & SRT**: Automatically generates `.srt` files and includes precision timestamps in Q&A tables, cross-referencing YouTube's own timing data for pinpoint accuracy when using AI transcripts.
+    - **Videos**: Combines infographics and audio into a shareable video summary.
 
 2.  **Structured Data (CSV/Polars)**:
-    *   Instead of loose files, metadata and paths are organized into a robust CSV file using `polars`.
-    *   This makes it incredibly easy to import the data into Google Sheets, Excel, or a database for further analysis or publishing.
+    - Instead of loose files, metadata and paths are organized into a robust CSV file using `polars`.
+    - This makes it incredibly easy to import the data into Google Sheets, Excel, or a database for further analysis or publishing.
 
 3.  **Batch Processing**:
-    *   Seamlessly handles individual videos, entire playlists, or full channels with a single command.
+    - Seamlessly handles individual videos, entire playlists, or full channels with a single command.
 
 4.  **Multi-Provider Support**:
-    *   Agnostic to the LLM provider. Whether you use Google Gemini, Vertex AI, AWS Bedrock, or Azure Foundry, you can plug in your preferred model.
+    - Agnostic to the LLM provider. Whether you use Google Gemini, Vertex AI, AWS Bedrock, or Azure Foundry, you can plug in your preferred model.
 
 5.  **Cost Awareness**:
-    *   When using paid API models, it tracks and estimates the cost of summarization, saving it directly to your data file.
+    - When using paid API models, it tracks and estimates the cost of summarization, saving it directly to your data file.
