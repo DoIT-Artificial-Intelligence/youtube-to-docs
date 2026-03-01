@@ -187,7 +187,8 @@ class GoogleDriveStorage(Storage):
                 creds = Credentials.from_authorized_user_file(token_file, self.SCOPES)
             except Exception as e:
                 rprint(
-                    f"[yellow]Warning: Could not load existing Google token: {e}[/yellow]"
+                    f"[yellow]Warning: Could not load existing Google token: "
+                    f"{e}[/yellow]"
                 )
                 rprint("[cyan]Deleting corrupted token and starting fresh...[/cyan]")
                 try:
@@ -210,7 +211,8 @@ class GoogleDriveStorage(Storage):
             if not creds or not creds.valid:
                 if not creds_file.exists():
                     rprint(
-                        f"[bold red]Error: Google Client secrets not found at {creds_file.absolute()}[/bold red]"
+                        f"[bold red]Error: Google Client secrets not found at "
+                        f"{creds_file.absolute()}[/bold red]"
                     )
                     rprint(
                         "Please get your client secret JSON from Google Cloud Console "
