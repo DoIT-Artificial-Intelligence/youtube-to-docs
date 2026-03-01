@@ -13,7 +13,7 @@ Here are the following args for the tool:
 - **url**: The YouTube URL, video ID, playlist ID, or comma-separated list of IDs.
 - **output_file**: (Optional) Path to save the output CSV. Defaults to `youtube-to-docs-artifacts/youtube-docs.csv`. Can be a local path, `workspace` (or `w`) for Google Drive, `sharepoint` (or `s`) for Microsoft SharePoint, or `none` (or `n`) to skip saving to a file.
 - **transcript_source**: (Optional) Source for the transcript. Defaults to 'youtube' (fetches existing). set to an AI model name (e.g., 'gemini-3-flash-preview', 'gcp-chirp3') to perform STT on extracted audio. For `gcp-` models, `YTD_GCS_BUCKET_NAME` env var is recommended.
-- **model**: (Optional) The LLM model(s) to use for summarization, Q&A, speaker extraction and tag generation (e.g., 'gemini-3-flash-preview'). Can be a comma-separated list. Defaults to `gemini-3-flash-preview`.
+- **model**: (Optional) The LLM model(s) to use for summarization, Q&A, speaker extraction and tag generation (e.g., 'gemini-3-flash-preview'). Can be a comma-separated list. Defaults to `None` (Transcript only), but using the `-m` flag without an argument defaults to `gemini-3-flash-preview`.
 - **tts_model**: (Optional) The TTS model and voice to use (e.g., 'gemini-2.5-flash-preview-tts-Kore', 'gemini-2.5-pro-preview-tts-Kore', 'gcp-chirp3', 'gcp-chirp3-Kore', 'aws-polly', 'aws-polly-Ruth').
 - **infographic_model**: (Optional) The image model to use for generating an infographic (e.g., 'gemini-3.1-flash-image-preview' or 'gemini-3-pro-image-preview').
 - **alt_text_model**: (Optional) The LLM model to use for generating multimodal alt text for the infographic. Defaults to the summary model.
