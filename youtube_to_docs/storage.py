@@ -183,7 +183,19 @@ class GoogleDriveStorage(Storage):
         token_file = Path.home() / ".google_client_token.json"
 
         if token_file.exists():
-            creds = Credentials.from_authorized_user_file(token_file, self.SCOPES)
+            try:
+                creds = Credentials.from_authorized_user_file(token_file, self.SCOPES)
+            except Exception as e:
+                rprint(
+                    f"[yellow]Warning: Could not load existing Google token: {e}[/yellow]"
+                )
+                rprint("[cyan]Deleting corrupted token and starting fresh...[/cyan]")
+                try:
+                    token_file.unlink()
+                except Exception:
+                    pass
+                creds = None
+
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 try:
@@ -197,6 +209,13 @@ class GoogleDriveStorage(Storage):
 
             if not creds or not creds.valid:
                 if not creds_file.exists():
+                    rprint(
+                        f"[bold red]Error: Google Client secrets not found at {creds_file.absolute()}[/bold red]"
+                    )
+                    rprint(
+                        "Please get your client secret JSON from Google Cloud Console "
+                        "and save it to that location."
+                    )
                     raise FileNotFoundError(
                         f"Client secrets not found at {creds_file.absolute()}"
                     )
