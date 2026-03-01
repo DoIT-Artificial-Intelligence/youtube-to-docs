@@ -44,7 +44,8 @@ def process_video(
             (e.g., 'gemini-3-flash-preview') to perform STT on extracted audio.
         model: The LLM model to use for speaker extraction, Q&A, and summarization
             (e.g., 'gemini-3-flash-preview'). Can be a comma-separated list.
-            Defaults to None (Transcript only). Use 'gemini-3-flash-preview' for summarization.
+            Defaults to None (Transcript only).
+            Use 'gemini-3-flash-preview' for summarization.
         tts_model: The TTS model and voice to use
             (e.g., 'gemini-2.5-flash-preview-tts-Kore', 'gcp-chirp3-Kore',
             'aws-polly-Ruth').
