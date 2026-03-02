@@ -151,6 +151,7 @@ youtube-to-docs
 | `-cia`, `--combine-infographic-audio`  | Combine the infographic and audio summary into a video file (MP4). Requires both `--tts` and `--infographic` to be effective. When used with `--translate`, one video is created per language.                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `False`                                      | `--combine-infographic-audio`                                                   |
 | `--all`                                | Shortcut to use a specific model suite for everything. Supported: `'gemini-flash'`, `'gemini-pro'`, `'gemini-flash-pro-image'`, `'gcp-pro'`. Sets models for summary, TTS, and infographic, and enables `--no-youtube-summary`.                                                                                                                                                                                                                                                                                                                                                                                                                             | `None`                                       | `--all gemini-flash`                                                            |
 | `-scc`, `--suggest-corrected-captions` | Suggest WCAG 2.1 Level AA compliant caption corrections for an SRT file, per [Section 508 guidance](https://www.section508.gov/create/captions-transcripts/). Format: `{model}` or `{model}-{source}`. See [Suggested Corrected Captions](#suggested-corrected-captions) for full source rules.                                                                                                                                                                                                                                                                                                                                                             | `None`                                       | `-scc gemini-3-flash-preview-youtube`                                           |
+| `-pp`, `--post-process`                | Post-process the transcript with JSON operations. Supported operations: `word count` (case-insensitive, whole-word). Values can be a single string or a list. Results are added as new columns in the output CSV (e.g. `Post-process: word count(apple)`).                                                                                                                                                                                                                                                                                                                                                                                                  | `None`                                       | `-pp '{"word count": ["apple", "banana"]}'`                                     |
 | `--verbose`                            | Enable verbose output.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `False`                                      | `--verbose`                                                                     |
 
 ### Examples
@@ -225,6 +226,12 @@ youtube-to-docs atmGAHYpf_c -t gcp-chirp3 -scc gemini-3-flash-preview
 
 ```bash
 youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview -scc gemini-3-flash-preview-youtube
+```
+
+**13. Post-process a transcript to count word occurrences:**
+
+```bash
+youtube-to-docs atmGAHYpf_c -pp '{"word count": ["apple", "banana"]}'
 ```
 
 ## Suggested Corrected Captions
@@ -304,6 +311,7 @@ The output CSV file contains a variety of columns depending on the arguments pro
 - **Video File**: Path to the generated MP4 video combining the English infographic and audio.
 - **Video File (lang)**: Path to the translated language video (e.g., `Video File (es)`). Only present when `--translate` and `--combine-infographic-audio` are both used.
 - **Suggested Corrected Captions File ({model})**: Path to the suggested-corrections SRT file produced by `-scc`. Contains only the changed segments, or `NO_CHANGES` if no corrections were needed.
+- **Post-process: word count({word})**: Count of occurrences of `{word}` in the transcript (case-insensitive, whole-word match). One column per word when using `-pp`.
 
 ### AI Outputs & Costs
 

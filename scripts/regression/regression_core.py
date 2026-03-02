@@ -90,6 +90,7 @@ def run_regression(
     verbose: bool = False,
     combine_info_audio: bool = False,
     suggest_corrected_captions: Optional[str] = None,
+    post_process: Optional[str] = None,
 ):
     """Runs the full regression suite for a single video."""
     translate_lang = translate.rsplit("-", 1)[1] if translate else None
@@ -136,6 +137,9 @@ def run_regression(
     if suggest_corrected_captions:
         cmd.extend(["-scc", suggest_corrected_captions])
 
+    if post_process:
+        cmd.extend(["-pp", post_process])
+
     print(f"Executing: {' '.join(cmd)}")
     result = subprocess.run(cmd, capture_output=False)
 
@@ -157,6 +161,7 @@ def verify_output(
     all_gemini_arg: Optional[str] = None,
     verbose: bool = False,
     combine_info_audio: bool = False,
+    post_process: Optional[str] = None,
 ):
     """Verifies that the output CSV exists and contains expected columns and files."""
     translate_lang = translate.rsplit("-", 1)[1] if translate else None
@@ -267,43 +272,44 @@ def verify_output(
         if transcript_model != "youtube" and not no_youtube_summary:
             sources.append("youtube")
 
-        for source in sources:
-            source_cols = [
-                f"Summary Text {model} from {source}",
-                f"Summary File {model} from {source}",
-                f"QA Text {model} from {source}",
-                f"QA File {model} from {source}",
-                f"Speakers {model} from {source}",
-                f"Speakers File {model} from {source}",
-                f"One Sentence Summary {model} from {source}",
-            ]
+        if model:
+            for source in sources:
+                source_cols = [
+                    f"Summary Text {model} from {source}",
+                    f"Summary File {model} from {source}",
+                    f"QA Text {model} from {source}",
+                    f"QA File {model} from {source}",
+                    f"Speakers {model} from {source}",
+                    f"Speakers File {model} from {source}",
+                    f"One Sentence Summary {model} from {source}",
+                ]
 
-            if verbose:
-                source_cols.extend(
-                    [
-                        f"{norm_m} summary cost from {source} ($)",
-                        f"{norm_m} QA cost from {source} ($)",
-                        f"{norm_m} Speaker extraction cost from {source} ($)",
-                        f"{norm_m} one sentence summary cost from {source} ($)",
-                    ]
-                )
-
-            expected_columns.extend(source_cols)
-
-            if infographic_model:
-                m_name = f"{model} from {source}"
-                expected_columns.append(
-                    f"Summary Infographic File {m_name} {infographic_model}",
-                )
                 if verbose:
-                    expected_columns.append(
-                        f"Summary Infographic Cost {m_name} {infographic_model} ($)"
+                    source_cols.extend(
+                        [
+                            f"{norm_m} summary cost from {source} ($)",
+                            f"{norm_m} QA cost from {source} ($)",
+                            f"{norm_m} Speaker extraction cost from {source} ($)",
+                            f"{norm_m} one sentence summary cost from {source} ($)",
+                        ]
                     )
 
-            if tts_model:
-                expected_columns.append(
-                    f"Summary Audio File {model} from {source} {tts_model} File"
-                )
+                expected_columns.extend(source_cols)
+
+                if infographic_model:
+                    m_name = f"{model} from {source}"
+                    expected_columns.append(
+                        f"Summary Infographic File {m_name} {infographic_model}",
+                    )
+                    if verbose:
+                        expected_columns.append(
+                            f"Summary Infographic Cost {m_name} {infographic_model} ($)"
+                        )
+
+                if tts_model:
+                    expected_columns.append(
+                        f"Summary Audio File {model} from {source} {tts_model} File"
+                    )
 
         # Translated columns (added by --translate)
         translated_expected = []
@@ -373,6 +379,26 @@ def verify_output(
                 print(f"Available columns: {df.columns}")
                 sys.exit(1)
             print(f"Verified {len(video_expected)} video column(s).")
+
+        # Check post-process columns
+        if post_process:
+            try:
+                import json
+
+                ops = json.loads(post_process)
+                for op, val in ops.items():
+                    if op.lower() == "word count":
+                        words = val if isinstance(val, list) else [val]
+                        for word in words:
+                            col = f"Post-process: word count({word})"
+                            if col not in df.columns:
+                                print(f"Error: Missing post-process column: {col}")
+                                sys.exit(1)
+                            print(f"Verified post-process column: {col}")
+            except Exception as e:
+                print(
+                    f"Warning: Could not parse post_process JSON for verification: {e}"
+                )
 
         # Check files exist (only columns that store paths, not text content)
         file_cols = [c for c in df.columns if "File" in c or "Audio" in c]

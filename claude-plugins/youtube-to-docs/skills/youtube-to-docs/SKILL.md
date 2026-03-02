@@ -85,18 +85,19 @@ Use this when the user specifies particular models or output locations.
 
 ## Tool Reference: `youtube-to-docs:process_video`
 
-| Argument                    | Description                                                                                                                          | Required Extra             | Examples                                                            |
-| :-------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- | :------------------------- | :------------------------------------------------------------------ |
-| `url`                       | **Required**. YouTube URL, ID, Playlist ID, or Channel Handle.                                                                       | -                          | `https://youtu.be/...`, `@channel`                                  |
-| `model`                     | LLM for summaries/Q&A.                                                                                                               | `gcp` / `azure`            | `gemini-3-flash-preview`                                            |
-| `infographic_model`         | Model for generating the infographic image.                                                                                          | `gcp`                      | `gemini-3-pro-image-preview`                                        |
-| `alt_text_model`            | Model for generating multimodal alt text for the infographic.                                                                        | `gcp`                      | `gemini-3-flash-preview`                                            |
-| `tts_model`                 | Model for text-to-speech audio.                                                                                                      | `gcp`                      | `gemini-2.5-flash-preview-tts-Kore`, `gcp-chirp3-Kore`              |
-| `all_suite`                 | Shortcut to apply a suite of models.                                                                                                 | `gcp`, `audio`, `video`    | `gemini-pro`, `gemini-flash`                                        |
-| `combine_infographic_audio` | Boolean. If True, creates an MP4 video.                                                                                              | `video`                    | `True`                                                              |
-| `translate`                 | Translate all outputs to a target language. Format: `{model}-{language}`, `aws-translate-{language}`, or `gcp-translate-{language}`. | -                          | `gemini-3-flash-preview-es`, `aws-translate-es`, `gcp-translate-es` |
-| `output_file`               | Destination for the CSV report.                                                                                                      | `workspace` / `m365`       | `workspace`, `sharepoint`                                           |
-| `transcript_source`         | Source for transcript (default: 'youtube').                                                                                          | `audio`, `gcp` (for Chirp) | `gemini-3-flash-preview`, `gcp-chirp3`                              |
+| Argument                    | Description                                                                                                                          | Required Extra             | Examples                                                             |
+| :-------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- | :------------------------- | :------------------------------------------------------------------- |
+| `url`                       | **Required**. YouTube URL, ID, Playlist ID, or Channel Handle.                                                                       | -                          | `https://youtu.be/...`, `@channel`                                   |
+| `model`                     | LLM for summaries/Q&A.                                                                                                               | `gcp` / `azure`            | `gemini-3-flash-preview`                                             |
+| `infographic_model`         | Model for generating the infographic image.                                                                                          | `gcp`                      | `gemini-3-pro-image-preview`                                         |
+| `alt_text_model`            | Model for generating multimodal alt text for the infographic.                                                                        | `gcp`                      | `gemini-3-flash-preview`                                             |
+| `tts_model`                 | Model for text-to-speech audio.                                                                                                      | `gcp`                      | `gemini-2.5-flash-preview-tts-Kore`, `gcp-chirp3-Kore`               |
+| `all_suite`                 | Shortcut to apply a suite of models.                                                                                                 | `gcp`, `audio`, `video`    | `gemini-pro`, `gemini-flash`                                         |
+| `combine_infographic_audio` | Boolean. If True, creates an MP4 video.                                                                                              | `video`                    | `True`                                                               |
+| `translate`                 | Translate all outputs to a target language. Format: `{model}-{language}`, `aws-translate-{language}`, or `gcp-translate-{language}`. | -                          | `gemini-3-flash-preview-es`, `aws-translate-es`, `gcp-translate-es`  |
+| `post_process`              | Post-process the transcript with JSON operations. Results added as CSV columns.                                                      | -                          | `'{"word count": "apple"}'`, `'{"word count": ["apple", "banana"]}'` |
+| `output_file`               | Destination for the CSV report.                                                                                                      | `workspace` / `m365`       | `workspace`, `sharepoint`                                            |
+| `transcript_source`         | Source for transcript (default: 'youtube').                                                                                          | `audio`, `gcp` (for Chirp) | `gemini-3-flash-preview`, `gcp-chirp3`                               |
 
 ## Examples
 
@@ -111,6 +112,9 @@ Use this when the user specifies particular models or output locations.
 
 **User**: "Summarize this playlist and save it to Drive."
 **Action**: Call `youtube-to-docs:process_video(url='PL...', model='gemini-3-flash-preview', output_file='workspace')`
+
+**User**: "Count how many times 'apple' appears in this video's transcript."
+**Action**: Call `youtube-to-docs:process_video(url='...', post_process='{"word count": "apple"}')`
 
 ## Development & CLI Usage
 
@@ -132,6 +136,9 @@ uv run youtube-to-docs B0x2I_doX9o --all gemini-pro --verbose
 
 # Example: Translate to Spanish
 uv run youtube-to-docs B0x2I_doX9o -m gemini-3-flash-preview -tr gemini-3-flash-preview-es
+
+# Example: Post-process transcript to count word occurrences
+uv run youtube-to-docs B0x2I_doX9o -pp '{"word count": ["apple", "banana"]}'
 ```
 
 See `docs/usage.md` for full documentation and `docs/development.md` for setup details.

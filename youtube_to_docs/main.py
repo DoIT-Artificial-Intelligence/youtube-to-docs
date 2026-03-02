@@ -23,6 +23,7 @@ from youtube_to_docs.llms import (
     suggest_corrected_captions,
 )
 from youtube_to_docs.models import MODEL_SUITES
+from youtube_to_docs.post_process import post_process_transcript
 from youtube_to_docs.storage import (
     GoogleDriveStorage,
     LocalStorage,
@@ -262,6 +263,17 @@ def main(args_list: list[str] | None = None) -> None:
             "-m gemini-3-flash-preview -scc gemini-3-flash-preview-youtube"
         ),
     )
+    parser.add_argument(
+        "-pp",
+        "--post-process",
+        default=None,
+        help=(
+            "Post-process the transcript with JSON operations. "
+            "Example: '{\"word count\": \"apple\"}' counts occurrences of 'apple' "
+            "in the transcript. Values can be a list for multiple words: "
+            '\'{"word count": ["apple", "banana"]}\''
+        ),
+    )
 
     args = parser.parse_args(args_list)
 
@@ -309,6 +321,7 @@ def main(args_list: list[str] | None = None) -> None:
 
     combine_info_audio = args.combine_infographic_audio
     suggest_captions_arg = args.suggest_corrected_captions
+    post_process_arg = args.post_process
     model_names = model_names_arg.split(",") if model_names_arg else []
     translate_model = None
     translate_lang = None
@@ -1033,6 +1046,13 @@ def main(args_list: list[str] | None = None) -> None:
                     f"({language}). Skipping further processing for this language."
                 )
                 continue
+
+            # --- Post-processing ---
+            if post_process_arg:
+                pp_results = post_process_transcript(transcript, post_process_arg)
+                row.update(pp_results)
+                if pp_results:
+                    vprint(f"Post-process results: {pp_results}")
 
             # Summarize for each requested model
             for model_name in model_names:

@@ -21,6 +21,7 @@ Here are the following args for the tool:
 - **translate**: (Optional) Translate all outputs to a target language. Format: `{model}-{language}` (e.g., 'gemini-3-flash-preview-es', 'bedrock-nova-2-lite-v1-fr', 'aws-translate-es', 'gcp-translate-es'). Use `aws-translate` to use the AWS Translate service directly, or `gcp-translate` to use Google Cloud Translation API directly. Defaults to English only.
 - **combine_infographic_audio**: (Optional) If `True`, combines the infographic and audio summary into a video file (MP4). Requires `tts_model` and `infographic_model`.
 - **suggest_corrected_captions**: (Optional) Suggest WCAG 2.1 Level AA / Section 508 corrected captions using an LLM. Format: `{model}` or `{model}-{source}` (e.g., `'gemini-3-flash-preview'`, `'gemini-3-flash-preview-youtube'`, `'gemini-3-flash-preview-gcp-chirp3'`). Source can be `youtube` or an STT model name used for transcription; omit source to auto-detect the most recent AI-generated SRT. Output saved to `suggested-corrected-caption-files/`.
+- **post_process**: (Optional) Post-process the transcript with JSON operations. Example: `'{"word count": "apple"}'` counts occurrences of 'apple' in the transcript. Values can be a list for multiple words: `'{"word count": ["apple", "banana"]}'`. Results are added as columns in the output CSV.
 - **all_suite**: (Optional) Shortcut to use a specific model suite for everything (e.g. 'gemini-flash', 'gemini-pro', 'gemini-flash-pro-image', 'gcp-pro').
 - **verbose**: (Optional) If `True`, enables verbose output.
 
@@ -63,6 +64,7 @@ Here are the following args for the tool:
       - Use a specific AI model for transcription (needs `transcript_source`).
       - Translate to other languages (needs `translate`, format: `{model}-{language}` e.g. `gemini-3-flash-preview-es`, `aws-translate-es`, or `gcp-translate-es`).
       - Suggest corrected captions for WCAG 2.1 / Section 508 compliance (needs `suggest_corrected_captions`, format: `{model}` or `{model}-{source}` e.g. `gemini-3-flash-preview`, `gemini-3-flash-preview-youtube`).
+      - Post-process the transcript with JSON operations (needs `post_process`, e.g. `'{"word count": "apple"}'`).
 4.  **Artifact Storage**: Note that granular textual artifacts are saved to:
     - `tag-files/`: AI-generated tags.
     - `one-sentence-summary-files/`: One-sentence summaries.

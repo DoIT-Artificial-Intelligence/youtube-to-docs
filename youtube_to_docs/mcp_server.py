@@ -22,6 +22,7 @@ def process_video(
     combine_infographic_audio: bool = False,
     all_suite: str | None = None,
     suggest_corrected_captions: str | None = None,
+    post_process: str | None = None,
     verbose: bool = False,
 ) -> str:
     """
@@ -73,6 +74,9 @@ def process_video(
             omitted, the most recent AI-generated SRT is used. Output is saved to
             'suggested-corrected-caption-files/'. If speaker extraction has been run,
             speaker labels are added on speaker changes.
+        post_process: Post-process the transcript with JSON operations.
+            Example: '{"word count": "apple"}' counts occurrences of 'apple'.
+            Values can be a list for multiple words.
         verbose: If True, enables verbose logging in the output.
     """
     args = [
@@ -109,6 +113,9 @@ def process_video(
 
     if suggest_corrected_captions:
         args.extend(["--suggest-corrected-captions", suggest_corrected_captions])
+
+    if post_process:
+        args.extend(["--post-process", post_process])
 
     if verbose:
         args.append("--verbose")

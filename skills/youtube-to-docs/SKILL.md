@@ -110,6 +110,7 @@ Use this when the user specifies particular models or output locations.
 | `combine_infographic_audio`  | Boolean. If True, creates an MP4 video.                                                                                              | `video`                    | `True`                                                                                          |
 | `translate`                  | Translate all outputs to a target language. Format: `{model}-{language}`, `aws-translate-{language}`, or `gcp-translate-{language}`. | -                          | `gemini-3-flash-preview-es`, `aws-translate-es`, `gcp-translate-es`                             |
 | `suggest_corrected_captions` | Suggest WCAG 2.1 / Section 508 corrected captions. Format: `{model}` or `{model}-{source}`.                                          | -                          | `gemini-3-flash-preview`, `gemini-3-flash-preview-youtube`, `gemini-3-flash-preview-gcp-chirp3` |
+| `post_process`               | Post-process the transcript with JSON operations. Results added as CSV columns.                                                      | -                          | `'{"word count": "apple"}'`, `'{"word count": ["apple", "banana"]}'`                            |
 | `output_file`                | Destination for the CSV report.                                                                                                      | `workspace` / `m365`       | `workspace`, `sharepoint`                                                                       |
 | `transcript_source`          | Source for transcript (default: 'youtube').                                                                                          | `audio`, `gcp` (for Chirp) | `gemini-3-flash-preview`, `gcp-chirp3`                                                          |
 
@@ -132,6 +133,9 @@ Use this when the user specifies particular models or output locations.
 
 **User**: "Generate corrected captions from the STT transcript."
 **Action**: Call `youtube-to-docs:process_video(url='...', transcript_source='gcp-chirp3', suggest_corrected_captions='gemini-3-flash-preview-gcp-chirp3')`
+
+**User**: "Count how many times 'apple' appears in this video's transcript."
+**Action**: Call `youtube-to-docs:process_video(url='...', post_process='{"word count": "apple"}')`
 
 ## Development & CLI Usage
 
@@ -159,6 +163,9 @@ uv run youtube-to-docs B0x2I_doX9o -scc gemini-3-flash-preview-youtube
 
 # Example: STT transcription + corrected captions in one run
 uv run youtube-to-docs B0x2I_doX9o -t gcp-chirp3 -scc gemini-3-flash-preview-gcp-chirp3
+
+# Example: Post-process transcript to count word occurrences
+uv run youtube-to-docs B0x2I_doX9o -pp '{"word count": ["apple", "banana"]}'
 ```
 
 See `docs/usage.md` for full documentation and `docs/development.md` for setup details.
