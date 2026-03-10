@@ -198,8 +198,13 @@ def test_stream_error_job(client):
 
 
 def test_artifact_path_traversal(client):
+    # URL-level traversal gets normalized by the ASGI server (404),
+    # while encoded traversal reaches the handler and is rejected (400).
     resp = client.get("/api/artifacts/../../etc/passwd")
-    assert resp.status_code in (403, 404)
+    assert resp.status_code in (400, 404)
+
+    resp = client.get("/api/artifacts/%2e%2e/%2e%2e/etc/passwd")
+    assert resp.status_code in (400, 404)
 
 
 def test_artifact_not_found(client):

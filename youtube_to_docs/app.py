@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import io
+import os
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -104,21 +105,34 @@ async def model_suites():
     return MODEL_SUITES
 
 
+def _safe_resolve_within_cwd(user_path: str) -> str:
+    """Resolve a user-provided path and ensure it stays within cwd.
+
+    Returns the resolved absolute path string. Raises HTTPException if the
+    path escapes the working directory.
+
+    Uses os.path.realpath + startswith, which is the pattern recognised by
+    CodeQL as a path-traversal sanitizer.
+    """
+    cwd = os.path.realpath(os.getcwd())
+    resolved = os.path.realpath(os.path.join(cwd, user_path))
+    # Ensure the resolved path is within cwd (cwd itself or a child)
+    if not (resolved == cwd or resolved.startswith(cwd + os.sep)):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid path: must be within the working directory",
+        )
+    return resolved
+
+
 def _validate_output_file(output_file: str) -> str:
     """Validate and sanitize the output_file parameter to prevent path traversal."""
     # Allow known remote/special values as-is
     if output_file.lower() in REMOTE_OUTPUT_VALUES:
         return output_file
 
-    # Resolve the path and ensure it stays within the current working directory
-    cwd = Path.cwd().resolve()
-    resolved = (cwd / output_file).resolve()
-    if not (resolved == cwd or cwd in resolved.parents):
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid output_file: path must be within the working directory",
-        )
-    return str(resolved.relative_to(cwd))
+    resolved = _safe_resolve_within_cwd(output_file)
+    return os.path.relpath(resolved, os.getcwd())
 
 
 @app.post("/api/process")
@@ -224,13 +238,16 @@ def _scan_artifacts(video_id: str, output_file: str) -> list[dict]:
                 )
     # Also check the output CSV (skip remote storage values)
     if output_file.lower() not in REMOTE_OUTPUT_VALUES:
-        csv_path = Path(output_file)
-        if csv_path.exists():
+        safe_csv = _safe_resolve_within_cwd(output_file)
+        if os.path.isfile(safe_csv):
+            csv_path = Path(safe_csv)
             artifacts.append(
                 {
-                    "path": str(csv_path),
+                    "path": os.path.relpath(safe_csv, os.getcwd()),
                     "name": csv_path.name,
-                    "directory": str(csv_path.parent),
+                    "directory": str(
+                        Path(os.path.relpath(safe_csv, os.getcwd())).parent
+                    ),
                     "size": csv_path.stat().st_size,
                 }
             )
@@ -300,17 +317,13 @@ async def stream_job(job_id: str):
 
 @app.get("/api/artifacts/{path:path}")
 async def get_artifact(path: str):
-    file_path = Path(path).resolve()
-    cwd = Path.cwd().resolve()
+    # Sanitize: resolve and confirm the path is within cwd
+    safe_path = _safe_resolve_within_cwd(path)
 
-    # Security: ensure the path stays within the working directory
-    if not (file_path == cwd or cwd in file_path.parents):
-        raise HTTPException(status_code=403, detail="Access denied")
-
-    if not file_path.is_file():
+    if not os.path.isfile(safe_path):
         raise HTTPException(status_code=404, detail="File not found")
 
-    return FileResponse(file_path)
+    return FileResponse(safe_path)
 
 
 def _extract_video_id(url: str) -> str | None:
