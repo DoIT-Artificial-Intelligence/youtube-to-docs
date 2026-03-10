@@ -60,6 +60,38 @@ class TestParseTranslateArg(unittest.TestCase):
         self.assertEqual(model, "gcp-translate")
         self.assertEqual(lang, "fr")
 
+    def test_language_name_spanish(self):
+        model, lang = parse_translate_arg("gemini-3-flash-preview-spanish")
+        self.assertEqual(model, "gemini-3-flash-preview")
+        self.assertEqual(lang, "es")
+
+    def test_language_name_french(self):
+        model, lang = parse_translate_arg("aws-translate-french")
+        self.assertEqual(model, "aws-translate")
+        self.assertEqual(lang, "fr")
+
+    def test_language_name_korean(self):
+        model, lang = parse_translate_arg("gcp-translate-korean")
+        self.assertEqual(model, "gcp-translate")
+        self.assertEqual(lang, "ko")
+
+    def test_language_name_case_insensitive(self):
+        model, lang = parse_translate_arg("gemini-3-flash-preview-Spanish")
+        self.assertEqual(model, "gemini-3-flash-preview")
+        self.assertEqual(lang, "es")
+
+    def test_language_name_all_supported(self):
+        from youtube_to_docs.translate import LANGUAGE_NAME_TO_CODE
+
+        for name, code in LANGUAGE_NAME_TO_CODE.items():
+            with self.subTest(name=name):
+                _, lang = parse_translate_arg(f"mymodel-{name}")
+                self.assertEqual(lang, code)
+
+    def test_unknown_language_passed_through(self):
+        model, lang = parse_translate_arg("gemini-3-flash-preview-xx")
+        self.assertEqual(lang, "xx")
+
     def test_invalid_no_dash(self):
         with self.assertRaises(ValueError):
             parse_translate_arg("nodashhere")

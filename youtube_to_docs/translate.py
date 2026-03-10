@@ -15,14 +15,38 @@ except ImportError:
     google_translate: Any = None
 
 
+LANGUAGE_NAME_TO_CODE = {
+    "arabic": "ar",
+    "chinese": "zh",
+    "dutch": "nl",
+    "french": "fr",
+    "german": "de",
+    "hindi": "hi",
+    "italian": "it",
+    "japanese": "ja",
+    "korean": "ko",
+    "portuguese": "pt",
+    "russian": "ru",
+    "spanish": "es",
+    "turkish": "tr",
+    "ukrainian": "uk",
+    "vietnamese": "vi",
+}
+
+
 def parse_translate_arg(translate_arg: str) -> Tuple[str, str]:
     """Parse a --translate argument in the format `{model}-{language}`.
 
-    The language code is the last dash-separated component. Examples:
+    The language code is the last dash-separated component. Language names
+    (e.g. "spanish") are automatically converted to codes (e.g. "es").
+
+    Examples:
       "gemini-3-flash-preview-es"         -> ("gemini-3-flash-preview", "es")
+      "gemini-3-flash-preview-spanish"    -> ("gemini-3-flash-preview", "es")
       "bedrock-nova-2-lite-v1-fr"         -> ("bedrock-nova-2-lite-v1", "fr")
       "gemini-3-flash-preview-zh"         -> ("gemini-3-flash-preview", "zh")
       "aws-translate-es"                  -> ("aws-translate", "es")
+      "aws-translate-spanish"             -> ("aws-translate", "es")
       "gcp-translate-es"                  -> ("gcp-translate", "es")
 
     Returns (model_name, language_code).
@@ -32,9 +56,12 @@ def parse_translate_arg(translate_arg: str) -> Tuple[str, str]:
         raise ValueError(
             f"Invalid --translate format: '{translate_arg}'. "
             "Expected '{model}-{language}' e.g. 'gemini-3-flash-preview-es', "
-            "'aws-translate-es', or 'gcp-translate-es'."
+            "'gemini-3-flash-preview-spanish', 'aws-translate-es', "
+            "or 'gcp-translate-es'."
         )
-    return parts[0], parts[1]
+    model, lang = parts[0], parts[1].lower()
+    lang = LANGUAGE_NAME_TO_CODE.get(lang, lang)
+    return model, lang
 
 
 def parse_suggest_captions_arg(arg: str) -> Tuple[str, Optional[str]]:

@@ -27,6 +27,7 @@ To keep the installation footprint small, many features are optional. You can en
 | `aws`       | AWS Bedrock support.                                                     | None                                                                                       |
 | `azure`     | Required if using Azure OpenAI models.                                   | `openai`                                                                                   |
 | `gcp`       | Required if using Google Gemini or Vertex AI models.                     | `google-genai`, `google-cloud-speech`, `google-cloud-storage`, `google-cloud-texttospeech` |
+| `app`       | Web app with browser-based UI.                                           | `fastapi`, `uvicorn`                                                                       |
 | `all`       | Installs all of the above.                                               | All optional dependencies.                                                                 |
 
 **How to use extras with `uvx`:**
@@ -338,6 +339,61 @@ When a model is specified using the `-m` or `--model` argument, the tool automat
 - **Structured Output**: It identifies speakers and their professional titles or roles (e.g., "Speaker 1 (Senator Katie Fry Hester, Co-Chair)").
 - **Cost Tracking**: The cost of speaker extraction is tracked separately in the `{model} Speaker extraction cost ($)` column and included in the total `{model} summary cost ($)`.
 - **Unknowns**: If a speaker or title cannot be identified, the tool uses the placeholder `UNKNOWN`. If no speakers are detected at all, the field is set to `NaN`.
+
+## Web App
+
+`youtube-to-docs` includes a browser-based web interface powered by FastAPI. It provides the same functionality as the CLI in an interactive UI with real-time log streaming.
+
+### Running the Web App
+
+```bash
+uvx --with "youtube-to-docs[app]" youtube-to-docs-app
+```
+
+This starts a local server at [http://localhost:8000](http://localhost:8000).
+
+#### Options
+
+| Flag       | Description                  | Default     |
+| :--------- | :--------------------------- | :---------- |
+| `--host`   | Host to bind to.             | `0.0.0.0`  |
+| `--port`   | Port to bind to.             | `8000`      |
+| `--reload` | Enable auto-reload for dev.  | `False`     |
+
+**Example: Run on a custom port with auto-reload**
+
+```bash
+uvx --with "youtube-to-docs[app]" youtube-to-docs-app --port 3000 --reload
+```
+
+### Features
+
+- **Model suite dropdown** — Select from pre-configured suites (gemini-flash, gemini-pro, etc.) or configure individual models.
+- **All CLI parameters** — Transcript source, TTS, infographic, translation, corrected captions, post-processing, and output file are all configurable.
+- **Real-time log streaming** — Processing output streams to the browser via Server-Sent Events (SSE) as the job runs.
+- **Artifact browser** — After processing completes, generated files (summaries, Q&A, SRT files, infographics, audio, video) are listed with download links.
+
+### How It Works
+
+1. Enter a YouTube URL or Video ID and select your options.
+2. Click **Process Video** — this starts a background job on the server.
+3. Logs stream to the browser in real time.
+4. When the job completes, any generated artifacts are listed with links to view or download them.
+
+The web app builds CLI arguments internally and calls the same `main()` function as the CLI, so behavior is identical. Jobs run in background threads, allowing the server to handle multiple requests.
+
+### API Endpoints
+
+The web app exposes a REST API that the frontend uses:
+
+| Method | Endpoint                     | Description                              |
+| :----- | :--------------------------- | :--------------------------------------- |
+| GET    | `/`                          | Serves the HTML frontend.                |
+| GET    | `/api/model-suites`          | Returns available model suite configs.   |
+| POST   | `/api/process`               | Starts a processing job. Returns job ID. |
+| GET    | `/api/jobs/{job_id}`         | Returns job status, output, artifacts.   |
+| GET    | `/api/jobs/{job_id}/stream`  | SSE stream of real-time log output.      |
+| GET    | `/api/artifacts/{path}`      | Serves a generated artifact file.        |
 
 ## MCP Server
 
