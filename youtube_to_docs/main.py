@@ -481,10 +481,6 @@ def main(args_list: list[str] | None = None) -> None:
             )
         else:
             video_title = row.get("Title", "")
-            description = row.get("Description", "")
-            publishedAt = row.get("Data Published", "")
-            channelTitle = row.get("Channel", "")
-            tags = row.get("Tags", "")
             video_duration = row.get("Duration", "")
             # Approximate duration from string if not fresh, or 0.0
             video_duration_seconds = 0.0
@@ -510,7 +506,7 @@ def main(args_list: list[str] | None = None) -> None:
         display_title = video_title if video_title else video_id
         print(f"(Video {i} of {len(video_ids)}) Video Title: {display_title}")
 
-        safe_title = re.sub(r'[\\/*?:"><>|]', "_", video_title).replace("\n", " ")
+        safe_title = re.sub(r'[\\/*?:"><|]', "_", video_title).replace("\n", " ")
         safe_title = safe_title.replace("\r", "")
 
         # Initial Save: Create the sheet with basic metadata if it's a new video
@@ -557,7 +553,6 @@ def main(args_list: list[str] | None = None) -> None:
                         if hasattr(storage, "get_full_path")
                         else expected_audio
                     )
-                    pass
 
         audio_file_path = row.get("Audio File", "")
         local_audio_path = ""
@@ -821,8 +816,6 @@ def main(args_list: list[str] | None = None) -> None:
             ai_transcript = ""
             ai_srt_content = ""
             srt_transcript = ""
-            stt_cost = float("nan")
-            transcript = youtube_transcript  # Default to YouTube transcript
 
             if transcript_arg != "youtube":
                 ai_col = f"Transcript File {transcript_arg} generated{col_suffix}"
@@ -1089,8 +1082,6 @@ def main(args_list: list[str] | None = None) -> None:
                 speakers_text = ""
                 speakers_input = 0
                 speakers_output = 0
-                speaker_cost = float("nan")
-
                 # Check disk for speakers file
                 if not row.get(speakers_file_col_name):
                     speakers_filename = (
@@ -1326,7 +1317,6 @@ def main(args_list: list[str] | None = None) -> None:
                         model_name, transcript, video_title, url, language=language
                     )
 
-                    summary_cost = float("nan")
                     if verbose:
                         input_price, output_price = get_model_pricing(model_name)
                         if input_price is not None and output_price is not None:
@@ -1660,7 +1650,6 @@ def main(args_list: list[str] | None = None) -> None:
                         ):
                             row[yt_qa_col_name] = float("nan")
 
-                        yt_qa_cost = float("nan")
                         if verbose:
                             input_price, output_price = get_model_pricing(model_name)
                             if input_price is not None and output_price is not None:
@@ -1751,7 +1740,6 @@ def main(args_list: list[str] | None = None) -> None:
                             language=language,
                         )
 
-                        yt_summary_cost = float("nan")
                         if verbose:
                             input_price, output_price = get_model_pricing(model_name)
                             if input_price is not None and output_price is not None:

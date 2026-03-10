@@ -364,8 +364,6 @@ def process_tts(
 
     for col in summary_file_cols:
         # Extract language from column name: e.g. "... (es)" -> "es"
-        col_lang = "en"
-        lang_code = None
         if "(" in col and col.endswith(")"):
             code = col.split("(")[-1].strip(")")
             col_lang = code
@@ -406,7 +404,7 @@ def process_tts(
 
                 # Safe Title
                 safe_title = (
-                    re.sub(r'[\\/*?:"><>|]', "_", row["Title"])
+                    re.sub(r'[\\/*?:"><|]', "_", row["Title"])
                     .replace("\n", " ")
                     .replace("\r", "")
                 )

@@ -395,12 +395,6 @@ def generate_transcript(
         with open(audio_path, "rb") as f:
             audio_bytes = f.read()
 
-        prompt = (
-            f"Can you extract the transcript for {url} from this audio in {language}? "
-            "Start the response immediately with the transcript. "
-            "Provide the transcript as a single continuous string of text "
-            "without line breaks or speaker labels."
-        )
         if srt:
             prompt = (
                 f"Can you extract the transcript for {url} from this audio in "
@@ -540,7 +534,7 @@ def _process_gcp_batch_result(
             try:
                 blob_out.delete()
             except Exception:
-                pass
+                pass  # Best-effort cleanup of temporary GCS blob
 
     except Exception as e:
         print(f"Error processing GCS output: {e}")
@@ -861,7 +855,7 @@ def _transcribe_gcp(
                 try:
                     blob.delete()
                 except Exception:
-                    pass
+                    pass  # Best-effort cleanup of temporary GCS blob
 
         # Calculate duration-based cost (represented as pseudo-tokens for main.py)
         # 1,000,000 pseudo-tokens = 1 minute of audio
@@ -934,7 +928,7 @@ def _transcribe_gcp(
         try:
             blob.delete()
         except Exception:
-            pass
+            pass  # Best-effort cleanup of temporary GCS blob
 
         # Calculate duration-based cost (represented as pseudo-tokens for main.py)
         # 1,000,000 pseudo-tokens = 1 minute of audio

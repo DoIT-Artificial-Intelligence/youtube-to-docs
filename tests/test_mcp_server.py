@@ -140,4 +140,4 @@ def test_tool_registration():
         # Check if the tool is registered in the FastMCP instance
         assert mcp.name == "youtube-to-docs"
     except Exception:
-        pass
+        pass  # Tool registration check is best-effort

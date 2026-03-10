@@ -50,7 +50,8 @@ def verify(csv_path: str, correction_model: str) -> None:
             if not os.path.exists(val):
                 print(f"  ERROR: File not found: {val}")
                 sys.exit(1)
-            content = open(val).read()
+            with open(val) as _f:
+                content = _f.read()
             if not SRT_TIMESTAMP_RE.search(content) and content.strip() != "NO_CHANGES":
                 print(f"  ERROR: File does not look like a valid SRT: {val}")
                 print(f"  Content preview: {content[:200]!r}")

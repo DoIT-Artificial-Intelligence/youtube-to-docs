@@ -1,12 +1,11 @@
 import os
-import unittest
-from unittest import mock
+from unittest import TestCase, mock
 from unittest.mock import MagicMock, patch
 
 from youtube_to_docs import infographic
 
 
-class TestInfographic(unittest.TestCase):
+class TestInfographic(TestCase):
     def setUp(self):
         # Mock environment variables
         self.env_patcher = patch.dict(
@@ -217,4 +216,6 @@ class TestInfographic(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    import unittest
+
     unittest.main()

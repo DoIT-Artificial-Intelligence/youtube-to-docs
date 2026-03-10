@@ -194,7 +194,7 @@ class GoogleDriveStorage(Storage):
                 try:
                     token_file.unlink()
                 except Exception:
-                    pass
+                    pass  # Best-effort removal of corrupted token file
                 creds = None
 
         if not creds or not creds.valid:
@@ -468,7 +468,6 @@ class GoogleDriveStorage(Storage):
                 pass
             except Exception as e:
                 print(f"Warning: pypandoc conversion failed: {e}")
-                pass
 
         fh = io.BytesIO(upload_content)
         media = MediaIoBaseUpload(fh, mimetype=mimetype, resumable=True)
@@ -1164,9 +1163,6 @@ class M365Storage(Storage):
         parent = str(Path(target_path).parent)
         if parent != ".":
             self.ensure_directory(parent)
-
-        if not content_type:
-            content_type = "application/octet-stream"
 
         return self.write_bytes(target_path, content)
 
