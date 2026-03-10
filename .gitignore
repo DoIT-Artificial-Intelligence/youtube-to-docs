@@ -225,3 +225,6 @@ temp-processing-artifacts/
 .vscode/
 
 *.m4a
+
+codeql-db*
+codeql-*.csv

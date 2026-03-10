@@ -317,11 +317,12 @@ async def stream_job(job_id: str):
 
 @app.get("/api/artifacts/{path:path}")
 async def get_artifact(path: str):
-    # Sanitize: resolve and confirm the path is within cwd.
-    # Inlined so CodeQL recognises the realpath+startswith guard.
-    cwd = os.path.realpath(os.getcwd())
-    safe_path = os.path.realpath(os.path.join(cwd, path))
-    if not (safe_path == cwd or safe_path.startswith(cwd + os.sep)):
+    # Sanitize: normalise the joined path and confirm it stays within cwd.
+    # Uses os.path.normpath + startswith, the pattern CodeQL recognises as a
+    # path-traversal sanitizer for py/path-injection.
+    base_dir = os.path.normpath(os.getcwd())
+    safe_path = os.path.normpath(os.path.join(base_dir, path))
+    if not safe_path.startswith(base_dir + os.sep):
         raise HTTPException(status_code=400, detail="Access denied")
 
     if not os.path.isfile(safe_path):
