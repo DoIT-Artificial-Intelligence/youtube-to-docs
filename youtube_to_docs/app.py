@@ -317,8 +317,12 @@ async def stream_job(job_id: str):
 
 @app.get("/api/artifacts/{path:path}")
 async def get_artifact(path: str):
-    # Sanitize: resolve and confirm the path is within cwd
-    safe_path = _safe_resolve_within_cwd(path)
+    # Sanitize: resolve and confirm the path is within cwd.
+    # Inlined so CodeQL recognises the realpath+startswith guard.
+    cwd = os.path.realpath(os.getcwd())
+    safe_path = os.path.realpath(os.path.join(cwd, path))
+    if not (safe_path == cwd or safe_path.startswith(cwd + os.sep)):
+        raise HTTPException(status_code=400, detail="Access denied")
 
     if not os.path.isfile(safe_path):
         raise HTTPException(status_code=404, detail="File not found")
