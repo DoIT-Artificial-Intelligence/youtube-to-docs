@@ -28,6 +28,7 @@ To keep the installation light, some features are optional. You can enable them 
 - `aws`: AWS Bedrock support.
 - `azure`: Required for Azure OpenAI models.
 - `gcp`: Required for Google Gemini and Vertex AI models (uses `google-genai`).
+- `app`: Web app with browser-based UI (uses `fastapi`, `uvicorn`).
 - `all`: Installs everything.
 
 **Example: Run with audio and video support**
@@ -56,6 +57,14 @@ Install as a Claude Code plugin:
 /plugin marketplace add DoIT-Artificial-Intelligence/youtube-to-docs
 /plugin install youtube-to-docs@youtube-to-docs
 ```
+
+Run as a web app:
+
+```bash
+uvx --with "youtube-to-docs[app]" youtube-to-docs-app
+```
+
+Then open http://localhost:8000 in your browser. See the [Web App docs](https://doit-artificial-intelligence.github.io/youtube-to-docs/usage/#web-app) for details.
 
 Install as an MCP server for Claude Code:
 

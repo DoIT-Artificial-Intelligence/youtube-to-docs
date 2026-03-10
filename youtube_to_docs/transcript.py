@@ -92,7 +92,14 @@ def resolve_video_ids(video_id_input: str, youtube_service: Optional[Any]) -> Li
     video_ids: List[str] = []
 
     # Handle full URLs
-    if "youtube.com" in video_id_input or "youtu.be" in video_id_input:
+    from urllib.parse import urlparse
+
+    try:
+        parsed = urlparse(video_id_input)
+        hostname = (parsed.hostname or "").lower()
+    except Exception:
+        hostname = ""
+    if hostname in ("youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"):
         # Regex to capture the 11-character video ID from common URL formats
         match = re.search(r"(?:v=|\/)([0-9A-Za-z_-]{11})", video_id_input)
         if match:
@@ -206,14 +213,14 @@ def fetch_transcript(
                 [language]
             )
         except Exception:
-            pass
+            pass  # Not available; fall through to next strategy
 
         # 2. Try exact match (generated)
         if not transcript_obj:
             try:
                 transcript_obj = transcript_list.find_generated_transcript([language])
             except Exception:
-                pass
+                pass  # Not available; fall through to next strategy
 
         # 3. Try translating from English (manual)
         if not transcript_obj:
@@ -223,7 +230,7 @@ def fetch_transcript(
                 )
                 transcript_obj = en_transcript.translate(language)
             except Exception:
-                pass
+                pass  # Not available; fall through to next strategy
 
         # 4. Try translating from English (generated)
         if not transcript_obj:
@@ -233,7 +240,7 @@ def fetch_transcript(
                 )
                 transcript_obj = en_transcript.translate(language)
             except Exception:
-                pass
+                pass  # Not available; fall through to next strategy
 
         # 5. Try translating from ANY available
         if not transcript_obj:
@@ -242,7 +249,7 @@ def fetch_transcript(
                 first_transcript = next(iter(transcript_list))
                 transcript_obj = first_transcript.translate(language)
             except Exception:
-                pass
+                pass  # No transcript available at all
 
         if transcript_obj:
             transcript_data = transcript_obj.fetch()

@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import time
+from pathlib import Path
 
 import isodate
 import polars as pl
@@ -188,9 +189,11 @@ def main(args_list: list[str] | None = None) -> None:
         default=None,
         help=(
             "Translate LLM outputs to a target language after generating in English. "
-            "Format: `{model}-{language}` e.g. `gemini-3-flash-preview-es` \n"
-            "or `bedrock-nova-2-lite-v1-fr` or `aws-translate-es`"
-            " or `gcp-translate-es`\n"
+            "Format: `{model}-{language}` e.g. `gemini-3-flash-preview-spanish` \n"
+            "or `gemini-3-flash-preview-es` or `bedrock-nova-2-lite-v1-fr`\n"
+            "or `aws-translate-spanish` or `gcp-translate-french`\n"
+            "Both language names (e.g. 'spanish', 'french', 'korean') and "
+            "ISO codes (e.g. 'es', 'fr', 'ko') are accepted.\n"
             "Use `aws-translate` to use AWS Translate, or `gcp-translate` to use "
             "Google Cloud Translation API, instead of an LLM. "
             "All summaries, Q&A, tags, and one-sentence summaries are generated in "
@@ -413,7 +416,14 @@ def main(args_list: list[str] | None = None) -> None:
 
     rprint(f"Processing {len(video_ids)} videos.")
     rprint(f"Processing Videos: {video_ids}")
-    display_outfile = "SharePoint" if outfile in ("s", "sharepoint") else outfile
+    if outfile in ("s", "sharepoint"):
+        display_outfile = "SharePoint"
+    elif outfile in ("w", "workspace"):
+        display_outfile = "Google Drive (Workspace)"
+    elif outfile in ("n", "none"):
+        display_outfile = "None (log only)"
+    else:
+        display_outfile = str(Path(outfile).resolve())
     rprint(f"Saving to: {display_outfile}")
 
     if model_names:
@@ -471,10 +481,6 @@ def main(args_list: list[str] | None = None) -> None:
             )
         else:
             video_title = row.get("Title", "")
-            description = row.get("Description", "")
-            publishedAt = row.get("Data Published", "")
-            channelTitle = row.get("Channel", "")
-            tags = row.get("Tags", "")
             video_duration = row.get("Duration", "")
             # Approximate duration from string if not fresh, or 0.0
             video_duration_seconds = 0.0
@@ -500,7 +506,7 @@ def main(args_list: list[str] | None = None) -> None:
         display_title = video_title if video_title else video_id
         print(f"(Video {i} of {len(video_ids)}) Video Title: {display_title}")
 
-        safe_title = re.sub(r'[\\/*?:"><>|]', "_", video_title).replace("\n", " ")
+        safe_title = re.sub(r'[\\/*?:"><|]', "_", video_title).replace("\n", " ")
         safe_title = safe_title.replace("\r", "")
 
         # Initial Save: Create the sheet with basic metadata if it's a new video
@@ -547,7 +553,6 @@ def main(args_list: list[str] | None = None) -> None:
                         if hasattr(storage, "get_full_path")
                         else expected_audio
                     )
-                    pass
 
         audio_file_path = row.get("Audio File", "")
         local_audio_path = ""
@@ -811,8 +816,6 @@ def main(args_list: list[str] | None = None) -> None:
             ai_transcript = ""
             ai_srt_content = ""
             srt_transcript = ""
-            stt_cost = float("nan")
-            transcript = youtube_transcript  # Default to YouTube transcript
 
             if transcript_arg != "youtube":
                 ai_col = f"Transcript File {transcript_arg} generated{col_suffix}"
@@ -1079,8 +1082,6 @@ def main(args_list: list[str] | None = None) -> None:
                 speakers_text = ""
                 speakers_input = 0
                 speakers_output = 0
-                speaker_cost = float("nan")
-
                 # Check disk for speakers file
                 if not row.get(speakers_file_col_name):
                     speakers_filename = (
@@ -1316,7 +1317,6 @@ def main(args_list: list[str] | None = None) -> None:
                         model_name, transcript, video_title, url, language=language
                     )
 
-                    summary_cost = float("nan")
                     if verbose:
                         input_price, output_price = get_model_pricing(model_name)
                         if input_price is not None and output_price is not None:
@@ -1650,7 +1650,6 @@ def main(args_list: list[str] | None = None) -> None:
                         ):
                             row[yt_qa_col_name] = float("nan")
 
-                        yt_qa_cost = float("nan")
                         if verbose:
                             input_price, output_price = get_model_pricing(model_name)
                             if input_price is not None and output_price is not None:
@@ -1741,7 +1740,6 @@ def main(args_list: list[str] | None = None) -> None:
                             language=language,
                         )
 
-                        yt_summary_cost = float("nan")
                         if verbose:
                             input_price, output_price = get_model_pricing(model_name)
                             if input_price is not None and output_price is not None:

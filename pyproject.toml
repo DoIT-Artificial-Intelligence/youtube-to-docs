@@ -65,12 +65,20 @@ audio = [
 video = [
     "static-ffmpeg>=2.13",
 ]
+app = [
+    "fastapi>=0.135.1",
+    "uvicorn[standard]>=0.41.0",
+]
 all = [
-    "youtube-to-docs[aws,azure,gcp,workspace,m365,audio,video]",
+    "youtube-to-docs[aws,azure,gcp,workspace,m365,audio,video,app]",
 ]
 
 [project.scripts]
 youtube-to-docs = "youtube_to_docs.main:main"
+youtube-to-docs-app = "youtube_to_docs.app:start_server"
+
+[tool.setuptools.package-data]
+youtube_to_docs = ["static/**"]
 
 [tool.setuptools.packages.find]
 include = ["youtube_to_docs*"]

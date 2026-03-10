@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube to Docs</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e1e4ed;
+    --text-muted: #8b8fa3;
+    --accent: #6366f1;
+    --accent-hover: #818cf8;
+    --success: #22c55e;
+    --error: #ef4444;
+    --warning: #f59e0b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .github-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    transition: color 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+  }
+
+  .github-badge:hover {
+    color: var(--text);
+    border-color: var(--text-muted);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .card h2 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .form-row.single {
+    grid-template-columns: 1fr;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  input[type="text"], select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.6rem 0.75rem;
+    color: var(--text);
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus, select:focus {
+    border-color: var(--accent);
+  }
+
+  input[type="text"]::placeholder {
+    color: var(--text-muted);
+    opacity: 0.5;
+  }
+
+  .checkbox-row {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+  }
+
+  .checkbox-group input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
+  }
+
+  .checkbox-group label {
+    text-transform: none;
+    font-size: 0.85rem;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .toggle-link {
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 0.85rem;
+    text-decoration: none;
+    display: inline-block;
+    margin-bottom: 1rem;
+  }
+
+  .toggle-link:hover {
+    color: var(--accent-hover);
+  }
+
+  .advanced { display: none; }
+  .advanced.show { display: block; }
+
+  .btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.7rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+    width: 100%;
+  }
+
+  .btn:hover { background: var(--accent-hover); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  #log-area {
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    max-height: 400px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #a3e635;
+    display: none;
+  }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.85rem;
+    display: none;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--warning);
+    animation: pulse 1.5s infinite;
+  }
+
+  .status-dot.done { background: var(--success); animation: none; }
+  .status-dot.error { background: var(--error); animation: none; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .artifacts-list {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .artifact-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    min-width: 0;
+  }
+
+  .artifact-info {
+    min-width: 0;
+  }
+
+  .artifact-item .dir {
+    display: inline-block;
+    color: var(--accent);
+    background: rgba(99, 102, 241, 0.1);
+    font-size: 0.7rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    margin-bottom: 0.25rem;
+  }
+
+  .artifact-item .name {
+    display: block;
+    color: var(--text);
+    font-family: monospace;
+    font-size: 0.8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .artifact-item a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .artifact-item a:hover { text-decoration: underline; }
+
+  #artifacts-card { display: none; }
+
+  @media (max-width: 640px) {
+    .form-row { grid-template-columns: 1fr; }
+    .container { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header-row">
+    <div>
+      <h1>YouTube to Docs</h1>
+      <p class="subtitle">Process YouTube videos into transcripts, summaries, Q&amp;A, infographics, and more.</p>
+    </div>
+    <a href="https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs" target="_blank" rel="noopener noreferrer" class="github-badge" title="View on GitHub">
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      <span>GitHub</span>
+    </a>
+  </div>
+
+  <div class="card">
+    <h2>Configuration</h2>
+    <div class="form-row single">
+      <div class="form-group">
+        <label for="url">YouTube URL or Video ID</label>
+        <input type="text" id="url" placeholder="https://youtube.com/watch?v=... or video ID">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="all_suite">Model Suite</label>
+        <select id="all_suite">
+          <option value="">None (transcript only)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="output_file">Output File</label>
+        <select id="output_file">
+          <option value="youtube-to-docs-artifacts/youtube-docs.csv">Local CSV (default)</option>
+          <option value="workspace">Google Drive (Workspace)</option>
+          <option value="sharepoint">Microsoft SharePoint</option>
+          <option value="none">None (log only)</option>
+        </select>
+      </div>
+    </div>
+
+    <a class="toggle-link" onclick="toggleAdvanced()">Show advanced options</a>
+
+    <div class="advanced" id="advanced-section">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="model">Summary Model</label>
+          <input type="text" id="model" list="model-options" placeholder="e.g. gemini-3-flash-preview">
+          <datalist id="model-options"></datalist>
+        </div>
+        <div class="form-group">
+          <label for="transcript_source">Transcript Source</label>
+          <input type="text" id="transcript_source" value="youtube" placeholder="youtube or AI model name">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="tts_model">Text-To-Speech Model</label>
+          <input type="text" id="tts_model" list="tts-options" placeholder="e.g. gemini-2.5-flash-preview-tts-Kore">
+          <datalist id="tts-options"></datalist>
+        </div>
+        <div class="form-group">
+          <label for="infographic_model">Infographic Model</label>
+          <input type="text" id="infographic_model" list="infographic-options" placeholder="e.g. gemini-3.1-flash-image-preview">
+          <datalist id="infographic-options"></datalist>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="alt_text_model">Alt Text Model</label>
+          <input type="text" id="alt_text_model" list="model-options" placeholder="Defaults to summary model">
+        </div>
+        <div class="form-group">
+          <label for="translate">Translate</label>
+          <input type="text" id="translate" list="translate-options" placeholder="e.g. gemini-3-flash-preview-es">
+          <datalist id="translate-options"></datalist>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="suggest_corrected_captions">Suggest Corrected Captions</label>
+          <input type="text" id="suggest_corrected_captions" list="model-options" placeholder="e.g. gemini-3-flash-preview">
+        </div>
+        <div class="form-group">
+          <label for="post_process">Post Process (JSON)</label>
+          <input type="text" id="post_process" placeholder='e.g. {"word count": "apple"}'>
+        </div>
+      </div>
+
+      <div class="checkbox-row">
+        <div class="checkbox-group">
+          <input type="checkbox" id="combine_infographic_audio">
+          <label for="combine_infographic_audio">Combine infographic + audio</label>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="no_youtube_summary">
+          <label for="no_youtube_summary">Skip YouTube summary</label>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="verbose" checked>
+          <label for="verbose">Verbose output</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn" id="process-btn" onclick="startProcess()">Process Video</button>
+
+  <div class="card" style="margin-top: 1.5rem;">
+    <div class="status-bar" id="status-bar">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Processing...</span>
+    </div>
+    <div id="log-area"></div>
+  </div>
+
+  <div class="card" id="artifacts-card">
+    <h2>Artifacts</h2>
+    <div class="artifacts-list" id="artifacts-list"></div>
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+
+  const SUMMARY_MODELS = [
+    'bedrock-claude-haiku-4-5-20251001-v1',
+    'bedrock-nova-2-lite-v1',
+    'foundry-gpt-5-mini',
+    'gemini-3-flash-preview',
+    'gemini-3.1-pro-preview',
+    'vertex-claude-haiku-4-5@20251001',
+  ];
+
+  // Load model suites and populate dropdowns
+  fetch('/api/model-suites')
+    .then(r => r.json())
+    .then(suites => {
+      const sel = $('all_suite');
+      for (const [key, val] of Object.entries(suites)) {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = key + ' (' + val.model + ')';
+        sel.appendChild(opt);
+      }
+    });
+
+  const TRANSLATE_OPTIONS = [
+    'aws-translate-spanish',
+    'aws-translate-french',
+    'aws-translate-korean',
+    'aws-translate-chinese',
+    'gcp-translate-spanish',
+    'gcp-translate-french',
+    'gcp-translate-korean',
+    'gcp-translate-chinese',
+    'gemini-3-flash-preview-spanish',
+    'gemini-3-flash-preview-french',
+    'gemini-3-flash-preview-korean',
+    'gemini-3-flash-preview-chinese',
+  ];
+
+  const INFOGRAPHIC_MODELS = [
+    'gemini-3-pro-image-preview',
+    'gemini-3.1-flash-image-preview',
+  ];
+
+  const TTS_MODELS = [
+    'aws-polly',
+    'aws-polly-Ruth',
+    'gcp-chirp3',
+    'gcp-chirp3-Kore',
+    'gemini-2.5-flash-preview-tts-Kore',
+    'gemini-2.5-pro-preview-tts-Kore',
+  ];
+
+  // Populate datalists
+  function populateDatalist(id, items) {
+    const dl = $(id);
+    for (const m of items) {
+      const opt = document.createElement('option');
+      opt.value = m;
+      dl.appendChild(opt);
+    }
+  }
+  populateDatalist('model-options', SUMMARY_MODELS);
+  populateDatalist('infographic-options', INFOGRAPHIC_MODELS);
+  populateDatalist('translate-options', TRANSLATE_OPTIONS);
+  populateDatalist('tts-options', TTS_MODELS);
+
+  function toggleAdvanced() {
+    const sec = $('advanced-section');
+    const link = sec.previousElementSibling;
+    sec.classList.toggle('show');
+    link.textContent = sec.classList.contains('show') ? 'Hide advanced options' : 'Show advanced options';
+  }
+
+  let currentJobId = null;
+  let eventSource = null;
+
+  function startProcess() {
+    const url = $('url').value.trim();
+    if (!url) { alert('Please enter a YouTube URL or Video ID.'); return; }
+
+    // Build request body
+    const body = { url };
+
+    const fields = [
+      'output_file', 'transcript_source', 'model', 'tts_model',
+      'infographic_model', 'alt_text_model', 'translate',
+      'suggest_corrected_captions', 'post_process', 'all_suite'
+    ];
+
+    for (const f of fields) {
+      const val = $(f).value.trim();
+      if (val) body[f] = val;
+    }
+
+    body.combine_infographic_audio = $('combine_infographic_audio').checked;
+    body.no_youtube_summary = $('no_youtube_summary').checked;
+    body.verbose = $('verbose').checked;
+
+    // Reset UI
+    const logArea = $('log-area');
+    logArea.textContent = '';
+    logArea.style.display = 'block';
+    $('status-bar').style.display = 'flex';
+    $('status-dot').className = 'status-dot';
+    $('status-text').textContent = 'Processing...';
+    $('artifacts-card').style.display = 'none';
+    $('process-btn').disabled = true;
+
+    if (eventSource) { eventSource.close(); eventSource = null; }
+
+    fetch('/api/process', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    .then(r => r.json())
+    .then(data => {
+      currentJobId = data.job_id;
+      connectSSE(data.job_id);
+    })
+    .catch(err => {
+      logArea.textContent += 'Error starting job: ' + err.message + '\n';
+      $('status-dot').className = 'status-dot error';
+      $('status-text').textContent = 'Failed to start';
+      $('process-btn').disabled = false;
+    });
+  }
+
+  function connectSSE(jobId) {
+    const logArea = $('log-area');
+    eventSource = new EventSource('/api/jobs/' + jobId + '/stream');
+
+    eventSource.onmessage = function(e) {
+      logArea.textContent += e.data + '\n';
+      logArea.scrollTop = logArea.scrollHeight;
+    };
+
+    eventSource.addEventListener('done', function() {
+      eventSource.close();
+      $('status-dot').className = 'status-dot done';
+      $('status-text').textContent = 'Completed';
+      $('process-btn').disabled = false;
+      loadArtifacts(jobId);
+    });
+
+    eventSource.addEventListener('error', function(e) {
+      if (e.data) {
+        logArea.textContent += '\nError: ' + e.data + '\n';
+      }
+      eventSource.close();
+      $('status-dot').className = 'status-dot error';
+      $('status-text').textContent = 'Error';
+      $('process-btn').disabled = false;
+      loadArtifacts(jobId);
+    });
+
+    eventSource.onerror = function() {
+      // SSE connection error — check job status
+      eventSource.close();
+      fetch('/api/jobs/' + jobId)
+        .then(r => r.json())
+        .then(job => {
+          if (job.status === 'completed') {
+            $('status-dot').className = 'status-dot done';
+            $('status-text').textContent = 'Completed';
+            loadArtifacts(jobId);
+          } else if (job.status === 'error') {
+            $('status-dot').className = 'status-dot error';
+            $('status-text').textContent = 'Error';
+            if (job.error) logArea.textContent += '\nError: ' + job.error + '\n';
+            loadArtifacts(jobId);
+          }
+          $('process-btn').disabled = false;
+        });
+    };
+  }
+
+  function loadArtifacts(jobId) {
+    fetch('/api/jobs/' + jobId)
+      .then(r => r.json())
+      .then(job => {
+        if (!job.artifacts || job.artifacts.length === 0) return;
+
+        const list = $('artifacts-list');
+        list.innerHTML = '';
+        $('artifacts-card').style.display = 'block';
+
+        for (const a of job.artifacts) {
+          const item = document.createElement('div');
+          item.className = 'artifact-item';
+          const dirPath = a.path.substring(0, a.path.lastIndexOf('/')) || a.directory;
+
+          const info = document.createElement('div');
+          info.className = 'artifact-info';
+          const dirSpan = document.createElement('span');
+          dirSpan.className = 'dir';
+          dirSpan.textContent = dirPath;
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'name';
+          nameSpan.textContent = a.name;
+          nameSpan.title = a.name;
+          info.appendChild(dirSpan);
+          info.appendChild(nameSpan);
+
+          const link = document.createElement('a');
+          link.href = '/api/artifacts/' + encodeURI(a.path);
+          link.target = '_blank';
+          link.textContent = 'Download';
+
+          item.appendChild(info);
+          item.appendChild(link);
+          list.appendChild(item);
+        }
+      });
+  }
+</script>
+</body>
+</html>
