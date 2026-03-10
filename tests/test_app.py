@@ -8,6 +8,7 @@ from youtube_to_docs.app import (
     Job,
     _extract_video_id,
     _scan_artifacts,
+    _validate_output_file,
     app,
     jobs,
 )
@@ -104,6 +105,14 @@ def test_process_missing_url(client):
     assert resp.status_code == 422
 
 
+def test_process_path_traversal_rejected(client):
+    resp = client.post(
+        "/api/process",
+        json={"url": "abc12345678", "output_file": "../../etc/evil.csv"},
+    )
+    assert resp.status_code == 400
+
+
 # ---------------------------------------------------------------------------
 # GET /api/jobs/{job_id}
 # ---------------------------------------------------------------------------
@@ -195,7 +204,7 @@ def test_artifact_path_traversal(client):
 
 def test_artifact_not_found(client):
     resp = client.get("/api/artifacts/youtube-to-docs-artifacts/nonexistent.csv")
-    assert resp.status_code in (403, 404)
+    assert resp.status_code == 404
 
 
 # ---------------------------------------------------------------------------
@@ -239,7 +248,9 @@ class TestExtractVideoId:
 
 def test_scan_artifacts_empty(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    result = _scan_artifacts("abc12345678")
+    result = _scan_artifacts(
+        "abc12345678", "youtube-to-docs-artifacts/youtube-docs.csv"
+    )
     assert result == []
 
 
@@ -249,7 +260,9 @@ def test_scan_artifacts_finds_files(tmp_path, monkeypatch):
     summary_dir.mkdir()
     (summary_dir / "gemini - abc12345678 - summary.md").write_text("test")
 
-    result = _scan_artifacts("abc12345678")
+    result = _scan_artifacts(
+        "abc12345678", "youtube-to-docs-artifacts/youtube-docs.csv"
+    )
     assert len(result) == 1
     assert result[0]["name"] == "gemini - abc12345678 - summary.md"
     assert result[0]["directory"] == "summary-files"
@@ -261,5 +274,64 @@ def test_scan_artifacts_ignores_unrelated_files(tmp_path, monkeypatch):
     summary_dir.mkdir()
     (summary_dir / "gemini - other_id - summary.md").write_text("test")
 
-    result = _scan_artifacts("abc12345678")
+    result = _scan_artifacts(
+        "abc12345678", "youtube-to-docs-artifacts/youtube-docs.csv"
+    )
     assert result == []
+
+
+def test_scan_artifacts_custom_output_file(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    custom_csv = tmp_path / "custom.csv"
+    custom_csv.write_text("header")
+
+    result = _scan_artifacts("abc12345678", "custom.csv")
+    assert len(result) == 1
+    assert result[0]["name"] == "custom.csv"
+
+
+def test_scan_artifacts_remote_output_file(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    result = _scan_artifacts("abc12345678", "workspace")
+    assert result == []
+
+
+# ---------------------------------------------------------------------------
+# _validate_output_file
+# ---------------------------------------------------------------------------
+
+
+class TestValidateOutputFile:
+    def test_valid_relative_path(self):
+        result = _validate_output_file("custom.csv")
+        assert result == "custom.csv"
+
+    def test_valid_nested_path(self):
+        result = _validate_output_file("youtube-to-docs-artifacts/youtube-docs.csv")
+        assert result == "youtube-to-docs-artifacts/youtube-docs.csv"
+
+    def test_remote_workspace(self):
+        assert _validate_output_file("workspace") == "workspace"
+        assert _validate_output_file("w") == "w"
+
+    def test_remote_sharepoint(self):
+        assert _validate_output_file("sharepoint") == "sharepoint"
+        assert _validate_output_file("s") == "s"
+
+    def test_remote_none(self):
+        assert _validate_output_file("none") == "none"
+        assert _validate_output_file("n") == "n"
+
+    def test_path_traversal_rejected(self):
+        from fastapi import HTTPException
+
+        with pytest.raises(HTTPException) as exc_info:
+            _validate_output_file("../../etc/passwd")
+        assert exc_info.value.status_code == 400
+
+    def test_absolute_path_rejected(self):
+        from fastapi import HTTPException
+
+        with pytest.raises(HTTPException) as exc_info:
+            _validate_output_file("/etc/passwd")
+        assert exc_info.value.status_code == 400

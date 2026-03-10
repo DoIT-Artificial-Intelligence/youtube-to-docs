@@ -35,6 +35,11 @@ class Job:
     started_at: float = field(default_factory=time.time)
     finished_at: float | None = None
     video_id: str = ""
+    output_file: str = "youtube-to-docs-artifacts/youtube-docs.csv"
+
+
+# Remote/special output_file values that are not local paths
+REMOTE_OUTPUT_VALUES = {"workspace", "w", "sharepoint", "s", "none", "n"}
 
 
 jobs: dict[str, Job] = {}
@@ -99,17 +104,35 @@ async def model_suites():
     return MODEL_SUITES
 
 
+def _validate_output_file(output_file: str) -> str:
+    """Validate and sanitize the output_file parameter to prevent path traversal."""
+    # Allow known remote/special values as-is
+    if output_file.lower() in REMOTE_OUTPUT_VALUES:
+        return output_file
+
+    # Resolve the path and ensure it stays within the current working directory
+    cwd = Path.cwd().resolve()
+    resolved = (cwd / output_file).resolve()
+    if not (resolved == cwd or cwd in resolved.parents):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid output_file: path must be within the working directory",
+        )
+    return str(resolved.relative_to(cwd))
+
+
 @app.post("/api/process")
 async def process(req: ProcessRequest):
     job_id = uuid.uuid4().hex[:12]
-    job = Job(id=job_id, video_id=req.url)
+    validated_output = _validate_output_file(req.output_file)
+    job = Job(id=job_id, video_id=req.url, output_file=validated_output)
     jobs[job_id] = job
 
     # Build args exactly like mcp_server.py
     args = [
         req.url,
         "--outfile",
-        req.output_file,
+        validated_output,
         "--transcript",
         req.transcript_source,
     ]
@@ -182,7 +205,7 @@ async def _run_job(job: Job, args: list[str]):
         job.finished_at = time.time()
 
 
-def _scan_artifacts(video_id: str) -> list[dict]:
+def _scan_artifacts(video_id: str, output_file: str) -> list[dict]:
     """Scan known artifact directories for files matching the video ID."""
     artifacts = []
     for dir_name in ARTIFACT_DIRS:
@@ -199,17 +222,18 @@ def _scan_artifacts(video_id: str) -> list[dict]:
                         "size": file_path.stat().st_size,
                     }
                 )
-    # Also check the main CSV
-    csv_path = Path("youtube-to-docs-artifacts/youtube-docs.csv")
-    if csv_path.exists():
-        artifacts.append(
-            {
-                "path": str(csv_path),
-                "name": csv_path.name,
-                "directory": "youtube-to-docs-artifacts",
-                "size": csv_path.stat().st_size,
-            }
-        )
+    # Also check the output CSV (skip remote storage values)
+    if output_file.lower() not in REMOTE_OUTPUT_VALUES:
+        csv_path = Path(output_file)
+        if csv_path.exists():
+            artifacts.append(
+                {
+                    "path": str(csv_path),
+                    "name": csv_path.name,
+                    "directory": str(csv_path.parent),
+                    "size": csv_path.stat().st_size,
+                }
+            )
     return artifacts
 
 
@@ -232,7 +256,7 @@ async def get_job(job_id: str):
         # Extract video ID from URL for artifact scanning
         vid = _extract_video_id(job.video_id)
         if vid:
-            result["artifacts"] = _scan_artifacts(vid)
+            result["artifacts"] = _scan_artifacts(vid, job.output_file)
 
     return result
 
@@ -279,11 +303,8 @@ async def get_artifact(path: str):
     file_path = Path(path).resolve()
     cwd = Path.cwd().resolve()
 
-    # Security: ensure the path stays within allowed directories
-    allowed_roots = [cwd / d for d in ARTIFACT_DIRS]
-    if not any(
-        file_path == root or root in file_path.parents for root in allowed_roots
-    ):
+    # Security: ensure the path stays within the working directory
+    if not (file_path == cwd or cwd in file_path.parents):
         raise HTTPException(status_code=403, detail="Access denied")
 
     if not file_path.is_file():

@@ -607,12 +607,26 @@
           const item = document.createElement('div');
           item.className = 'artifact-item';
           const dirPath = a.path.substring(0, a.path.lastIndexOf('/')) || a.directory;
-          item.innerHTML =
-            '<div class="artifact-info">' +
-              '<span class="dir">' + dirPath + '</span>' +
-              '<span class="name" title="' + a.name + '">' + a.name + '</span>' +
-            '</div>' +
-            '<a href="/api/artifacts/' + encodeURI(a.path) + '" target="_blank">Download</a>';
+
+          const info = document.createElement('div');
+          info.className = 'artifact-info';
+          const dirSpan = document.createElement('span');
+          dirSpan.className = 'dir';
+          dirSpan.textContent = dirPath;
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'name';
+          nameSpan.textContent = a.name;
+          nameSpan.title = a.name;
+          info.appendChild(dirSpan);
+          info.appendChild(nameSpan);
+
+          const link = document.createElement('a');
+          link.href = '/api/artifacts/' + encodeURI(a.path);
+          link.target = '_blank';
+          link.textContent = 'Download';
+
+          item.appendChild(info);
+          item.appendChild(link);
           list.appendChild(item);
         }
       });
