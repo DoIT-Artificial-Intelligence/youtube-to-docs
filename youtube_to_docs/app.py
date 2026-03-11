@@ -1,8 +1,10 @@
 import asyncio
 import contextlib
 import io
+import logging
 import os
 import time
+import traceback
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -12,8 +14,13 @@ from youtube_to_docs.models import MODEL_SUITES
 
 try:
     import uvicorn
-    from fastapi import FastAPI, HTTPException
-    from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
+    from fastapi import FastAPI, HTTPException, Request
+    from fastapi.responses import (
+        FileResponse,
+        HTMLResponse,
+        JSONResponse,
+        StreamingResponse,
+    )
     from pydantic import BaseModel
     from starlette.staticfiles import StaticFiles
 except ImportError as e:
@@ -90,7 +97,20 @@ class ProcessRequest(BaseModel):
 # FastAPI app
 # ---------------------------------------------------------------------------
 
+logger = logging.getLogger("youtube_to_docs.app")
+
 app = FastAPI(title="YouTube to Docs")
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    tb = traceback.format_exception(exc)
+    logger.error("Unhandled exception: %s\n%s", exc, "".join(tb))
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc)},
+    )
+
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -180,7 +200,7 @@ async def process(req: ProcessRequest):
         if req.verbose:
             args.append("--verbose")
 
-        asyncio.get_event_loop().create_task(_run_job(job, args))
+        asyncio.create_task(_run_job(job, args))
         return {"job_id": job_id}
     except HTTPException:
         raise
