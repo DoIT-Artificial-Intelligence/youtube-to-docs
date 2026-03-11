@@ -140,45 +140,52 @@ def _validate_output_file(output_file: str) -> str:
 
 @app.post("/api/process")
 async def process(req: ProcessRequest):
-    job_id = uuid.uuid4().hex[:12]
-    validated_output = _validate_output_file(req.output_file)
-    job = Job(id=job_id, video_id=req.url, output_file=validated_output)
-    jobs[job_id] = job
+    try:
+        job_id = uuid.uuid4().hex[:12]
+        validated_output = _validate_output_file(req.output_file)
+        job = Job(id=job_id, video_id=req.url, output_file=validated_output)
+        jobs[job_id] = job
 
-    # Build args exactly like mcp_server.py
-    args = [
-        req.url,
-        "--outfile",
-        validated_output,
-        "--transcript",
-        req.transcript_source,
-    ]
+        # Build args exactly like mcp_server.py
+        args = [
+            req.url,
+            "--outfile",
+            validated_output,
+            "--transcript",
+            req.transcript_source,
+        ]
 
-    if req.translate:
-        args.extend(["--translate", req.translate])
-    if req.model:
-        args.extend(["--model", req.model])
-    if req.tts_model:
-        args.extend(["--tts", req.tts_model])
-    if req.infographic_model:
-        args.extend(["--infographic", req.infographic_model])
-    if req.alt_text_model:
-        args.extend(["--alt-text-model", req.alt_text_model])
-    if req.no_youtube_summary:
-        args.append("--no-youtube-summary")
-    if req.combine_infographic_audio:
-        args.append("--combine-infographic-audio")
-    if req.all_suite:
-        args.extend(["--all", req.all_suite])
-    if req.suggest_corrected_captions:
-        args.extend(["--suggest-corrected-captions", req.suggest_corrected_captions])
-    if req.post_process:
-        args.extend(["--post-process", req.post_process])
-    if req.verbose:
-        args.append("--verbose")
+        if req.translate:
+            args.extend(["--translate", req.translate])
+        if req.model:
+            args.extend(["--model", req.model])
+        if req.tts_model:
+            args.extend(["--tts", req.tts_model])
+        if req.infographic_model:
+            args.extend(["--infographic", req.infographic_model])
+        if req.alt_text_model:
+            args.extend(["--alt-text-model", req.alt_text_model])
+        if req.no_youtube_summary:
+            args.append("--no-youtube-summary")
+        if req.combine_infographic_audio:
+            args.append("--combine-infographic-audio")
+        if req.all_suite:
+            args.extend(["--all", req.all_suite])
+        if req.suggest_corrected_captions:
+            args.extend(
+                ["--suggest-corrected-captions", req.suggest_corrected_captions]
+            )
+        if req.post_process:
+            args.extend(["--post-process", req.post_process])
+        if req.verbose:
+            args.append("--verbose")
 
-    asyncio.get_event_loop().create_task(_run_job(job, args))
-    return {"job_id": job_id}
+        asyncio.get_event_loop().create_task(_run_job(job, args))
+        return {"job_id": job_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 async def _run_job(job: Job, args: list[str]):

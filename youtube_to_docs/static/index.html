@@ -575,7 +575,14 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
-    .then(r => r.json())
+    .then(r => {
+      if (!r.ok) {
+        return r.text().then(text => {
+          throw new Error('Server error (' + r.status + '): ' + text);
+        });
+      }
+      return r.json();
+    })
     .then(data => {
       currentJobId = data.job_id;
       connectSSE(data.job_id);
