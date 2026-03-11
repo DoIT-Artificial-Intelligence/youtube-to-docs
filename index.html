@@ -630,6 +630,7 @@
 <li><code>aws</code>: AWS Bedrock support.</li>
 <li><code>azure</code>: Required for Azure OpenAI models.</li>
 <li><code>gcp</code>: Required for Google Gemini, Vertex AI models, and GCP Cloud TTS (uses <code>google-genai</code> and google-cloud libs).</li>
+<li><code>app</code>: Web app with browser-based UI (uses <code>fastapi</code>, <code>uvicorn</code>).</li>
 <li><code>all</code>: Installs everything.</li>
 </ul>
 <p><strong>Example: Run with audio and video support</strong>
@@ -643,6 +644,17 @@
 *   <strong>Windows</strong>: <code>powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"</code></p>
 <p>Install as a Gemini CLI extension:</p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>gemini<span class="w"> </span>extensions<span class="w"> </span>install<span class="w"> </span>https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs.git
+</code></pre></div>
+<p>Install as a Claude Code plugin:</p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>/plugin<span class="w"> </span>marketplace<span class="w"> </span>add<span class="w"> </span>DoIT-Artificial-Intelligence/youtube-to-docs
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>/plugin<span class="w"> </span>install<span class="w"> </span>youtube-to-docs@youtube-to-docs
+</code></pre></div>
+<p>Run as a web app:</p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>uvx<span class="w"> </span>--with<span class="w"> </span><span class="s2">&quot;youtube-to-docs[app]&quot;</span><span class="w"> </span>youtube-to-docs-app
+</code></pre></div>
+<p>Then open http://localhost:8000 in your browser. See the <a href="usage/#web-app">Web App docs</a> for details.</p>
+<p>Install as an MCP server for Claude Code:</p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>youtube-to-docs<span class="w"> </span>--<span class="w"> </span>uvx<span class="w"> </span>--with<span class="w"> </span><span class="s2">&quot;youtube-to-docs[all]&quot;</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>youtube_to_docs.mcp_server
 </code></pre></div>
 <p><em>Created with the help of AI. All artifacts have been checked and work as expected.</em></p>
 
