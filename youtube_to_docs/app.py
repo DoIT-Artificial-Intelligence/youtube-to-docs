@@ -362,6 +362,9 @@ def start_server():
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload")
     args = parser.parse_args()
 
+    if args.host == "0.0.0.0":
+        print(f"App available at: http://localhost:{args.port}")
+
     uvicorn.run(
         "youtube_to_docs.app:app",
         host=args.host,
