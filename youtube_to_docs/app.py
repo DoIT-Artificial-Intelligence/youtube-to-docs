@@ -100,6 +100,15 @@ async def index():
     return HTMLResponse(html_file.read_text())
 
 
+@app.get("/static/{filename}")
+async def static_file(filename: str):
+    safe_name = Path(filename).name
+    file_path = STATIC_DIR / safe_name
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Not found")
+    return FileResponse(file_path)
+
+
 @app.get("/api/model-suites")
 async def model_suites():
     return MODEL_SUITES
