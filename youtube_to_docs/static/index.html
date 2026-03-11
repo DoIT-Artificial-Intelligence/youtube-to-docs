@@ -657,7 +657,9 @@
         for (const a of job.artifacts) {
           const item = document.createElement('div');
           item.className = 'artifact-item';
-          const dirPath = a.path.substring(0, a.path.lastIndexOf('/')) || a.directory;
+          // Handle both / (WSL/macOS/Linux) and \ (Windows/PowerShell) path separators
+          const lastSep = Math.max(a.path.lastIndexOf('/'), a.path.lastIndexOf('\\'));
+          const dirPath = lastSep > 0 ? a.path.substring(0, lastSep) : a.directory;
 
           const info = document.createElement('div');
           info.className = 'artifact-info';

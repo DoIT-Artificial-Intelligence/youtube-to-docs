@@ -19,6 +19,7 @@ try:
         FileResponse,
         HTMLResponse,
         JSONResponse,
+        Response,
         StreamingResponse,
     )
     from pydantic import BaseModel
@@ -115,6 +116,12 @@ async def global_exception_handler(request: Request, exc: Exception):
 STATIC_DIR = Path(__file__).parent / "static"
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    svg = (STATIC_DIR / "favicon.svg").read_bytes()
+    return Response(content=svg, media_type="image/svg+xml")
 
 
 @app.get("/", response_class=HTMLResponse)
