@@ -102,11 +102,13 @@ async def index():
 
 @app.get("/static/{filename}")
 async def static_file(filename: str):
-    safe_name = Path(filename).name
-    file_path = STATIC_DIR / safe_name
-    if not file_path.is_file():
+    base_dir = os.path.normpath(str(STATIC_DIR))
+    safe_path = os.path.normpath(os.path.join(base_dir, filename))
+    if not safe_path.startswith(base_dir + os.sep):
+        raise HTTPException(status_code=400, detail="Access denied")
+    if not os.path.isfile(safe_path):
         raise HTTPException(status_code=404, detail="Not found")
-    return FileResponse(file_path)
+    return FileResponse(safe_path)
 
 
 @app.get("/api/model-suites")
