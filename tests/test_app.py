@@ -1,4 +1,6 @@
 import asyncio
+import os
+import tempfile
 from unittest.mock import patch
 
 import pytest
@@ -7,6 +9,7 @@ from fastapi.testclient import TestClient
 from youtube_to_docs.app import (
     Job,
     _extract_video_id,
+    _run_job,
     _scan_artifacts,
     _validate_output_file,
     app,
@@ -340,3 +343,221 @@ class TestValidateOutputFile:
         with pytest.raises(HTTPException) as exc_info:
             _validate_output_file("/etc/passwd")
         assert exc_info.value.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Missing environment variables
+# ---------------------------------------------------------------------------
+
+_VIDEO_DETAILS = (
+    "Test Title",
+    "Test Description",
+    "2024-01-01",
+    "Test Channel",
+    "tag1,tag2",
+    "0:05:00",
+    "https://www.youtube.com/watch?v=abc12345678",
+    300.0,
+)
+
+
+def _run_job_sync(job: Job, args: list[str]) -> None:
+    """Helper to run _run_job synchronously in tests."""
+    asyncio.run(_run_job(job, args))
+
+
+@patch("youtube_to_docs.main.get_youtube_service")
+@patch("youtube_to_docs.main.resolve_video_ids", return_value=["abc12345678"])
+@patch("youtube_to_docs.main.get_video_details", return_value=_VIDEO_DETAILS)
+@patch(
+    "youtube_to_docs.main.fetch_transcript",
+    return_value=("Test transcript text", False, ""),
+)
+def test_missing_gemini_api_key_job_completes(
+    _mock_transcript, _mock_details, _mock_resolve, _mock_svc
+):
+    """When GEMINI_API_KEY is absent the job should complete (not crash) and
+    the output should contain a recognisable error message."""
+    with tempfile.TemporaryDirectory() as tmp:
+        outfile = os.path.join(tmp, "out.csv")
+        job = Job(id="nokey1", video_id="abc12345678", output_file=outfile)
+        args = [
+            "abc12345678",
+            "--outfile",
+            outfile,
+            "--transcript",
+            "youtube",
+            "--model",
+            "gemini-3-flash-preview",
+        ]
+        env = {k: v for k, v in os.environ.items() if k != "GEMINI_API_KEY"}
+        with patch.dict(os.environ, env, clear=True):
+            _run_job_sync(job, args)
+
+    assert job.status == "completed"
+    combined = "\n".join(job.output)
+    assert "GEMINI_API_KEY" in combined
+
+
+@patch("youtube_to_docs.main.get_youtube_service")
+@patch("youtube_to_docs.main.resolve_video_ids", return_value=["abc12345678"])
+@patch("youtube_to_docs.main.get_video_details", return_value=_VIDEO_DETAILS)
+@patch(
+    "youtube_to_docs.main.fetch_transcript",
+    return_value=("Test transcript text", False, ""),
+)
+def test_missing_aws_bearer_token_job_completes(
+    _mock_transcript, _mock_details, _mock_resolve, _mock_svc
+):
+    """When AWS_BEARER_TOKEN_BEDROCK is absent the job should complete and
+    include a recognisable error message in the output."""
+    with tempfile.TemporaryDirectory() as tmp:
+        outfile = os.path.join(tmp, "out.csv")
+        job = Job(id="nokey2", video_id="abc12345678", output_file=outfile)
+        args = [
+            "abc12345678",
+            "--outfile",
+            outfile,
+            "--transcript",
+            "youtube",
+            "--model",
+            "bedrock-nova-2-lite-v1",
+        ]
+        env = {k: v for k, v in os.environ.items() if k != "AWS_BEARER_TOKEN_BEDROCK"}
+        with patch.dict(os.environ, env, clear=True):
+            _run_job_sync(job, args)
+
+    assert job.status == "completed"
+    combined = "\n".join(job.output)
+    assert "AWS_BEARER_TOKEN_BEDROCK" in combined
+
+
+@patch("youtube_to_docs.main.get_youtube_service")
+@patch("youtube_to_docs.main.resolve_video_ids", return_value=["abc12345678"])
+@patch("youtube_to_docs.main.get_video_details", return_value=_VIDEO_DETAILS)
+@patch(
+    "youtube_to_docs.main.fetch_transcript",
+    return_value=("Test transcript text", False, ""),
+)
+def test_missing_azure_credentials_job_completes(
+    _mock_transcript, _mock_details, _mock_resolve, _mock_svc
+):
+    """When Azure Foundry credentials are absent the job should complete and
+    include a recognisable error message."""
+    with tempfile.TemporaryDirectory() as tmp:
+        outfile = os.path.join(tmp, "out.csv")
+        job = Job(id="nokey3", video_id="abc12345678", output_file=outfile)
+        args = [
+            "abc12345678",
+            "--outfile",
+            outfile,
+            "--transcript",
+            "youtube",
+            "--model",
+            "foundry-gpt-5-mini",
+        ]
+        env = {
+            k: v
+            for k, v in os.environ.items()
+            if k not in ("AZURE_FOUNDRY_ENDPOINT", "AZURE_FOUNDRY_API_KEY")
+        }
+        with patch.dict(os.environ, env, clear=True):
+            _run_job_sync(job, args)
+
+    assert job.status == "completed"
+    combined = "\n".join(job.output)
+    assert "AZURE_FOUNDRY" in combined
+
+
+@patch("youtube_to_docs.main.get_youtube_service", return_value=None)
+@patch(
+    "youtube_to_docs.main.fetch_transcript",
+    return_value=("Test transcript text", False, ""),
+)
+def test_missing_youtube_data_api_key_direct_video_id_completes(
+    _mock_transcript, _mock_svc
+):
+    """When YOUTUBE_DATA_API_KEY is absent but input is a direct video ID,
+    the job should complete — no YouTube Data API is needed for single videos."""
+    with tempfile.TemporaryDirectory() as tmp:
+        outfile = os.path.join(tmp, "out.csv")
+        job = Job(id="ytkey1", video_id="abc12345678", output_file=outfile)
+        args = ["abc12345678", "--outfile", outfile, "--transcript", "youtube"]
+        env = {k: v for k, v in os.environ.items() if k != "YOUTUBE_DATA_API_KEY"}
+        with patch.dict(os.environ, env, clear=True):
+            _run_job_sync(job, args)
+
+    assert job.status == "completed"
+
+
+def test_missing_youtube_data_api_key_playlist_errors():
+    """When YOUTUBE_DATA_API_KEY is absent and input is a playlist ID,
+    the job should end in error state with a clear message."""
+    with tempfile.TemporaryDirectory() as tmp:
+        outfile = os.path.join(tmp, "out.csv")
+        job = Job(
+            id="ytkey2",
+            video_id="PLabc123",
+            output_file=outfile,
+        )
+        args = ["PLabc123", "--outfile", outfile, "--transcript", "youtube"]
+        env = {k: v for k, v in os.environ.items() if k != "YOUTUBE_DATA_API_KEY"}
+        with patch.dict(os.environ, env, clear=True):
+            _run_job_sync(job, args)
+
+    assert job.status == "error"
+    assert "YOUTUBE_DATA_API_KEY" in "\n".join(job.output)
+
+
+def test_missing_youtube_data_api_key_channel_handle_errors():
+    """When YOUTUBE_DATA_API_KEY is absent and input is a channel handle,
+    the job should end in error state with a clear message."""
+    with tempfile.TemporaryDirectory() as tmp:
+        outfile = os.path.join(tmp, "out.csv")
+        job = Job(id="ytkey3", video_id="@testchannel", output_file=outfile)
+        args = ["@testchannel", "--outfile", outfile, "--transcript", "youtube"]
+        env = {k: v for k, v in os.environ.items() if k != "YOUTUBE_DATA_API_KEY"}
+        with patch.dict(os.environ, env, clear=True):
+            _run_job_sync(job, args)
+
+    assert job.status == "error"
+    assert "YOUTUBE_DATA_API_KEY" in "\n".join(job.output)
+
+
+@patch("youtube_to_docs.main.get_youtube_service")
+@patch("youtube_to_docs.main.resolve_video_ids", return_value=["abc12345678"])
+@patch("youtube_to_docs.main.get_video_details", return_value=_VIDEO_DETAILS)
+@patch(
+    "youtube_to_docs.main.fetch_transcript",
+    return_value=("Test transcript text", False, ""),
+)
+def test_no_model_transcript_only_job_completes(
+    _mock_transcript, _mock_details, _mock_resolve, _mock_svc
+):
+    """When no model is specified the job should complete without requiring
+    any AI API credentials."""
+    with tempfile.TemporaryDirectory() as tmp:
+        outfile = os.path.join(tmp, "out.csv")
+        job = Job(id="nomodel", video_id="abc12345678", output_file=outfile)
+        args = [
+            "abc12345678",
+            "--outfile",
+            outfile,
+            "--transcript",
+            "youtube",
+        ]
+        env = {
+            k: v
+            for k, v in os.environ.items()
+            if k
+            not in (
+                "GEMINI_API_KEY",
+                "AWS_BEARER_TOKEN_BEDROCK",
+                "AZURE_FOUNDRY_ENDPOINT",
+                "AZURE_FOUNDRY_API_KEY",
+            )
+        }
+        with patch.dict(os.environ, env, clear=True):
+            _run_job_sync(job, args)
+
+    assert job.status == "completed"

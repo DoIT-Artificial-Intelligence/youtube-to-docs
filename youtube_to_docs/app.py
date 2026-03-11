@@ -248,7 +248,7 @@ async def _run_job(job: Job, args: list[str]):
         await asyncio.to_thread(_run)
         capture.flush()
         job.status = "completed"
-    except Exception as e:
+    except (Exception, SystemExit) as e:
         capture.flush()
         job.error = str(e)
         job.status = "error"
