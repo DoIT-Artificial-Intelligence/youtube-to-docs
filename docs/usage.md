@@ -22,11 +22,11 @@ To keep the installation footprint small, many features are optional. You can en
 | :---------- | :----------------------------------------------------------------------- | :----------------------------------------------------------------------------------------- |
 | `audio`     | **Recommended.** Required for downloading audio (for TTS/transcription). | `yt-dlp`                                                                                   |
 | `video`     | Required for generating video files (combining audio & infographic).     | `static-ffmpeg`                                                                            |
-| `workspace` | Required for saving to Google Drive.                                     | `google-api-python-client`, `google-auth-oauthlib`                                         |
-| `m365`      | Required for saving to SharePoint/OneDrive.                              | `msal`, `fastexcel`, `xlsxwriter`, `pypandoc`                                              |
-| `aws`       | AWS Bedrock support.                                                     | None                                                                                       |
+| `workspace` | Required for saving to Google Drive.                                     | `google-auth-oauthlib`, `pypandoc`, `pypandoc_binary`                                      |
+| `m365`      | Required for saving to SharePoint/OneDrive.                              | `msal`, `fastexcel`, `xlsxwriter`, `pypandoc`, `pypandoc_binary`                           |
+| `aws`       | AWS Bedrock support.                                                     | `boto3`, `botocore[crt]`                                                                   |
 | `azure`     | Required if using Azure OpenAI models.                                   | `openai`                                                                                   |
-| `gcp`       | Required if using Google Gemini or Vertex AI models.                     | `google-genai`, `google-cloud-speech`, `google-cloud-storage`, `google-cloud-texttospeech` |
+| `gcp`       | Required if using Google Gemini or Vertex AI models.                     | `google-genai`, `google-cloud-speech`, `google-cloud-storage`, `google-cloud-texttospeech`, `google-cloud-translate` |
 | `app`       | Web app with browser-based UI.                                           | `fastapi`, `uvicorn`                                                                       |
 | `all`       | Installs all of the above.                                               | All optional dependencies.                                                                 |
 

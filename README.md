@@ -27,7 +27,7 @@ To keep the installation light, some features are optional. You can enable them 
 - `m365`: Required for Microsoft SharePoint/OneDrive integration.
 - `aws`: AWS Bedrock support.
 - `azure`: Required for Azure OpenAI models.
-- `gcp`: Required for Google Gemini and Vertex AI models (uses `google-genai`).
+- `gcp`: Required for Google Gemini, Vertex AI models, and GCP Cloud TTS (uses `google-genai` and google-cloud libs).
 - `app`: Web app with browser-based UI (uses `fastapi`, `uvicorn`).
 - `all`: Installs everything.
 

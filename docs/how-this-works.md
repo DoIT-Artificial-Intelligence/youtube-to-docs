@@ -102,6 +102,7 @@ youtube-to-docs-artifacts/
 ├── tag-files/                    # AI-generated tags files
 ├── infographic-files/            # Generated infographic images
 ├── alt-text-files/               # Multimodal alt text for infographics
+├── suggested-corrected-caption-files/  # LLM-suggested WCAG 2.1 corrected SRT files
 └── video-files/                  # Combined infographic + audio videos
 ```
 
