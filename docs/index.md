@@ -65,7 +65,7 @@ Install as a Claude Code plugin:
 Run as a web app:
 
 ```bash
-uvx --with "youtube-to-docs[app]" youtube-to-docs-app
+uvx --with "youtube-to-docs[all]" youtube-to-docs-app
 ```
 
 Then open http://localhost:8000 in your browser. See the [Web App docs](usage.md#web-app) for details.
