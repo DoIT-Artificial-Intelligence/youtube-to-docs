@@ -15,6 +15,7 @@ try:
     from fastapi import FastAPI, HTTPException
     from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
     from pydantic import BaseModel
+    from starlette.staticfiles import StaticFiles
 except ImportError as e:
     raise ImportError(
         "FastAPI dependencies not installed. "
@@ -93,22 +94,13 @@ app = FastAPI(title="YouTube to Docs")
 
 STATIC_DIR = Path(__file__).parent / "static"
 
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
     html_file = STATIC_DIR / "index.html"
     return HTMLResponse(html_file.read_text())
-
-
-@app.get("/static/{filename}")
-async def static_file(filename: str):
-    base_dir = os.path.normpath(str(STATIC_DIR))
-    safe_path = os.path.normpath(os.path.join(base_dir, filename))
-    if not safe_path.startswith(base_dir + os.sep):
-        raise HTTPException(status_code=400, detail="Access denied")
-    if not os.path.isfile(safe_path):
-        raise HTTPException(status_code=404, detail="Not found")
-    return FileResponse(safe_path)
 
 
 @app.get("/api/model-suites")
