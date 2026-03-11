@@ -18,7 +18,7 @@
     --link-hover: #1a4480;
     --dark-bg: #1b1b1b;
     --border-color: #dfe1e2;
-    --muted-text: #71767a;
+    --muted-text: #646464;
     --log-text: #a3e635;
     --status-active: #e5a000;
     --status-success: #00a91c;
@@ -276,9 +276,25 @@
     font-weight: 500;
     margin-bottom: 1rem;
   }
+
+  .usa-skipnav {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 9999;
+    padding: 0.5rem 1rem;
+    background: var(--link-color);
+    color: #fff;
+    font-size: 1rem;
+    text-decoration: none;
+  }
+  .usa-skipnav:focus {
+    left: 0;
+  }
 </style>
 </head>
 <body>
+<a href="#main-content" class="usa-skipnav">Skip to main content</a>
 
 <!-- App Header -->
 <div class="app-header">
@@ -309,7 +325,7 @@
           <img src="/static/logo.png" alt="YouTube to Docs logo">
         </div>
 
-        <form class="usa-form usa-form--full-width">
+        <form id="process-form" class="usa-form usa-form--full-width">
           <!-- YouTube URL -->
           <label class="usa-label label--nowrap" for="url">YouTube URL, Video ID, Playlist ID, Channel Handle, or comma-separated Video IDs</label>
           <input class="usa-input" id="url" name="url" type="text" placeholder="URL, video ID, PL..., @channel, or ID1,ID2,ID3">
@@ -329,15 +345,15 @@
 
           <!-- Toggle advanced options -->
           <div class="margin-top-2">
-            <button type="button" class="toggle-link" onclick="toggleAdvanced()">Show advanced options</button>
+            <button type="button" class="toggle-link" onclick="toggleAdvanced()" aria-expanded="false" aria-controls="advanced-section">Show advanced options</button>
           </div>
 
           <!-- Advanced Options -->
           <div class="advanced" id="advanced-section">
             <div class="grid-row grid-gap">
               <div class="grid-col-12 tablet:grid-col-6">
-                <label class="usa-label" for="all_suite">Model Suite <button type="button" class="info-btn" onclick="this.nextElementSibling.classList.toggle('show')" aria-label="More info about Model Suite">i</button>
-                  <div class="info-tooltip">Shortcut to use a specific model suite for everything.<br><br><strong>gemini-flash:</strong> summarization (gemini-3-flash-preview), TTS (gemini-2.5-flash-preview-tts-Kore), infographic (gemini-3.1-flash-image-preview).<br><strong>gemini-pro:</strong> summarization (gemini-3.1-pro-preview), TTS (gemini-2.5-pro-preview-tts-Kore), infographic (gemini-3-pro-image-preview).<br><strong>gemini-flash-pro-image:</strong> summarization (gemini-3-flash-preview), TTS (gemini-2.5-flash-preview-tts-Kore), infographic (gemini-3-pro-image-preview).<br><strong>gcp-pro:</strong> summarization (gemini-3.1-pro-preview), TTS (gcp-chirp3), infographic (gemini-3-pro-image-preview).<br><br>Also sets "Skip YouTube summary".</div>
+                <label class="usa-label" for="all_suite">Model Suite <button type="button" class="info-btn" onclick="this.nextElementSibling.classList.toggle('show')" aria-label="More info about Model Suite" aria-describedby="tooltip-all-suite">i</button>
+                  <div class="info-tooltip" id="tooltip-all-suite" role="tooltip">Shortcut to use a specific model suite for everything.<br><br><strong>gemini-flash:</strong> summarization (gemini-3-flash-preview), TTS (gemini-2.5-flash-preview-tts-Kore), infographic (gemini-3.1-flash-image-preview).<br><strong>gemini-pro:</strong> summarization (gemini-3.1-pro-preview), TTS (gemini-2.5-pro-preview-tts-Kore), infographic (gemini-3-pro-image-preview).<br><strong>gemini-flash-pro-image:</strong> summarization (gemini-3-flash-preview), TTS (gemini-2.5-flash-preview-tts-Kore), infographic (gemini-3-pro-image-preview).<br><strong>gcp-pro:</strong> summarization (gemini-3.1-pro-preview), TTS (gcp-chirp3), infographic (gemini-3-pro-image-preview).<br><br>Also sets "Skip YouTube summary".</div>
                 </label>
                 <select class="usa-select" id="all_suite" name="all_suite">
                   <option value="">None (transcript only)</option>
@@ -394,6 +410,7 @@
 
             <!-- Checkboxes -->
             <fieldset class="usa-fieldset margin-top-2">
+              <legend class="usa-legend">Options</legend>
               <div class="usa-checkbox">
                 <input class="usa-checkbox__input" id="combine_infographic_audio" type="checkbox" name="combine_infographic_audio">
                 <label class="usa-checkbox__label" for="combine_infographic_audio">Combine infographic + audio</label>
@@ -413,16 +430,16 @@
     </div>
 
     <!-- Process Button -->
-    <button type="button" class="usa-button usa-button--big width-full" id="process-btn" onclick="startProcess()">Process Video</button>
+    <button type="button" class="usa-button usa-button--big width-full" id="process-btn" form="process-form" onclick="startProcess()">Process Video</button>
 
     <!-- Log Output Card -->
     <div class="maryland-card maryland-card--simple margin-top-3">
       <div class="maryland-card__container card-body">
         <div class="status-bar" id="status-bar">
           <div class="status-dot" id="status-dot"></div>
-          <span id="status-text">Processing...</span>
+          <span id="status-text" role="status" aria-live="polite">Processing...</span>
         </div>
-        <div id="log-area"></div>
+        <div id="log-area" role="log" aria-live="polite" aria-label="Processing log"></div>
       </div>
     </div>
 
@@ -441,7 +458,7 @@
 <!-- Footer -->
 <footer class="maryland-footer">
   <div class="maryland-footer__container">
-    <section aria-labelledby="agency-footer" class="maryland-footer__section">
+    <section aria-label="Footer resources" class="maryland-footer__section">
       <div class="maryland-footer__agency-menu">
         <div class="maryland-footer__agency-contact">
           <div class="maryland-footer__link-group">
@@ -529,9 +546,11 @@
 
   function toggleAdvanced() {
     const sec = $('advanced-section');
-    const link = sec.previousElementSibling.querySelector('.toggle-link');
+    const btn = sec.previousElementSibling.querySelector('.toggle-link');
     sec.classList.toggle('show');
-    link.textContent = sec.classList.contains('show') ? 'Hide advanced options' : 'Show advanced options';
+    const isOpen = sec.classList.contains('show');
+    btn.setAttribute('aria-expanded', isOpen);
+    btn.textContent = isOpen ? 'Hide advanced options' : 'Show advanced options';
   }
 
   let currentJobId = null;
