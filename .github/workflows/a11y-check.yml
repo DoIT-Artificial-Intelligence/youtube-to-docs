@@ -25,10 +25,7 @@ jobs:
           node-version: "20"
 
       - name: Run html-validate
-        run: |
-          npx html-validate@10.11.1 \
-            --config '{"extends":["html-validate:recommended"]}' \
-            youtube_to_docs/static/index.html
+        run: npx html-validate@10.11.1 youtube_to_docs/static/index.html
 
   axe-scan:
     name: axe-core WCAG 2.1 AA Scan
