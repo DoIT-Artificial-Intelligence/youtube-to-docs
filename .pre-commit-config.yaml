@@ -28,3 +28,21 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+
+      - id: html-validate
+        name: HTML Validate (a11y lint)
+        entry: bash -c 'npx html-validate@10.11.1 youtube_to_docs/static/index.html'
+        language: system
+        types: [html]
+        pass_filenames: false
+
+      - id: axe-scan
+        name: axe-core WCAG 2.1 AA Scan
+        entry: bash -c 'python3 -m http.server 8080 --directory youtube_to_docs/static &
+          SERVER_PID=$!;
+          for i in $(seq 1 10); do curl -sf http://localhost:8080/index.html > /dev/null && break; sleep 1; done;
+          npx @axe-core/cli@4.11.1 --exit --tags wcag2a,wcag2aa http://localhost:8080/index.html;
+          STATUS=$?; kill $SERVER_PID; exit $STATUS'
+        language: system
+        types: [html]
+        pass_filenames: false
