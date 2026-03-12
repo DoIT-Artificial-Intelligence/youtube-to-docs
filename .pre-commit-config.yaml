@@ -42,7 +42,7 @@ repos:
           python3 -m http.server 8080 --directory youtube_to_docs/static &
           SERVER_PID=$!;
           for i in $(seq 1 10); do curl -sf http://localhost:8080/index.html > /dev/null && break; sleep 1; done;
-          npx @axe-core/cli@4.11.1 --exit --tags wcag2a,wcag2aa http://localhost:8080/index.html;
+          npx @axe-core/cli@4.11.1 --exit --tags wcag2a,wcag2aa --chrome-options="no-sandbox,disable-dev-shm-usage" http://localhost:8080/index.html;
           STATUS=$?; kill $SERVER_PID; exit $STATUS'
         language: system
         types: [html]
