@@ -9,6 +9,9 @@ on:
       - "**/*.html"
       - "**/*.css"
 
+permissions:
+  contents: read
+
 jobs:
   html-validate:
     name: HTML Validate (static a11y lint)
@@ -37,6 +40,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+
+      - name: Install matching ChromeDriver
+        run: npx browser-driver-manager install chrome
 
       - name: Serve static files and run axe-core
         run: |
