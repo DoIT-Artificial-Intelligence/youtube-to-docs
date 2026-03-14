@@ -1249,3 +1249,155 @@ class NullStorage(Storage):
         self, path: str, download_dir: Optional[str] = None
     ) -> Optional[str]:
         return None
+
+
+class MemoryStorage(Storage):
+    """In-memory storage — artifacts are held in Python dicts, not on disk.
+
+    Useful for app/API contexts where callers want structured results returned
+    directly without creating files on the local filesystem.
+    """
+
+    def __init__(self):
+        self._text: dict[str, str] = {}
+        self._bytes: dict[str, bytes] = {}
+
+    @staticmethod
+    def _norm(path: str) -> str:
+        """Strip leading ``./`` so dict keys are consistent with URL paths."""
+        if path.startswith("./"):
+            return path[2:]
+        return path
+
+    def exists(self, path: str) -> bool:
+        path = self._norm(path)
+        return path in self._text or path in self._bytes
+
+    def read_text(self, path: str) -> str:
+        path = self._norm(path)
+        if path in self._text:
+            return self._text[path]
+        raise FileNotFoundError(f"MemoryStorage: not found: {path}")
+
+    def read_bytes(self, path: str) -> bytes:
+        path = self._norm(path)
+        if path in self._bytes:
+            return self._bytes[path]
+        if path in self._text:
+            return self._text[path].encode("utf-8")
+        raise FileNotFoundError(f"MemoryStorage: not found: {path}")
+
+    def write_text(self, path: str, content: str) -> str:
+        path = self._norm(path)
+        self._text[path] = content
+        return path
+
+    def write_bytes(self, path: str, content: bytes) -> str:
+        path = self._norm(path)
+        self._bytes[path] = content
+        return path
+
+    def load_dataframe(self, path: str) -> Optional[pl.DataFrame]:
+        path = self._norm(path)
+        if path in self._text:
+            return pl.read_csv(io.StringIO(self._text[path]))
+        return None
+
+    def save_dataframe(self, df: pl.DataFrame, path: str) -> str:
+        path = self._norm(path)
+        buf = io.StringIO()
+        df.write_csv(buf)
+        self._text[path] = buf.getvalue()
+        return path
+
+    def ensure_directory(self, path: str) -> None:
+        pass
+
+    def upload_file(
+        self, local_path: str, target_path: str, content_type: Optional[str] = None
+    ) -> str:
+        target_path = self._norm(target_path)
+        with open(local_path, "rb") as f:
+            self._bytes[target_path] = f.read()
+        return target_path
+
+    def get_full_path(self, path: str) -> str:
+        return self._norm(path)
+
+    def get_name(self, path: str) -> str:
+        return os.path.basename(path)
+
+    def get_local_file(
+        self, path: str, download_dir: Optional[str] = None
+    ) -> Optional[str]:
+        path = self._norm(path)
+        content: bytes | None = None
+        if path in self._bytes:
+            content = self._bytes[path]
+        elif path in self._text:
+            content = self._text[path].encode("utf-8")
+        if content is None:
+            return None
+        suffix = os.path.splitext(path)[1] or ".bin"
+        if download_dir:
+            os.makedirs(download_dir, exist_ok=True)
+            local_path = os.path.join(download_dir, os.path.basename(path))
+            with open(local_path, "wb") as f:
+                f.write(content)
+            return local_path
+        fd, tmp_path = tempfile.mkstemp(suffix=suffix)
+        os.write(fd, content)
+        os.close(fd)
+        return tmp_path
+
+    def get_artifacts(self) -> list[dict[str, Any]]:
+        """Return a list of stored artifact metadata."""
+        artifacts = []
+        for path in self._text:
+            artifacts.append(
+                {
+                    "path": path,
+                    "name": os.path.basename(path),
+                    "directory": os.path.dirname(path) or ".",
+                    "size": len(self._text[path]),
+                }
+            )
+        for path in self._bytes:
+            artifacts.append(
+                {
+                    "path": path,
+                    "name": os.path.basename(path),
+                    "directory": os.path.dirname(path) or ".",
+                    "size": len(self._bytes[path]),
+                }
+            )
+        return artifacts
+
+    def serve_artifact(self, path: str) -> tuple[bytes, str]:
+        """Return ``(content_bytes, content_type)`` for HTTP serving."""
+        path = self._norm(path)
+        ext = os.path.splitext(path)[1].lower()
+        if path in self._bytes:
+            binary_types = {
+                ".png": "image/png",
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".mp3": "audio/mpeg",
+                ".m4a": "audio/mp4",
+                ".mp4": "video/mp4",
+                ".wav": "audio/wav",
+            }
+            return self._bytes[path], binary_types.get(ext, "application/octet-stream")
+        if path in self._text:
+            text_types = {
+                ".md": "text/markdown",
+                ".txt": "text/plain",
+                ".srt": "text/plain",
+                ".csv": "text/csv",
+            }
+            media = text_types.get(ext, "text/plain")
+            return (
+                self._text[path].encode("utf-8"),
+                f"{media}; charset=utf-8",
+            )
+        raise FileNotFoundError(f"MemoryStorage: not found: {path}")
