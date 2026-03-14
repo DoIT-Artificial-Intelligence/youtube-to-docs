@@ -1,3 +1,17 @@
+"""FastAPI web application for youtube-to-docs.
+
+Usage::
+
+    # Install with app extras
+    uv sync --all-extras
+
+    # Start the server (default: http://localhost:8000)
+    uv run youtube-to-docs-app
+
+    # Custom host/port with auto-reload for development
+    uv run youtube-to-docs-app --host 127.0.0.1 --port 9000 --reload
+"""
+
 import asyncio
 import contextlib
 import io
@@ -11,6 +25,7 @@ from pathlib import Path
 
 from youtube_to_docs.main import main as app_main
 from youtube_to_docs.models import MODEL_SUITES
+from youtube_to_docs.storage import MemoryStorage
 
 try:
     import uvicorn
@@ -46,10 +61,11 @@ class Job:
     finished_at: float | None = None
     video_id: str = ""
     output_file: str = "youtube-to-docs-artifacts/youtube-docs.csv"
+    storage: MemoryStorage | None = None
 
 
 # Remote/special output_file values that are not local paths
-REMOTE_OUTPUT_VALUES = {"workspace", "w", "sharepoint", "s", "none", "n"}
+REMOTE_OUTPUT_VALUES = {"workspace", "w", "sharepoint", "s", "memory", "m", "none", "n"}
 
 
 jobs: dict[str, Job] = {}
@@ -242,12 +258,14 @@ async def _run_job(job: Job, args: list[str]):
 
     def _run():
         with contextlib.redirect_stdout(capture), contextlib.redirect_stderr(capture):
-            app_main(args)
+            return app_main(args)
 
     try:
-        await asyncio.to_thread(_run)
+        result = await asyncio.to_thread(_run)
         capture.flush()
         job.status = "completed"
+        if isinstance(result, MemoryStorage):
+            job.storage = result
     except (Exception, SystemExit) as e:
         capture.flush()
         job.error = str(e)
@@ -307,10 +325,13 @@ async def get_job(job_id: str):
     }
 
     if job.status in ("completed", "error"):
-        # Extract video ID from URL for artifact scanning
-        vid = _extract_video_id(job.video_id)
-        if vid:
-            result["artifacts"] = _scan_artifacts(vid, job.output_file)
+        if job.storage is not None:
+            result["artifacts"] = job.storage.get_artifacts()
+            result["memory_mode"] = True
+        else:
+            vid = _extract_video_id(job.video_id)
+            if vid:
+                result["artifacts"] = _scan_artifacts(vid, job.output_file)
 
     return result
 
@@ -366,6 +387,23 @@ async def get_artifact(path: str):
         raise HTTPException(status_code=404, detail="File not found")
 
     return FileResponse(safe_path)
+
+
+@app.get("/api/jobs/{job_id}/artifacts/{path:path}")
+async def get_job_artifact(job_id: str, path: str):
+    """Serve an artifact from a memory-mode job."""
+    job = jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if not job.storage:
+        raise HTTPException(
+            status_code=404, detail="No in-memory artifacts for this job"
+        )
+    try:
+        content, media_type = job.storage.serve_artifact(path)
+        return Response(content=content, media_type=media_type)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Artifact not found")
 
 
 def _extract_video_id(url: str) -> str | None:

@@ -116,9 +116,10 @@ The `--outfile` argument controls where the output CSV is saved:
 - **Local path** (default): `youtube-to-docs-artifacts/youtube-docs.csv`.
 - **`workspace` / `w`**: Saves to Google Drive (requires `google-auth-oauthlib`).
 - **`sharepoint` / `s`**: Saves to Microsoft SharePoint (requires `msal` and `xlsxwriter`).
+- **`memory` / `m`**: Keeps artifacts in memory (no files on disk). Useful for the web app where users want results returned directly without local file side-effects.
 - **`none` / `n`**: Skips saving to a file; results are available in the log output only.
 
-Storage is abstracted via `youtube_to_docs/storage.py` (`LocalStorage`, `GoogleDriveStorage`, `M365Storage`, `NullStorage`), so the rest of the pipeline is storage-agnostic.
+Storage is abstracted via `youtube_to_docs/storage.py` (`LocalStorage`, `GoogleDriveStorage`, `M365Storage`, `MemoryStorage`, `NullStorage`), so the rest of the pipeline is storage-agnostic.
 
 ### 9. Cost Tracking
 The system includes a pricing engine (`youtube_to_docs/prices.py`) that tracks token usage for every API call.

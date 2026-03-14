@@ -337,14 +337,15 @@
         <form id="process-form" class="usa-form usa-form--full-width" onsubmit="event.preventDefault(); startProcess();">
           <!-- YouTube URL -->
           <label class="usa-label label--nowrap" for="url">YouTube URL, Video ID, Playlist ID, Channel Handle, or comma-separated Video IDs</label>
-          <input class="usa-input" id="url" name="url" type="text" placeholder="URL, video ID, PL..., @channel, or ID1,ID2,ID3">
+          <input class="usa-input" id="url" name="url" type="text" value="atmGAHYpf_c" placeholder="URL, video ID, PL..., @channel, or ID1,ID2,ID3">
 
           <!-- Output File -->
           <div class="grid-row grid-gap margin-top-2">
             <div class="grid-col-12 tablet:grid-col-6">
               <label class="usa-label" for="output_file">Output File</label>
               <select class="usa-select" id="output_file" name="output_file">
-                <option value="youtube-to-docs-artifacts/youtube-docs.csv">Local CSV (default)</option>
+                <option value="memory">Memory (no files on disk)</option>
+                <option value="youtube-to-docs-artifacts/youtube-docs.csv">Local CSV</option>
                 <option value="workspace">Google Drive (Workspace)</option>
                 <option value="sharepoint">Microsoft SharePoint</option>
                 <option value="none">None (log only)</option>
@@ -429,7 +430,7 @@
                 <label class="usa-checkbox__label" for="no_youtube_summary">Skip YouTube summary</label>
               </div>
               <div class="usa-checkbox">
-                <input class="usa-checkbox__input" id="verbose" type="checkbox" name="verbose" checked>
+                <input class="usa-checkbox__input" id="verbose" type="checkbox" name="verbose">
                 <label class="usa-checkbox__label" for="verbose">Verbose output</label>
               </div>
             </fieldset>
@@ -703,7 +704,9 @@
           info.appendChild(nameSpan);
 
           const link = document.createElement('a');
-          link.href = '/api/artifacts/' + encodeURI(a.path);
+          link.href = job.memory_mode
+            ? '/api/jobs/' + jobId + '/artifacts/' + encodeURI(a.path)
+            : '/api/artifacts/' + encodeURI(a.path);
           link.target = '_blank';
           link.textContent = 'Download';
 

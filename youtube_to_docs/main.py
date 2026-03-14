@@ -29,6 +29,7 @@ from youtube_to_docs.storage import (
     GoogleDriveStorage,
     LocalStorage,
     M365Storage,
+    MemoryStorage,
     NullStorage,
 )
 from youtube_to_docs.transcript import (
@@ -68,7 +69,7 @@ class VerboseRow(dict):
             rprint(f"Updated column: {k}")
 
 
-def main(args_list: list[str] | None = None) -> None:
+def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     # Define styles for the help output
     RichHelpFormatter.styles["argparse.args"] = "cyan italic"
     RichHelpFormatter.styles["argparse.groups"] = "bold yellow"
@@ -97,6 +98,7 @@ def main(args_list: list[str] | None = None) -> None:
             "Local file path to save the output CSV file.\n"
             "`workspace` or `w` to store to Google Drive or a workspace folder ID.\n"
             "`sharepoint` or `s` to store to Microsoft SharePoint.\n"
+            "`memory` or `m` to keep artifacts in memory (no files on disk).\n"
             "`none` or `n` to skip saving to a file (results will be in the log)."
         ),
     )
@@ -352,6 +354,11 @@ def main(args_list: list[str] | None = None) -> None:
         storage = NullStorage()
         outfile_path = "none.csv"
         base_dir = "."
+    elif outfile in ("memory", "m"):
+        vprint("Using Memory storage. Artifacts kept in memory.")
+        storage = MemoryStorage()
+        outfile_path = "memory.csv"
+        base_dir = "."
     elif outfile in ("sharepoint", "s"):
         vprint(f"Using SharePoint storage. Output: {outfile}")
         storage = M365Storage()
@@ -422,6 +429,8 @@ def main(args_list: list[str] | None = None) -> None:
         display_outfile = "Google Drive (Workspace)"
     elif outfile in ("n", "none"):
         display_outfile = "None (log only)"
+    elif outfile in ("m", "memory"):
+        display_outfile = "Memory (in-memory only)"
     else:
         display_outfile = str(Path(outfile).resolve())
     rprint(f"Saving to: {display_outfile}")
@@ -2249,6 +2258,10 @@ def main(args_list: list[str] | None = None) -> None:
         import shutil
 
         shutil.rmtree(local_temp_dir)
+
+    if isinstance(storage, MemoryStorage):
+        return storage
+    return None
 
 
 if __name__ == "__main__":

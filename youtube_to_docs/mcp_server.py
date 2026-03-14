@@ -39,6 +39,7 @@ def process_video(
             Defaults to 'youtube-to-docs-artifacts/youtube-docs.csv'.
             Can also be 'workspace' or 'w' to store to Google Drive,
             'sharepoint' or 's' to store to Microsoft SharePoint,
+            'memory' or 'm' to keep artifacts in memory (no files on disk),
             or 'none' or 'n' to skip saving to a file (results will be in the log).
         transcript_source: The transcript source to use. 'youtube' (default)
             fetches existing transcripts. Provide an AI model name

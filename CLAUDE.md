@@ -11,7 +11,7 @@ Processes a YouTube video to generate transcripts, summaries, Q&A, and infograph
 Here are the following args for the tool:
 
 - **url**: The YouTube URL, video ID, playlist ID, or comma-separated list of IDs.
-- **output_file**: (Optional) Path to save the output CSV. Defaults to `youtube-to-docs-artifacts/youtube-docs.csv`. Can be a local path, `workspace` (or `w`) for Google Drive, `sharepoint` (or `s`) for Microsoft SharePoint, or `none` (or `n`) to skip saving to a file.
+- **output_file**: (Optional) Path to save the output CSV. Defaults to `youtube-to-docs-artifacts/youtube-docs.csv`. Can be a local path, `workspace` (or `w`) for Google Drive, `sharepoint` (or `s`) for Microsoft SharePoint, `memory` (or `m`) to keep artifacts in memory (no files on disk), or `none` (or `n`) to skip saving to a file.
 - **transcript_source**: (Optional) Source for the transcript. Defaults to 'youtube' (fetches existing). set to an AI model name (e.g., 'gemini-3-flash-preview', 'gcp-chirp3') to perform STT on extracted audio. For `gcp-` models, `YTD_GCS_BUCKET_NAME` env var is recommended.
 - **model**: (Optional) The LLM model(s) to use for summarization, Q&A, speaker extraction and tag generation (e.g., 'gemini-3-flash-preview'). Can be a comma-separated list.
 - **tts_model**: (Optional) The TTS model and voice to use (e.g., 'gemini-2.5-flash-preview-tts-Kore', 'gemini-2.5-pro-preview-tts-Kore', 'gcp-chirp3', 'gcp-chirp3-Kore', 'aws-polly', 'aws-polly-Ruth').
