@@ -1072,8 +1072,9 @@
 - <strong>Local path</strong> (default): <code>youtube-to-docs-artifacts/youtube-docs.csv</code>.
 - <strong><code>workspace</code> / <code>w</code></strong>: Saves to Google Drive (requires <code>google-auth-oauthlib</code>).
 - <strong><code>sharepoint</code> / <code>s</code></strong>: Saves to Microsoft SharePoint (requires <code>msal</code> and <code>xlsxwriter</code>).
+- <strong><code>memory</code> / <code>m</code></strong>: Keeps artifacts in memory (no files on disk). Useful for the web app where users want results returned directly without local file side-effects.
 - <strong><code>none</code> / <code>n</code></strong>: Skips saving to a file; results are available in the log output only.</p>
-<p>Storage is abstracted via <code>youtube_to_docs/storage.py</code> (<code>LocalStorage</code>, <code>GoogleDriveStorage</code>, <code>M365Storage</code>, <code>NullStorage</code>), so the rest of the pipeline is storage-agnostic.</p>
+<p>Storage is abstracted via <code>youtube_to_docs/storage.py</code> (<code>LocalStorage</code>, <code>GoogleDriveStorage</code>, <code>M365Storage</code>, <code>MemoryStorage</code>, <code>NullStorage</code>), so the rest of the pipeline is storage-agnostic.</p>
 <h3 id="9-cost-tracking">9. Cost Tracking</h3>
 <p>The system includes a pricing engine (<code>youtube_to_docs/prices.py</code>) that tracks token usage for every API call.
 - It calculates costs for input and output tokens based on the specific model used.
