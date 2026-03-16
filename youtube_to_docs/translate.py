@@ -1,8 +1,33 @@
+"""Translation utilities for youtube-to-docs.
+
+Translates LLM-generated summaries, Q&A, and tags into a target language
+using an LLM, AWS Translate, or Google Cloud Translation API.
+
+A ``--model`` (``-m``) is required to generate the English content
+(summaries, Q&A, tags) that ``--translate`` (``-tr``) then translates.
+Without ``-m``, only the raw transcript is translated.
+
+Usage (CLI)::
+
+    # Translate with an LLM
+    uv run youtube-to-docs URL -m gemini-3-flash-preview \
+        -tr gemini-3-flash-preview-es
+
+    # Translate with AWS Translate
+    uv run youtube-to-docs URL -m gemini-3-flash-preview \
+        -tr aws-translate-spanish
+
+    # Translate with Google Cloud Translation API
+    uv run youtube-to-docs URL -m gemini-3-flash-preview \
+        -tr gcp-translate-fr
+"""
+
 import os
 from typing import Any, Optional, Tuple
 
 from youtube_to_docs.constants import KNOWN_SRT_SOURCE_PREFIXES
 from youtube_to_docs.llms import _query_llm
+from youtube_to_docs.utils import get_gcp_client
 
 try:
     import boto3
@@ -99,6 +124,7 @@ def _chunk_text(text: str, max_bytes: int = _AWS_TRANSLATE_BYTE_LIMIT) -> list[s
 
     Splits on blank lines first, then on single newlines, to keep logical
     blocks (e.g. SRT entries, paragraphs) together wherever possible.
+    If a single line is too long, it splits it into smaller pieces.
     """
     chunks: list[str] = []
     current_lines: list[str] = []
@@ -106,10 +132,39 @@ def _chunk_text(text: str, max_bytes: int = _AWS_TRANSLATE_BYTE_LIMIT) -> list[s
 
     for line in text.splitlines(keepends=True):
         line_bytes = len(line.encode("utf-8"))
+
+        # If this single line is longer than the absolute limit,
+        # we must split it.
+        if line_bytes > max_bytes:
+            # First, flush anything currently in current_lines
+            if current_lines:
+                chunks.append("".join(current_lines))
+                current_lines = []
+                current_bytes = 0
+
+            # Split the giant line into max_bytes chunks
+            # We must be careful with UTF-8 character boundaries.
+            remaining_bytes = line.encode("utf-8")
+            while len(remaining_bytes) > max_bytes:
+                # Find a split point that doesn't break a UTF-8 character
+                split_point = max_bytes
+                # UTF-8 continuation bytes start with 10xxxxxx (0x80 to 0xBF)
+                while split_point > 0 and (remaining_bytes[split_point] & 0xC0) == 0x80:
+                    split_point -= 1
+
+                chunks.append(remaining_bytes[:split_point].decode("utf-8"))
+                remaining_bytes = remaining_bytes[split_point:]
+
+            if remaining_bytes:
+                current_lines.append(remaining_bytes.decode("utf-8"))
+                current_bytes = len(remaining_bytes)
+            continue
+
         if current_bytes + line_bytes > max_bytes and current_lines:
             chunks.append("".join(current_lines))
             current_lines = []
             current_bytes = 0
+
         current_lines.append(line)
         current_bytes += line_bytes
 
@@ -174,7 +229,15 @@ def _translate_gcp(text: str, target_language: str) -> Tuple[str, int, int]:
             0,
         )
 
-    client = google_translate.Client()
+    client = get_gcp_client(google_translate.Client, "GCP Translate")
+    if client is None:
+        return (
+            "Error: Google Cloud Translation client could not be initialized. "
+            "Please check your credentials "
+            "(run 'gcloud auth application-default login').",
+            0,
+            0,
+        )
 
     chunks = _chunk_text(text, max_bytes=_GCP_TRANSLATE_CHAR_LIMIT)
     translated_chunks: list[str] = []

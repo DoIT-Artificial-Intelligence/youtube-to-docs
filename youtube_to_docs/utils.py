@@ -1,8 +1,62 @@
 import os
 import re
+from collections.abc import Callable
 from pathlib import Path
+from typing import TypeVar
 
 import polars as pl
+from rich import print as rprint
+
+T = TypeVar("T")
+
+
+def get_gcp_client(
+    callable_item: Callable[..., T], service_name: str, **kwargs
+) -> T | None:
+    """
+    Safely initializes a GCP client or calls a GCP auth function.
+    Handles DefaultCredentialsError and provides helpful instructions to the user.
+    """
+    try:
+        return callable_item(**kwargs)
+    except Exception as e:
+        # Use isinstance for better type checking if google-auth is available
+        creds_error = False
+        try:
+            from google.auth import exceptions as google_auth_exceptions
+
+            if isinstance(e, google_auth_exceptions.DefaultCredentialsError):
+                creds_error = True
+        except ImportError:
+            pass
+
+        if not creds_error and "DefaultCredentialsError" in str(e):
+            creds_error = True
+
+        if creds_error:
+            rprint(
+                f"\n[bold red]Error: Google Cloud Application Default Credentials "
+                f"not found for {service_name}.[/bold red]"
+            )
+            rprint(
+                "[yellow]To fix this, please run the following command in your "
+                "terminal:[/yellow]\n"
+            )
+            rprint(
+                "    [bold white]gcloud auth application-default login[/bold white]\n"
+            )
+            rprint(
+                "[yellow]Alternatively, set the "
+                "[bold white]GOOGLE_APPLICATION_CREDENTIALS[/bold white] "
+                "environment variable to the path of your service account JSON key "
+                "file.[/yellow]\n"
+            )
+            return None
+        else:
+            rprint(
+                f"[bold red]Error initializing {service_name} client: {e}[/bold red]"
+            )
+            return None
 
 
 def format_clickable_path(path: str) -> str:

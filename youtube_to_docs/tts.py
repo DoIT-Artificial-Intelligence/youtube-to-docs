@@ -9,7 +9,7 @@ import polars as pl
 from rich import print as rprint
 
 from youtube_to_docs.storage import Storage
-from youtube_to_docs.utils import format_clickable_path
+from youtube_to_docs.utils import format_clickable_path, get_gcp_client
 
 
 def wave_file(filename, pcm, channels=1, rate=24000, sample_width=2):
@@ -92,7 +92,9 @@ def generate_speech_gcp(
         return b""
 
     try:
-        client = texttospeech.TextToSpeechClient()
+        client = get_gcp_client(texttospeech.TextToSpeechClient, "GCP Text-to-Speech")
+        if client is None:
+            return b""
 
         # Build the voice name from language code and voice name
         # e.g., language_code="en-US", voice_name="Kore" -> "en-US-Chirp3-HD-Kore"

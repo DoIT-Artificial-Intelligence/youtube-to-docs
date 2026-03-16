@@ -161,6 +161,7 @@ class TestTranslateGcp(unittest.TestCase):
         # Return different text per call to verify chunk joining
         mock_client.translate.side_effect = [
             {"translatedText": "Hola"},
+            {"translatedText": ""},
             {"translatedText": " mundo"},
         ]
 
