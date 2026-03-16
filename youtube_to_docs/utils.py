@@ -1,6 +1,5 @@
 import os
 import re
-import sys
 from pathlib import Path
 from typing import Any, Type, TypeVar
 
@@ -10,7 +9,9 @@ from rich import print as rprint
 T = TypeVar("T")
 
 
-def get_gcp_client(callable_item: Type[T] | Any, service_name: str, **kwargs) -> T | Any | None:
+def get_gcp_client(
+    callable_item: Type[T] | Any, service_name: str, **kwargs
+) -> T | Any | None:
     """
     Safely initializes a GCP client or calls a GCP auth function.
     Handles DefaultCredentialsError and provides helpful instructions to the user.
@@ -29,15 +30,20 @@ def get_gcp_client(callable_item: Type[T] | Any, service_name: str, **kwargs) ->
                 "[yellow]To fix this, please run the following command in your "
                 "terminal:[/yellow]\n"
             )
-            rprint("    [bold white]gcloud auth application-default login[/bold white]\n")
             rprint(
-                "[yellow]Alternatively, set the [bold white]GOOGLE_APPLICATION_CREDENTIALS[/bold white] "
+                "    [bold white]gcloud auth application-default login[/bold white]\n"
+            )
+            rprint(
+                "[yellow]Alternatively, set the "
+                "[bold white]GOOGLE_APPLICATION_CREDENTIALS[/bold white] "
                 "environment variable to the path of your service account JSON key "
                 "file.[/yellow]\n"
             )
             return None
         else:
-            rprint(f"[bold red]Error initializing {service_name} client: {e}[/bold red]")
+            rprint(
+                f"[bold red]Error initializing {service_name} client: {e}[/bold red]"
+            )
             return None
 
 

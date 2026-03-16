@@ -144,7 +144,11 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
 
                     res = get_gcp_client(google.auth.default, "Vertex AI Credentials")
                     if res is None:
-                        return "Error: Vertex AI Credentials could not be initialized.", 0, 0
+                        return (
+                            "Error: Vertex AI Credentials could not be initialized.",
+                            0,
+                            0,
+                        )
                     vertex_credentials, _ = res
                     authed_session = AuthorizedSession(vertex_credentials)
 
