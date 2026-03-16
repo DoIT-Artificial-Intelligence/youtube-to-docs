@@ -140,7 +140,12 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
 
                 if response is None:
                     # Fallback to Application Default Credentials
-                    vertex_credentials, _ = google.auth.default()
+                    from youtube_to_docs.utils import get_gcp_client
+
+                    res = get_gcp_client(google.auth.default, "Vertex AI Credentials")
+                    if res is None:
+                        return "Error: Vertex AI Credentials could not be initialized.", 0, 0
+                    vertex_credentials, _ = res
                     authed_session = AuthorizedSession(vertex_credentials)
 
                     try:
@@ -158,7 +163,12 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
                                 check=True,
                             )
                             # Reload credentials and retry
-                            vertex_credentials, _ = google.auth.default()
+                            res = get_gcp_client(
+                                google.auth.default, "Vertex AI Credentials"
+                            )
+                            if res is None:
+                                return "Error: Re-authentication failed.", 0, 0
+                            vertex_credentials, _ = res
                             authed_session = AuthorizedSession(vertex_credentials)
                             response = authed_session.post(
                                 endpoint, json=payload, headers=headers
@@ -688,7 +698,12 @@ def _transcribe_gcp(
     CHUNK_SIZE_SEC = 1140  # 19 minutes
     should_chunk = duration_seconds and duration_seconds > 1140
 
-    storage_client = storage.Client(project=project_id)
+    from youtube_to_docs.utils import get_gcp_client
+
+    storage_client = get_gcp_client(storage.Client, "GCP Storage", project=project_id)
+    if storage_client is None:
+        return "Error: GCP Storage client could not be initialized.", "", 0, 0
+
     bucket = storage_client.bucket(bucket_name)
 
     client_options = None
@@ -696,7 +711,11 @@ def _transcribe_gcp(
         api_endpoint = f"{location}-speech.googleapis.com"
         client_options = ClientOptions(api_endpoint=api_endpoint)
 
-    client = speech_v2.SpeechClient(client_options=client_options)
+    client = get_gcp_client(
+        speech_v2.SpeechClient, "GCP Speech-to-Text", client_options=client_options
+    )
+    if client is None:
+        return "Error: GCP Speech-to-Text client could not be initialized.", "", 0, 0
 
     if language == "en":
         language = "en-US"

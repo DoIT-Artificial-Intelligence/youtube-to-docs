@@ -92,7 +92,11 @@ def generate_speech_gcp(
         return b""
 
     try:
-        client = texttospeech.TextToSpeechClient()
+        from youtube_to_docs.utils import get_gcp_client
+
+        client = get_gcp_client(texttospeech.TextToSpeechClient, "GCP Text-to-Speech")
+        if client is None:
+            return b""
 
         # Build the voice name from language code and voice name
         # e.g., language_code="en-US", voice_name="Kore" -> "en-US-Chirp3-HD-Kore"

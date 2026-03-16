@@ -174,7 +174,16 @@ def _translate_gcp(text: str, target_language: str) -> Tuple[str, int, int]:
             0,
         )
 
-    client = google_translate.Client()
+    from youtube_to_docs.utils import get_gcp_client
+
+    client = get_gcp_client(google_translate.Client, "GCP Translate")
+    if client is None:
+        return (
+            "Error: Google Cloud Translation client could not be initialized. "
+            "Please check your credentials (run 'gcloud auth application-default login').",
+            0,
+            0,
+        )
 
     chunks = _chunk_text(text, max_bytes=_GCP_TRANSLATE_CHAR_LIMIT)
     translated_chunks: list[str] = []
