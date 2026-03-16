@@ -1,3 +1,27 @@
+"""Translation utilities for youtube-to-docs.
+
+Translates LLM-generated summaries, Q&A, and tags into a target language
+using an LLM, AWS Translate, or Google Cloud Translation API.
+
+A ``--model`` (``-m``) is required to generate the English content
+(summaries, Q&A, tags) that ``--translate`` (``-tr``) then translates.
+Without ``-m``, only the raw transcript is translated.
+
+Usage (CLI)::
+
+    # Translate with an LLM
+    uv run youtube-to-docs URL -m gemini-3-flash-preview \
+        -tr gemini-3-flash-preview-es
+
+    # Translate with AWS Translate
+    uv run youtube-to-docs URL -m gemini-3-flash-preview \
+        -tr aws-translate-spanish
+
+    # Translate with Google Cloud Translation API
+    uv run youtube-to-docs URL -m gemini-3-flash-preview \
+        -tr gcp-translate-fr
+"""
+
 import os
 from typing import Any, Optional, Tuple
 
