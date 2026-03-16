@@ -1,7 +1,8 @@
 import os
 import re
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Type, TypeVar
+from typing import TypeVar
 
 import polars as pl
 from rich import print as rprint
@@ -10,8 +11,8 @@ T = TypeVar("T")
 
 
 def get_gcp_client(
-    callable_item: Type[T] | Any, service_name: str, **kwargs
-) -> T | Any | None:
+    callable_item: Callable[..., T], service_name: str, **kwargs
+) -> T | None:
     """
     Safely initializes a GCP client or calls a GCP auth function.
     Handles DefaultCredentialsError and provides helpful instructions to the user.
@@ -24,9 +25,7 @@ def get_gcp_client(
         try:
             from google.auth import exceptions as google_auth_exceptions
 
-            if google_auth_exceptions and isinstance(
-                e, google_auth_exceptions.DefaultCredentialsError
-            ):
+            if isinstance(e, google_auth_exceptions.DefaultCredentialsError):
                 creds_error = True
         except ImportError:
             pass

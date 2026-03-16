@@ -3,6 +3,7 @@ from typing import Any, Optional, Tuple
 
 from youtube_to_docs.constants import KNOWN_SRT_SOURCE_PREFIXES
 from youtube_to_docs.llms import _query_llm
+from youtube_to_docs.utils import get_gcp_client
 
 try:
     import boto3
@@ -203,8 +204,6 @@ def _translate_gcp(text: str, target_language: str) -> Tuple[str, int, int]:
             0,
             0,
         )
-
-    from youtube_to_docs.utils import get_gcp_client
 
     client = get_gcp_client(google_translate.Client, "GCP Translate")
     if client is None:

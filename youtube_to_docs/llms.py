@@ -20,7 +20,11 @@ except ImportError:
 
 
 from youtube_to_docs.prices import PRICES
-from youtube_to_docs.utils import add_question_numbers, normalize_model_name
+from youtube_to_docs.utils import (
+    add_question_numbers,
+    get_gcp_client,
+    normalize_model_name,
+)
 
 
 def get_model_pricing(model_name: str) -> Tuple[float | None, float | None]:
@@ -140,8 +144,6 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
 
                 if response is None:
                     # Fallback to Application Default Credentials
-                    from youtube_to_docs.utils import get_gcp_client
-
                     res = get_gcp_client(google.auth.default, "Vertex AI Credentials")
                     if res is None:
                         return (
@@ -701,8 +703,6 @@ def _transcribe_gcp(
 
     CHUNK_SIZE_SEC = 1140  # 19 minutes
     should_chunk = duration_seconds and duration_seconds > 1140
-
-    from youtube_to_docs.utils import get_gcp_client
 
     storage_client = get_gcp_client(storage.Client, "GCP Storage", project=project_id)
     if storage_client is None:

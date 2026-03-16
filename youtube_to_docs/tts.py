@@ -9,7 +9,7 @@ import polars as pl
 from rich import print as rprint
 
 from youtube_to_docs.storage import Storage
-from youtube_to_docs.utils import format_clickable_path
+from youtube_to_docs.utils import format_clickable_path, get_gcp_client
 
 
 def wave_file(filename, pcm, channels=1, rate=24000, sample_width=2):
@@ -92,8 +92,6 @@ def generate_speech_gcp(
         return b""
 
     try:
-        from youtube_to_docs.utils import get_gcp_client
-
         client = get_gcp_client(texttospeech.TextToSpeechClient, "GCP Text-to-Speech")
         if client is None:
             return b""
