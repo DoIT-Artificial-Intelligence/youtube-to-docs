@@ -19,9 +19,22 @@ def get_gcp_client(
     try:
         return callable_item(**kwargs)
     except Exception as e:
-        # We check for 'DefaultCredentialsError' in the string representation
-        # of the error to avoid direct dependency on google-auth if not present.
-        if "DefaultCredentialsError" in str(e):
+        # Use isinstance for better type checking if google-auth is available
+        creds_error = False
+        try:
+            from google.auth import exceptions as google_auth_exceptions
+
+            if google_auth_exceptions and isinstance(
+                e, google_auth_exceptions.DefaultCredentialsError
+            ):
+                creds_error = True
+        except ImportError:
+            pass
+
+        if not creds_error and "DefaultCredentialsError" in str(e):
+            creds_error = True
+
+        if creds_error:
             rprint(
                 f"\n[bold red]Error: Google Cloud Application Default Credentials "
                 f"not found for {service_name}.[/bold red]"
