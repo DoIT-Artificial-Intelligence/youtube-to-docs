@@ -1264,7 +1264,9 @@ class MemoryStorage(Storage):
 
     @staticmethod
     def _norm(path: str) -> str:
-        """Strip leading ``./`` so dict keys are consistent with URL paths."""
+        """Normalise to forward slashes and strip leading ``./`` so dict keys
+        are consistent with URL paths on every platform (including Windows)."""
+        path = path.replace("\\", "/")
         if path.startswith("./"):
             return path[2:]
         return path

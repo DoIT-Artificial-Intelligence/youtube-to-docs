@@ -285,7 +285,7 @@ def _scan_artifacts(video_id: str, output_file: str) -> list[dict]:
             if file_path.is_file() and video_id in file_path.name:
                 artifacts.append(
                     {
-                        "path": str(file_path),
+                        "path": file_path.as_posix(),
                         "name": file_path.name,
                         "directory": dir_name,
                         "size": file_path.stat().st_size,
@@ -296,13 +296,12 @@ def _scan_artifacts(video_id: str, output_file: str) -> list[dict]:
         safe_csv = _safe_resolve_within_cwd(output_file)
         if os.path.isfile(safe_csv):
             csv_path = Path(safe_csv)
+            rel = Path(os.path.relpath(safe_csv, os.getcwd()))
             artifacts.append(
                 {
-                    "path": os.path.relpath(safe_csv, os.getcwd()),
+                    "path": rel.as_posix(),
                     "name": csv_path.name,
-                    "directory": str(
-                        Path(os.path.relpath(safe_csv, os.getcwd())).parent
-                    ),
+                    "directory": rel.parent.as_posix(),
                     "size": csv_path.stat().st_size,
                 }
             )
