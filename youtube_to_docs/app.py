@@ -438,12 +438,19 @@ def _is_port_in_use(port: int, host: str = "0.0.0.0") -> bool:
 def start_server():
     """Entry point for the youtube-to-docs-app command."""
     import argparse
+    import importlib.metadata
 
     parser = argparse.ArgumentParser(description="YouTube to Docs Web App")
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
     parser.add_argument("--port", type=int, default=8000, help="Port to bind to")
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload")
     args = parser.parse_args()
+
+    # Get version
+    try:
+        version = importlib.metadata.version("youtube-to-docs")
+    except importlib.metadata.PackageNotFoundError:
+        version = "unknown"
 
     port = args.port
     # If the user didn't specify a port (it's the default 8000), or even if they did,
@@ -452,13 +459,17 @@ def start_server():
     while _is_port_in_use(port, args.host):
         port += 1
         if port > original_port + 100:  # Safety limit
-            print(f"Error: Could not find an available port after 100 attempts starting from {original_port}.")
+            print(
+                f"Error: Could not find an available port after 100 attempts "
+                f"starting from {original_port}."
+            )
             return
 
     if port != args.port:
         print(f"Port {args.port} is in use, using port {port} instead.")
 
     if args.host == "0.0.0.0":
+        print(f"YouTube to Docs v{version}")
         print(f"App available at: http://localhost:{port}")
 
     uvicorn.run(
