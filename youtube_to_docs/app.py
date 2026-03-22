@@ -423,6 +423,18 @@ def _extract_video_id(url: str) -> str | None:
     return None
 
 
+def _is_port_in_use(port: int, host: str = "0.0.0.0") -> bool:
+    """Check if a port is already in use on the given host."""
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind((host, port))
+            return False
+        except OSError:
+            return True
+
+
 def start_server():
     """Entry point for the youtube-to-docs-app command."""
     import argparse
@@ -433,13 +445,26 @@ def start_server():
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload")
     args = parser.parse_args()
 
+    port = args.port
+    # If the user didn't specify a port (it's the default 8000), or even if they did,
+    # try to find the next available one if it's in use.
+    original_port = port
+    while _is_port_in_use(port, args.host):
+        port += 1
+        if port > original_port + 100:  # Safety limit
+            print(f"Error: Could not find an available port after 100 attempts starting from {original_port}.")
+            return
+
+    if port != args.port:
+        print(f"Port {args.port} is in use, using port {port} instead.")
+
     if args.host == "0.0.0.0":
-        print(f"App available at: http://localhost:{args.port}")
+        print(f"App available at: http://localhost:{port}")
 
     uvicorn.run(
         "youtube_to_docs.app:app",
         host=args.host,
-        port=args.port,
+        port=port,
         reload=args.reload,
     )
 
