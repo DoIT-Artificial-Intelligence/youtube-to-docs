@@ -705,8 +705,8 @@
 
           const link = document.createElement('a');
           link.href = job.memory_mode
-            ? '/api/jobs/' + jobId + '/artifacts/' + encodeURI(a.path)
-            : '/api/artifacts/' + encodeURI(a.path);
+            ? '/api/jobs/' + jobId + '/artifacts/' + a.path.split('/').map(encodeURIComponent).join('/')
+            : '/api/artifacts/' + a.path.split('/').map(encodeURIComponent).join('/');
           link.target = '_blank';
           link.textContent = 'Download';
 
