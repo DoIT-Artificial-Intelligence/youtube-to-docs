@@ -109,8 +109,8 @@
   .logo-container img {
     flex-shrink: 0;
     border-radius: 4px;
-    height: 210px;
-    width: auto;
+    max-width: 100%;
+    height: auto;
     max-height: 210px;
   }
 
@@ -445,7 +445,7 @@
           <div class="status-dot" id="status-dot"></div>
           <span id="status-text" role="status" aria-live="polite">Processing...</span>
         </div>
-        <div id="log-area" role="log" aria-label="Processing log"></div>
+        <div id="log-area" role="region" aria-label="Processing log"></div>
       </div>
     </div>
 
