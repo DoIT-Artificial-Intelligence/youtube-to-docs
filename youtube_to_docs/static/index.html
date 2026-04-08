@@ -705,7 +705,7 @@
             : '/api/artifacts/' + a.path.split('/').map(encodeURIComponent).join('/');
           link.target = '_blank';
           link.textContent = 'Download';
-          link.setAttribute('aria-label', `Download ${a.name}`);
+          link.setAttribute('aria-label', `Download ${a.name} (opens in new window)`);
 
           item.appendChild(info);
           item.appendChild(link);
