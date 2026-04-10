@@ -71,7 +71,7 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
     if model_name.startswith("nova") or model_name.startswith("claude"):
         model_name = "bedrock-" + model_name
 
-    if model_name.startswith("gemini"):
+    if model_name.startswith("gemini") or model_name.startswith("gemma"):
         try:
             from google import genai
             from google.genai import types
@@ -204,6 +204,13 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
                         f"Vertex API Error {response.status_code}: {response.text}"
                     )
                     print(response_text)
+            elif actual_model_name.startswith("gemma"):
+                raise NotImplementedError(
+                    f"Vertex AI Gemma models ('{model_name}') require a "
+                    "dedicated deployment. Use the 'gemma-' prefix "
+                    "(without 'vertex-') to run via the Google GenAI "
+                    "client instead."
+                )
             elif actual_model_name.startswith("gemini"):
                 from google import genai
                 from google.genai import types
@@ -229,6 +236,8 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
                 "Error: PROJECT_ID environment variable required for GCPVertex models."
             )
             response_text = "Error: PROJECT_ID required"
+        except NotImplementedError:
+            raise
         except Exception as e:
             print(f"Vertex Request Error: {e}")
             response_text = f"Error: {e}"
@@ -1287,7 +1296,7 @@ def generate_alt_text(
         "Start the response immediately with the alt text."
     )
 
-    if model_name.startswith("gemini"):
+    if model_name.startswith("gemini") or model_name.startswith("gemma"):
         try:
             from google import genai
             from google.genai import types

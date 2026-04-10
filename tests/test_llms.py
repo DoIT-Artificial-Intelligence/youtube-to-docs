@@ -152,6 +152,28 @@ class TestLLMs(unittest.TestCase):
         self.assertEqual(out_tokens, 20)
 
     @patch("google.genai.Client")
+    def test_generate_summary_gemma(self, mock_client_cls):
+        """Gemma models should route to the Google GenAI client (same as Gemini)."""
+        mock_client = mock_client_cls.return_value
+        mock_resp = MagicMock()
+        mock_resp.text = "Gemma Summary"
+        mock_resp.usage_metadata.prompt_token_count = 100
+        mock_resp.usage_metadata.candidates_token_count = 50
+        mock_client.models.generate_content.return_value = mock_resp
+
+        summary, in_tokens, out_tokens = llms.generate_summary(
+            "gemma-4-27b-it", "transcript", "Title", "url"
+        )
+        self.assertEqual(summary, "Gemma Summary")
+        self.assertEqual(in_tokens, 100)
+        self.assertEqual(out_tokens, 50)
+
+    def test_vertex_gemma_raises_not_implemented(self):
+        """vertex-gemma-* should raise NotImplementedError (requires deployment)."""
+        with self.assertRaises(NotImplementedError):
+            llms._query_llm("vertex-gemma-4-27b-it", "test prompt")
+
+    @patch("google.genai.Client")
     def test_generate_alt_text_gemini(self, mock_client_cls):
         mock_client = mock_client_cls.return_value
         mock_resp = MagicMock()

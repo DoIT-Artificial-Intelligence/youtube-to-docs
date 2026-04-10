@@ -30,7 +30,7 @@ For each video, the tool fetches or generates a transcript:
 
 ### 3. The LLM Pipeline
 Text processing is handled by Large Language Models (LLMs) defined in `youtube_to_docs/llms.py`. The pipeline is model-agnostic, supporting:
-- **Google Gemini** (direct API)
+- **Google Gemini / Gemma** (direct API, models prefixed `gemini-` or `gemma-`)
 - **GCP Vertex AI** (prefixed with `vertex-`, e.g. `vertex-claude-haiku-4-5@20251001`)
 - **AWS Bedrock** (prefixed with `bedrock-`, e.g. `bedrock-nova-2-lite-v1`)
 - **Azure Foundry** (prefixed with `foundry-`, e.g. `foundry-gpt-5-mini`)

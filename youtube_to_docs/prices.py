@@ -707,6 +707,22 @@ PRICES = {
             "input_cached": None,
         },
         {
+            "id": "gemma-4-26b-a4b-it",
+            "vendor": "google",
+            "name": "Gemma 4 26B (open source)",
+            "input": 0,
+            "output": 0,
+            "input_cached": None,
+        },
+        {
+            "id": "gemma-4-31b-it",
+            "vendor": "google",
+            "name": "Gemma 4 31B (open source)",
+            "input": 0,
+            "output": 0,
+            "input_cached": None,
+        },
+        {
             "id": "gcp-translate",
             "vendor": "google",
             "name": "GCP Cloud Translation*",

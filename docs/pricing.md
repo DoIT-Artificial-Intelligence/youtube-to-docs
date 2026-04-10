@@ -189,6 +189,8 @@ const pricingData = {
         {"id": "imagen-4-ultra", "vendor": "google", "name": "Imagen 4 Ultra*", "input": 30.0, "output": 30.0},
         {"id": "imagen-4.0-ultra-generate-001", "vendor": "google", "name": "Imagen 4.0 Ultra Generate 001*", "input": 30.0, "output": 30.0},
         {"id": "imagen-4.0-fast-generate-001", "vendor": "google", "name": "Imagen 4.0 Fast Generate 001*", "input": 10.0, "output": 10.0},
+        {"id": "gemma-4-26b-a4b-it", "vendor": "google", "name": "Gemma 4 26B (open source)", "input": 0, "output": 0},
+        {"id": "gemma-4-31b-it", "vendor": "google", "name": "Gemma 4 31B (open source)", "input": 0, "output": 0},
         {"id": "chirp_3", "vendor": "google", "name": "GCP Chirp 3 (STT)*", "input": 40.0, "output": 40.0},
         {"id": "aws-polly", "vendor": "amazon", "name": "AWS Polly*", "input": 32.0, "output": 32.0},
         {"id": "aws-transcribe", "vendor": "amazon", "name": "AWS Transcribe*", "input": 60.0, "output": 60.0},

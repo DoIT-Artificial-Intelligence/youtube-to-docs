@@ -26,7 +26,7 @@ To keep the installation footprint small, many features are optional. You can en
 | `m365`      | Required for saving to SharePoint/OneDrive.                              | `msal`, `fastexcel`, `xlsxwriter`, `pypandoc`, `pypandoc_binary`                           |
 | `aws`       | AWS Bedrock support.                                                     | `boto3`, `botocore[crt]`                                                                   |
 | `azure`     | Required if using Azure OpenAI models.                                   | `openai`                                                                                   |
-| `gcp`       | Required if using Google Gemini or Vertex AI models.                     | `google-genai`, `google-cloud-speech`, `google-cloud-storage`, `google-cloud-texttospeech`, `google-cloud-translate` |
+| `gcp`       | Required if using Google Gemini, Gemma, or Vertex AI models.             | `google-genai`, `google-cloud-speech`, `google-cloud-storage`, `google-cloud-texttospeech`, `google-cloud-translate` |
 | `app`       | Web app with browser-based UI.                                           | `fastapi`, `uvicorn`                                                                       |
 | `all`       | Installs all of the above.                                               | All optional dependencies.                                                                 |
 
@@ -79,7 +79,7 @@ Set the following environment variables based on the AI providers you intend to 
 | Variable                   | Description                                      | Required For                                                                            |
 | :------------------------- | :----------------------------------------------- | :-------------------------------------------------------------------------------------- |
 | `YOUTUBE_DATA_API_KEY`     | API key for the YouTube Data API v3.             | Fetching video metadata.                                                                |
-| `GEMINI_API_KEY`           | API key for Google Gemini models.                | Gemini models (`-m gemini...`).                                                         |
+| `GEMINI_API_KEY`           | API key for Google Gemini/Gemma models.          | Gemini/Gemma models (`-m gemini...`, `-m gemma...`).                                    |
 | `PROJECT_ID`               | Google Cloud Project ID.                         | GCP Vertex models (`-m vertex...`), GCP STT (`-t gcp...`) and GCP TTS (`--tts gcp...`). |
 | `YTD_GCS_BUCKET_NAME`      | Google Cloud Storage bucket name (write access). | GCP STT models (`-t gcp...`) for temp audio storage.                                    |
 | `AWS_BEARER_TOKEN_BEDROCK` | AWS Bearer Token.                                | AWS Bedrock models (`-m bedrock...`).                                                   |
