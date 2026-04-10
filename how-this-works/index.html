@@ -966,7 +966,7 @@
 </blockquote>
 <h3 id="3-the-llm-pipeline">3. The LLM Pipeline</h3>
 <p>Text processing is handled by Large Language Models (LLMs) defined in <code>youtube_to_docs/llms.py</code>. The pipeline is model-agnostic, supporting:
-- <strong>Google Gemini</strong> (direct API)
+- <strong>Google Gemini / Gemma</strong> (direct API, models prefixed <code>gemini-</code> or <code>gemma-</code>)
 - <strong>GCP Vertex AI</strong> (prefixed with <code>vertex-</code>, e.g. <code>vertex-claude-haiku-4-5@20251001</code>)
 - <strong>AWS Bedrock</strong> (prefixed with <code>bedrock-</code>, e.g. <code>bedrock-nova-2-lite-v1</code>)
 - <strong>Azure Foundry</strong> (prefixed with <code>foundry-</code>, e.g. <code>foundry-gpt-5-mini</code>)</p>
