@@ -147,6 +147,9 @@ def resolve_video_ids(video_id_input: str, youtube_service: Optional[Any]) -> Li
                 video_ids.append(item["contentDetails"]["videoId"])
             request = service.playlistItems().list_next(request, response)
 
+    # Deduplicate video IDs while preserving order
+    video_ids = list(dict.fromkeys(video_ids))
+
     return video_ids
 
 
