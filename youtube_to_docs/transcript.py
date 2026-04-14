@@ -134,6 +134,20 @@ def resolve_video_ids(video_id_input: str, youtube_service: Optional[Any]) -> Li
         video_ids = video_id_input.split(",")
     # Playlist (Standard 'PL' or Uploads 'UU')
     elif video_id_input.startswith("PL") or video_id_input.startswith("UU"):
+        playlist_slice = slice(None)
+        if "n=" in video_id_input:
+            video_id_input, n_str = video_id_input.split("n=")
+            if ":" in n_str:
+                parts = n_str.split(":")
+                start = int(parts[0]) if parts[0] else None
+                end = int(parts[1]) if len(parts) > 1 and parts[1] else None
+                # Treat end index as inclusive, mimicking closed interval [start, end]
+                if end is not None:
+                    end += 1
+                playlist_slice = slice(start, end)
+            else:
+                playlist_slice = slice(0, int(n_str))
+
         if not youtube_service:
             print("Error: YOUTUBE_DATA_API_KEY is required for playlists.")
             sys.exit(1)
@@ -146,6 +160,10 @@ def resolve_video_ids(video_id_input: str, youtube_service: Optional[Any]) -> Li
             for item in response["items"]:
                 video_ids.append(item["contentDetails"]["videoId"])
             request = service.playlistItems().list_next(request, response)
+        
+        # Deduplicate the video IDs early so slicing works correctly
+        video_ids = list(dict.fromkeys(video_ids))
+        video_ids = video_ids[playlist_slice]
 
     # Deduplicate video IDs while preserving order
     video_ids = list(dict.fromkeys(video_ids))
