@@ -13,7 +13,7 @@ MODEL_SUITES = {
     },
     "gemini-flash-pro-image": {
         "model": "gemini-3-flash-preview",
-        "tts": "gemini-2.5-flash-preview-tts-Kore",
+        "tts": "gemini-3.1-flash-tts-preview-Kore",
         "infographic": "gemini-3-pro-image-preview",
         "transcript": "gemini-3-flash-preview",
     },

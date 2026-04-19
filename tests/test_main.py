@@ -665,10 +665,10 @@ class TestMain(unittest.TestCase):
         )
         self.assertTrue(any_flash_summary)
 
-        # Check if process_tts was called with gemini-2.5-flash-preview-tts-Kore
+        # Check if process_tts was called with gemini-3.1-flash-tts-preview-Kore
         mock_tts.assert_called()
         self.assertEqual(
-            mock_tts.call_args.args[1], "gemini-2.5-flash-preview-tts-Kore"
+            mock_tts.call_args.args[1], "gemini-3.1-flash-tts-preview-Kore"
         )
 
         # Check if generate_infographic was called with gemini-3.1-flash-image-preview
@@ -849,10 +849,10 @@ class TestMain(unittest.TestCase):
         )
         self.assertTrue(any_flash_summary)
 
-        # Check if process_tts was called with gemini-2.5-flash-preview-tts-Kore
+        # Check if process_tts was called with gemini-3.1-flash-tts-preview-Kore
         mock_tts.assert_called()
         self.assertEqual(
-            mock_tts.call_args.args[1], "gemini-2.5-flash-preview-tts-Kore"
+            mock_tts.call_args.args[1], "gemini-3.1-flash-tts-preview-Kore"
         )
 
         # Check if generate_infographic was called with gemini-3-pro-image-preview
