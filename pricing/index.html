@@ -540,7 +540,7 @@
 <p>Compare the pricing of various Large Language Models. Prices are shown in USD per 1M tokens.</p>
 <blockquote>
 <p>[!NOTE]
-Prices last updated on <strong>2026-02-27</strong>. All values are per 1 million tokens unless otherwise specified.
+Prices last updated on <strong>2026-04-16</strong>. All values are per 1 million tokens unless otherwise specified.
 Non-token-based models are marked with * and converted as follows:</p>
 <ul>
 <li><strong>Character-based</strong> (TTS, Translation): $X per 1M chars → assume ~4 chars/token → multiply by 4. Cost split 50/50 input/output.</li>
@@ -643,7 +643,7 @@ Non-token-based models are marked with * and converted as follows:</p>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
 <script>
 const pricingData = {
-    "updated_at": "2026-02-27",
+    "updated_at": "2026-04-16",
     "prices": [
         {"id": "amazon-nova-micro", "vendor": "amazon", "name": "Amazon Nova Micro", "input": 0.035, "output": 0.14},
         {"id": "amazon-nova-lite", "vendor": "amazon", "name": "Amazon Nova Lite", "input": 0.06, "output": 0.24},
@@ -669,6 +669,8 @@ const pricingData = {
         {"id": "claude-opus-4-5", "vendor": "anthropic", "name": "Claude Opus 4.5", "input": 5, "output": 25},
         {"id": "claude-opus-4.6", "vendor": "anthropic", "name": "Claude Opus 4.6 \u2264200k", "input": 5, "output": 25},
         {"id": "claude-opus-4.6-200k", "vendor": "anthropic", "name": "Claude Opus 4.6 >200k", "input": 10, "output": 37.5},
+        {"id": "claude-opus-4.7", "vendor": "anthropic", "name": "Claude Opus 4.7 \u2264200k", "input": 5, "output": 25},
+        {"id": "claude-opus-4.7-200k", "vendor": "anthropic", "name": "Claude Opus 4.7 >200k", "input": 10, "output": 37.5},
         {"id": "gemini-2.5-pro-preview-03-25", "vendor": "google", "name": "Gemini 2.5 Pro Preview \u2264200k", "input": 1.25, "output": 10},
         {"id": "gemini-2.5-pro-preview-03-25-200k", "vendor": "google", "name": "Gemini 2.5 Pro Preview >200k", "input": 2.5, "output": 15},
         {"id": "gemini-2.0-flash-lite", "vendor": "google", "name": "Gemini 2.0 Flash Lite", "input": 0.08, "output": 0.3},
@@ -688,6 +690,7 @@ const pricingData = {
         {"id": "gemini-3-flash-preview-thinking", "vendor": "google", "name": "Gemini 3 Flash Preview Thinking", "input": 0.5, "output": 3.0},
         {"id": "gemini-2.5-flash-preview-tts", "vendor": "google", "name": "Gemini 2.5 Flash Preview TTS", "input": 0.5, "output": 10},
         {"id": "gemini-2.5-pro-preview-tts", "vendor": "google", "name": "Gemini 2.5 Pro Preview TTS", "input": 1, "output": 20},
+        {"id": "gemini-3.1-flash-tts-preview", "vendor": "google", "name": "Gemini 3.1 Flash TTS Preview", "input": 1, "output": 20},
         {"id": "gpt-4.5", "vendor": "openai", "name": "GPT-4.5", "input": 75, "output": 150},
         {"id": "gpt-4o", "vendor": "openai", "name": "GPT-4o", "input": 2.5, "output": 10},
         {"id": "gpt-4o-mini", "vendor": "openai", "name": "GPT-4o Mini", "input": 0.15, "output": 0.6},
@@ -726,8 +729,6 @@ const pricingData = {
         {"id": "imagen-4-ultra", "vendor": "google", "name": "Imagen 4 Ultra*", "input": 30.0, "output": 30.0},
         {"id": "imagen-4.0-ultra-generate-001", "vendor": "google", "name": "Imagen 4.0 Ultra Generate 001*", "input": 30.0, "output": 30.0},
         {"id": "imagen-4.0-fast-generate-001", "vendor": "google", "name": "Imagen 4.0 Fast Generate 001*", "input": 10.0, "output": 10.0},
-        {"id": "gemma-4-26b-a4b-it", "vendor": "google", "name": "Gemma 4 26B (open source)", "input": 0, "output": 0},
-        {"id": "gemma-4-31b-it", "vendor": "google", "name": "Gemma 4 31B (open source)", "input": 0, "output": 0},
         {"id": "chirp_3", "vendor": "google", "name": "GCP Chirp 3 (STT)*", "input": 40.0, "output": 40.0},
         {"id": "aws-polly", "vendor": "amazon", "name": "AWS Polly*", "input": 32.0, "output": 32.0},
         {"id": "aws-transcribe", "vendor": "amazon", "name": "AWS Transcribe*", "input": 60.0, "output": 60.0},
