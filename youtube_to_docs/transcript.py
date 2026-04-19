@@ -160,7 +160,7 @@ def resolve_video_ids(video_id_input: str, youtube_service: Optional[Any]) -> Li
             for item in response["items"]:
                 video_ids.append(item["contentDetails"]["videoId"])
             request = service.playlistItems().list_next(request, response)
-        
+
         # Deduplicate the video IDs early so slicing works correctly
         video_ids = list(dict.fromkeys(video_ids))
         video_ids = video_ids[playlist_slice]
