@@ -49,7 +49,8 @@ def process_video(
             Defaults to None (Transcript only).
             Use 'gemini-3-flash-preview' for summarization.
         tts_model: The TTS model and voice to use
-            (e.g., 'gemini-2.5-flash-preview-tts-Kore', 'gcp-chirp3-Kore',
+            (e.g., 'gemini-3.1-flash-tts-preview-Kore',
+            'gemini-2.5-flash-preview-tts-Kore', 'gcp-chirp3-Kore',
             'aws-polly-Ruth').
         infographic_model: The image model to use for generating an infographic
             (e.g., 'gemini-3.1-flash-image-preview').
@@ -67,7 +68,8 @@ def process_video(
         combine_infographic_audio: If True, combines the infographic and audio summary
             into a video file. Requires both tts_model and infographic_model.
         all_suite: Shortcut to use a specific model suite for everything.
-            e.g., 'gemini-flash', 'gemini-pro', 'gemini-flash-pro-image', or 'gcp-pro'.
+            e.g., 'gemini-flash', 'gemini-pro', 'gemini-flash-pro-image', 'gcp-pro',
+            or 'anthropic-opus'.
         suggest_corrected_captions: Suggest WCAG 2.1 Level AA compliant caption
             corrections for an SRT file, per Section 508 guidance. Format:
             `{model}` or `{model}-{source}`. Source can be 'youtube' or a transcript
