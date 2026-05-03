@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
+from youtube_to_docs.providers import BaseProvider, LLMProvider, TranslationProvider
 from youtube_to_docs.translate import (
     _translate_aws,
     _translate_gcp,
@@ -187,9 +188,15 @@ class TestTranslateGcp(unittest.TestCase):
 
 
 class TestTranslateText(unittest.TestCase):
-    @patch("youtube_to_docs.translate._query_llm")
-    def test_calls_query_llm_with_correct_prompt(self, mock_query):
-        mock_query.return_value = ("Hola mundo", 10, 5)
+    @patch("youtube_to_docs.providers.get_provider")
+    def test_calls_query_llm_with_correct_prompt(self, mock_get_provider):
+        from typing import Any
+
+        provider_instance: Any = MockLLMProvider("gemini-3-flash-preview")
+        provider_instance.generate_content = MagicMock(
+            return_value=("Hola mundo", 10, 5)
+        )
+        mock_get_provider.return_value = provider_instance
 
         result, in_tok, out_tok = translate_text(
             "gemini-3-flash-preview", "Hello world", "es"
@@ -199,62 +206,88 @@ class TestTranslateText(unittest.TestCase):
         self.assertEqual(in_tok, 10)
         self.assertEqual(out_tok, 5)
 
-        prompt_used = mock_query.call_args[0][1]
+        prompt_used = provider_instance.generate_content.call_args[0][0]
         self.assertIn("es", prompt_used)
         self.assertIn("Hello world", prompt_used)
 
-    @patch("youtube_to_docs.translate._query_llm")
-    def test_target_language_in_prompt(self, mock_query):
-        mock_query.return_value = ("Bonjour", 5, 3)
+    @patch("youtube_to_docs.providers.get_provider")
+    def test_target_language_in_prompt(self, mock_get_provider):
+        from typing import Any
+
+        provider_instance: Any = MockLLMProvider("gemini-3-flash-preview")
+        provider_instance.generate_content = MagicMock(return_value=("Bonjour", 5, 3))
+        mock_get_provider.return_value = provider_instance
 
         translate_text("gemini-3-flash-preview", "Hello", "fr")
 
-        prompt = mock_query.call_args[0][1]
+        prompt = provider_instance.generate_content.call_args[0][0]
         self.assertIn("fr", prompt)
 
-    @patch("youtube_to_docs.translate._query_llm")
-    def test_returns_query_llm_tuple(self, mock_query):
-        mock_query.return_value = ("translated", 100, 50)
+    @patch("youtube_to_docs.providers.get_provider")
+    def test_returns_query_llm_tuple(self, mock_get_provider):
+        from typing import Any
+
+        provider_instance: Any = MockLLMProvider("some-model")
+        provider_instance.generate_content = MagicMock(
+            return_value=("translated", 100, 50)
+        )
+        mock_get_provider.return_value = provider_instance
 
         result = translate_text("some-model", "some text", "de")
 
         self.assertEqual(result, ("translated", 100, 50))
 
-    @patch("youtube_to_docs.translate._translate_aws")
-    def test_routes_to_aws_translate(self, mock_aws):
-        mock_aws.return_value = ("Hola", 0, 0)
+    @patch("youtube_to_docs.providers.get_provider")
+    def test_routes_to_aws_translate(self, mock_get_provider):
+        from typing import Any
+
+        provider_instance: Any = MockTranslationProvider("aws-translate")
+        provider_instance.translate = MagicMock(return_value="Hola")
+        mock_get_provider.return_value = provider_instance
 
         result = translate_text("aws-translate", "Hello", "es")
 
         self.assertEqual(result, ("Hola", 0, 0))
-        mock_aws.assert_called_once_with("Hello", "es")
+        provider_instance.translate.assert_called_once_with("Hello", "es")
 
-    @patch("youtube_to_docs.translate._translate_aws")
-    @patch("youtube_to_docs.translate._query_llm")
-    def test_does_not_call_llm_for_aws_translate(self, mock_query, mock_aws):
-        mock_aws.return_value = ("Hola", 0, 0)
+    @patch("youtube_to_docs.providers.get_provider")
+    def test_does_not_call_llm_for_aws_translate(self, mock_get_provider):
+        from typing import Any
+
+        provider_instance: Any = MockTranslationProvider("aws-translate")
+        provider_instance.translate = MagicMock(return_value="Hola")
+        provider_instance.generate_content = MagicMock()
+        mock_get_provider.return_value = provider_instance
 
         translate_text("aws-translate", "Hello", "es")
 
-        mock_query.assert_not_called()
+        provider_instance.generate_content.assert_not_called()
 
-    @patch("youtube_to_docs.translate._translate_gcp")
-    def test_routes_to_gcp_translate(self, mock_gcp):
-        mock_gcp.return_value = ("Hola", 0, 0)
+    @patch("youtube_to_docs.providers.get_provider")
+    def test_routes_to_gcp_translate(self, mock_get_provider):
+        from typing import Any
+
+        provider_instance: Any = MockTranslationProvider("gcp-translate")
+        provider_instance.translate = MagicMock(return_value="Hola")
+        mock_get_provider.return_value = provider_instance
 
         result = translate_text("gcp-translate", "Hello", "es")
 
         self.assertEqual(result, ("Hola", 0, 0))
-        mock_gcp.assert_called_once_with("Hello", "es")
+        provider_instance.translate.assert_called_once_with("Hello", "es")
 
-    @patch("youtube_to_docs.translate._translate_gcp")
-    @patch("youtube_to_docs.translate._query_llm")
-    def test_does_not_call_llm_for_gcp_translate(self, mock_query, mock_gcp):
-        mock_gcp.return_value = ("Hola", 0, 0)
+    @patch("youtube_to_docs.providers.get_provider")
+    def test_does_not_call_llm_for_gcp_translate(self, mock_get_provider):
+        from typing import Any
+
+        provider_instance: Any = MockTranslationProvider("gcp-translate")
+        provider_instance.translate = MagicMock(return_value="Hola")
+        provider_instance.generate_content = MagicMock()
+        mock_get_provider.return_value = provider_instance
 
         translate_text("gcp-translate", "Hello", "es")
 
-        mock_query.assert_not_called()
+        provider_instance.generate_content.assert_not_called()
 
 
 class TestProcessTranslate(unittest.TestCase):
@@ -271,9 +304,9 @@ class TestProcessTranslate(unittest.TestCase):
             f"Tags {transcript_arg} {model} model": "tag1, tag2",
         }
 
-    @patch("youtube_to_docs.translate._query_llm")
-    def test_translates_all_columns(self, mock_query):
-        mock_query.return_value = ("traducido", 10, 5)
+    @patch("youtube_to_docs.translate.translate_text")
+    def test_translates_all_columns(self, mock_translate):
+        mock_translate.return_value = ("traducido", 10, 5)
         model = "gemini-3-flash-preview"
         transcript_arg = "youtube"
         row = self._base_row(model, transcript_arg)
@@ -307,9 +340,9 @@ class TestProcessTranslate(unittest.TestCase):
             result[f"Tags {transcript_arg} {model} model (es)"], "traducido"
         )
 
-    @patch("youtube_to_docs.translate._query_llm")
-    def test_skips_already_translated_columns(self, mock_query):
-        mock_query.return_value = ("traducido", 10, 5)
+    @patch("youtube_to_docs.translate.translate_text")
+    def test_skips_already_translated_columns(self, mock_translate):
+        mock_translate.return_value = ("traducido", 10, 5)
         model = "gemini-3-flash-preview"
         transcript_arg = "youtube"
         row = self._base_row(model, transcript_arg)
@@ -337,9 +370,9 @@ class TestProcessTranslate(unittest.TestCase):
             "already translated",
         )
 
-    @patch("youtube_to_docs.translate._query_llm")
-    def test_skips_missing_english_columns(self, mock_query):
-        mock_query.return_value = ("traducido", 10, 5)
+    @patch("youtube_to_docs.translate.translate_text")
+    def test_skips_missing_english_columns(self, mock_translate):
+        mock_translate.return_value = ("traducido", 10, 5)
         model = "gemini-3-flash-preview"
         transcript_arg = "youtube"
         # Row has no English content at all
@@ -362,11 +395,11 @@ class TestProcessTranslate(unittest.TestCase):
 
         # No translated columns should be added
         self.assertNotIn(f"Summary Text {model} from {transcript_arg} (es)", result)
-        mock_query.assert_not_called()
+        mock_translate.assert_not_called()
 
-    @patch("youtube_to_docs.translate._query_llm")
-    def test_translates_secondary_youtube_columns(self, mock_query):
-        mock_query.return_value = ("traducido", 10, 5)
+    @patch("youtube_to_docs.translate.translate_text")
+    def test_translates_secondary_youtube_columns(self, mock_translate):
+        mock_translate.return_value = ("traducido", 10, 5)
         model = "gemini-3-flash-preview"
         transcript_arg = "gemini-3-flash-preview"
         row = self._base_row(model, transcript_arg)
@@ -394,9 +427,9 @@ class TestProcessTranslate(unittest.TestCase):
         self.assertIn(f"One Sentence Summary {model} from youtube (fr)", result)
         self.assertIn(f"QA Text {model} from youtube (fr)", result)
 
-    @patch("youtube_to_docs.translate._query_llm")
-    def test_saves_translated_files(self, mock_query):
-        mock_query.return_value = ("traducido", 10, 5)
+    @patch("youtube_to_docs.translate.translate_text")
+    def test_saves_translated_files(self, mock_translate):
+        mock_translate.return_value = ("traducido", 10, 5)
         model = "gemini-3-flash-preview"
         transcript_arg = "youtube"
         row = self._base_row(model, transcript_arg)
@@ -417,12 +450,12 @@ class TestProcessTranslate(unittest.TestCase):
             storage=storage,
         )
 
-        # write_text should have been called for each translatable column
-        self.assertEqual(storage.write_text.call_count, 4)
+        # translate_text should have been called for each translatable column
+        self.assertEqual(mock_translate.call_count, 4)
 
-    @patch("youtube_to_docs.translate._query_llm")
-    def test_multiple_models(self, mock_query):
-        mock_query.return_value = ("traducido", 10, 5)
+    @patch("youtube_to_docs.translate.translate_text")
+    def test_multiple_models(self, mock_translate):
+        mock_translate.return_value = ("traducido", 10, 5)
         model_a = "gemini-3-flash-preview"
         model_b = "bedrock-nova-2-lite-v1"
         transcript_arg = "youtube"
@@ -450,9 +483,9 @@ class TestProcessTranslate(unittest.TestCase):
             self.assertIn(f"Summary Text {model} from {transcript_arg} (de)", result)
             self.assertIn(f"QA Text {model} from {transcript_arg} (de)", result)
 
-    @patch("youtube_to_docs.translate._query_llm")
-    def test_file_col_stored_in_row(self, mock_query):
-        mock_query.return_value = ("traducido", 10, 5)
+    @patch("youtube_to_docs.translate.translate_text")
+    def test_file_col_stored_in_row(self, mock_translate):
+        mock_translate.return_value = ("traducido", 10, 5)
         model = "gemini-3-flash-preview"
         transcript_arg = "youtube"
         row = self._base_row(model, transcript_arg)
@@ -536,6 +569,16 @@ class TestParseSuggestCaptionsArg(unittest.TestCase):
                 model, source = parse_suggest_captions_arg(arg)
                 self.assertEqual(model, arg)
                 self.assertIsNone(source)
+
+
+class MockLLMProvider(BaseProvider, LLMProvider):
+    def generate_content(self, prompt: str, **kwargs):
+        return "response", 0, 0
+
+
+class MockTranslationProvider(BaseProvider, TranslationProvider):
+    def translate(self, text: str, target_lang: str, **kwargs):
+        return "translated"
 
 
 if __name__ == "__main__":

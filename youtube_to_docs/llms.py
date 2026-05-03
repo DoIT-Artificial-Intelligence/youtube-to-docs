@@ -1,4 +1,5 @@
 import json
+import mimetypes
 import os
 import re
 import subprocess
@@ -8,6 +9,16 @@ import uuid
 from typing import Any, Dict, List, Optional, Tuple, cast
 
 import requests
+from rich import print as rprint
+
+from youtube_to_docs.providers import (
+    BaseProvider,
+    LLMProvider,
+    MultimodalProvider,
+    STTProvider,
+    TranslationProvider,
+    TTSProvider,
+)
 
 try:
     import boto3
@@ -59,19 +70,10 @@ def get_model_pricing(model_name: str) -> Tuple[float | None, float | None]:
     return None, None
 
 
-def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
-    """
-    Generic function to query the specified LLM model.
-    Returns (response_text, input_tokens, output_tokens).
-    """
-    response_text: str = ""
-    input_tokens: int = 0
-    output_tokens: int = 0
-
-    if model_name.startswith("nova") or model_name.startswith("claude"):
-        model_name = "bedrock-" + model_name
-
-    if model_name.startswith("gemini") or model_name.startswith("gemma"):
+class GeminiProvider(
+    BaseProvider, LLMProvider, STTProvider, MultimodalProvider, TTSProvider
+):
+    def generate_content(self, prompt: str, **kwargs) -> Tuple[str, int, int]:
         try:
             from google import genai
             from google.genai import types
@@ -79,7 +81,7 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
             GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
             google_genai_client = genai.Client(api_key=GEMINI_API_KEY)
             response = google_genai_client.models.generate_content(
-                model=model_name,
+                model=self.model_name,
                 contents=[
                     types.Content(
                         role="user", parts=[types.Part.from_text(text=prompt)]
@@ -87,17 +89,227 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
                 ],
             )
             response_text = response.text or ""
+            input_tokens = 0
+            output_tokens = 0
             if response.usage_metadata:
                 input_tokens = response.usage_metadata.prompt_token_count or 0
                 output_tokens = response.usage_metadata.candidates_token_count or 0
+            return response_text, input_tokens, output_tokens
         except KeyError:
-            print("Error: GEMINI_API_KEY not found")
-            response_text = "Error: GEMINI_API_KEY not found"
+            return "Error: GEMINI_API_KEY not found", 0, 0
         except Exception as e:
             print(f"Gemini API Error: {e}")
-            response_text = f"Error: {e}"
+            return f"Error: {e}", 0, 0
 
-    elif model_name.startswith("vertex"):
+    def transcribe(
+        self,
+        audio_path: str,
+        url: str,
+        language: str = "en",
+        duration_seconds: Optional[float] = None,
+        **kwargs,
+    ) -> Tuple[str, str, int, int]:
+        srt = kwargs.get("srt", False)
+        try:
+            from google import genai
+            from google.genai import types
+
+            GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
+            client = genai.Client(api_key=GEMINI_API_KEY)
+
+            with open(audio_path, "rb") as f:
+                audio_bytes = f.read()
+
+            mime_type = mimetypes.guess_type(audio_path)[0] or "audio/x-m4a"
+
+            if srt:
+                prompt = (
+                    f"Can you extract the transcript for {url} from this audio in "
+                    f"{language}? Start the response immediately with the "
+                    "transcript. \n\nPlease provide the transcript in SRT format "
+                    "with accurate time stamps."
+                )
+            else:
+                prompt = (
+                    f"Can you extract the transcript for {url} from this audio in "
+                    f"{language}? Start the response immediately with the "
+                    "transcript. Provide the transcript as a single continuous "
+                    "string of text without line breaks or speaker labels."
+                )
+
+            contents = [
+                types.Content(
+                    role="user",
+                    parts=[
+                        types.Part.from_bytes(
+                            mime_type=mime_type,
+                            data=audio_bytes,
+                        ),
+                        types.Part.from_text(text=prompt),
+                    ],
+                ),
+            ]
+
+            print(f"Starting transcription with model: {self.model_name}...")
+            response = client.models.generate_content(
+                model=self.model_name,
+                contents=contents,
+            )
+
+            response_text = response.text or ""
+            input_tokens = 0
+            output_tokens = 0
+            if response.usage_metadata:
+                input_tokens = response.usage_metadata.prompt_token_count or 0
+                output_tokens = response.usage_metadata.candidates_token_count or 0
+
+            if srt:
+                return "", response_text, input_tokens, output_tokens
+            return response_text, "", input_tokens, output_tokens
+
+        except KeyError:
+            return "Error: GEMINI_API_KEY not found", "", 0, 0
+        except Exception as e:
+            print(f"Gemini STT Error: {e}")
+            return f"Error: {e}", "", 0, 0
+
+    def generate_alt_text(
+        self, image_bytes: bytes, language: str = "en", **kwargs
+    ) -> Tuple[str, int, int]:
+        try:
+            from google import genai
+            from google.genai import types
+
+            GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
+            client = genai.Client(api_key=GEMINI_API_KEY)
+
+            prompt = (
+                f"Please provide a descriptive alt text for this infographic "
+                f"in {language}. "
+                "The alt text should describe the visual layout and key information "
+                "presented, making it accessible for someone who cannot see the image. "
+                "Start the response immediately with the alt text."
+            )
+
+            contents = [
+                types.Content(
+                    role="user",
+                    parts=[
+                        types.Part.from_bytes(
+                            mime_type="image/png",
+                            data=image_bytes,
+                        ),
+                        types.Part.from_text(text=prompt),
+                    ],
+                ),
+            ]
+
+            response = client.models.generate_content(
+                model=self.model_name,
+                contents=contents,
+            )
+
+            response_text = response.text or ""
+            response_text = re.sub(
+                r"^(Alt text[:\-\s]+)", "", response_text, flags=re.IGNORECASE
+            ).strip()
+
+            input_tokens = 0
+            output_tokens = 0
+            if response.usage_metadata:
+                input_tokens = response.usage_metadata.prompt_token_count or 0
+                output_tokens = response.usage_metadata.candidates_token_count or 0
+
+            return response_text, input_tokens, output_tokens
+
+        except KeyError:
+            return "Error: GEMINI_API_KEY not found", 0, 0
+        except Exception as e:
+            print(f"Gemini Alt Text Error: {e}")
+            return f"Error: {e}", 0, 0
+
+    def generate_speech(
+        self, text: str, voice: str, language_code: Optional[str] = None, **kwargs
+    ) -> Tuple[bytes, int]:
+        try:
+            from google import genai
+            from google.genai import types
+
+            api_key = os.environ.get("GEMINI_API_KEY")
+            if not api_key:
+                print("Error: GEMINI_API_KEY environment variable not set.")
+                return b"", 0
+
+            client = genai.Client(api_key=api_key)
+
+            # Gemini TTS has limits. We chunk the text and concatenate the results.
+            # Using 5000 chars as a safe chunk size (similar to GCP).
+            text_bytes = text.encode("utf-8")
+            chunk_size = 4800
+
+            if len(text_bytes) <= 5000:
+                chunks = [text]
+            else:
+                from youtube_to_docs.tts import _chunk_text_by_bytes
+
+                chunks = _chunk_text_by_bytes(text, chunk_size)
+
+            all_audio = b""
+            for i, chunk in enumerate(chunks):
+                if len(chunks) > 1:
+                    rprint(f"  Synthesizing Gemini chunk {i + 1}/{len(chunks)}...")
+
+                response = client.models.generate_content(
+                    model=self.model_name,
+                    contents=chunk,
+                    config=types.GenerateContentConfig(
+                        response_modalities=["AUDIO"],
+                        speech_config=types.SpeechConfig(
+                            language_code=language_code,
+                            voice_config=types.VoiceConfig(
+                                prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                                    voice_name=voice,
+                                )
+                            ),
+                        ),
+                    ),
+                )
+
+                if (
+                    response.candidates
+                    and response.candidates[0].content
+                    and response.candidates[0].content.parts
+                    and response.candidates[0].content.parts[0].inline_data
+                    and response.candidates[0].content.parts[0].inline_data.data
+                ):
+                    all_audio += (
+                        response.candidates[0].content.parts[0].inline_data.data
+                    )
+                else:
+                    print(f"Error: No audio data in response for chunk {i + 1}.")
+
+            return all_audio, 24000
+
+        except Exception as e:
+            print(f"Error generating Gemini speech: {e}")
+            return b"", 0
+
+    def translate(self, text: str, target_lang: str, **kwargs) -> str:
+        prompt = (
+            f"Please translate the following text to {target_lang}. "
+            "Return only the translated text without any preamble or explanation."
+            "\n\n"
+            f"{text}"
+        )
+        translated, _, _ = self.generate_content(prompt)
+        return translated
+
+
+class VertexProvider(BaseProvider, LLMProvider, MultimodalProvider):
+    def generate_content(self, prompt: str, **kwargs) -> Tuple[str, int, int]:
+        response_text: str = ""
+        input_tokens: int = 0
+        output_tokens: int = 0
         try:
             import subprocess
 
@@ -106,7 +318,7 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
             from google.auth.transport.requests import AuthorizedSession
 
             vertex_project_id = os.environ["PROJECT_ID"]
-            actual_model_name = model_name.replace("vertex-", "")
+            actual_model_name = self.model_name.replace("vertex-", "")
 
             if actual_model_name.startswith("claude"):
                 endpoint = (
@@ -114,7 +326,6 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
                     f"projects/{vertex_project_id}/locations/us-east5/"
                     f"publishers/anthropic/models/{actual_model_name}:rawPredict"
                 )
-                # ... existing claude logic ...
                 payload = {
                     "anthropic_version": "vertex-2023-10-16",
                     "messages": [{"role": "user", "content": prompt}],
@@ -127,14 +338,12 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
                 response = None
 
                 if vertex_api_key:
-                    # Use API Key if available
                     response = requests.post(
                         endpoint,
                         json=payload,
                         headers=headers,
                         params={"key": vertex_api_key},
                     )
-                    # If API key is not supported or fails, we will try ADC fallback
                     if response.status_code != 200:
                         print(
                             f"Vertex API Key failed (Status {response.status_code})."
@@ -143,7 +352,6 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
                         response = None
 
                 if response is None:
-                    # Fallback to Application Default Credentials
                     res = get_gcp_client(google.auth.default, "Vertex AI Credentials")
                     if res is None:
                         return (
@@ -163,12 +371,10 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
                             "Vertex AI Credentials expired. Launching gcloud login..."
                         )
                         try:
-                            # Run gcloud login interactively
                             subprocess.run(
                                 ["gcloud", "auth", "application-default", "login"],
                                 check=True,
                             )
-                            # Reload credentials and retry
                             res = get_gcp_client(
                                 google.auth.default, "Vertex AI Credentials"
                             )
@@ -206,7 +412,7 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
                     print(response_text)
             elif actual_model_name.startswith("gemma"):
                 raise NotImplementedError(
-                    f"Vertex AI Gemma models ('{model_name}') require a "
+                    f"Vertex AI Gemma models ('{self.model_name}') require a "
                     "dedicated deployment. Use the 'gemma-' prefix "
                     "(without 'vertex-') to run via the Google GenAI "
                     "client instead."
@@ -242,10 +448,89 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
             print(f"Vertex Request Error: {e}")
             response_text = f"Error: {e}"
 
-    elif model_name.startswith("bedrock"):
+        return response_text, input_tokens, output_tokens
+
+    def generate_alt_text(
+        self, image_bytes: bytes, language: str = "en", **kwargs
+    ) -> Tuple[str, int, int]:
+        # Vertex AI multimodal usually uses the same logic as Gemini
+        # But we need to ensure the client is initialized with vertexai=True
+        # For now, we leverage the existing generate_alt_text function if
+        # it handles vertex.
+        # But wait, generate_alt_text currently only handles gemini and bedrock.
+        # Let's fix that.
+        actual_model_name = self.model_name.replace("vertex-", "")
+        if not actual_model_name.startswith("gemini"):
+            return (
+                f"Error: Multimodal alt text not yet implemented for {self.model_name}",
+                0,
+                0,
+            )
+
+        try:
+            from google import genai
+            from google.genai import types
+
+            vertex_project_id = os.environ["PROJECT_ID"]
+            vertex_location = os.environ.get("VERTEX_LOCATION", "us-east5")
+            client = genai.Client(
+                vertexai=True,
+                project=vertex_project_id,
+                location=vertex_location,
+                http_options=types.HttpOptions(api_version="v1"),
+            )
+
+            prompt = (
+                f"Please provide a descriptive alt text for this infographic "
+                f"in {language}. "
+                "The alt text should describe the visual layout and key information "
+                "presented, making it accessible for someone who cannot see the image. "
+                "Start the response immediately with the alt text."
+            )
+
+            contents = [
+                types.Content(
+                    role="user",
+                    parts=[
+                        types.Part.from_bytes(
+                            mime_type="image/png",
+                            data=image_bytes,
+                        ),
+                        types.Part.from_text(text=prompt),
+                    ],
+                ),
+            ]
+
+            response = client.models.generate_content(
+                model=actual_model_name,
+                contents=contents,
+            )
+
+            response_text = response.text or ""
+            response_text = re.sub(
+                r"^(Alt text[:\-\s]+)", "", response_text, flags=re.IGNORECASE
+            ).strip()
+
+            input_tokens = 0
+            output_tokens = 0
+            if response.usage_metadata:
+                input_tokens = response.usage_metadata.prompt_token_count or 0
+                output_tokens = response.usage_metadata.candidates_token_count or 0
+
+            return response_text, input_tokens, output_tokens
+        except Exception as e:
+            print(f"Vertex Alt Text Error: {e}")
+            return f"Error: {e}", 0, 0
+
+
+class BedrockProvider(BaseProvider, LLMProvider, MultimodalProvider):
+    def generate_content(self, prompt: str, **kwargs) -> Tuple[str, int, int]:
+        response_text: str = ""
+        input_tokens: int = 0
+        output_tokens: int = 0
         try:
             aws_bearer_token_bedrock = os.environ["AWS_BEARER_TOKEN_BEDROCK"]
-            actual_model_name = model_name.replace("bedrock-", "")
+            actual_model_name = self.model_name.replace("bedrock-", "")
             if "claude" in actual_model_name:
                 if not actual_model_name.startswith(
                     "anthropic."
@@ -314,13 +599,123 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
             print(f"Bedrock Request Error: {e}")
             response_text = f"Error: {e}"
 
-    elif model_name.startswith("foundry"):
+        return response_text, input_tokens, output_tokens
+
+    def generate_alt_text(
+        self, image_bytes: bytes, language: str = "en", **kwargs
+    ) -> Tuple[str, int, int]:
+        try:
+            import base64
+
+            aws_bearer_token_bedrock = os.environ["AWS_BEARER_TOKEN_BEDROCK"]
+            actual_model_name = self.model_name.replace("bedrock-", "")
+
+            if "claude" in actual_model_name:
+                if not actual_model_name.startswith(
+                    "anthropic."
+                ) and not actual_model_name.startswith("us.anthropic."):
+                    actual_model_name = f"us.anthropic.{actual_model_name}:0"
+            elif "nova" in actual_model_name:
+                if not actual_model_name.startswith(
+                    "amazon."
+                ) and not actual_model_name.startswith("us.amazon."):
+                    actual_model_name = f"us.amazon.{actual_model_name}:0"
+                if not actual_model_name.endswith(":0"):
+                    actual_model_name = f"{actual_model_name}:0"
+
+            endpoint = (
+                f"https://bedrock-runtime.us-east-1.amazonaws.com/model/"
+                f"{actual_model_name}/converse"
+            )
+
+            image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+
+            prompt = (
+                f"Please provide a descriptive alt text for this infographic "
+                f"in {language}. "
+                "The alt text should describe the visual layout and key information "
+                "presented, making it accessible for someone who cannot see the image. "
+                "Start the response immediately with the alt text."
+            )
+
+            payload = {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "image": {
+                                    "format": "png",
+                                    "source": {"bytes": image_base64},
+                                }
+                            },
+                            {"text": prompt},
+                        ],
+                    }
+                ],
+                "max_tokens": 2048,
+            }
+
+            response = requests.post(
+                endpoint,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {aws_bearer_token_bedrock}",
+                },
+                json=payload,
+            )
+
+            if response.status_code == 200:
+                response_json = response.json()
+                try:
+                    content_blocks = response_json["output"]["message"]["content"]
+                    if (
+                        content_blocks
+                        and isinstance(content_blocks, list)
+                        and "text" in content_blocks[0]
+                    ):
+                        response_text = content_blocks[0]["text"]
+                        response_text = re.sub(
+                            r"^(Alt text[:\-\s]+)",
+                            "",
+                            response_text,
+                            flags=re.IGNORECASE,
+                        ).strip()
+
+                        usage = response_json.get("usage", {})
+                        return (
+                            response_text,
+                            usage.get("inputTokens", 0),
+                            usage.get("outputTokens", 0),
+                        )
+                    else:
+                        return f"Unexpected content format: {response.text}", 0, 0
+                except KeyError:
+                    return f"Unexpected response structure: {response.text}", 0, 0
+            else:
+                return (
+                    f"Bedrock API Error {response.status_code}: {response.text}",
+                    0,
+                    0,
+                )
+        except KeyError:
+            return "Error: AWS_BEARER_TOKEN_BEDROCK required", 0, 0
+        except Exception as e:
+            print(f"Bedrock Alt Text Error: {e}")
+            return f"Error: {e}", 0, 0
+
+
+class AzureFoundryProvider(BaseProvider, LLMProvider):
+    def generate_content(self, prompt: str, **kwargs) -> Tuple[str, int, int]:
+        response_text: str = ""
+        input_tokens: int = 0
+        output_tokens: int = 0
         try:
             from openai import OpenAI
 
             AZURE_FOUNDRY_ENDPOINT = os.environ["AZURE_FOUNDRY_ENDPOINT"]
             AZURE_FOUNDRY_API_KEY = os.environ["AZURE_FOUNDRY_API_KEY"]
-            actual_model_name = model_name.replace("foundry-", "")
+            actual_model_name = self.model_name.replace("foundry-", "")
             client = OpenAI(
                 base_url=AZURE_FOUNDRY_ENDPOINT, api_key=AZURE_FOUNDRY_API_KEY
             )
@@ -347,7 +742,197 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
             print(f"Foundry Request Error: {e}")
             response_text = f"Error: {e}"
 
-    return response_text, input_tokens, output_tokens
+        return response_text, input_tokens, output_tokens
+
+
+class GCPProvider(BaseProvider, STTProvider, TTSProvider, TranslationProvider):
+    def transcribe(
+        self,
+        audio_path: str,
+        url: str,
+        language: str = "en",
+        duration_seconds: Optional[float] = None,
+        **kwargs,
+    ) -> Tuple[str, str, int, int]:
+        return _transcribe_gcp(
+            self.model_name, audio_path, url, language, duration_seconds
+        )
+
+    def generate_speech(
+        self, text: str, voice: str, language_code: Optional[str] = None, **kwargs
+    ) -> Tuple[bytes, int]:
+        try:
+            from google.cloud import texttospeech
+        except ImportError:
+            print(
+                "Error: google-cloud-texttospeech is required for GCP TTS models. "
+                "Install with `pip install '.[gcp]'`"
+            )
+            return b"", 0
+
+        try:
+            client = get_gcp_client(
+                texttospeech.TextToSpeechClient, "GCP Text-to-Speech"
+            )
+            if client is None:
+                return b"", 0
+
+            if language_code:
+                full_voice_name = f"{language_code}-Chirp3-HD-{voice}"
+            else:
+                full_voice_name = f"en-US-Chirp3-HD-{voice}"
+
+            voice_params = texttospeech.VoiceSelectionParams(
+                language_code=language_code or "en-US",
+                name=full_voice_name,
+            )
+
+            audio_config = texttospeech.AudioConfig(
+                audio_encoding=texttospeech.AudioEncoding.LINEAR16,
+                sample_rate_hertz=24000,
+            )
+
+            text_bytes = text.encode("utf-8")
+            rprint(
+                f"[cyan]GCP TTS: input text length: {len(text)} chars, "
+                f"{len(text_bytes)} bytes[/cyan]"
+            )
+            if len(text_bytes) <= 5000:
+                input_text = texttospeech.SynthesisInput(text=text)
+                response = client.synthesize_speech(
+                    input=input_text,
+                    voice=voice_params,
+                    audio_config=audio_config,
+                )
+                return response.audio_content, 24000
+            else:
+                rprint(
+                    f"[yellow]Text is long ({len(text_bytes)} bytes). "
+                    "Chunking for GCP TTS...[/yellow]"
+                )
+                from youtube_to_docs.tts import _chunk_text_by_bytes
+
+                chunks = _chunk_text_by_bytes(text, 4800)
+                all_audio = b""
+                for i, chunk in enumerate(chunks):
+                    rprint(f"  Synthesizing chunk {i + 1}/{len(chunks)}...")
+                    input_text = texttospeech.SynthesisInput(text=chunk)
+                    response = client.synthesize_speech(
+                        input=input_text,
+                        voice=voice_params,
+                        audio_config=audio_config,
+                    )
+                    all_audio += response.audio_content
+
+                return all_audio, 24000
+
+        except Exception as e:
+            print(f"Error generating speech with GCP TTS: {e}")
+            return b"", 0
+
+    def translate(self, text: str, target_lang: str, **kwargs) -> str:
+        from youtube_to_docs.translate import _translate_gcp
+
+        translated, _, _ = _translate_gcp(text, target_lang)
+        return translated
+
+
+class AWSProvider(BaseProvider, STTProvider, TTSProvider, TranslationProvider):
+    def transcribe(
+        self,
+        audio_path: str,
+        url: str,
+        language: str = "en",
+        duration_seconds: Optional[float] = None,
+        **kwargs,
+    ) -> Tuple[str, str, int, int]:
+        return _transcribe_aws(
+            self.model_name, audio_path, url, language, duration_seconds
+        )
+
+    def generate_speech(
+        self, text: str, voice: str, language_code: Optional[str] = None, **kwargs
+    ) -> Tuple[bytes, int]:
+        try:
+            import boto3
+            from botocore.exceptions import BotoCoreError, ClientError
+        except ImportError:
+            print(
+                "Error: boto3 is required for AWS Polly. "
+                "Install with `pip install boto3`"
+            )
+            return b"", 0
+
+        try:
+            polly = boto3.client("polly")
+            chunk_size = 2000
+            text_bytes = text.encode("utf-8")
+
+            rprint(
+                f"[cyan]AWS Polly: input text length: {len(text)} chars, "
+                f"{len(text_bytes)} bytes[/cyan]"
+            )
+
+            audio_stream = b""
+            from youtube_to_docs.tts import _chunk_text_by_bytes
+
+            if len(text_bytes) <= chunk_size:
+                chunks = [text]
+            else:
+                rprint(
+                    f"[yellow]Text is long ({len(text_bytes)} bytes). "
+                    "Chunking for AWS Polly...[/yellow]"
+                )
+                chunks = _chunk_text_by_bytes(text, chunk_size)
+
+            for i, chunk in enumerate(chunks):
+                if len(chunks) > 1:
+                    rprint(f"  Synthesizing chunk {i + 1}/{len(chunks)}...")
+
+                response = polly.synthesize_speech(
+                    Text=chunk,
+                    OutputFormat="pcm",
+                    VoiceId=voice,
+                    Engine=kwargs.get("engine", "long-form"),
+                )
+                if "AudioStream" in response:
+                    with response["AudioStream"] as stream:
+                        audio_stream += stream.read()
+                else:
+                    print("Error: No AudioStream in Polly response")
+
+            return audio_stream, 16000
+
+        except (BotoCoreError, ClientError) as error:
+            print(f"Error generating speech with AWS Polly: {error}")
+            return b"", 0
+        except Exception as e:
+            print(f"Error generating speech with AWS Polly: {e}")
+            return b"", 0
+
+    def translate(self, text: str, target_lang: str, **kwargs) -> str:
+        from youtube_to_docs.translate import _translate_aws
+
+        translated, _, _ = _translate_aws(text, target_lang)
+        return translated
+
+
+def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
+    """
+    Generic function to query the specified LLM model.
+    Returns (response_text, input_tokens, output_tokens).
+    """
+    from youtube_to_docs.providers import LLMProvider, get_provider
+
+    try:
+        provider = get_provider(model_name)
+        if isinstance(provider, LLMProvider):
+            return provider.generate_content(prompt)
+        return f"Error: {model_name} does not support LLM tasks", 0, 0
+    except NotImplementedError:
+        raise
+    except Exception as e:
+        return f"Error: {e}", 0, 0
 
 
 def generate_transcript_with_srt(
@@ -359,20 +944,21 @@ def generate_transcript_with_srt(
 ) -> Tuple[str, str, int, int]:
     """
     Generates both transcript text and SRT content from audio in a single call.
-    Only supported for GCP models. For other models, call generate_transcript twice.
     Returns (transcript_text, srt_content, input_tokens, output_tokens).
     """
-    if model_name.startswith("nova") or model_name.startswith("claude"):
-        model_name = "bedrock-" + model_name
+    from youtube_to_docs.providers import STTProvider, get_provider
 
-    if model_name.startswith("gcp-"):
-        return _transcribe_gcp(model_name, audio_path, url, language, duration_seconds)
-
-    if model_name == "aws-transcribe":
-        return _transcribe_aws(model_name, audio_path, url, language, duration_seconds)
-
-    # For non-GCP models, return empty SRT (caller should use generate_transcript)
-    return "", "", 0, 0
+    try:
+        provider = get_provider(model_name)
+        if isinstance(provider, STTProvider):
+            return provider.transcribe(
+                audio_path, url, language, duration_seconds, srt=True
+            )
+        return f"Error: STT not implemented for {model_name}", "", 0, 0
+    except NotImplementedError:
+        raise
+    except Exception as e:
+        return f"Error: {e}", "", 0, 0
 
 
 def generate_transcript(
@@ -385,91 +971,23 @@ def generate_transcript(
 ) -> Tuple[str, int, int]:
     """
     Generates a transcript from an audio file using the specified model.
-    Currently only supports Gemini models.
     Returns (transcript_text, input_tokens, output_tokens).
     """
-    if model_name.startswith("nova") or model_name.startswith("claude"):
-        model_name = "bedrock-" + model_name
-
-    if model_name.startswith("gcp-"):
-        text, srt_content, in_tok, out_tok = _transcribe_gcp(
-            model_name, audio_path, url, language, duration_seconds
-        )
-        if srt:
-            return srt_content, in_tok, out_tok
-        return text, in_tok, out_tok
-
-    if model_name == "aws-transcribe":
-        text, srt_content, in_tok, out_tok = _transcribe_aws(
-            model_name, audio_path, url, language, duration_seconds
-        )
-        if srt:
-            return srt_content, in_tok, out_tok
-        return text, in_tok, out_tok
-
-    if not model_name.startswith("gemini"):
-        return f"Error: STT not yet implemented for model {model_name}", 0, 0
+    from youtube_to_docs.providers import STTProvider, get_provider
 
     try:
-        from google import genai
-        from google.genai import types
-
-        GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
-        client = genai.Client(api_key=GEMINI_API_KEY)
-
-        with open(audio_path, "rb") as f:
-            audio_bytes = f.read()
-
-        if srt:
-            prompt = (
-                f"Can you extract the transcript for {url} from this audio in "
-                f"{language}? Start the response immediately with the "
-                "transcript. \n\nPlease provide the transcript in SRT format "
-                "with accurate time stamps."
+        provider = get_provider(model_name)
+        if isinstance(provider, STTProvider):
+            text, srt_content, in_tok, out_tok = provider.transcribe(
+                audio_path, url, language, duration_seconds, srt=srt
             )
-        else:
-            prompt = (
-                f"Can you extract the transcript for {url} from this audio in "
-                f"{language}? Start the response immediately with the "
-                "transcript. Provide the transcript as a single continuous "
-                "string of text without line breaks or speaker labels."
-            )
-
-        contents = [
-            types.Content(
-                role="user",
-                parts=[
-                    types.Part.from_bytes(
-                        mime_type="audio/x-m4a",
-                        data=audio_bytes,
-                    ),
-                    types.Part.from_text(text=prompt),
-                ],
-            ),
-        ]
-
-        generate_content_config = types.GenerateContentConfig()
-
-        print(f"Starting transcription with model: {model_name}...")
-        response = client.models.generate_content(
-            model=model_name,
-            contents=contents,
-            config=generate_content_config,
-        )
-
-        response_text = response.text or ""
-        input_tokens = 0
-        output_tokens = 0
-        if response.usage_metadata:
-            input_tokens = response.usage_metadata.prompt_token_count or 0
-            output_tokens = response.usage_metadata.candidates_token_count or 0
-
-        return response_text, input_tokens, output_tokens
-
-    except KeyError:
-        return "Error: GEMINI_API_KEY not found", 0, 0
+            if srt:
+                return srt_content, in_tok, out_tok
+            return text, in_tok, out_tok
+        return f"Error: STT not implemented for {model_name}", 0, 0
+    except NotImplementedError:
+        raise
     except Exception as e:
-        print(f"Gemini STT Error: {e}")
         return f"Error: {e}", 0, 0
 
 
@@ -832,7 +1350,9 @@ def _transcribe_gcp(
                 )
 
                 request = speech_v2.BatchRecognizeRequest(
-                    recognizer=f"projects/{project_id}/locations/{location}/recognizers/_",
+                    recognizer=(
+                        f"projects/{project_id}/locations/{location}/recognizers/_"
+                    ),
                     config=decoding_config,
                     files=batch_files_metadata,
                     recognition_output_config=recognition_output_config,
@@ -1285,163 +1805,17 @@ def generate_alt_text(
     Generates alt text for an infographic based on the generated image.
     Returns (alt_text, input_tokens, output_tokens).
     """
-    if model_name.startswith("nova") or model_name.startswith("claude"):
-        model_name = "bedrock-" + model_name
+    from youtube_to_docs.providers import MultimodalProvider, get_provider
 
-    prompt = (
-        f"Please provide a descriptive alt text for this infographic "
-        f"in {language}. "
-        "The alt text should describe the visual layout and key information "
-        "presented, making it accessible for someone who cannot see the image. "
-        "Start the response immediately with the alt text."
-    )
-
-    if model_name.startswith("gemini") or model_name.startswith("gemma"):
-        try:
-            from google import genai
-            from google.genai import types
-
-            GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
-            client = genai.Client(api_key=GEMINI_API_KEY)
-
-            contents = [
-                types.Content(
-                    role="user",
-                    parts=[
-                        types.Part.from_bytes(
-                            mime_type="image/png",
-                            data=image_bytes,
-                        ),
-                        types.Part.from_text(text=prompt),
-                    ],
-                ),
-            ]
-
-            generate_content_config = types.GenerateContentConfig()
-
-            response = client.models.generate_content(
-                model=model_name,
-                contents=contents,
-                config=generate_content_config,
-            )
-
-            response_text = response.text or ""
-            # Post-processing: Remove common prefixes like "Alt text: " or "Alt text - "
-            response_text = re.sub(
-                r"^(Alt text[:\-\s]+)", "", response_text, flags=re.IGNORECASE
-            ).strip()
-
-            input_tokens = 0
-            output_tokens = 0
-            if response.usage_metadata:
-                input_tokens = response.usage_metadata.prompt_token_count or 0
-                output_tokens = response.usage_metadata.candidates_token_count or 0
-
-            return response_text, input_tokens, output_tokens
-
-        except KeyError:
-            return "Error: GEMINI_API_KEY not found", 0, 0
-        except Exception as e:
-            print(f"Gemini Alt Text Error: {e}")
-            return f"Error: {e}", 0, 0
-
-    elif model_name.startswith("bedrock"):
-        try:
-            import base64
-
-            aws_bearer_token_bedrock = os.environ["AWS_BEARER_TOKEN_BEDROCK"]
-            actual_model_name = model_name.replace("bedrock-", "")
-
-            # Mapping (shared logic with _query_llm could be refactored later)
-            if "claude" in actual_model_name:
-                if not actual_model_name.startswith(
-                    "anthropic."
-                ) and not actual_model_name.startswith("us.anthropic."):
-                    actual_model_name = f"us.anthropic.{actual_model_name}:0"
-            elif "nova" in actual_model_name:
-                if not actual_model_name.startswith(
-                    "amazon."
-                ) and not actual_model_name.startswith("us.amazon."):
-                    actual_model_name = f"us.amazon.{actual_model_name}:0"
-                if not actual_model_name.endswith(":0"):
-                    actual_model_name = f"{actual_model_name}:0"
-
-            endpoint = (
-                f"https://bedrock-runtime.us-east-1.amazonaws.com/model/"
-                f"{actual_model_name}/converse"
-            )
-
-            # Convert images bytes to base64
-            image_base64 = base64.b64encode(image_bytes).decode("utf-8")
-
-            payload = {
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "image": {
-                                    "format": "png",
-                                    "source": {"bytes": image_base64},
-                                }
-                            },
-                            {"text": prompt},
-                        ],
-                    }
-                ],
-                "max_tokens": 2048,
-            }
-
-            response = requests.post(
-                endpoint,
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {aws_bearer_token_bedrock}",
-                },
-                json=payload,
-            )
-
-            if response.status_code == 200:
-                response_json = response.json()
-                try:
-                    content_blocks = response_json["output"]["message"]["content"]
-                    if (
-                        content_blocks
-                        and isinstance(content_blocks, list)
-                        and "text" in content_blocks[0]
-                    ):
-                        response_text = content_blocks[0]["text"]
-                        # Post-processing
-                        response_text = re.sub(
-                            r"^(Alt text[:\-\s]+)",
-                            "",
-                            response_text,
-                            flags=re.IGNORECASE,
-                        ).strip()
-
-                        usage = response_json.get("usage", {})
-                        return (
-                            response_text,
-                            usage.get("inputTokens", 0),
-                            usage.get("outputTokens", 0),
-                        )
-                    else:
-                        return f"Unexpected content format: {response.text}", 0, 0
-                except KeyError:
-                    return f"Unexpected response structure: {response.text}", 0, 0
-            else:
-                return (
-                    f"Bedrock API Error {response.status_code}: {response.text}",
-                    0,
-                    0,
-                )
-        except KeyError:
-            return "Error: AWS_BEARER_TOKEN_BEDROCK required", 0, 0
-        except Exception as e:
-            print(f"Bedrock Alt Text Error: {e}")
-            return f"Error: {e}", 0, 0
-
-    return f"Error: Multimodal alt text not yet implemented for {model_name}", 0, 0
+    try:
+        provider = get_provider(model_name)
+        if isinstance(provider, MultimodalProvider):
+            return provider.generate_alt_text(image_bytes, language)
+        return f"Error: Multimodal not implemented for {model_name}", 0, 0
+    except NotImplementedError:
+        raise
+    except Exception as e:
+        return f"Error: {e}", 0, 0
 
 
 def suggest_corrected_captions(

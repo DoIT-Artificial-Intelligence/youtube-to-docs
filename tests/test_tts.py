@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import polars as pl
 
+from youtube_to_docs.providers import BaseProvider, TTSProvider
 from youtube_to_docs.tts import (
     generate_speech,
     generate_speech_aws_polly,
@@ -47,20 +48,22 @@ class TestTTS(unittest.TestCase):
         mock_client.models.generate_content.return_value = mock_response
 
         # Execute
-        audio_data = generate_speech("Hello world", "model", "voice")
+        audio_data, rate = generate_speech("Hello world", "model", "voice")
 
         # Verify
         self.assertEqual(audio_data, b"fake_audio_data")
+        self.assertEqual(rate, 24000)
         mock_client.models.generate_content.assert_called_once()
 
     @patch("google.genai", create=True)
     @patch.dict(os.environ, {}, clear=True)
     def test_generate_speech_no_api_key(self, mock_genai):
         # Execute
-        audio_data = generate_speech("Hello world", "model", "voice")
+        audio_data, rate = generate_speech("Hello world", "model", "voice")
 
         # Verify
         self.assertEqual(audio_data, b"")
+        self.assertEqual(rate, 0)
         mock_genai.Client.assert_not_called()
 
     @patch("google.genai", create=True)
@@ -72,15 +75,16 @@ class TestTTS(unittest.TestCase):
         mock_client.models.generate_content.side_effect = Exception("API Error")
 
         # Execute
-        audio_data = generate_speech("Hello world", "model", "voice")
+        audio_data, rate = generate_speech("Hello world", "model", "voice")
 
         # Verify
         self.assertEqual(audio_data, b"")
+        self.assertEqual(rate, 0)
 
-    @patch("youtube_to_docs.tts.generate_speech")
+    @patch("youtube_to_docs.providers.get_provider")
     def test_process_tts(
         self,
-        mock_generate_speech,
+        mock_get_provider,
     ):
         # Setup DataFrame
         df = pl.DataFrame(
@@ -117,8 +121,11 @@ class TestTTS(unittest.TestCase):
         mock_storage.write_bytes.return_value = "/saved/path.wav"
         mock_storage.get_full_path.return_value = "/full/path/summary2 - tts-arg.wav"
 
-        # Even length bytes for 16-bit PCM
-        mock_generate_speech.return_value = b"1234"
+        from typing import Any
+
+        provider_instance: Any = MockTTSProvider("tts")
+        provider_instance.generate_speech = MagicMock(return_value=(b"1234", 16000))
+        mock_get_provider.return_value = provider_instance
 
         # Execute
         updated_df = process_tts(df, "tts-arg", mock_storage, "/tmp")
@@ -127,8 +134,8 @@ class TestTTS(unittest.TestCase):
         self.assertIn("Summary Audio File 1 tts-arg File", updated_df.columns)
 
         # Check generate_speech called once (for the first row only)
-        mock_generate_speech.assert_called_once_with(
-            "Summary text", "tts", "arg", "en-US"
+        provider_instance.generate_speech.assert_called_once_with(
+            "Summary text", "arg", "en-US"
         )
 
         # Check storage writes
@@ -148,10 +155,10 @@ class TestTTS(unittest.TestCase):
         # if available
         self.assertEqual(new_col[1], "/full/path/summary2 - tts-arg.wav")
 
-    @patch("youtube_to_docs.tts.generate_speech")
+    @patch("youtube_to_docs.providers.get_provider")
     def test_process_tts_with_language(
         self,
-        mock_generate_speech,
+        mock_get_provider,
     ):
         # Setup DataFrame with language-suffixed column
         df = pl.DataFrame(
@@ -172,15 +179,18 @@ class TestTTS(unittest.TestCase):
         mock_storage.read_text.return_value = "Texto resumen"
         mock_storage.write_bytes.return_value = "/saved/es.wav"
 
-        # Even bytes
-        mock_generate_speech.return_value = b"1234"
+        from typing import Any
+
+        provider_instance: Any = MockTTSProvider("tts")
+        provider_instance.generate_speech = MagicMock(return_value=(b"1234", 16000))
+        mock_get_provider.return_value = provider_instance
 
         # Execute
         process_tts(df, "tts-arg", mock_storage, "/tmp")
 
         # Verify generate_speech called with 'es-US'
-        mock_generate_speech.assert_called_once_with(
-            "Texto resumen", "tts", "arg", "es-US"
+        provider_instance.generate_speech.assert_called_once_with(
+            "Texto resumen", "arg", "es-US"
         )
 
         # Verify write was called
@@ -233,22 +243,24 @@ class TestGCPTTS(unittest.TestCase):
             mock_client.synthesize_speech.return_value = mock_response
 
             # Execute
-            audio_data = generate_speech_gcp("Hello world", "Kore", "en-US")
+            audio_data, rate = generate_speech_gcp("Hello world", "Kore", "en-US")
 
             # Verify
             self.assertEqual(audio_data, b"fake_pcm_audio_data")
+            self.assertEqual(rate, 24000)
 
     def test_generate_speech_gcp_import_error(self):
         """Test GCP TTS when google-cloud-texttospeech is not installed."""
         with patch.dict("sys.modules", {"google.cloud": None}):
             # This should catch the import error and return empty bytes
-            audio_data = generate_speech_gcp("Hello", "Kore", "en-US")
+            audio_data, rate = generate_speech_gcp("Hello", "Kore", "en-US")
             self.assertEqual(audio_data, b"")
+            self.assertEqual(rate, 0)
             # Note: Due to how the import works, this may not trigger cleanly
             # in all test environments
 
-    @patch("youtube_to_docs.tts.generate_speech_gcp")
-    def test_process_tts_with_gcp_model(self, mock_generate_speech_gcp):
+    @patch("youtube_to_docs.providers.get_provider")
+    def test_process_tts_with_gcp_model(self, mock_get_provider):
         """Test process_tts routes to GCP TTS for gcp-chirp3 models."""
         df = pl.DataFrame(
             {
@@ -267,14 +279,17 @@ class TestGCPTTS(unittest.TestCase):
         mock_storage.read_text.return_value = "Summary text"
         mock_storage.write_bytes.return_value = "/saved/path.wav"
 
-        # Return valid PCM data (even bytes for 16-bit)
-        mock_generate_speech_gcp.return_value = b"1234"
+        from typing import Any
+
+        provider_instance: Any = MockGCPTTSProvider("gcp-chirp3")
+        provider_instance.generate_speech = MagicMock(return_value=(b"1234", 24000))
+        mock_get_provider.return_value = provider_instance
 
         # Execute with GCP model
         updated_df = process_tts(df, "gcp-chirp3-Kore", mock_storage, "/tmp")
 
         # Verify GCP function was called
-        mock_generate_speech_gcp.assert_called_once_with(
+        provider_instance.generate_speech.assert_called_once_with(
             "Summary text", "Kore", "en-US"
         )
 
@@ -329,10 +344,11 @@ class TestAWSPolly(unittest.TestCase):
         # Need to ensure import inside function uses the mock
         with patch.dict("sys.modules", {"boto3": mock_boto3}):
             # Execute
-            audio_data = generate_speech_aws_polly("Hello world", "Ruth")
+            audio_data, rate = generate_speech_aws_polly("Hello world", "Ruth")
 
         # Verify
         self.assertEqual(audio_data, b"fake_pcm_data")
+        self.assertEqual(rate, 16000)
         mock_client.synthesize_speech.assert_called_once()
         args, kwargs = mock_client.synthesize_speech.call_args
         self.assertEqual(kwargs["Text"], "Hello world")
@@ -343,11 +359,12 @@ class TestAWSPolly(unittest.TestCase):
     def test_generate_speech_aws_polly_import_error(self):
         """Test AWS Polly TTS when boto3 is not installed."""
         with patch.dict("sys.modules", {"boto3": None}):
-            audio_data = generate_speech_aws_polly("Hello", "Ruth")
+            audio_data, rate = generate_speech_aws_polly("Hello", "Ruth")
             self.assertEqual(audio_data, b"")
+            self.assertEqual(rate, 0)
 
-    @patch("youtube_to_docs.tts.generate_speech_aws_polly")
-    def test_process_tts_with_aws_polly_model(self, mock_generate_speech_aws):
+    @patch("youtube_to_docs.providers.get_provider")
+    def test_process_tts_with_aws_polly_model(self, mock_get_provider):
         """Test process_tts routes to AWS Polly for aws-polly models."""
         df = pl.DataFrame(
             {
@@ -366,15 +383,19 @@ class TestAWSPolly(unittest.TestCase):
         mock_storage.read_text.return_value = "Summary text"
         mock_storage.write_bytes.return_value = "/saved/path.wav"
 
-        # Return valid PCM data
-        mock_generate_speech_aws.return_value = b"1234"
+        from typing import Any
+
+        provider_instance: Any = MockAWSTTSProvider("aws-polly")
+        provider_instance.generate_speech = MagicMock(return_value=(b"1234", 16000))
+        mock_get_provider.return_value = provider_instance
 
         # Execute with AWS Polly model
         updated_df = process_tts(df, "aws-polly", mock_storage, "/tmp")
 
         # Verify AWS function was called
-        mock_generate_speech_aws.assert_called_once_with(
-            "Summary text", "Ruth", engine="long-form"
+        # Note: process_tts now passes (text, voice_name, lang_code)
+        provider_instance.generate_speech.assert_called_once_with(
+            "Summary text", "Ruth", "en-US"
         )
 
         # Verify new column was created
@@ -385,6 +406,21 @@ class TestAWSPolly(unittest.TestCase):
         args, _ = mock_storage.write_bytes.call_args
         self.assertTrue(args[0].endswith(".wav"))
         self.assertTrue(args[1].startswith(b"RIFF"))
+
+
+class MockTTSProvider(BaseProvider, TTSProvider):
+    def generate_speech(self, text, voice, language_code=None, **kwargs):
+        return b"audio", 16000
+
+
+class MockGCPTTSProvider(BaseProvider, TTSProvider):
+    def generate_speech(self, text, voice, language_code=None, **kwargs):
+        return b"audio", 24000
+
+
+class MockAWSTTSProvider(BaseProvider, TTSProvider):
+    def generate_speech(self, text, voice, language_code=None, **kwargs):
+        return b"audio", 16000
 
 
 if __name__ == "__main__":

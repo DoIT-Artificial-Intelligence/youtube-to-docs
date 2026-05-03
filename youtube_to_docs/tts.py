@@ -76,10 +76,10 @@ def _chunk_text_by_bytes(text: str, max_bytes: int = 5000) -> List[str]:
 
 def generate_speech_gcp(
     text: str, voice_name: str, language_code: Optional[str] = None
-) -> bytes:
+) -> Tuple[bytes, int]:
     """
     Generates speech from text using Google Cloud Text-to-Speech API.
-    Returns raw PCM audio bytes (LINEAR16 format, 24kHz, mono).
+    Returns (raw PCM audio bytes, sample_rate).
     Handles text longer than 5000 bytes by chunking and concatenating results.
     """
     try:
@@ -89,12 +89,12 @@ def generate_speech_gcp(
             "Error: google-cloud-texttospeech is required for GCP TTS models. "
             "Install with `pip install '.[gcp]'`"
         )
-        return b""
+        return b"", 0
 
     try:
         client = get_gcp_client(texttospeech.TextToSpeechClient, "GCP Text-to-Speech")
         if client is None:
-            return b""
+            return b"", 0
 
         # Build the voice name from language code and voice name
         # e.g., language_code="en-US", voice_name="Kore" -> "en-US-Chirp3-HD-Kore"
@@ -127,7 +127,7 @@ def generate_speech_gcp(
                 voice=voice,
                 audio_config=audio_config,
             )
-            return response.audio_content
+            return response.audio_content, 24000
         else:
             # GCP TTS has a 5000 byte limit for synthesize_speech.
             # We chunk the text and concatenate the PCM results.
@@ -147,19 +147,19 @@ def generate_speech_gcp(
                 )
                 all_audio += response.audio_content
 
-            return all_audio
+            return all_audio, 24000
 
     except Exception as e:
         print(f"Error generating speech with GCP TTS: {e}")
-        return b""
+        return b"", 0
 
 
 def generate_speech_aws_polly(
     text: str, voice_id: str = "Ruth", engine: str = "long-form"
-) -> bytes:
+) -> Tuple[bytes, int]:
     """
     Generates speech from text using AWS Polly.
-    Returns raw PCM audio bytes.
+    Returns (raw PCM audio bytes, sample_rate).
     Handles text longer than limits by chunking.
     """
     try:
@@ -169,7 +169,7 @@ def generate_speech_aws_polly(
         print(
             "Error: boto3 is required for AWS Polly. Install with `pip install boto3`"
         )
-        return b""
+        return b"", 0
 
     try:
         polly = boto3.client("polly")
@@ -211,22 +211,22 @@ def generate_speech_aws_polly(
             else:
                 print("Error: No AudioStream in Polly response")
 
-        return audio_stream
+        return audio_stream, 16000
 
     except (BotoCoreError, ClientError) as error:
         print(f"Error generating speech with AWS Polly: {error}")
-        return b""
+        return b"", 0
     except Exception as e:
         print(f"Error generating speech with AWS Polly: {e}")
-        return b""
+        return b"", 0
 
 
 def generate_speech(
     text: str, model_name: str, voice_name: str, language_code: Optional[str] = None
-) -> bytes:
+) -> Tuple[bytes, int]:
     """
     Generates speech from text using the specified Gemini model and voice.
-    Returns the raw PCM audio bytes.
+    Returns (raw PCM audio bytes, sample_rate).
     """
     try:
         from google import genai
@@ -235,7 +235,7 @@ def generate_speech(
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             print("Error: GEMINI_API_KEY environment variable not set.")
-            return b""
+            return b"", 0
 
         client = genai.Client(api_key=api_key)
 
@@ -255,8 +255,6 @@ def generate_speech(
             ),
         )
 
-        # The response structure based on the docs:
-        # response.candidates[0].content.parts[0].inline_data.data
         if (
             response.candidates
             and response.candidates[0].content
@@ -264,14 +262,14 @@ def generate_speech(
             and response.candidates[0].content.parts[0].inline_data
             and response.candidates[0].content.parts[0].inline_data.data
         ):
-            return response.candidates[0].content.parts[0].inline_data.data
+            return response.candidates[0].content.parts[0].inline_data.data, 24000
         else:
             print("Error: No audio data in response.")
-            return b""
+            return b"", 0
 
     except Exception as e:
         print(f"Error generating speech: {e}")
-        return b""
+        return b"", 0
 
 
 def is_gcp_tts_model(model_name: str) -> bool:
@@ -436,9 +434,7 @@ def process_tts(
 
             try:
                 # Read summary from storage
-                # summary_path comes from row, might be Link or Path.
                 text = storage.read_text(summary_path)
-
             except Exception as e:
                 print(f"Error reading summary file {summary_path}: {e}")
                 new_col_values.append(None)
@@ -449,73 +445,36 @@ def process_tts(
                 new_col_values.append(None)
                 continue
 
-            # Generate audio using the appropriate TTS engine
-            if is_gcp_tts_model(model_name):
-                # GCP TTS with LINEAR16 returns PCM data that needs WAV wrapping
-                pcm_data = generate_speech_gcp(text, voice_name, lang_code)
-                if pcm_data:
-                    try:
-                        wav_io = io.BytesIO()
-                        wave_file(wav_io, pcm_data)
-                        wav_bytes = wav_io.getvalue()
+            # Generate audio using the unified provider
+            from youtube_to_docs.providers import TTSProvider, get_provider
 
-                        saved_path = storage.write_bytes(target_path, wav_bytes)
-                        rprint(f"Saved audio: {format_clickable_path(saved_path)}")
-                        new_col_values.append(saved_path)
-                    except Exception as e:
-                        print(f"Error writing audio file: {e}")
+            try:
+                provider = get_provider(model_name)
+                if isinstance(provider, TTSProvider):
+                    pcm_data, rate = provider.generate_speech(
+                        text, voice_name, lang_code
+                    )
+
+                    if pcm_data:
+                        try:
+                            wav_io = io.BytesIO()
+                            wave_file(wav_io, pcm_data, rate=rate)
+                            wav_bytes = wav_io.getvalue()
+
+                            saved_path = storage.write_bytes(target_path, wav_bytes)
+                            rprint(f"Saved audio: {format_clickable_path(saved_path)}")
+                            new_col_values.append(saved_path)
+                        except Exception as e:
+                            print(f"Error writing audio file: {e}")
+                            new_col_values.append(None)
+                    else:
                         new_col_values.append(None)
                 else:
+                    print(f"Provider {model_name} does not support TTS")
                     new_col_values.append(None)
-            elif is_aws_polly_model(model_name):
-                # AWS Polly returns PCM data
-                # Using 16000Hz as standard for Polly PCM, but we might need to adjust
-                # `wave_file` defaults or Polly request.
-                # `long-form` engine supports 24000Hz?
-                # Let's request 24000Hz sample rate if possible, otherwise use 16000.
-                # Polly `SampleRate` parameter.
-                # Polly defaults to 16000Hz or 22050Hz for PCM.
-                # `long-form` engine supports up to 24000Hz.
-                # To avoid pitch distortion with `wave_file` default (24000Hz),
-                # we explicitly set rate=16000 below.
-                # Warning: If Polly returns 16k and we save as 24k, it will be fast.
-                # I will explicitly set rate=16000 in `wave_file` for Polly for now.
-                pcm_data = generate_speech_aws_polly(
-                    text, voice_name, engine="long-form"
-                )
-                if pcm_data:
-                    try:
-                        wav_io = io.BytesIO()
-                        # Assuming Polly returns 16000Hz by default for PCM
-                        wave_file(wav_io, pcm_data, rate=16000)
-                        wav_bytes = wav_io.getvalue()
-
-                        saved_path = storage.write_bytes(target_path, wav_bytes)
-                        rprint(f"Saved audio: {format_clickable_path(saved_path)}")
-                        new_col_values.append(saved_path)
-                    except Exception as e:
-                        print(f"Error writing audio file: {e}")
-                        new_col_values.append(None)
-                else:
-                    new_col_values.append(None)
-            else:
-                # Gemini TTS returns PCM data that needs to be wrapped in WAV
-                pcm_data = generate_speech(text, model_name, voice_name, lang_code)
-                if pcm_data:
-                    try:
-                        # Write to BytesIO then storage.write_bytes
-                        wav_io = io.BytesIO()
-                        wave_file(wav_io, pcm_data)
-                        wav_bytes = wav_io.getvalue()
-
-                        saved_path = storage.write_bytes(target_path, wav_bytes)
-                        rprint(f"Saved audio: {format_clickable_path(saved_path)}")
-                        new_col_values.append(saved_path)
-                    except Exception as e:
-                        print(f"Error writing audio file: {e}")
-                        new_col_values.append(None)
-                else:
-                    new_col_values.append(None)
+            except Exception as e:
+                print(f"Error in TTS generation: {e}")
+                new_col_values.append(None)
 
         updated_df = updated_df.with_columns(
             pl.Series(name=new_col_name, values=new_col_values)

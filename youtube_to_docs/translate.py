@@ -26,7 +26,6 @@ import os
 from typing import Any, Optional, Tuple
 
 from youtube_to_docs.constants import KNOWN_SRT_SOURCE_PREFIXES
-from youtube_to_docs.llms import _query_llm
 from youtube_to_docs.utils import get_gcp_client
 
 try:
@@ -262,23 +261,28 @@ def translate_text(
 
     If model_name is 'aws-translate', uses the AWS Translate service directly.
     If model_name is 'gcp-translate', uses Google Cloud Translation API directly.
-    Otherwise, uses the specified LLM via _query_llm.
+    Otherwise, uses the specified LLM via its provider.
 
     Returns (translated_text, input_tokens, output_tokens).
     """
-    if model_name == "aws-translate":
-        return _translate_aws(text, target_language)
+    from youtube_to_docs.providers import LLMProvider, TranslationProvider, get_provider
 
-    if model_name == "gcp-translate":
-        return _translate_gcp(text, target_language)
-
-    prompt = (
-        f"Please translate the following text to {target_language}. "
-        "Return only the translated text without any preamble or explanation."
-        "\n\n"
-        f"{text}"
-    )
-    return _query_llm(model_name, prompt)
+    try:
+        provider = get_provider(model_name)
+        if isinstance(provider, TranslationProvider):
+            translated = provider.translate(text, target_language)
+            return translated, 0, 0
+        elif isinstance(provider, LLMProvider):
+            prompt = (
+                f"Please translate the following text to {target_language}. "
+                "Return only the translated text without any preamble or explanation."
+                "\n\n"
+                f"{text}"
+            )
+            return provider.generate_content(prompt)
+        return f"Error: Translation not implemented for {model_name}", 0, 0
+    except Exception as e:
+        return f"Error: {e}", 0, 0
 
 
 def process_translate(
