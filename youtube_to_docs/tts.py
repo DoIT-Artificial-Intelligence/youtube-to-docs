@@ -436,9 +436,7 @@ def process_tts(
 
             try:
                 # Read summary from storage
-                # summary_path comes from row, might be Link or Path.
                 text = storage.read_text(summary_path)
-
             except Exception as e:
                 print(f"Error reading summary file {summary_path}: {e}")
                 new_col_values.append(None)
@@ -449,73 +447,39 @@ def process_tts(
                 new_col_values.append(None)
                 continue
 
-            # Generate audio using the appropriate TTS engine
-            if is_gcp_tts_model(model_name):
-                # GCP TTS with LINEAR16 returns PCM data that needs WAV wrapping
-                pcm_data = generate_speech_gcp(text, voice_name, lang_code)
-                if pcm_data:
-                    try:
-                        wav_io = io.BytesIO()
-                        wave_file(wav_io, pcm_data)
-                        wav_bytes = wav_io.getvalue()
+            # Generate audio using the unified provider
+            from youtube_to_docs.providers import get_provider, TTSProvider
+            try:
+                provider = get_provider(model_name)
+                if isinstance(provider, TTSProvider):
+                    # Set sample rate based on provider/engine
+                    rate = 24000
+                    if model_name.startswith("aws-polly"):
+                        rate = 16000
+                        pcm_data = provider.generate_speech(text, voice_name, engine="long-form")
+                    else:
+                        pcm_data = provider.generate_speech(text, voice_name, lang_code)
+                    
+                    if pcm_data:
+                        try:
+                            wav_io = io.BytesIO()
+                            wave_file(wav_io, pcm_data, rate=rate)
+                            wav_bytes = wav_io.getvalue()
 
-                        saved_path = storage.write_bytes(target_path, wav_bytes)
-                        rprint(f"Saved audio: {format_clickable_path(saved_path)}")
-                        new_col_values.append(saved_path)
-                    except Exception as e:
-                        print(f"Error writing audio file: {e}")
+                            saved_path = storage.write_bytes(target_path, wav_bytes)
+                            rprint(f"Saved audio: {format_clickable_path(saved_path)}")
+                            new_col_values.append(saved_path)
+                        except Exception as e:
+                            print(f"Error writing audio file: {e}")
+                            new_col_values.append(None)
+                    else:
                         new_col_values.append(None)
                 else:
+                    print(f"Provider {model_name} does not support TTS")
                     new_col_values.append(None)
-            elif is_aws_polly_model(model_name):
-                # AWS Polly returns PCM data
-                # Using 16000Hz as standard for Polly PCM, but we might need to adjust
-                # `wave_file` defaults or Polly request.
-                # `long-form` engine supports 24000Hz?
-                # Let's request 24000Hz sample rate if possible, otherwise use 16000.
-                # Polly `SampleRate` parameter.
-                # Polly defaults to 16000Hz or 22050Hz for PCM.
-                # `long-form` engine supports up to 24000Hz.
-                # To avoid pitch distortion with `wave_file` default (24000Hz),
-                # we explicitly set rate=16000 below.
-                # Warning: If Polly returns 16k and we save as 24k, it will be fast.
-                # I will explicitly set rate=16000 in `wave_file` for Polly for now.
-                pcm_data = generate_speech_aws_polly(
-                    text, voice_name, engine="long-form"
-                )
-                if pcm_data:
-                    try:
-                        wav_io = io.BytesIO()
-                        # Assuming Polly returns 16000Hz by default for PCM
-                        wave_file(wav_io, pcm_data, rate=16000)
-                        wav_bytes = wav_io.getvalue()
-
-                        saved_path = storage.write_bytes(target_path, wav_bytes)
-                        rprint(f"Saved audio: {format_clickable_path(saved_path)}")
-                        new_col_values.append(saved_path)
-                    except Exception as e:
-                        print(f"Error writing audio file: {e}")
-                        new_col_values.append(None)
-                else:
-                    new_col_values.append(None)
-            else:
-                # Gemini TTS returns PCM data that needs to be wrapped in WAV
-                pcm_data = generate_speech(text, model_name, voice_name, lang_code)
-                if pcm_data:
-                    try:
-                        # Write to BytesIO then storage.write_bytes
-                        wav_io = io.BytesIO()
-                        wave_file(wav_io, pcm_data)
-                        wav_bytes = wav_io.getvalue()
-
-                        saved_path = storage.write_bytes(target_path, wav_bytes)
-                        rprint(f"Saved audio: {format_clickable_path(saved_path)}")
-                        new_col_values.append(saved_path)
-                    except Exception as e:
-                        print(f"Error writing audio file: {e}")
-                        new_col_values.append(None)
-                else:
-                    new_col_values.append(None)
+            except Exception as e:
+                print(f"Error in TTS generation: {e}")
+                new_col_values.append(None)
 
         updated_df = updated_df.with_columns(
             pl.Series(name=new_col_name, values=new_col_values)

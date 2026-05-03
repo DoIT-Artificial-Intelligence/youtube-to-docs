@@ -230,3 +230,5 @@ codeql-db*
 codeql-*.csv
 
 .claude/settings.local.json
+
+conductor/

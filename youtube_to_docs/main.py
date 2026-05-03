@@ -23,6 +23,12 @@ from youtube_to_docs.llms import (
     get_model_pricing,
     suggest_corrected_captions,
 )
+from youtube_to_docs.providers import (
+    get_provider,
+    LLMProvider,
+    STTProvider,
+    MultimodalProvider,
+)
 from youtube_to_docs.models import MODEL_SUITES
 from youtube_to_docs.post_process import post_process_transcript
 from youtube_to_docs.storage import (
@@ -972,34 +978,31 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                                 f"({language})..."
                             )
 
-                            # Use single call for GCP models (returns both text + SRT)
-                            if transcript_arg.startswith("gcp-"):
+                            # Use the unified provider
+                            provider = get_provider(transcript_arg)
+                            if isinstance(provider, STTProvider):
                                 ai_transcript, ai_srt_content, stt_in, stt_out = (
-                                    generate_transcript_with_srt(
-                                        transcript_arg,
+                                    provider.transcribe(
                                         audio_input_path,
                                         url,
                                         language=language,
                                         duration_seconds=video_duration_seconds,
+                                        srt=True,
                                     )
                                 )
+                                # If the provider didn't return text in one go, try text-only call
+                                if not ai_transcript and ai_srt_content:
+                                    # Fallback: extract text from SRT or call again without SRT
+                                    ai_transcript, _, _, _ = provider.transcribe(
+                                        audio_input_path,
+                                        url,
+                                        language=language,
+                                        duration_seconds=video_duration_seconds,
+                                        srt=False,
+                                    )
                             else:
-                                # For Gemini/other models, still need two calls
-                                ai_transcript, stt_in, stt_out = generate_transcript(
-                                    transcript_arg,
-                                    audio_input_path,
-                                    url,
-                                    language=language,
-                                    duration_seconds=video_duration_seconds,
-                                )
-                                ai_srt_content, _, _ = generate_transcript(
-                                    transcript_arg,
-                                    audio_input_path,
-                                    url,
-                                    language=language,
-                                    srt=True,
-                                    duration_seconds=video_duration_seconds,
-                                )
+                                print(f"Error: {transcript_arg} does not support STT.")
+                                continue
 
                             # Save AI transcript
                             prefix = f"{transcript_arg} generated{lang_str} - "
@@ -1981,9 +1984,16 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                             "Generating multimodal alt text using model: "
                             f"{alt_text_model}"
                         )
-                        alt_text, at_input, at_output = generate_alt_text(
-                            alt_text_model, image_bytes, language=language
-                        )
+                        # Use the unified provider
+                        provider = get_provider(alt_text_model)
+                        if isinstance(provider, MultimodalProvider):
+                            alt_text, at_input, at_output = provider.generate_alt_text(
+                                image_bytes, language=language
+                            )
+                        else:
+                            alt_text = f"Error: {alt_text_model} does not support multimodal alt text."
+                            at_input, at_output = 0, 0
+                        
                         row[alt_text_col] = alt_text
 
                         # Save Alt Text File
