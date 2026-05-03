@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 
 class BaseProvider(ABC):
@@ -13,9 +13,7 @@ class LLMProvider(ABC):
     """Interface for Large Language Model services."""
 
     @abstractmethod
-    def generate_content(
-        self, prompt: str, **kwargs
-    ) -> Tuple[str, int, int]:
+    def generate_content(self, prompt: str, **kwargs) -> Tuple[str, int, int]:
         """Returns (response_text, input_tokens, output_tokens)."""
         pass
 
@@ -51,9 +49,7 @@ class TranslationProvider(ABC):
     """Interface for Translation services."""
 
     @abstractmethod
-    def translate(
-        self, text: str, target_lang: str, **kwargs
-    ) -> str:
+    def translate(self, text: str, target_lang: str, **kwargs) -> str:
         """Returns translated text."""
         pass
 
@@ -81,21 +77,31 @@ def get_provider(model_name: str) -> BaseProvider:
     # This will be populated by concrete implementations
     if model_name.startswith("gemini") or model_name.startswith("gemma"):
         from youtube_to_docs.llms import GeminiProvider
+
         return GeminiProvider(model_name)
     elif model_name.startswith("vertex"):
         from youtube_to_docs.llms import VertexProvider
+
         return VertexProvider(model_name)
-    elif model_name.startswith("bedrock") or model_name.startswith("nova") or model_name.startswith("claude"):
+    elif (
+        model_name.startswith("bedrock")
+        or model_name.startswith("nova")
+        or model_name.startswith("claude")
+    ):
         from youtube_to_docs.llms import BedrockProvider
+
         return BedrockProvider(model_name)
     elif model_name.startswith("gcp-"):
         from youtube_to_docs.llms import GCPProvider
+
         return GCPProvider(model_name)
     elif model_name.startswith("aws-"):
         from youtube_to_docs.llms import AWSProvider
+
         return AWSProvider(model_name)
     elif model_name.startswith("foundry"):
         from youtube_to_docs.llms import AzureFoundryProvider
+
         return AzureFoundryProvider(model_name)
-    
+
     raise ValueError(f"Unknown provider for model: {model_name}")

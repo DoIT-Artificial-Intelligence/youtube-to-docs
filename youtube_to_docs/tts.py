@@ -446,12 +446,15 @@ def process_tts(
                 continue
 
             # Generate audio using the unified provider
-            from youtube_to_docs.providers import get_provider, TTSProvider
+            from youtube_to_docs.providers import TTSProvider, get_provider
+
             try:
                 provider = get_provider(model_name)
                 if isinstance(provider, TTSProvider):
-                    pcm_data, rate = provider.generate_speech(text, voice_name, lang_code)
-                    
+                    pcm_data, rate = provider.generate_speech(
+                        text, voice_name, lang_code
+                    )
+
                     if pcm_data:
                         try:
                             wav_io = io.BytesIO()

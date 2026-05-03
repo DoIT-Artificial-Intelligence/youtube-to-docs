@@ -1,7 +1,8 @@
 import os
 import tempfile
 import unittest
-from unittest.mock import mock_open, patch
+from typing import Any, cast
+from unittest.mock import MagicMock, mock_open, patch
 
 import polars as pl
 
@@ -593,7 +594,7 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.generate_qa")
     @patch("youtube_to_docs.main.extract_audio")
     @patch("youtube_to_docs.storage.LocalStorage.upload_file")
-    @patch("youtube_to_docs.main.generate_transcript")
+    @patch("youtube_to_docs.providers.get_provider")
     @patch("youtube_to_docs.main.generate_one_sentence_summary")
     @patch("youtube_to_docs.main.generate_tags")
     @patch("os.makedirs")
@@ -602,7 +603,7 @@ class TestMain(unittest.TestCase):
         mock_makedirs,
         mock_gen_tags,
         mock_gen_one_sentence,
-        mock_gen_transcript,
+        mock_get_provider,
         mock_upload_file,
         mock_extract_audio,
         mock_gen_qa,
@@ -617,6 +618,20 @@ class TestMain(unittest.TestCase):
         mock_svc,
     ):
         mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
+        mock_gen_one_sentence.return_value = ("One sentence", 5, 2)
+
+        from youtube_to_docs.providers import BaseProvider, STTProvider
+
+        class MockSTTProvider(BaseProvider, STTProvider):
+            def transcribe(self, *args, **kwargs):
+                return "AI Transcript", "SRT content", 100, 50
+
+        mock_p = MockSTTProvider("test")
+        cast(Any, mock_p).transcribe = MagicMock(
+            return_value=("AI Transcript", "SRT content", 100, 50)
+        )
+        mock_get_provider.return_value = mock_p
+
         mock_resolve.return_value = ["vid1"]
         mock_details.return_value = (
             "Title 1",
@@ -635,7 +650,6 @@ class TestMain(unittest.TestCase):
         mock_extract_speakers.return_value = ("Speaker 1", 10, 10)
         mock_gen_qa.return_value = ("Q&A", 20, 20)
         mock_gen_one_sentence.return_value = ("One sentence summary", 5, 5)
-        mock_gen_transcript.return_value = ("Transcript content", 50, 50)
         mock_extract_audio.return_value = self.dummy_audio
         mock_upload_file.return_value = "audio-files/vid1.m4a"
 
@@ -689,7 +703,7 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.generate_qa")
     @patch("youtube_to_docs.main.extract_audio")
     @patch("youtube_to_docs.storage.LocalStorage.upload_file")
-    @patch("youtube_to_docs.main.generate_transcript")
+    @patch("youtube_to_docs.providers.get_provider")
     @patch("youtube_to_docs.main.generate_one_sentence_summary")
     @patch("youtube_to_docs.main.generate_tags")
     @patch("os.makedirs")
@@ -698,7 +712,7 @@ class TestMain(unittest.TestCase):
         mock_makedirs,
         mock_gen_tags,
         mock_gen_one_sentence,
-        mock_gen_transcript,
+        mock_get_provider,
         mock_upload_file,
         mock_extract_audio,
         mock_gen_qa,
@@ -713,6 +727,20 @@ class TestMain(unittest.TestCase):
         mock_svc,
     ):
         mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
+        mock_gen_one_sentence.return_value = ("One sentence", 5, 2)
+
+        from youtube_to_docs.providers import BaseProvider, STTProvider
+
+        class MockSTTProvider(BaseProvider, STTProvider):
+            def transcribe(self, *args, **kwargs):
+                return "AI Transcript", "SRT content", 100, 50
+
+        mock_p = MockSTTProvider("test")
+        cast(Any, mock_p).transcribe = MagicMock(
+            return_value=("AI Transcript", "SRT content", 100, 50)
+        )
+        mock_get_provider.return_value = mock_p
+
         mock_resolve.return_value = ["vid1"]
         mock_details.return_value = (
             "Title 1",
@@ -731,7 +759,6 @@ class TestMain(unittest.TestCase):
         mock_extract_speakers.return_value = ("Speaker 1", 10, 10)
         mock_gen_qa.return_value = ("Q&A", 20, 20)
         mock_gen_one_sentence.return_value = ("One sentence summary", 5, 5)
-        mock_gen_transcript.return_value = ("Transcript content", 50, 50)
         mock_extract_audio.return_value = self.dummy_audio
         mock_upload_file.return_value = "audio-files/vid1.m4a"
 
@@ -779,7 +806,7 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.generate_qa")
     @patch("youtube_to_docs.main.extract_audio")
     @patch("youtube_to_docs.storage.LocalStorage.upload_file")
-    @patch("youtube_to_docs.main.generate_transcript")
+    @patch("youtube_to_docs.providers.get_provider")
     @patch("youtube_to_docs.main.generate_one_sentence_summary")
     @patch("youtube_to_docs.main.generate_tags")
     @patch("os.makedirs")
@@ -788,7 +815,7 @@ class TestMain(unittest.TestCase):
         mock_makedirs,
         mock_gen_tags,
         mock_gen_one_sentence,
-        mock_gen_transcript,
+        mock_get_provider,
         mock_upload_file,
         mock_extract_audio,
         mock_gen_qa,
@@ -803,6 +830,20 @@ class TestMain(unittest.TestCase):
         mock_svc,
     ):
         mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
+        mock_gen_one_sentence.return_value = ("One sentence", 5, 2)
+
+        from youtube_to_docs.providers import BaseProvider, STTProvider
+
+        class MockSTTProvider(BaseProvider, STTProvider):
+            def transcribe(self, *args, **kwargs):
+                return "AI Transcript", "SRT content", 100, 50
+
+        mock_p = MockSTTProvider("test")
+        cast(Any, mock_p).transcribe = MagicMock(
+            return_value=("AI Transcript", "SRT content", 100, 50)
+        )
+        mock_get_provider.return_value = mock_p
+
         mock_resolve.return_value = ["vid1"]
         mock_details.return_value = (
             "Title 1",
@@ -821,7 +862,6 @@ class TestMain(unittest.TestCase):
         mock_extract_speakers.return_value = ("Speaker 1", 10, 10)
         mock_gen_qa.return_value = ("Q&A", 20, 20)
         mock_gen_one_sentence.return_value = ("One sentence summary", 5, 5)
-        mock_gen_transcript.return_value = ("Transcript content", 50, 50)
         mock_extract_audio.return_value = self.dummy_audio
         mock_upload_file.return_value = "audio-files/vid1.m4a"
 

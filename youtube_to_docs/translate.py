@@ -26,7 +26,6 @@ import os
 from typing import Any, Optional, Tuple
 
 from youtube_to_docs.constants import KNOWN_SRT_SOURCE_PREFIXES
-from youtube_to_docs.llms import _query_llm
 from youtube_to_docs.utils import get_gcp_client
 
 try:
@@ -266,7 +265,8 @@ def translate_text(
 
     Returns (translated_text, input_tokens, output_tokens).
     """
-    from youtube_to_docs.providers import get_provider, TranslationProvider, LLMProvider
+    from youtube_to_docs.providers import LLMProvider, TranslationProvider, get_provider
+
     try:
         provider = get_provider(model_name)
         if isinstance(provider, TranslationProvider):

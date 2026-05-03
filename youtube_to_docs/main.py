@@ -13,24 +13,20 @@ from rich_argparse import RichHelpFormatter
 from youtube_to_docs.infographic import generate_infographic
 from youtube_to_docs.llms import (
     extract_speakers,
-    generate_alt_text,
     generate_one_sentence_summary,
     generate_qa,
     generate_summary,
     generate_tags,
-    generate_transcript,
-    generate_transcript_with_srt,
     get_model_pricing,
     suggest_corrected_captions,
 )
-from youtube_to_docs.providers import (
-    get_provider,
-    LLMProvider,
-    STTProvider,
-    MultimodalProvider,
-)
 from youtube_to_docs.models import MODEL_SUITES
 from youtube_to_docs.post_process import post_process_transcript
+from youtube_to_docs.providers import (
+    MultimodalProvider,
+    STTProvider,
+    get_provider,
+)
 from youtube_to_docs.storage import (
     GoogleDriveStorage,
     LocalStorage,
@@ -990,12 +986,15 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                                         srt=True,
                                     )
                                 )
-                                # If the provider didn't return text in one go, try to extract it from SRT
+                                # If the provider didn't return text in one go, try to
+                                # extract it from SRT
                                 if not ai_transcript and ai_srt_content:
                                     vprint("Extracting plain text from SRT locally...")
                                     # Strip SRT tags, timestamps, and sequence numbers
-                                    # Pattern for timestamps: 00:00:00,000 --> 00:00:00,000
-                                    # Pattern for sequence numbers: \d+ followed by newline
+                                    # Pattern for timestamps:
+                                    # 00:00:00,000 --> 00:00:00,000
+                                    # Pattern for sequence numbers:
+                                    # \d+ followed by newline
                                     # Pattern for HTML-like tags: <[^>]+>
                                     text_blocks = []
                                     lines = ai_srt_content.strip().splitlines()
@@ -1015,7 +1014,10 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
 
                                 # If still empty, fallback to provider call without SRT
                                 if not ai_transcript:
-                                    vprint("Fallback: Requesting text-only transcript from provider...")
+                                    vprint(
+                                        "Fallback: Requesting text-only transcript "
+                                        "from provider..."
+                                    )
                                     ai_transcript, _, _, _ = provider.transcribe(
                                         audio_input_path,
                                         url,
@@ -2014,9 +2016,12 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                                 image_bytes, language=language
                             )
                         else:
-                            alt_text = f"Error: {alt_text_model} does not support multimodal alt text."
+                            alt_text = (
+                                f"Error: {alt_text_model} does not support "
+                                "multimodal alt text."
+                            )
                             at_input, at_output = 0, 0
-                        
+
                         row[alt_text_col] = alt_text
 
                         # Save Alt Text File

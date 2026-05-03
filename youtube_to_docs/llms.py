@@ -14,10 +14,10 @@ from rich import print as rprint
 from youtube_to_docs.providers import (
     BaseProvider,
     LLMProvider,
-    STTProvider,
-    TTSProvider,
-    TranslationProvider,
     MultimodalProvider,
+    STTProvider,
+    TranslationProvider,
+    TTSProvider,
 )
 
 try:
@@ -70,7 +70,9 @@ def get_model_pricing(model_name: str) -> Tuple[float | None, float | None]:
     return None, None
 
 
-class GeminiProvider(BaseProvider, LLMProvider, STTProvider, MultimodalProvider, TTSProvider):
+class GeminiProvider(
+    BaseProvider, LLMProvider, STTProvider, MultimodalProvider, TTSProvider
+):
     def generate_content(self, prompt: str, **kwargs) -> Tuple[str, int, int]:
         try:
             from google import genai
@@ -236,7 +238,7 @@ class GeminiProvider(BaseProvider, LLMProvider, STTProvider, MultimodalProvider,
             api_key = os.environ.get("GEMINI_API_KEY")
             if not api_key:
                 print("Error: GEMINI_API_KEY environment variable not set.")
-                return b""
+                return b"", 0
 
             client = genai.Client(api_key=api_key)
 
@@ -280,9 +282,11 @@ class GeminiProvider(BaseProvider, LLMProvider, STTProvider, MultimodalProvider,
                     and response.candidates[0].content.parts[0].inline_data
                     and response.candidates[0].content.parts[0].inline_data.data
                 ):
-                    all_audio += response.candidates[0].content.parts[0].inline_data.data
+                    all_audio += (
+                        response.candidates[0].content.parts[0].inline_data.data
+                    )
                 else:
-                    print(f"Error: No audio data in response for chunk {i+1}.")
+                    print(f"Error: No audio data in response for chunk {i + 1}.")
 
             return all_audio, 24000
 
@@ -451,12 +455,17 @@ class VertexProvider(BaseProvider, LLMProvider, MultimodalProvider):
     ) -> Tuple[str, int, int]:
         # Vertex AI multimodal usually uses the same logic as Gemini
         # But we need to ensure the client is initialized with vertexai=True
-        # For now, I'll leverage the existing generate_alt_text function if it handles vertex
+        # For now, we leverage the existing generate_alt_text function if
+        # it handles vertex.
         # But wait, generate_alt_text currently only handles gemini and bedrock.
         # Let's fix that.
         actual_model_name = self.model_name.replace("vertex-", "")
         if not actual_model_name.startswith("gemini"):
-            return f"Error: Multimodal alt text not yet implemented for {self.model_name}", 0, 0
+            return (
+                f"Error: Multimodal alt text not yet implemented for {self.model_name}",
+                0,
+                0,
+            )
 
         try:
             from google import genai
@@ -745,7 +754,9 @@ class GCPProvider(BaseProvider, STTProvider, TTSProvider, TranslationProvider):
         duration_seconds: Optional[float] = None,
         **kwargs,
     ) -> Tuple[str, str, int, int]:
-        return _transcribe_gcp(self.model_name, audio_path, url, language, duration_seconds)
+        return _transcribe_gcp(
+            self.model_name, audio_path, url, language, duration_seconds
+        )
 
     def generate_speech(
         self, text: str, voice: str, language_code: Optional[str] = None, **kwargs
@@ -757,12 +768,14 @@ class GCPProvider(BaseProvider, STTProvider, TTSProvider, TranslationProvider):
                 "Error: google-cloud-texttospeech is required for GCP TTS models. "
                 "Install with `pip install '.[gcp]'`"
             )
-            return b""
+            return b"", 0
 
         try:
-            client = get_gcp_client(texttospeech.TextToSpeechClient, "GCP Text-to-Speech")
+            client = get_gcp_client(
+                texttospeech.TextToSpeechClient, "GCP Text-to-Speech"
+            )
             if client is None:
-                return b""
+                return b"", 0
 
             if language_code:
                 full_voice_name = f"{language_code}-Chirp3-HD-{voice}"
@@ -817,9 +830,9 @@ class GCPProvider(BaseProvider, STTProvider, TTSProvider, TranslationProvider):
             print(f"Error generating speech with GCP TTS: {e}")
             return b"", 0
 
-
     def translate(self, text: str, target_lang: str, **kwargs) -> str:
         from youtube_to_docs.translate import _translate_gcp
+
         translated, _, _ = _translate_gcp(text, target_lang)
         return translated
 
@@ -833,7 +846,9 @@ class AWSProvider(BaseProvider, STTProvider, TTSProvider, TranslationProvider):
         duration_seconds: Optional[float] = None,
         **kwargs,
     ) -> Tuple[str, str, int, int]:
-        return _transcribe_aws(self.model_name, audio_path, url, language, duration_seconds)
+        return _transcribe_aws(
+            self.model_name, audio_path, url, language, duration_seconds
+        )
 
     def generate_speech(
         self, text: str, voice: str, language_code: Optional[str] = None, **kwargs
@@ -843,9 +858,10 @@ class AWSProvider(BaseProvider, STTProvider, TTSProvider, TranslationProvider):
             from botocore.exceptions import BotoCoreError, ClientError
         except ImportError:
             print(
-                "Error: boto3 is required for AWS Polly. Install with `pip install boto3`"
+                "Error: boto3 is required for AWS Polly. "
+                "Install with `pip install boto3`"
             )
-            return b""
+            return b"", 0
 
         try:
             polly = boto3.client("polly")
@@ -896,6 +912,7 @@ class AWSProvider(BaseProvider, STTProvider, TTSProvider, TranslationProvider):
 
     def translate(self, text: str, target_lang: str, **kwargs) -> str:
         from youtube_to_docs.translate import _translate_aws
+
         translated, _, _ = _translate_aws(text, target_lang)
         return translated
 
@@ -905,7 +922,8 @@ def _query_llm(model_name: str, prompt: str) -> Tuple[str, int, int]:
     Generic function to query the specified LLM model.
     Returns (response_text, input_tokens, output_tokens).
     """
-    from youtube_to_docs.providers import get_provider, LLMProvider
+    from youtube_to_docs.providers import LLMProvider, get_provider
+
     try:
         provider = get_provider(model_name)
         if isinstance(provider, LLMProvider):
@@ -928,11 +946,14 @@ def generate_transcript_with_srt(
     Generates both transcript text and SRT content from audio in a single call.
     Returns (transcript_text, srt_content, input_tokens, output_tokens).
     """
-    from youtube_to_docs.providers import get_provider, STTProvider
+    from youtube_to_docs.providers import STTProvider, get_provider
+
     try:
         provider = get_provider(model_name)
         if isinstance(provider, STTProvider):
-            return provider.transcribe(audio_path, url, language, duration_seconds, srt=True)
+            return provider.transcribe(
+                audio_path, url, language, duration_seconds, srt=True
+            )
         return f"Error: STT not implemented for {model_name}", "", 0, 0
     except NotImplementedError:
         raise
@@ -952,7 +973,8 @@ def generate_transcript(
     Generates a transcript from an audio file using the specified model.
     Returns (transcript_text, input_tokens, output_tokens).
     """
-    from youtube_to_docs.providers import get_provider, STTProvider
+    from youtube_to_docs.providers import STTProvider, get_provider
+
     try:
         provider = get_provider(model_name)
         if isinstance(provider, STTProvider):
@@ -1328,7 +1350,9 @@ def _transcribe_gcp(
                 )
 
                 request = speech_v2.BatchRecognizeRequest(
-                    recognizer=f"projects/{project_id}/locations/{location}/recognizers/_",
+                    recognizer=(
+                        f"projects/{project_id}/locations/{location}/recognizers/_"
+                    ),
                     config=decoding_config,
                     files=batch_files_metadata,
                     recognition_output_config=recognition_output_config,
@@ -1781,7 +1805,8 @@ def generate_alt_text(
     Generates alt text for an infographic based on the generated image.
     Returns (alt_text, input_tokens, output_tokens).
     """
-    from youtube_to_docs.providers import get_provider, MultimodalProvider
+    from youtube_to_docs.providers import MultimodalProvider, get_provider
+
     try:
         provider = get_provider(model_name)
         if isinstance(provider, MultimodalProvider):

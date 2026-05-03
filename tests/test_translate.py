@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
+from youtube_to_docs.providers import BaseProvider, LLMProvider, TranslationProvider
 from youtube_to_docs.translate import (
     _translate_aws,
     _translate_gcp,
@@ -189,14 +190,12 @@ class TestTranslateGcp(unittest.TestCase):
 class TestTranslateText(unittest.TestCase):
     @patch("youtube_to_docs.providers.get_provider")
     def test_calls_query_llm_with_correct_prompt(self, mock_get_provider):
-        mock_provider = MagicMock()
-        from youtube_to_docs.providers import BaseProvider, LLMProvider
-        class MockLLMProvider(BaseProvider, LLMProvider):
-            def generate_content(self, prompt, **kwargs):
-                return ("Hola mundo", 10, 5)
-        
-        provider_instance = MockLLMProvider("gemini-3-flash-preview")
-        provider_instance.generate_content = MagicMock(return_value=("Hola mundo", 10, 5))
+        from typing import Any
+
+        provider_instance: Any = MockLLMProvider("gemini-3-flash-preview")
+        provider_instance.generate_content = MagicMock(
+            return_value=("Hola mundo", 10, 5)
+        )
         mock_get_provider.return_value = provider_instance
 
         result, in_tok, out_tok = translate_text(
@@ -213,13 +212,9 @@ class TestTranslateText(unittest.TestCase):
 
     @patch("youtube_to_docs.providers.get_provider")
     def test_target_language_in_prompt(self, mock_get_provider):
-        mock_provider = MagicMock()
-        from youtube_to_docs.providers import BaseProvider, LLMProvider
-        class MockLLMProvider(BaseProvider, LLMProvider):
-            def generate_content(self, prompt, **kwargs):
-                return ("Bonjour", 5, 3)
-        
-        provider_instance = MockLLMProvider("gemini-3-flash-preview")
+        from typing import Any
+
+        provider_instance: Any = MockLLMProvider("gemini-3-flash-preview")
         provider_instance.generate_content = MagicMock(return_value=("Bonjour", 5, 3))
         mock_get_provider.return_value = provider_instance
 
@@ -230,13 +225,12 @@ class TestTranslateText(unittest.TestCase):
 
     @patch("youtube_to_docs.providers.get_provider")
     def test_returns_query_llm_tuple(self, mock_get_provider):
-        from youtube_to_docs.providers import BaseProvider, LLMProvider
-        class MockLLMProvider(BaseProvider, LLMProvider):
-            def generate_content(self, prompt, **kwargs):
-                return ("translated", 100, 50)
-        
-        provider_instance = MockLLMProvider("some-model")
-        provider_instance.generate_content = MagicMock(return_value=("translated", 100, 50))
+        from typing import Any
+
+        provider_instance: Any = MockLLMProvider("some-model")
+        provider_instance.generate_content = MagicMock(
+            return_value=("translated", 100, 50)
+        )
         mock_get_provider.return_value = provider_instance
 
         result = translate_text("some-model", "some text", "de")
@@ -245,12 +239,9 @@ class TestTranslateText(unittest.TestCase):
 
     @patch("youtube_to_docs.providers.get_provider")
     def test_routes_to_aws_translate(self, mock_get_provider):
-        from youtube_to_docs.providers import BaseProvider, TranslationProvider
-        class MockTranslationProvider(BaseProvider, TranslationProvider):
-            def translate(self, text, target_lang, **kwargs):
-                return "Hola"
-        
-        provider_instance = MockTranslationProvider("aws-translate")
+        from typing import Any
+
+        provider_instance: Any = MockTranslationProvider("aws-translate")
         provider_instance.translate = MagicMock(return_value="Hola")
         mock_get_provider.return_value = provider_instance
 
@@ -261,12 +252,9 @@ class TestTranslateText(unittest.TestCase):
 
     @patch("youtube_to_docs.providers.get_provider")
     def test_does_not_call_llm_for_aws_translate(self, mock_get_provider):
-        from youtube_to_docs.providers import BaseProvider, TranslationProvider
-        class MockTranslationProvider(BaseProvider, TranslationProvider):
-            def translate(self, text, target_lang, **kwargs):
-                return "Hola"
-        
-        provider_instance = MockTranslationProvider("aws-translate")
+        from typing import Any
+
+        provider_instance: Any = MockTranslationProvider("aws-translate")
         provider_instance.translate = MagicMock(return_value="Hola")
         provider_instance.generate_content = MagicMock()
         mock_get_provider.return_value = provider_instance
@@ -277,12 +265,9 @@ class TestTranslateText(unittest.TestCase):
 
     @patch("youtube_to_docs.providers.get_provider")
     def test_routes_to_gcp_translate(self, mock_get_provider):
-        from youtube_to_docs.providers import BaseProvider, TranslationProvider
-        class MockTranslationProvider(BaseProvider, TranslationProvider):
-            def translate(self, text, target_lang, **kwargs):
-                return "Hola"
-        
-        provider_instance = MockTranslationProvider("gcp-translate")
+        from typing import Any
+
+        provider_instance: Any = MockTranslationProvider("gcp-translate")
         provider_instance.translate = MagicMock(return_value="Hola")
         mock_get_provider.return_value = provider_instance
 
@@ -293,12 +278,9 @@ class TestTranslateText(unittest.TestCase):
 
     @patch("youtube_to_docs.providers.get_provider")
     def test_does_not_call_llm_for_gcp_translate(self, mock_get_provider):
-        from youtube_to_docs.providers import BaseProvider, TranslationProvider
-        class MockTranslationProvider(BaseProvider, TranslationProvider):
-            def translate(self, text, target_lang, **kwargs):
-                return "Hola"
-        
-        provider_instance = MockTranslationProvider("gcp-translate")
+        from typing import Any
+
+        provider_instance: Any = MockTranslationProvider("gcp-translate")
         provider_instance.translate = MagicMock(return_value="Hola")
         provider_instance.generate_content = MagicMock()
         mock_get_provider.return_value = provider_instance
@@ -587,6 +569,16 @@ class TestParseSuggestCaptionsArg(unittest.TestCase):
                 model, source = parse_suggest_captions_arg(arg)
                 self.assertEqual(model, arg)
                 self.assertIsNone(source)
+
+
+class MockLLMProvider(BaseProvider, LLMProvider):
+    def generate_content(self, prompt: str, **kwargs):
+        return "response", 0, 0
+
+
+class MockTranslationProvider(BaseProvider, TranslationProvider):
+    def translate(self, text: str, target_lang: str, **kwargs):
+        return "translated"
 
 
 if __name__ == "__main__":

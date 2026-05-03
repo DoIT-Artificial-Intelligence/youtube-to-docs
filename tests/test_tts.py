@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import polars as pl
 
+from youtube_to_docs.providers import BaseProvider, TTSProvider
 from youtube_to_docs.tts import (
     generate_speech,
     generate_speech_aws_polly,
@@ -120,13 +121,9 @@ class TestTTS(unittest.TestCase):
         mock_storage.write_bytes.return_value = "/saved/path.wav"
         mock_storage.get_full_path.return_value = "/full/path/summary2 - tts-arg.wav"
 
-        # Mock Provider
-        from youtube_to_docs.providers import BaseProvider, TTSProvider
-        class MockTTSProvider(BaseProvider, TTSProvider):
-            def generate_speech(self, text, voice, language_code=None, **kwargs):
-                return b"1234", 16000
-        
-        provider_instance = MockTTSProvider("tts")
+        from typing import Any
+
+        provider_instance: Any = MockTTSProvider("tts")
         provider_instance.generate_speech = MagicMock(return_value=(b"1234", 16000))
         mock_get_provider.return_value = provider_instance
 
@@ -182,13 +179,9 @@ class TestTTS(unittest.TestCase):
         mock_storage.read_text.return_value = "Texto resumen"
         mock_storage.write_bytes.return_value = "/saved/es.wav"
 
-        # Mock Provider
-        from youtube_to_docs.providers import BaseProvider, TTSProvider
-        class MockTTSProvider(BaseProvider, TTSProvider):
-            def generate_speech(self, text, voice, language_code=None, **kwargs):
-                return b"1234", 16000
-        
-        provider_instance = MockTTSProvider("tts")
+        from typing import Any
+
+        provider_instance: Any = MockTTSProvider("tts")
         provider_instance.generate_speech = MagicMock(return_value=(b"1234", 16000))
         mock_get_provider.return_value = provider_instance
 
@@ -286,13 +279,9 @@ class TestGCPTTS(unittest.TestCase):
         mock_storage.read_text.return_value = "Summary text"
         mock_storage.write_bytes.return_value = "/saved/path.wav"
 
-        # Mock Provider
-        from youtube_to_docs.providers import BaseProvider, TTSProvider
-        class MockGCPTTSProvider(BaseProvider, TTSProvider):
-            def generate_speech(self, text, voice, language_code=None, **kwargs):
-                return b"1234", 24000
-        
-        provider_instance = MockGCPTTSProvider("gcp-chirp3")
+        from typing import Any
+
+        provider_instance: Any = MockGCPTTSProvider("gcp-chirp3")
         provider_instance.generate_speech = MagicMock(return_value=(b"1234", 24000))
         mock_get_provider.return_value = provider_instance
 
@@ -394,13 +383,9 @@ class TestAWSPolly(unittest.TestCase):
         mock_storage.read_text.return_value = "Summary text"
         mock_storage.write_bytes.return_value = "/saved/path.wav"
 
-        # Mock Provider
-        from youtube_to_docs.providers import BaseProvider, TTSProvider
-        class MockAWSTTSProvider(BaseProvider, TTSProvider):
-            def generate_speech(self, text, voice, language_code=None, **kwargs):
-                return b"1234", 16000
-        
-        provider_instance = MockAWSTTSProvider("aws-polly")
+        from typing import Any
+
+        provider_instance: Any = MockAWSTTSProvider("aws-polly")
         provider_instance.generate_speech = MagicMock(return_value=(b"1234", 16000))
         mock_get_provider.return_value = provider_instance
 
@@ -421,6 +406,21 @@ class TestAWSPolly(unittest.TestCase):
         args, _ = mock_storage.write_bytes.call_args
         self.assertTrue(args[0].endswith(".wav"))
         self.assertTrue(args[1].startswith(b"RIFF"))
+
+
+class MockTTSProvider(BaseProvider, TTSProvider):
+    def generate_speech(self, text, voice, language_code=None, **kwargs):
+        return b"audio", 16000
+
+
+class MockGCPTTSProvider(BaseProvider, TTSProvider):
+    def generate_speech(self, text, voice, language_code=None, **kwargs):
+        return b"audio", 24000
+
+
+class MockAWSTTSProvider(BaseProvider, TTSProvider):
+    def generate_speech(self, text, voice, language_code=None, **kwargs):
+        return b"audio", 16000
 
 
 if __name__ == "__main__":
