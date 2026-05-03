@@ -1,4 +1,5 @@
 import json
+import mimetypes
 import os
 import re
 import subprocess
@@ -117,6 +118,8 @@ class GeminiProvider(BaseProvider, LLMProvider, STTProvider, MultimodalProvider,
             with open(audio_path, "rb") as f:
                 audio_bytes = f.read()
 
+            mime_type = mimetypes.guess_type(audio_path)[0] or "audio/x-m4a"
+
             if srt:
                 prompt = (
                     f"Can you extract the transcript for {url} from this audio in "
@@ -137,7 +140,7 @@ class GeminiProvider(BaseProvider, LLMProvider, STTProvider, MultimodalProvider,
                     role="user",
                     parts=[
                         types.Part.from_bytes(
-                            mime_type="audio/x-m4a",
+                            mime_type=mime_type,
                             data=audio_bytes,
                         ),
                         types.Part.from_text(text=prompt),
@@ -225,7 +228,7 @@ class GeminiProvider(BaseProvider, LLMProvider, STTProvider, MultimodalProvider,
 
     def generate_speech(
         self, text: str, voice: str, language_code: Optional[str] = None, **kwargs
-    ) -> bytes:
+    ) -> Tuple[bytes, int]:
         try:
             from google import genai
             from google.genai import types
@@ -237,37 +240,55 @@ class GeminiProvider(BaseProvider, LLMProvider, STTProvider, MultimodalProvider,
 
             client = genai.Client(api_key=api_key)
 
-            response = client.models.generate_content(
-                model=self.model_name,
-                contents=text,
-                config=types.GenerateContentConfig(
-                    response_modalities=["AUDIO"],
-                    speech_config=types.SpeechConfig(
-                        language_code=language_code,
-                        voice_config=types.VoiceConfig(
-                            prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                                voice_name=voice,
-                            )
+            # Gemini TTS has limits. We chunk the text and concatenate the results.
+            # Using 5000 chars as a safe chunk size (similar to GCP).
+            text_bytes = text.encode("utf-8")
+            chunk_size = 4800
+
+            if len(text_bytes) <= 5000:
+                chunks = [text]
+            else:
+                from youtube_to_docs.tts import _chunk_text_by_bytes
+
+                chunks = _chunk_text_by_bytes(text, chunk_size)
+
+            all_audio = b""
+            for i, chunk in enumerate(chunks):
+                if len(chunks) > 1:
+                    rprint(f"  Synthesizing Gemini chunk {i + 1}/{len(chunks)}...")
+
+                response = client.models.generate_content(
+                    model=self.model_name,
+                    contents=chunk,
+                    config=types.GenerateContentConfig(
+                        response_modalities=["AUDIO"],
+                        speech_config=types.SpeechConfig(
+                            language_code=language_code,
+                            voice_config=types.VoiceConfig(
+                                prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                                    voice_name=voice,
+                                )
+                            ),
                         ),
                     ),
-                ),
-            )
+                )
 
-            if (
-                response.candidates
-                and response.candidates[0].content
-                and response.candidates[0].content.parts
-                and response.candidates[0].content.parts[0].inline_data
-                and response.candidates[0].content.parts[0].inline_data.data
-            ):
-                return response.candidates[0].content.parts[0].inline_data.data
-            else:
-                print("Error: No audio data in response.")
-                return b""
+                if (
+                    response.candidates
+                    and response.candidates[0].content
+                    and response.candidates[0].content.parts
+                    and response.candidates[0].content.parts[0].inline_data
+                    and response.candidates[0].content.parts[0].inline_data.data
+                ):
+                    all_audio += response.candidates[0].content.parts[0].inline_data.data
+                else:
+                    print(f"Error: No audio data in response for chunk {i+1}.")
+
+            return all_audio, 24000
 
         except Exception as e:
-            print(f"Error generating speech: {e}")
-            return b""
+            print(f"Error generating Gemini speech: {e}")
+            return b"", 0
 
     def translate(self, text: str, target_lang: str, **kwargs) -> str:
         prompt = (
@@ -728,7 +749,7 @@ class GCPProvider(BaseProvider, STTProvider, TTSProvider, TranslationProvider):
 
     def generate_speech(
         self, text: str, voice: str, language_code: Optional[str] = None, **kwargs
-    ) -> bytes:
+    ) -> Tuple[bytes, int]:
         try:
             from google.cloud import texttospeech
         except ImportError:
@@ -770,13 +791,14 @@ class GCPProvider(BaseProvider, STTProvider, TTSProvider, TranslationProvider):
                     voice=voice_params,
                     audio_config=audio_config,
                 )
-                return response.audio_content
+                return response.audio_content, 24000
             else:
                 rprint(
                     f"[yellow]Text is long ({len(text_bytes)} bytes). "
                     "Chunking for GCP TTS...[/yellow]"
                 )
                 from youtube_to_docs.tts import _chunk_text_by_bytes
+
                 chunks = _chunk_text_by_bytes(text, 4800)
                 all_audio = b""
                 for i, chunk in enumerate(chunks):
@@ -789,11 +811,12 @@ class GCPProvider(BaseProvider, STTProvider, TTSProvider, TranslationProvider):
                     )
                     all_audio += response.audio_content
 
-                return all_audio
+                return all_audio, 24000
 
         except Exception as e:
             print(f"Error generating speech with GCP TTS: {e}")
-            return b""
+            return b"", 0
+
 
     def translate(self, text: str, target_lang: str, **kwargs) -> str:
         from youtube_to_docs.translate import _translate_gcp
@@ -814,7 +837,7 @@ class AWSProvider(BaseProvider, STTProvider, TTSProvider, TranslationProvider):
 
     def generate_speech(
         self, text: str, voice: str, language_code: Optional[str] = None, **kwargs
-    ) -> bytes:
+    ) -> Tuple[bytes, int]:
         try:
             import boto3
             from botocore.exceptions import BotoCoreError, ClientError
@@ -862,14 +885,14 @@ class AWSProvider(BaseProvider, STTProvider, TTSProvider, TranslationProvider):
                 else:
                     print("Error: No AudioStream in Polly response")
 
-            return audio_stream
+            return audio_stream, 16000
 
         except (BotoCoreError, ClientError) as error:
             print(f"Error generating speech with AWS Polly: {error}")
-            return b""
+            return b"", 0
         except Exception as e:
             print(f"Error generating speech with AWS Polly: {e}")
-            return b""
+            return b"", 0
 
     def translate(self, text: str, target_lang: str, **kwargs) -> str:
         from youtube_to_docs.translate import _translate_aws

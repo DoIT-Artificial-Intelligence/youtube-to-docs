@@ -990,9 +990,32 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                                         srt=True,
                                     )
                                 )
-                                # If the provider didn't return text in one go, try text-only call
+                                # If the provider didn't return text in one go, try to extract it from SRT
                                 if not ai_transcript and ai_srt_content:
-                                    # Fallback: extract text from SRT or call again without SRT
+                                    vprint("Extracting plain text from SRT locally...")
+                                    # Strip SRT tags, timestamps, and sequence numbers
+                                    # Pattern for timestamps: 00:00:00,000 --> 00:00:00,000
+                                    # Pattern for sequence numbers: \d+ followed by newline
+                                    # Pattern for HTML-like tags: <[^>]+>
+                                    text_blocks = []
+                                    lines = ai_srt_content.strip().splitlines()
+                                    for line in lines:
+                                        line = line.strip()
+                                        if not line:
+                                            continue
+                                        if re.match(r"^\d+$", line):
+                                            continue
+                                        if "-->" in line:
+                                            continue
+                                        # Remove tags
+                                        line = re.sub(r"<[^>]+>", "", line)
+                                        if line:
+                                            text_blocks.append(line)
+                                    ai_transcript = " ".join(text_blocks)
+
+                                # If still empty, fallback to provider call without SRT
+                                if not ai_transcript:
+                                    vprint("Fallback: Requesting text-only transcript from provider...")
                                     ai_transcript, _, _, _ = provider.transcribe(
                                         audio_input_path,
                                         url,

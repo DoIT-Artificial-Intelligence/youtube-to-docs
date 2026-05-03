@@ -42,8 +42,8 @@ class TTSProvider(ABC):
     @abstractmethod
     def generate_speech(
         self, text: str, voice: str, language_code: Optional[str] = None, **kwargs
-    ) -> bytes:
-        """Returns raw audio bytes."""
+    ) -> Tuple[bytes, int]:
+        """Returns (raw_audio_bytes, sample_rate_hertz)."""
         pass
 
 

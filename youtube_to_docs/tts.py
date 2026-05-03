@@ -76,10 +76,10 @@ def _chunk_text_by_bytes(text: str, max_bytes: int = 5000) -> List[str]:
 
 def generate_speech_gcp(
     text: str, voice_name: str, language_code: Optional[str] = None
-) -> bytes:
+) -> Tuple[bytes, int]:
     """
     Generates speech from text using Google Cloud Text-to-Speech API.
-    Returns raw PCM audio bytes (LINEAR16 format, 24kHz, mono).
+    Returns (raw PCM audio bytes, sample_rate).
     Handles text longer than 5000 bytes by chunking and concatenating results.
     """
     try:
@@ -89,12 +89,12 @@ def generate_speech_gcp(
             "Error: google-cloud-texttospeech is required for GCP TTS models. "
             "Install with `pip install '.[gcp]'`"
         )
-        return b""
+        return b"", 0
 
     try:
         client = get_gcp_client(texttospeech.TextToSpeechClient, "GCP Text-to-Speech")
         if client is None:
-            return b""
+            return b"", 0
 
         # Build the voice name from language code and voice name
         # e.g., language_code="en-US", voice_name="Kore" -> "en-US-Chirp3-HD-Kore"
@@ -127,7 +127,7 @@ def generate_speech_gcp(
                 voice=voice,
                 audio_config=audio_config,
             )
-            return response.audio_content
+            return response.audio_content, 24000
         else:
             # GCP TTS has a 5000 byte limit for synthesize_speech.
             # We chunk the text and concatenate the PCM results.
@@ -147,19 +147,19 @@ def generate_speech_gcp(
                 )
                 all_audio += response.audio_content
 
-            return all_audio
+            return all_audio, 24000
 
     except Exception as e:
         print(f"Error generating speech with GCP TTS: {e}")
-        return b""
+        return b"", 0
 
 
 def generate_speech_aws_polly(
     text: str, voice_id: str = "Ruth", engine: str = "long-form"
-) -> bytes:
+) -> Tuple[bytes, int]:
     """
     Generates speech from text using AWS Polly.
-    Returns raw PCM audio bytes.
+    Returns (raw PCM audio bytes, sample_rate).
     Handles text longer than limits by chunking.
     """
     try:
@@ -169,7 +169,7 @@ def generate_speech_aws_polly(
         print(
             "Error: boto3 is required for AWS Polly. Install with `pip install boto3`"
         )
-        return b""
+        return b"", 0
 
     try:
         polly = boto3.client("polly")
@@ -211,22 +211,22 @@ def generate_speech_aws_polly(
             else:
                 print("Error: No AudioStream in Polly response")
 
-        return audio_stream
+        return audio_stream, 16000
 
     except (BotoCoreError, ClientError) as error:
         print(f"Error generating speech with AWS Polly: {error}")
-        return b""
+        return b"", 0
     except Exception as e:
         print(f"Error generating speech with AWS Polly: {e}")
-        return b""
+        return b"", 0
 
 
 def generate_speech(
     text: str, model_name: str, voice_name: str, language_code: Optional[str] = None
-) -> bytes:
+) -> Tuple[bytes, int]:
     """
     Generates speech from text using the specified Gemini model and voice.
-    Returns the raw PCM audio bytes.
+    Returns (raw PCM audio bytes, sample_rate).
     """
     try:
         from google import genai
@@ -235,7 +235,7 @@ def generate_speech(
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             print("Error: GEMINI_API_KEY environment variable not set.")
-            return b""
+            return b"", 0
 
         client = genai.Client(api_key=api_key)
 
@@ -255,8 +255,6 @@ def generate_speech(
             ),
         )
 
-        # The response structure based on the docs:
-        # response.candidates[0].content.parts[0].inline_data.data
         if (
             response.candidates
             and response.candidates[0].content
@@ -264,14 +262,14 @@ def generate_speech(
             and response.candidates[0].content.parts[0].inline_data
             and response.candidates[0].content.parts[0].inline_data.data
         ):
-            return response.candidates[0].content.parts[0].inline_data.data
+            return response.candidates[0].content.parts[0].inline_data.data, 24000
         else:
             print("Error: No audio data in response.")
-            return b""
+            return b"", 0
 
     except Exception as e:
         print(f"Error generating speech: {e}")
-        return b""
+        return b"", 0
 
 
 def is_gcp_tts_model(model_name: str) -> bool:
@@ -452,13 +450,7 @@ def process_tts(
             try:
                 provider = get_provider(model_name)
                 if isinstance(provider, TTSProvider):
-                    # Set sample rate based on provider/engine
-                    rate = 24000
-                    if model_name.startswith("aws-polly"):
-                        rate = 16000
-                        pcm_data = provider.generate_speech(text, voice_name, engine="long-form")
-                    else:
-                        pcm_data = provider.generate_speech(text, voice_name, lang_code)
+                    pcm_data, rate = provider.generate_speech(text, voice_name, lang_code)
                     
                     if pcm_data:
                         try:
