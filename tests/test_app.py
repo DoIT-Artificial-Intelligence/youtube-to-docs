@@ -1,7 +1,7 @@
 import asyncio
 import os
 import tempfile
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -61,7 +61,7 @@ def test_model_suites_returns_dict(client):
 
 
 def test_process_defaults(client):
-    with patch("youtube_to_docs.app._run_job", return_value=asyncio.sleep(0)):
+    with patch("youtube_to_docs.app._run_job", new_callable=AsyncMock):
         resp = client.post(
             "/api/process",
             json={"url": "https://www.youtube.com/watch?v=abc12345678"},
@@ -73,14 +73,14 @@ def test_process_defaults(client):
 
 
 def test_process_creates_job_with_correct_video_id(client):
-    with patch("youtube_to_docs.app._run_job", return_value=asyncio.sleep(0)):
+    with patch("youtube_to_docs.app._run_job", new_callable=AsyncMock):
         resp = client.post("/api/process", json={"url": "abc12345678"})
     job_id = resp.json()["job_id"]
     assert jobs[job_id].video_id == "abc12345678"
 
 
 def test_process_all_args(client):
-    with patch("youtube_to_docs.app._run_job", return_value=asyncio.sleep(0)):
+    with patch("youtube_to_docs.app._run_job", new_callable=AsyncMock):
         resp = client.post(
             "/api/process",
             json={
