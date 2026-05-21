@@ -148,6 +148,7 @@ const pricingData = {
         {"id": "gemini-3-pro-preview", "vendor": "google", "name": "Gemini 3 Pro \u2264200k", "input": 2, "output": 12},
         {"id": "gemini-3-pro-preview-200k", "vendor": "google", "name": "Gemini 3 Pro >200k", "input": 4, "output": 18},
         {"id": "gemini-3-flash-preview", "vendor": "google", "name": "Gemini 3 Flash Preview", "input": 0.5, "output": 3},
+        {"id": "gemini-3.5-flash", "vendor": "google", "name": "Gemini 3.5 Flash", "input": 1.5, "output": 9},
         {"id": "gemini-2.5-flash-thinking", "vendor": "google", "name": "Gemini 2.5 Flash Thinking", "input": 0.3, "output": 2.5},
         {"id": "gemini-2.5-flash-lite-thinking", "vendor": "google", "name": "Gemini 2.5 Flash-Lite Thinking", "input": 0.1, "output": 0.4},
         {"id": "gemini-3-flash-preview-thinking", "vendor": "google", "name": "Gemini 3 Flash Preview Thinking", "input": 0.5, "output": 3.0},
