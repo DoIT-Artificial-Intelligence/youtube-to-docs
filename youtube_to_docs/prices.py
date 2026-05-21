@@ -324,6 +324,14 @@ PRICES = {
             "input_cached": None,
         },
         {
+            "id": "gemini-3.5-flash",
+            "vendor": "google",
+            "name": "Gemini 3.5 Flash",
+            "input": 1.5,
+            "output": 9,
+            "input_cached": 0.15,
+        },
+        {
             "id": "gemini-2.5-flash-thinking",
             "vendor": "google",
             "name": "Gemini 2.5 Flash Thinking",
