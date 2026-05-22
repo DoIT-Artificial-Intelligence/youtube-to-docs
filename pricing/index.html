@@ -656,7 +656,6 @@ const pricingData = {
         {"id": "amazon.nova-canvas-v1:0", "vendor": "amazon", "name": "Amazon Nova Canvas v1*", "input": 20.0, "output": 20.0},
         {"id": "claude-3.7-sonnet", "vendor": "anthropic", "name": "Claude 3.7 Sonnet", "input": 3, "output": 15},
         {"id": "claude-3.5-sonnet", "vendor": "anthropic", "name": "Claude 3.5 Sonnet", "input": 3, "output": 15},
-        {"id": "claude-3-opus", "vendor": "anthropic", "name": "Claude 3 Opus", "input": 15, "output": 75},
         {"id": "claude-3-haiku", "vendor": "anthropic", "name": "Claude 3 Haiku", "input": 0.25, "output": 1.25},
         {"id": "claude-3.5-haiku", "vendor": "anthropic", "name": "Claude 3.5 Haiku", "input": 0.8, "output": 4},
         {"id": "claude-4.5-haiku", "vendor": "anthropic", "name": "Claude 4.5 Haiku", "input": 1, "output": 5},
@@ -664,11 +663,6 @@ const pricingData = {
         {"id": "claude-sonnet-4.5-200k", "vendor": "anthropic", "name": "Claude Sonnet 4 and 4.5 >200k", "input": 6, "output": 22.5},
         {"id": "claude-sonnet-4.6", "vendor": "anthropic", "name": "Claude Sonnet 4.6 \u2264200k", "input": 3, "output": 15},
         {"id": "claude-sonnet-4.6-200k", "vendor": "anthropic", "name": "Claude Sonnet 4.6 >200k", "input": 6, "output": 22.5},
-        {"id": "claude-opus-4", "vendor": "anthropic", "name": "Claude Opus 4", "input": 15, "output": 75},
-        {"id": "claude-opus-4-1", "vendor": "anthropic", "name": "Claude Opus 4.1", "input": 15, "output": 75},
-        {"id": "claude-opus-4-5", "vendor": "anthropic", "name": "Claude Opus 4.5", "input": 5, "output": 25},
-        {"id": "claude-opus-4.6", "vendor": "anthropic", "name": "Claude Opus 4.6 \u2264200k", "input": 5, "output": 25},
-        {"id": "claude-opus-4.6-200k", "vendor": "anthropic", "name": "Claude Opus 4.6 >200k", "input": 10, "output": 37.5},
         {"id": "claude-opus-4.7", "vendor": "anthropic", "name": "Claude Opus 4.7 \u2264200k", "input": 5, "output": 25},
         {"id": "claude-opus-4.7-200k", "vendor": "anthropic", "name": "Claude Opus 4.7 >200k", "input": 10, "output": 37.5},
         {"id": "gemini-2.5-pro-preview-03-25", "vendor": "google", "name": "Gemini 2.5 Pro Preview \u2264200k", "input": 1.25, "output": 10},
@@ -697,7 +691,6 @@ const pricingData = {
         {"id": "gpt-4o-mini", "vendor": "openai", "name": "GPT-4o Mini", "input": 0.15, "output": 0.6},
         {"id": "chatgpt-4o-latest", "vendor": "openai", "name": "ChatGPT 4o Latest", "input": 5, "output": 15},
         {"id": "o1-preview", "vendor": "openai", "name": "o1 and o1-preview", "input": 15, "output": 60},
-        {"id": "o1-pro", "vendor": "openai", "name": "o1 Pro", "input": 150, "output": 600},
         {"id": "o1-mini", "vendor": "openai", "name": "o1-mini", "input": 1.1, "output": 4.4},
         {"id": "o3-mini", "vendor": "openai", "name": "o3-mini", "input": 1.1, "output": 4.4},
         {"id": "gpt-4.1", "vendor": "openai", "name": "GPT-4.1", "input": 2, "output": 8},
@@ -714,10 +707,7 @@ const pricingData = {
         {"id": "gpt-image-1", "vendor": "openai", "name": "gpt-image-1 (image gen)", "input": 10, "output": 40},
         {"id": "gpt-image-1-mini", "vendor": "openai", "name": "gpt-image-1-mini (image gen)", "input": 2, "output": 8},
         {"id": "gpt-image-1.5", "vendor": "openai", "name": "gpt-image-1.5 (image gen)", "input": 5, "output": 34},
-        {"id": "gpt-5-pro", "vendor": "openai", "name": "GPT-5 Pro", "input": 15, "output": 120},
         {"id": "o3-pro", "vendor": "openai", "name": "o3 Pro", "input": 20, "output": 80},
-        {"id": "o4-mini-deep-research", "vendor": "openai", "name": "o4-mini Deep Research", "input": 2, "output": 8},
-        {"id": "o3-deep-research", "vendor": "openai", "name": "o3 Deep Research", "input": 10, "output": 40},
         {"id": "gpt-5.1-codex-mini", "vendor": "openai", "name": "GPT-5.1 Codex mini", "input": 0.25, "output": 2.0},
         {"id": "gpt-5.1-codex", "vendor": "openai", "name": "GPT-5.1 Codex", "input": 1.25, "output": 10.0},
         {"id": "gpt-5.1", "vendor": "openai", "name": "GPT-5.1", "input": 1.25, "output": 10.0},
@@ -743,6 +733,8 @@ const pricingData = {
 let currentData = [...pricingData.prices];
 // Active type filter set by clicking legend type items (null = show all)
 let activeTypeFilter = null;
+// Active vendor filter set by clicking legend vendor items (null = show all)
+let activeVendorFilter = null;
 // Log scale toggle
 let useLogScale = false;
 // Sort state
@@ -811,7 +803,8 @@ function getFilteredData() {
             item.id.toLowerCase().includes(searchTerm) ||
             getModelType(item).includes(searchTerm);
         const matchesType = !activeTypeFilter || getModelType(item) === activeTypeFilter;
-        return matchesSearch && matchesType;
+        const matchesVendor = !activeVendorFilter || item.vendor === activeVendorFilter;
+        return matchesSearch && matchesType && matchesVendor;
     });
 }
 
@@ -824,6 +817,12 @@ function filterTable() {
 
 function toggleTypeFilter(type) {
     activeTypeFilter = activeTypeFilter === type ? null : type;
+    filterTable();
+    buildLegend();
+}
+
+function toggleVendorFilter(vendor) {
+    activeVendorFilter = activeVendorFilter === vendor ? null : vendor;
     filterTable();
     buildLegend();
 }
@@ -947,10 +946,10 @@ function renderChart(data) {
 function buildLegend() {
     const el = document.getElementById('chartLegend');
     const vendorItems = [
-        {color: '#8B5CF6', label: 'Google'},
-        {color: '#FFB800', label: 'Amazon'},
-        {color: '#1A1A1A', label: 'OpenAI'},
-        {color: '#E8511A', label: 'Anthropic'}
+        {color: '#8B5CF6', label: 'Google',    vendor: 'google'},
+        {color: '#FFB800', label: 'Amazon',    vendor: 'amazon'},
+        {color: '#1A1A1A', label: 'OpenAI',    vendor: 'openai'},
+        {color: '#E8511A', label: 'Anthropic', vendor: 'anthropic'}
     ];
     const typeItems = [
         {symbol: '●', label: 'Text',          type: 'text'},
@@ -961,7 +960,14 @@ function buildLegend() {
     ];
     let html = '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:20px;margin-bottom:8px;font-size:14px;">';
     html += '<strong style="color:#666">Vendor:</strong> ';
-    vendorItems.forEach(v => { html += `<span style="color:${v.color}">${v.label}</span>`; });
+    vendorItems.forEach(v => {
+        const isActive = activeVendorFilter === v.vendor;
+        const style = `cursor:pointer;padding:2px 8px;border-radius:4px;user-select:none;color:${v.color};${isActive ? 'background:#e0e0e0;font-weight:bold;' : ''}`;
+        html += `<span style="${style}" onclick="toggleVendorFilter('${v.vendor}')" title="Click to filter">${v.label}</span>`;
+    });
+    if (activeVendorFilter) {
+        html += `<span style="color:#666;margin-left:8px;font-style:italic;cursor:pointer;" onclick="toggleVendorFilter(activeVendorFilter)">✕ clear filter</span>`;
+    }
     html += '</div>';
     html += '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:20px;margin-bottom:24px;font-size:14px;">';
     html += '<strong style="color:#666">Type:</strong> ';
