@@ -953,7 +953,7 @@
 <p>For each video, the tool fetches or generates a transcript:</p>
 <ul>
 <li><strong>YouTube Source</strong> (default): Fetches the existing transcript (auto-captions or manual) directly from YouTube.</li>
-<li><strong>AI STT Source</strong>: If an AI model name is specified (e.g. <code>gemini-3-flash-preview</code>, <code>gcp-chirp3</code>, <code>aws-transcribe</code>), the tool extracts audio from the video via <code>yt-dlp</code> and passes it to a Speech-to-Text model for a fresh transcript.<ul>
+<li><strong>AI STT Source</strong>: If an AI model name is specified (e.g. <code>gemini-3.1-flash-lite</code>, <code>gcp-chirp3</code>, <code>aws-transcribe</code>), the tool extracts audio from the video via <code>yt-dlp</code> and passes it to a Speech-to-Text model for a fresh transcript.<ul>
 <li>For <code>gcp-</code> models (Cloud Speech-to-Text V2), <code>GOOGLE_CLOUD_PROJECT</code> is required and <code>YTD_GCS_BUCKET_NAME</code> is recommended.</li>
 <li>For <code>aws-transcribe</code>, <code>YTD_S3_BUCKET_NAME</code> is required.</li>
 <li>When <code>--no-youtube-summary</code> is set, the secondary summary pass from the YouTube transcript is skipped.</li>
@@ -1008,7 +1008,7 @@
 </li>
 </ol>
 <h3 id="4-translation-support">4. Translation Support</h3>
-<p>The <code>--translate {model}-{language}</code> argument enables multilingual output (e.g., <code>--translate gemini-3-flash-preview-es</code>). Use <code>aws-translate-{language}</code> (e.g., <code>--translate aws-translate-es</code>) to use the AWS Translate service directly, or <code>gcp-translate-{language}</code> (e.g., <code>--translate gcp-translate-es</code>) to use Google Cloud Translation API directly. Large texts are automatically chunked to respect per-request limits.</p>
+<p>The <code>--translate {model}-{language}</code> argument enables multilingual output (e.g., <code>--translate gemini-3.1-flash-lite-es</code>). Use <code>aws-translate-{language}</code> (e.g., <code>--translate aws-translate-es</code>) to use the AWS Translate service directly, or <code>gcp-translate-{language}</code> (e.g., <code>--translate gcp-translate-es</code>) to use Google Cloud Translation API directly. Large texts are automatically chunked to respect per-request limits.</p>
 <p>All content is generated in English first, then the tool iterates over the target language:</p>
 <ol>
 <li><strong>Transcript</strong>: Tries to fetch a native YouTube transcript in the target language. Falls back to translating the English transcript using the specified model.</li>
@@ -1017,7 +1017,7 @@
 <li><strong>Infographic &amp; TTS</strong>: When <code>-i</code> or <code>--tts</code> are also set, assets are produced in both English and the target language.</li>
 <li><strong>Video</strong>: When <code>--combine-infographic-audio</code> is also set, one video is produced per language.</li>
 </ol>
-<p>File names use <code>({model}-{language})</code> (e.g., <code>(gemini-3-flash-preview-es)</code>, <code>(aws-translate-es)</code>, or <code>(gcp-translate-es)</code>) to identify the translation source. CSV column headers use the shorter <code>(lang)</code> suffix (e.g., <code>(es)</code>).</p>
+<p>File names use <code>({model}-{language})</code> (e.g., <code>(gemini-3.1-flash-lite-es)</code>, <code>(aws-translate-es)</code>, or <code>(gcp-translate-es)</code>) to identify the translation source. CSV column headers use the shorter <code>(lang)</code> suffix (e.g., <code>(es)</code>).</p>
 <h3 id="5-multimodal-generation">5. Multimodal Generation</h3>
 <p>Beyond text, the tool creates audio and visual assets:</p>
 <ul>
@@ -1066,7 +1066,7 @@
     *   <code>'{"word count": ["apple", "banana"]}'</code> → adds one column per word.</p>
 <h3 id="7-suggested-corrected-captions">7. Suggested Corrected Captions</h3>
 <p>The <code>--suggest-corrected-captions</code> argument uses an LLM to review an SRT file and suggest WCAG 2.1 Level AA / Section 508 compliant corrections. Output is saved to <code>suggested-corrected-caption-files/</code> as a diff-style file (changed segments only).</p>
-<p>Format: <code>{model}</code> or <code>{model}-{source}</code> (e.g., <code>gemini-3-flash-preview</code>, <code>gemini-3-flash-preview-youtube</code>, <code>gemini-3-flash-preview-gcp-chirp3</code>). If source is omitted, the most recent AI-generated SRT is used automatically. If speaker extraction has been run, speaker labels are included on speaker changes.</p>
+<p>Format: <code>{model}</code> or <code>{model}-{source}</code> (e.g., <code>gemini-3.1-flash-lite</code>, <code>gemini-3.1-flash-lite-youtube</code>, <code>gemini-3.1-flash-lite-gcp-chirp3</code>). If source is omitted, the most recent AI-generated SRT is used automatically. If speaker extraction has been run, speaker labels are included on speaker changes.</p>
 <h3 id="8-output-storage">8. Output &amp; Storage</h3>
 <p>The <code>--outfile</code> argument controls where the output CSV is saved:
 - <strong>Local path</strong> (default): <code>youtube-to-docs-artifacts/youtube-docs.csv</code>.
