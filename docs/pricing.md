@@ -124,8 +124,6 @@ const pricingData = {
         {"id": "gemini-3.1-pro-preview-200k", "vendor": "google", "name": "Gemini 3.1 Pro >200k", "input": 4, "output": 18},
         {"id": "gemini-3.5-flash", "vendor": "google", "name": "Gemini 3.5 Flash", "input": 1.5, "output": 9},
         {"id": "gemini-3.1-flash-lite", "vendor": "google", "name": "Gemini 3.1 Flash-Lite", "input": 0.25, "output": 1.5},
-        {"id": "gemini-2.5-flash-preview-tts", "vendor": "google", "name": "Gemini 2.5 Flash Preview TTS", "input": 0.5, "output": 10},
-        {"id": "gemini-2.5-pro-preview-tts", "vendor": "google", "name": "Gemini 2.5 Pro Preview TTS", "input": 1, "output": 20},
         {"id": "gemini-3.1-flash-tts-preview", "vendor": "google", "name": "Gemini 3.1 Flash TTS Preview", "input": 1, "output": 20},
         {"id": "gpt-5.5", "vendor": "openai", "name": "GPT-5.5 ≤272k", "input": 5.0, "output": 30.0},
         {"id": "gpt-5.4", "vendor": "openai", "name": "GPT-5.4 ≤272k", "input": 2.5, "output": 15.0},

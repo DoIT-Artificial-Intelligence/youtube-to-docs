@@ -7,7 +7,7 @@ MODEL_SUITES = {
     },
     "gemini-pro": {
         "model": "gemini-3.1-pro-preview",
-        "tts": "gemini-2.5-pro-preview-tts-Kore",
+        "tts": "gemini-3.1-flash-tts-preview-Kore",
         "infographic": "gemini-3-pro-image-preview",
         "transcript": "gemini-3.1-pro-preview",
     },

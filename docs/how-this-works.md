@@ -77,7 +77,7 @@ File names use `({model}-{language})` (e.g., `(gemini-3.1-flash-lite-es)`, `(aws
 Beyond text, the tool creates audio and visual assets:
 
 - **Text-to-Speech (TTS)**:
-    *   Uses TTS models (e.g. `gemini-2.5-flash-preview-tts-Kore`, `gcp-chirp3`, `aws-polly-Ruth`) to convert the generated summary into an audio file.
+    *   Uses TTS models (e.g. `gemini-3.1-flash-tts-preview-Kore`, `gcp-chirp3`, `aws-polly-Ruth`) to convert the generated summary into an audio file.
     *   This allows users to "listen" to the video summary.
 
 - **Infographics**:

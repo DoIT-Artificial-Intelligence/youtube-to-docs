@@ -88,7 +88,7 @@ def test_process_all_args(client):
                 "output_file": "custom.csv",
                 "transcript_source": "gemini-pro",
                 "model": "gemini-3.1-flash-lite",
-                "tts_model": "gemini-2.5-flash-preview-tts-Kore",
+                "tts_model": "gemini-3.1-flash-tts-preview-Kore",
                 "infographic_model": "gemini-3.1-flash-image-preview",
                 "alt_text_model": "gemini-3.1-flash-lite",
                 "no_youtube_summary": True,

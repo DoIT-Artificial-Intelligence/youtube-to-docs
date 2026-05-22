@@ -49,8 +49,7 @@ def process_video(
             Defaults to None (Transcript only).
             Use 'gemini-3.1-flash-lite' for summarization.
         tts_model: The TTS model and voice to use
-            (e.g., 'gemini-3.1-flash-tts-preview-Kore',
-            'gemini-2.5-flash-preview-tts-Kore', 'gcp-chirp3-Kore',
+            (e.g., 'gemini-3.1-flash-tts-preview-Kore', 'gcp-chirp3-Kore',
             'aws-polly-Ruth').
         infographic_model: The image model to use for generating an infographic
             (e.g., 'gemini-3.1-flash-image-preview').

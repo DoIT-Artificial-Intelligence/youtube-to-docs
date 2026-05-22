@@ -132,22 +132,6 @@ PRICES = {
             "input_cached": 0.025,
         },
         {
-            "id": "gemini-2.5-flash-preview-tts",
-            "vendor": "google",
-            "name": "Gemini 2.5 Flash Preview TTS",
-            "input": 0.5,
-            "output": 10,
-            "input_cached": None,
-        },
-        {
-            "id": "gemini-2.5-pro-preview-tts",
-            "vendor": "google",
-            "name": "Gemini 2.5 Pro Preview TTS",
-            "input": 1,
-            "output": 20,
-            "input_cached": None,
-        },
-        {
             "id": "gemini-3.1-flash-tts-preview",
             "vendor": "google",
             "name": "Gemini 3.1 Flash TTS Preview",

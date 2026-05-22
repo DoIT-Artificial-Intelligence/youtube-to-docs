@@ -786,9 +786,9 @@ class TestMain(unittest.TestCase):
         )
         self.assertTrue(any_pro_summary)
 
-        # Check if process_tts was called with gemini-2.5-pro-preview-tts-Kore
+        # Check if process_tts was called with gemini-3.1-flash-tts-preview-Kore
         mock_tts.assert_called()
-        self.assertEqual(mock_tts.call_args.args[1], "gemini-2.5-pro-preview-tts-Kore")
+        self.assertEqual(mock_tts.call_args.args[1], "gemini-3.1-flash-tts-preview-Kore")
 
         # Check if generate_infographic was called with gemini-3-pro-image-preview
         mock_gen_info.assert_called()

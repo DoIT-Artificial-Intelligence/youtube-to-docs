@@ -19,8 +19,8 @@ from youtube_to_docs.tts import (
 class TestTTS(unittest.TestCase):
     def test_parse_tts_arg(self):
         # Test with hyphen
-        model, voice = parse_tts_arg("gemini-2.5-flash-preview-tts-Kore")
-        self.assertEqual(model, "gemini-2.5-flash-preview-tts")
+        model, voice = parse_tts_arg("gemini-3.1-flash-tts-preview-Kore")
+        self.assertEqual(model, "gemini-3.1-flash-tts-preview")
         self.assertEqual(voice, "Kore")
 
         # Test with simple hyphen
@@ -222,7 +222,7 @@ class TestGCPTTS(unittest.TestCase):
         """Test GCP model detection helper."""
         self.assertTrue(is_gcp_tts_model("gcp-chirp3"))
         self.assertTrue(is_gcp_tts_model("gcp-chirp3-Kore"))
-        self.assertFalse(is_gcp_tts_model("gemini-2.5-flash-preview-tts"))
+        self.assertFalse(is_gcp_tts_model("gemini-3.1-flash-tts-preview"))
         self.assertFalse(is_gcp_tts_model("some-other-model"))
 
     @patch("youtube_to_docs.tts.texttospeech", create=True)
@@ -323,7 +323,7 @@ class TestAWSPolly(unittest.TestCase):
         self.assertTrue(is_aws_polly_model("aws-polly"))
         self.assertTrue(is_aws_polly_model("aws-polly-Ruth"))
         self.assertFalse(is_aws_polly_model("gcp-chirp3"))
-        self.assertFalse(is_aws_polly_model("gemini-2.5-flash-preview-tts"))
+        self.assertFalse(is_aws_polly_model("gemini-3.1-flash-tts-preview"))
 
     @patch("youtube_to_docs.tts.boto3", create=True)
     def test_generate_speech_aws_polly_success(self, mock_boto3):

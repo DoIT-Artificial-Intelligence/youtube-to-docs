@@ -287,7 +287,7 @@ def parse_tts_arg(tts_arg: str) -> Tuple[str, str]:
     Parses the --tts argument into (model_name, voice_name).
 
     For Gemini models:
-        gemini-2.5-flash-preview-tts-Kore -> (gemini-2.5-flash-preview-tts, Kore)
+        gemini-3.1-flash-tts-preview-Kore -> (gemini-3.1-flash-tts-preview, Kore)
     For GCP Chirp3 models:
         gcp-chirp3-Kore -> (gcp-chirp3, Kore)
         gcp-chirp3 -> (gcp-chirp3, Kore)  # Default voice
@@ -496,7 +496,7 @@ def main() -> None:
         default=None,
         help=(
             "The TTS model and voice to use. "
-            "Format: {model}-{voice} e.g. 'gemini-2.5-flash-preview-tts-Kore'"
+            "Format: {model}-{voice} e.g. 'gemini-3.1-flash-tts-preview-Kore'"
         ),
     )
 

@@ -174,13 +174,13 @@ def verify_output(
         model = "gemini-3.1-flash-lite"
         transcript_model = transcript_model or "gemini-3.1-flash-lite"
         infographic_model = "gemini-3.1-flash-image-preview"
-        tts_model = "gemini-2.5-flash-preview-tts-Kore"
+        tts_model = "gemini-3.1-flash-tts-preview-Kore"
         no_youtube_summary = True
     elif all_gemini_arg == "gemini-pro":
         model = "gemini-3.1-pro-preview"
         transcript_model = transcript_model or "gemini-3.1-pro-preview"
         infographic_model = "gemini-3-pro-image-preview"
-        tts_model = "gemini-2.5-pro-preview-tts-Kore"
+        tts_model = "gemini-3.1-flash-tts-preview-Kore"
         no_youtube_summary = True
 
     # Ensure model and transcript_model are not None for normalization
