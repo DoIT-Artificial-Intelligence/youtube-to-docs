@@ -14,8 +14,8 @@ from youtube_to_docs.translate import (
 
 class TestParseTranslateArg(unittest.TestCase):
     def test_simple_model_and_lang(self):
-        model, lang = parse_translate_arg("gemini-3-flash-preview-es")
-        self.assertEqual(model, "gemini-3-flash-preview")
+        model, lang = parse_translate_arg("gemini-3.1-flash-lite-es")
+        self.assertEqual(model, "gemini-3.1-flash-lite")
         self.assertEqual(lang, "es")
 
     def test_bedrock_model(self):
@@ -30,10 +30,10 @@ class TestParseTranslateArg(unittest.TestCase):
 
     def test_various_languages(self):
         cases = [
-            ("gemini-3-flash-preview-ja", "gemini-3-flash-preview", "ja"),
-            ("gemini-3-flash-preview-ko", "gemini-3-flash-preview", "ko"),
-            ("gemini-3-flash-preview-zh", "gemini-3-flash-preview", "zh"),
-            ("gemini-3-flash-preview-pt", "gemini-3-flash-preview", "pt"),
+            ("gemini-3.1-flash-lite-ja", "gemini-3.1-flash-lite", "ja"),
+            ("gemini-3.1-flash-lite-ko", "gemini-3.1-flash-lite", "ko"),
+            ("gemini-3.1-flash-lite-zh", "gemini-3.1-flash-lite", "zh"),
+            ("gemini-3.1-flash-lite-pt", "gemini-3.1-flash-lite", "pt"),
         ]
         for arg, expected_model, expected_lang in cases:
             with self.subTest(arg=arg):
@@ -62,8 +62,8 @@ class TestParseTranslateArg(unittest.TestCase):
         self.assertEqual(lang, "fr")
 
     def test_language_name_spanish(self):
-        model, lang = parse_translate_arg("gemini-3-flash-preview-spanish")
-        self.assertEqual(model, "gemini-3-flash-preview")
+        model, lang = parse_translate_arg("gemini-3.1-flash-lite-spanish")
+        self.assertEqual(model, "gemini-3.1-flash-lite")
         self.assertEqual(lang, "es")
 
     def test_language_name_french(self):
@@ -77,8 +77,8 @@ class TestParseTranslateArg(unittest.TestCase):
         self.assertEqual(lang, "ko")
 
     def test_language_name_case_insensitive(self):
-        model, lang = parse_translate_arg("gemini-3-flash-preview-Spanish")
-        self.assertEqual(model, "gemini-3-flash-preview")
+        model, lang = parse_translate_arg("gemini-3.1-flash-lite-Spanish")
+        self.assertEqual(model, "gemini-3.1-flash-lite")
         self.assertEqual(lang, "es")
 
     def test_language_name_all_supported(self):
@@ -90,7 +90,7 @@ class TestParseTranslateArg(unittest.TestCase):
                 self.assertEqual(lang, code)
 
     def test_unknown_language_passed_through(self):
-        model, lang = parse_translate_arg("gemini-3-flash-preview-xx")
+        model, lang = parse_translate_arg("gemini-3.1-flash-lite-xx")
         self.assertEqual(lang, "xx")
 
     def test_invalid_no_dash(self):
@@ -192,14 +192,14 @@ class TestTranslateText(unittest.TestCase):
     def test_calls_query_llm_with_correct_prompt(self, mock_get_provider):
         from typing import Any
 
-        provider_instance: Any = MockLLMProvider("gemini-3-flash-preview")
+        provider_instance: Any = MockLLMProvider("gemini-3.1-flash-lite")
         provider_instance.generate_content = MagicMock(
             return_value=("Hola mundo", 10, 5)
         )
         mock_get_provider.return_value = provider_instance
 
         result, in_tok, out_tok = translate_text(
-            "gemini-3-flash-preview", "Hello world", "es"
+            "gemini-3.1-flash-lite", "Hello world", "es"
         )
 
         self.assertEqual(result, "Hola mundo")
@@ -214,11 +214,11 @@ class TestTranslateText(unittest.TestCase):
     def test_target_language_in_prompt(self, mock_get_provider):
         from typing import Any
 
-        provider_instance: Any = MockLLMProvider("gemini-3-flash-preview")
+        provider_instance: Any = MockLLMProvider("gemini-3.1-flash-lite")
         provider_instance.generate_content = MagicMock(return_value=("Bonjour", 5, 3))
         mock_get_provider.return_value = provider_instance
 
-        translate_text("gemini-3-flash-preview", "Hello", "fr")
+        translate_text("gemini-3.1-flash-lite", "Hello", "fr")
 
         prompt = provider_instance.generate_content.call_args[0][0]
         self.assertIn("fr", prompt)
@@ -296,7 +296,7 @@ class TestProcessTranslate(unittest.TestCase):
         storage.write_text.side_effect = lambda path, text: path
         return storage
 
-    def _base_row(self, model="gemini-3-flash-preview", transcript_arg="youtube"):
+    def _base_row(self, model="gemini-3.1-flash-lite", transcript_arg="youtube"):
         return {
             f"Summary Text {model} from {transcript_arg}": "English summary",
             f"One Sentence Summary {model} from {transcript_arg}": "One sentence.",
@@ -307,7 +307,7 @@ class TestProcessTranslate(unittest.TestCase):
     @patch("youtube_to_docs.translate.translate_text")
     def test_translates_all_columns(self, mock_translate):
         mock_translate.return_value = ("traducido", 10, 5)
-        model = "gemini-3-flash-preview"
+        model = "gemini-3.1-flash-lite"
         transcript_arg = "youtube"
         row = self._base_row(model, transcript_arg)
 
@@ -343,7 +343,7 @@ class TestProcessTranslate(unittest.TestCase):
     @patch("youtube_to_docs.translate.translate_text")
     def test_skips_already_translated_columns(self, mock_translate):
         mock_translate.return_value = ("traducido", 10, 5)
-        model = "gemini-3-flash-preview"
+        model = "gemini-3.1-flash-lite"
         transcript_arg = "youtube"
         row = self._base_row(model, transcript_arg)
         # Pre-populate the translated column
@@ -373,7 +373,7 @@ class TestProcessTranslate(unittest.TestCase):
     @patch("youtube_to_docs.translate.translate_text")
     def test_skips_missing_english_columns(self, mock_translate):
         mock_translate.return_value = ("traducido", 10, 5)
-        model = "gemini-3-flash-preview"
+        model = "gemini-3.1-flash-lite"
         transcript_arg = "youtube"
         # Row has no English content at all
         row = {}
@@ -400,8 +400,8 @@ class TestProcessTranslate(unittest.TestCase):
     @patch("youtube_to_docs.translate.translate_text")
     def test_translates_secondary_youtube_columns(self, mock_translate):
         mock_translate.return_value = ("traducido", 10, 5)
-        model = "gemini-3-flash-preview"
-        transcript_arg = "gemini-3-flash-preview"
+        model = "gemini-3.1-flash-lite"
+        transcript_arg = "gemini-3.1-flash-lite"
         row = self._base_row(model, transcript_arg)
         # Add secondary "from youtube" columns
         row[f"Summary Text {model} from youtube"] = "YouTube English summary"
@@ -430,7 +430,7 @@ class TestProcessTranslate(unittest.TestCase):
     @patch("youtube_to_docs.translate.translate_text")
     def test_saves_translated_files(self, mock_translate):
         mock_translate.return_value = ("traducido", 10, 5)
-        model = "gemini-3-flash-preview"
+        model = "gemini-3.1-flash-lite"
         transcript_arg = "youtube"
         row = self._base_row(model, transcript_arg)
         storage = self._make_storage()
@@ -456,7 +456,7 @@ class TestProcessTranslate(unittest.TestCase):
     @patch("youtube_to_docs.translate.translate_text")
     def test_multiple_models(self, mock_translate):
         mock_translate.return_value = ("traducido", 10, 5)
-        model_a = "gemini-3-flash-preview"
+        model_a = "gemini-3.1-flash-lite"
         model_b = "bedrock-nova-2-lite-v1"
         transcript_arg = "youtube"
         row = {
@@ -486,7 +486,7 @@ class TestProcessTranslate(unittest.TestCase):
     @patch("youtube_to_docs.translate.translate_text")
     def test_file_col_stored_in_row(self, mock_translate):
         mock_translate.return_value = ("traducido", 10, 5)
-        model = "gemini-3-flash-preview"
+        model = "gemini-3.1-flash-lite"
         transcript_arg = "youtube"
         row = self._base_row(model, transcript_arg)
         storage = self._make_storage()
@@ -514,25 +514,25 @@ class TestProcessTranslate(unittest.TestCase):
 
 class TestParseSuggestCaptionsArg(unittest.TestCase):
     def test_model_only_no_source(self):
-        model, source = parse_suggest_captions_arg("gemini-3-flash-preview")
-        self.assertEqual(model, "gemini-3-flash-preview")
+        model, source = parse_suggest_captions_arg("gemini-3.1-flash-lite")
+        self.assertEqual(model, "gemini-3.1-flash-lite")
         self.assertIsNone(source)
 
     def test_model_with_youtube_source(self):
-        model, source = parse_suggest_captions_arg("gemini-3-flash-preview-youtube")
-        self.assertEqual(model, "gemini-3-flash-preview")
+        model, source = parse_suggest_captions_arg("gemini-3.1-flash-lite-youtube")
+        self.assertEqual(model, "gemini-3.1-flash-lite")
         self.assertEqual(source, "youtube")
 
     def test_model_with_gcp_source(self):
-        model, source = parse_suggest_captions_arg("gemini-3-flash-preview-gcp-chirp3")
-        self.assertEqual(model, "gemini-3-flash-preview")
+        model, source = parse_suggest_captions_arg("gemini-3.1-flash-lite-gcp-chirp3")
+        self.assertEqual(model, "gemini-3.1-flash-lite")
         self.assertEqual(source, "gcp-chirp3")
 
     def test_model_with_aws_source(self):
         model, source = parse_suggest_captions_arg(
-            "gemini-3-flash-preview-aws-transcribe"
+            "gemini-3.1-flash-lite-aws-transcribe"
         )
-        self.assertEqual(model, "gemini-3-flash-preview")
+        self.assertEqual(model, "gemini-3.1-flash-lite")
         self.assertEqual(source, "aws-transcribe")
 
     def test_bedrock_model_with_youtube_source(self):
@@ -542,10 +542,10 @@ class TestParseSuggestCaptionsArg(unittest.TestCase):
 
     def test_bedrock_model_with_gemini_source(self):
         model, source = parse_suggest_captions_arg(
-            "bedrock-nova-2-lite-v1-gemini-3-flash-preview"
+            "bedrock-nova-2-lite-v1-gemini-3.1-flash-lite"
         )
         self.assertEqual(model, "bedrock-nova-2-lite-v1")
-        self.assertEqual(source, "gemini-3-flash-preview")
+        self.assertEqual(source, "gemini-3.1-flash-lite")
 
     def test_bedrock_model_only(self):
         model, source = parse_suggest_captions_arg("bedrock-nova-2-lite-v1")
@@ -554,9 +554,9 @@ class TestParseSuggestCaptionsArg(unittest.TestCase):
 
     def test_vertex_source(self):
         model, source = parse_suggest_captions_arg(
-            "gemini-3-flash-preview-vertex-gemini-pro"
+            "gemini-3.1-flash-lite-vertex-gemini-pro"
         )
-        self.assertEqual(model, "gemini-3-flash-preview")
+        self.assertEqual(model, "gemini-3.1-flash-lite")
         self.assertEqual(source, "vertex-gemini-pro")
 
     def test_various_model_only_cases(self):

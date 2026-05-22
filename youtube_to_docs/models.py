@@ -1,9 +1,9 @@
 MODEL_SUITES = {
     "gemini-flash": {
-        "model": "gemini-3-flash-preview",
+        "model": "gemini-3.1-flash-lite",
         "tts": "gemini-3.1-flash-tts-preview-Kore",
         "infographic": "gemini-3.1-flash-image-preview",
-        "transcript": "gemini-3-flash-preview",
+        "transcript": "gemini-3.1-flash-lite",
     },
     "gemini-pro": {
         "model": "gemini-3.1-pro-preview",
@@ -12,10 +12,10 @@ MODEL_SUITES = {
         "transcript": "gemini-3.1-pro-preview",
     },
     "gemini-flash-pro-image": {
-        "model": "gemini-3-flash-preview",
+        "model": "gemini-3.1-flash-lite",
         "tts": "gemini-3.1-flash-tts-preview-Kore",
         "infographic": "gemini-3-pro-image-preview",
-        "transcript": "gemini-3-flash-preview",
+        "transcript": "gemini-3.1-flash-lite",
     },
     "gcp-pro": {
         "model": "gemini-3.1-pro-preview",

@@ -143,15 +143,15 @@ youtube-to-docs
 | `video_id`                             | The YouTube content to process. Can be a **YouTube URL**, **Video ID**, **Playlist ID** (starts with `PL`), **Channel Handle** (starts with `@`), or a **comma-separated list** of Video IDs.                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `atmGAHYpf_c`                                | `youtube-to-docs @mychannel`                                                    |
 | `-o`, `--outfile`                      | Path to save the output CSV file. <br> - Local path: `my-data.csv` <br> - Google Workspace: `workspace` or `w` (saves to Drive folder `youtube-to-docs-artifacts`) or a specific Folder ID. <br> - SharePoint/OneDrive: `sharepoint` or `s` (saves to `youtube-to-docs-artifacts`). <br> - Memory: `memory` or `m` (keeps artifacts in memory, no files on disk). <br> - No-op: `none` or `n` (skips saving to a file, results are printed to the console).                                                                                                                                                                                                                                                                               | `youtube-to-docs-artifacts/youtube-docs.csv` | `-o n`                                                                          |
 | `-t`, `--transcript`                   | The transcript source to use. Can be `'youtube'` (default) to fetch existing YouTube transcripts, or an AI model name to perform STT on extracted audio (e.g. `gemini...` for Gemini API, `gcp-chirp3` for GCP Speech-to-Text V2).                                                                                                                                                                                                                                                                                                                                                                                                                          | `youtube`                                    | `-t gemini-2.0-flash-exp`                                                       |
-| `-m`, `--model`                        | The LLM(s) to use for speaker extraction, Q&A generation, tag generation, and summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. **Can be a comma-separated list.**                                                                                                                                                                                                                                                                                                                                                                                                                                            | `None` (Transcript only)                     | `-m gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001`                    |
+| `-m`, `--model`                        | The LLM(s) to use for speaker extraction, Q&A generation, tag generation, and summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. **Can be a comma-separated list.**                                                                                                                                                                                                                                                                                                                                                                                                                                            | `None` (Transcript only)                     | `-m gemini-3.1-flash-lite,vertex-claude-haiku-4-5@20251001`                    |
 | `--tts`                                | The TTS model and voice to use for generating audio summaries. Format: `{model}-{voice}`. Supports Gemini models (e.g., `gemini-3.1-flash-tts-preview-Kore`, `gemini-2.5-flash-preview-tts-Kore`) and GCP Cloud TTS (e.g., `gcp-chirp3-Kore`).                                                                                                                                                                                                                                                         | `None`                                       | `--tts gemini-3.1-flash-tts-preview-Kore`                                      |
 | `-i`, `--infographic`                  | The image model to use for generating a visual summary. Supports models from Google (Gemini, Imagen), AWS Bedrock (Titan, Nova Canvas), and Azure Foundry.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `None`                                       | `--infographic gemini-3.1-flash-image-preview`                                  |
-| `--alt-text-model`                     | The LLM model to use for generating multimodal alt text for the infographic. Defaults to the summary model.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `None`                                       | `--alt-text-model gemini-3-flash-preview`                                       |
+| `--alt-text-model`                     | The LLM model to use for generating multimodal alt text for the infographic. Defaults to the summary model.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `None`                                       | `--alt-text-model gemini-3.1-flash-lite`                                       |
 | `-nys`, `--no-youtube-summary`         | If set, skips generating a secondary summary from the YouTube transcript when using an AI model for the primary transcript.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `False`                                      | `--no-youtube-summary`                                                          |
-| `-tr`, `--translate`                   | Translate all outputs to a target language after generating in English. Format: `{model}-{language}` e.g. `gemini-3-flash-preview-es`, or `aws-translate-{language}` / `gcp-translate-{language}` to use AWS Translate or Google Cloud Translation directly (e.g. `aws-translate-es`, `gcp-translate-es`). The tool first tries to fetch a native YouTube transcript in the target language; if unavailable, it translates the English transcript. Summaries, Q&A, tags, one-sentence summaries, transcripts, and SRT files are all translated. When combined with `--tts` or `--infographic`, assets are produced in both English and the target language. | `None`                                       | `-tr gemini-3-flash-preview-es`, `-tr aws-translate-es`, `-tr gcp-translate-es` |
+| `-tr`, `--translate`                   | Translate all outputs to a target language after generating in English. Format: `{model}-{language}` e.g. `gemini-3.1-flash-lite-es`, or `aws-translate-{language}` / `gcp-translate-{language}` to use AWS Translate or Google Cloud Translation directly (e.g. `aws-translate-es`, `gcp-translate-es`). The tool first tries to fetch a native YouTube transcript in the target language; if unavailable, it translates the English transcript. Summaries, Q&A, tags, one-sentence summaries, transcripts, and SRT files are all translated. When combined with `--tts` or `--infographic`, assets are produced in both English and the target language. | `None`                                       | `-tr gemini-3.1-flash-lite-es`, `-tr aws-translate-es`, `-tr gcp-translate-es` |
 | `-cia`, `--combine-infographic-audio`  | Combine the infographic and audio summary into a video file (MP4). Requires both `--tts` and `--infographic` to be effective. When used with `--translate`, one video is created per language.                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `False`                                      | `--combine-infographic-audio`                                                   |
 | `--all`                                | Shortcut to use a specific model suite for everything. Supported: `'gemini-flash'`, `'gemini-pro'`, `'gemini-flash-pro-image'`, `'gcp-pro'`, `'anthropic-opus'`. Sets models for summary, TTS, and infographic, and enables `--no-youtube-summary`.                                                                                                                                                                                                                                                                                                                                                                                                                             | `None`                                       | `--all gemini-flash`                                                            |
-| `-scc`, `--suggest-corrected-captions` | Suggest WCAG 2.1 Level AA compliant caption corrections for an SRT file, per [Section 508 guidance](https://www.section508.gov/create/captions-transcripts/). Format: `{model}` or `{model}-{source}`. See [Suggested Corrected Captions](#suggested-corrected-captions) for full source rules.                                                                                                                                                                                                                                                                                                                                                             | `None`                                       | `-scc gemini-3-flash-preview-youtube`                                           |
+| `-scc`, `--suggest-corrected-captions` | Suggest WCAG 2.1 Level AA compliant caption corrections for an SRT file, per [Section 508 guidance](https://www.section508.gov/create/captions-transcripts/). Format: `{model}` or `{model}-{source}`. See [Suggested Corrected Captions](#suggested-corrected-captions) for full source rules.                                                                                                                                                                                                                                                                                                                                                             | `None`                                       | `-scc gemini-3.1-flash-lite-youtube`                                           |
 | `-pp`, `--post-process`                | Post-process the transcript with JSON operations. Supported operations: `word count` (case-insensitive, whole-word). Values can be a single string or a list. Results are added as new columns in the output CSV (e.g. `Post-process: word count(apple)`).                                                                                                                                                                                                                                                                                                                                                                                                  | `None`                                       | `-pp '{"word count": ["apple", "banana"]}'`                                     |
 | `--verbose`                            | Enable verbose output.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `False`                                      | `--verbose`                                                                     |
 
@@ -178,7 +178,7 @@ youtube-to-docs -o my-docs.csv
 **4. Summarize a Playlist using multiple models (Gemini and Vertex):**
 
 ```bash
-youtube-to-docs PLGKTTEqwhiHHWO-jdxM1KtzTbWo6h0Ycl -m gemini-3-flash-preview,vertex-claude-haiku-4-5@20251001
+youtube-to-docs PLGKTTEqwhiHHWO-jdxM1KtzTbWo6h0Ycl -m gemini-3.1-flash-lite,vertex-claude-haiku-4-5@20251001
 ```
 
 **5. Process a Channel with Summaries, TTS, and Infographics:**
@@ -196,37 +196,37 @@ youtube-to-docs atmGAHYpf_c --infographic bedrock-titan-image-generator-v2:0
 **7. Create a Video (Infographic + Audio Summary):**
 
 ```bash
-youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-3.1-flash-image-preview --combine-infographic-audio
+youtube-to-docs atmGAHYpf_c -m gemini-3.1-flash-lite --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-3.1-flash-image-preview --combine-infographic-audio
 ```
 
 **8. Translate all outputs to Spanish:**
 
 ```bash
-youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview -tr gemini-3-flash-preview-es
+youtube-to-docs atmGAHYpf_c -m gemini-3.1-flash-lite -tr gemini-3.1-flash-lite-es
 ```
 
 **9. Full multilingual pipeline — English + Spanish summaries, audio, infographics, and videos:**
 
 ```bash
-youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview -tr gemini-3-flash-preview-es --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-3.1-flash-image-preview --combine-infographic-audio
+youtube-to-docs atmGAHYpf_c -m gemini-3.1-flash-lite -tr gemini-3.1-flash-lite-es --tts gemini-2.5-flash-preview-tts-Kore --infographic gemini-3.1-flash-image-preview --combine-infographic-audio
 ```
 
 **10. Suggest corrected captions for YouTube SRT:**
 
 ```bash
-youtube-to-docs atmGAHYpf_c -scc gemini-3-flash-preview-youtube
+youtube-to-docs atmGAHYpf_c -scc gemini-3.1-flash-lite-youtube
 ```
 
 **11. Run STT and correct the generated captions in one pass:**
 
 ```bash
-youtube-to-docs atmGAHYpf_c -t gcp-chirp3 -scc gemini-3-flash-preview
+youtube-to-docs atmGAHYpf_c -t gcp-chirp3 -scc gemini-3.1-flash-lite
 ```
 
 **12. Correct captions and add speaker labels in one pass:**
 
 ```bash
-youtube-to-docs atmGAHYpf_c -m gemini-3-flash-preview -scc gemini-3-flash-preview-youtube
+youtube-to-docs atmGAHYpf_c -m gemini-3.1-flash-lite -scc gemini-3.1-flash-lite-youtube
 ```
 
 **13. Post-process a transcript to count word occurrences:**
@@ -257,9 +257,9 @@ The format is `-scc {model}` or `-scc {model}-{source}`.
 
 | Source         | Behaviour                                                                                                                             | Example                                  |
 | :------------- | :------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------- |
-| Omitted        | Automatically uses the most recent non-YouTube AI SRT in the row. Useful when `-t {stt-model}` is set in the same run or a prior run. | `-scc gemini-3-flash-preview`            |
-| `youtube`      | Uses the YouTube-generated SRT explicitly.                                                                                            | `-scc gemini-3-flash-preview-youtube`    |
-| STT model name | Uses the SRT produced by that specific STT run.                                                                                       | `-scc gemini-3-flash-preview-gcp-chirp3` |
+| Omitted        | Automatically uses the most recent non-YouTube AI SRT in the row. Useful when `-t {stt-model}` is set in the same run or a prior run. | `-scc gemini-3.1-flash-lite`            |
+| `youtube`      | Uses the YouTube-generated SRT explicitly.                                                                                            | `-scc gemini-3.1-flash-lite-youtube`    |
+| STT model name | Uses the SRT produced by that specific STT run.                                                                                       | `-scc gemini-3.1-flash-lite-gcp-chirp3` |
 
 > **Tip:** If you have more than one AI SRT in the row (e.g. from both `gcp-chirp3` and `aws-transcribe`), the default picks the first one found. Use the explicit `{model}-{source}` form to target a specific SRT.
 
@@ -267,16 +267,16 @@ The format is `-scc {model}` or `-scc {model}-{source}`.
 
 ```bash
 # Correct YouTube captions only
-youtube-to-docs VIDEO_ID -scc gemini-3-flash-preview-youtube
+youtube-to-docs VIDEO_ID -scc gemini-3.1-flash-lite-youtube
 
 # STT with GCP Chirp3, then correct the generated captions
-youtube-to-docs VIDEO_ID -t gcp-chirp3 -scc gemini-3-flash-preview
+youtube-to-docs VIDEO_ID -t gcp-chirp3 -scc gemini-3.1-flash-lite
 
 # Explicitly target the gcp-chirp3 SRT from a previous run
-youtube-to-docs VIDEO_ID -scc gemini-3-flash-preview-gcp-chirp3
+youtube-to-docs VIDEO_ID -scc gemini-3.1-flash-lite-gcp-chirp3
 
 # Speaker extraction + caption correction in one run
-youtube-to-docs VIDEO_ID -m gemini-3-flash-preview -scc gemini-3-flash-preview-youtube
+youtube-to-docs VIDEO_ID -m gemini-3.1-flash-lite -scc gemini-3.1-flash-lite-youtube
 ```
 
 ## CSV Column Reference

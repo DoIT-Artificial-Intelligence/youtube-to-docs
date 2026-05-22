@@ -94,7 +94,7 @@ def test_process_video_suggest_corrected_captions():
         url = "https://www.youtube.com/watch?v=123"
         result = process_video(
             url=url,
-            suggest_corrected_captions="gemini-3-flash-preview-gcp-chirp3",
+            suggest_corrected_captions="gemini-3.1-flash-lite-gcp-chirp3",
         )
 
         expected_args = [
@@ -104,7 +104,7 @@ def test_process_video_suggest_corrected_captions():
             "--transcript",
             "youtube",
             "--suggest-corrected-captions",
-            "gemini-3-flash-preview-gcp-chirp3",
+            "gemini-3.1-flash-lite-gcp-chirp3",
         ]
 
         mock_main.assert_called_once_with(expected_args)
@@ -117,12 +117,12 @@ def test_process_video_suggest_corrected_captions_youtube_source():
         url = "https://www.youtube.com/watch?v=123"
         process_video(
             url=url,
-            suggest_corrected_captions="gemini-3-flash-preview-youtube",
+            suggest_corrected_captions="gemini-3.1-flash-lite-youtube",
         )
 
         call_args = mock_main.call_args[0][0]
         idx = call_args.index("--suggest-corrected-captions")
-        assert call_args[idx + 1] == "gemini-3-flash-preview-youtube"
+        assert call_args[idx + 1] == "gemini-3.1-flash-lite-youtube"
 
 
 def test_process_video_suggest_corrected_captions_not_passed_when_none():

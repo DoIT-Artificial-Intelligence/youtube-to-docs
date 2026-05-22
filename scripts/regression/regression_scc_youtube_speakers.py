@@ -10,7 +10,7 @@ Run with:
     uv run python scripts/regression/regression_scc_youtube_speakers.py
 
 To force a specific model:
-    SCC_MODEL=gemini-3-flash-preview uv run python \
+    SCC_MODEL=gemini-3.1-flash-lite uv run python \
         scripts/regression/regression_scc_youtube_speakers.py
 """
 

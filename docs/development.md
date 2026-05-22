@@ -31,13 +31,13 @@ For more information, see the [official `uv` documentation](https://docs.astral.
 To run the script locally using the entry point defined in `pyproject.toml`:
 
 ```bash
-uv run youtube-to-docs --model gemini-3-flash-preview
+uv run youtube-to-docs --model gemini-3.1-flash-lite
 ```
 
 Alternatively, you can run it as a module:
 
 ```bash
-uv run python -m youtube_to_docs.main --model gemini-3-flash-preview
+uv run python -m youtube_to_docs.main --model gemini-3.1-flash-lite
 ```
 
 ## Running Tests

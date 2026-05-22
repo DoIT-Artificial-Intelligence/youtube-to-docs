@@ -17,7 +17,7 @@ Run with:
     uv run --extra all python scripts/regression/regression_scc_stt.py
 
 To force a specific correction model:
-    SCC_MODEL=gemini-3-flash-preview uv run --extra all python \
+    SCC_MODEL=gemini-3.1-flash-lite uv run --extra all python \
         scripts/regression/regression_scc_stt.py
 """
 

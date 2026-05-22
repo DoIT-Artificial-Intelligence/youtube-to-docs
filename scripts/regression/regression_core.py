@@ -14,7 +14,7 @@ from googleapiclient.discovery import build
 VIDEO_ID = "B0x2I_doX9o"
 ARTIFACTS_DIR = "youtube-to-docs-test"
 MODELS_TO_CHECK = {
-    "gemini-3-flash-preview": "Gemini (GCP)",
+    "gemini-3.1-flash-lite": "Gemini (GCP)",
     "vertex-claude-haiku-4-5@20251001": "Claude (Vertex GCP)",
     "bedrock-nova-2-lite-v1": "Nova 2 Lite (AWS)",
     "foundry-gpt-5-mini": "GPT-5 Mini (Azure)",
@@ -171,8 +171,8 @@ def verify_output(
     )
 
     if all_gemini_arg == "gemini-flash":
-        model = "gemini-3-flash-preview"
-        transcript_model = transcript_model or "gemini-3-flash-preview"
+        model = "gemini-3.1-flash-lite"
+        transcript_model = transcript_model or "gemini-3.1-flash-lite"
         infographic_model = "gemini-3.1-flash-image-preview"
         tts_model = "gemini-2.5-flash-preview-tts-Kore"
         no_youtube_summary = True
@@ -422,8 +422,8 @@ def verify_output(
 def get_default_model(available_models: List[str]) -> str:
     """Returns the default model to use."""
     return (
-        "gemini-3-flash-preview"
-        if "gemini-3-flash-preview" in available_models
+        "gemini-3.1-flash-lite"
+        if "gemini-3.1-flash-lite" in available_models
         else available_models[0]
     )
 

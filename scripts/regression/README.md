@@ -12,7 +12,7 @@ This directory contains regression tests for the `youtube-to-docs` tool.
 
 - **[regression_en_full.py](regression_en_full.py)**: A full run in English featuring transcription, summarization, infographics, and text-to-speech. Includes secondary "from youtube" processing for summaries, QA, and speakers.
 - **[regression_es_no_yt_summary.py](regression_es_no_yt_summary.py)**: A Spanish run with no secondary YouTube summary processing (`-nys` flag).
-- **[regression_two_vids.py](regression_two_vids.py)**: Processes two videos (`B0x2I_doX9o,Cu27fBy-kHQ`) with `gemini-3-flash-preview` and no YouTube summary (`-nys`).
+- **[regression_two_vids.py](regression_two_vids.py)**: Processes two videos (`B0x2I_doX9o,Cu27fBy-kHQ`) with `gemini-3.1-flash-lite` and no YouTube summary (`-nys`).
 - **[regression_two_vids_verbose.py](regression_two_vids_verbose.py)**: Same as above but with verbose output enabled.
 
 ### Translation

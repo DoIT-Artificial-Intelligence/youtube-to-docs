@@ -10,15 +10,15 @@ Without ``-m``, only the raw transcript is translated.
 Usage (CLI)::
 
     # Translate with an LLM
-    uv run youtube-to-docs URL -m gemini-3-flash-preview \
-        -tr gemini-3-flash-preview-es
+    uv run youtube-to-docs URL -m gemini-3.1-flash-lite \
+        -tr gemini-3.1-flash-lite-es
 
     # Translate with AWS Translate
-    uv run youtube-to-docs URL -m gemini-3-flash-preview \
+    uv run youtube-to-docs URL -m gemini-3.1-flash-lite \
         -tr aws-translate-spanish
 
     # Translate with Google Cloud Translation API
-    uv run youtube-to-docs URL -m gemini-3-flash-preview \
+    uv run youtube-to-docs URL -m gemini-3.1-flash-lite \
         -tr gcp-translate-fr
 """
 
@@ -65,10 +65,10 @@ def parse_translate_arg(translate_arg: str) -> Tuple[str, str]:
     (e.g. "spanish") are automatically converted to codes (e.g. "es").
 
     Examples:
-      "gemini-3-flash-preview-es"         -> ("gemini-3-flash-preview", "es")
-      "gemini-3-flash-preview-spanish"    -> ("gemini-3-flash-preview", "es")
+      "gemini-3.1-flash-lite-es"         -> ("gemini-3.1-flash-lite", "es")
+      "gemini-3.1-flash-lite-spanish"    -> ("gemini-3.1-flash-lite", "es")
       "bedrock-nova-2-lite-v1-fr"         -> ("bedrock-nova-2-lite-v1", "fr")
-      "gemini-3-flash-preview-zh"         -> ("gemini-3-flash-preview", "zh")
+      "gemini-3.1-flash-lite-zh"         -> ("gemini-3.1-flash-lite", "zh")
       "aws-translate-es"                  -> ("aws-translate", "es")
       "aws-translate-spanish"             -> ("aws-translate", "es")
       "gcp-translate-es"                  -> ("gcp-translate", "es")
@@ -79,8 +79,8 @@ def parse_translate_arg(translate_arg: str) -> Tuple[str, str]:
     if len(parts) != 2:
         raise ValueError(
             f"Invalid --translate format: '{translate_arg}'. "
-            "Expected '{model}-{language}' e.g. 'gemini-3-flash-preview-es', "
-            "'gemini-3-flash-preview-spanish', 'aws-translate-es', "
+            "Expected '{model}-{language}' e.g. 'gemini-3.1-flash-lite-es', "
+            "'gemini-3.1-flash-lite-spanish', 'aws-translate-es', "
             "or 'gcp-translate-es'."
         )
     model, lang = parts[0], parts[1].lower()
@@ -93,14 +93,14 @@ def parse_suggest_captions_arg(arg: str) -> Tuple[str, Optional[str]]:
     `{model}` or `{model}-{source}`.
 
     The source is either 'youtube' or a transcript model name
-    (e.g. 'gcp-chirp3', 'gemini-3-flash-preview'). Parsing scans
+    (e.g. 'gcp-chirp3', 'gemini-3.1-flash-lite'). Parsing scans
     left-to-right for the first dash-boundary where the remaining suffix
     is 'youtube' or begins with a known source prefix.
 
     Examples:
-      "gemini-3-flash-preview"               -> ("gemini-3-flash-preview", None)
-      "gemini-3-flash-preview-youtube"       -> ("gemini-3-flash-preview", "youtube")
-      "gemini-3-flash-preview-gcp-chirp3"    -> ("gemini-3-flash-preview", "gcp-chirp3")
+      "gemini-3.1-flash-lite"               -> ("gemini-3.1-flash-lite", None)
+      "gemini-3.1-flash-lite-youtube"       -> ("gemini-3.1-flash-lite", "youtube")
+      "gemini-3.1-flash-lite-gcp-chirp3"    -> ("gemini-3.1-flash-lite", "gcp-chirp3")
       "bedrock-nova-2-lite-v1-youtube"       -> ("bedrock-nova-2-lite-v1", "youtube")
 
     Returns (model_name, source_or_none).

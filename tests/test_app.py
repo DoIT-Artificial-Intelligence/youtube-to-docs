@@ -87,15 +87,15 @@ def test_process_all_args(client):
                 "url": "abc12345678",
                 "output_file": "custom.csv",
                 "transcript_source": "gemini-pro",
-                "model": "gemini-3-flash-preview",
+                "model": "gemini-3.1-flash-lite",
                 "tts_model": "gemini-2.5-flash-preview-tts-Kore",
                 "infographic_model": "gemini-3.1-flash-image-preview",
-                "alt_text_model": "gemini-3-flash-preview",
+                "alt_text_model": "gemini-3.1-flash-lite",
                 "no_youtube_summary": True,
-                "translate": "gemini-3-flash-preview-es",
+                "translate": "gemini-3.1-flash-lite-es",
                 "combine_infographic_audio": True,
                 "all_suite": "gemini-flash",
-                "suggest_corrected_captions": "gemini-3-flash-preview",
+                "suggest_corrected_captions": "gemini-3.1-flash-lite",
                 "post_process": '{"word count": "apple"}',
                 "verbose": True,
             },
@@ -388,7 +388,7 @@ def test_missing_gemini_api_key_job_completes(
             "--transcript",
             "youtube",
             "--model",
-            "gemini-3-flash-preview",
+            "gemini-3.1-flash-lite",
         ]
         env = {k: v for k, v in os.environ.items() if k != "GEMINI_API_KEY"}
         with patch.dict(os.environ, env, clear=True):

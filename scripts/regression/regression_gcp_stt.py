@@ -17,7 +17,7 @@ def main():
     clear_artifacts()
 
     # Run Regression with GCP Chirp3 STT
-    model = "gemini-3-flash-preview"
+    model = "gemini-3.1-flash-lite"
     transcript_model = "gcp-chirp3"
     infographic_model = None
     tts_model = None

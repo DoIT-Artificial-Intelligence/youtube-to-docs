@@ -20,7 +20,7 @@ The entry point (`youtube_to_docs/main.py`) accepts flexible inputs:
 For each video, the tool fetches or generates a transcript:
 
 - **YouTube Source** (default): Fetches the existing transcript (auto-captions or manual) directly from YouTube.
-- **AI STT Source**: If an AI model name is specified (e.g. `gemini-3-flash-preview`, `gcp-chirp3`, `aws-transcribe`), the tool extracts audio from the video via `yt-dlp` and passes it to a Speech-to-Text model for a fresh transcript.
+- **AI STT Source**: If an AI model name is specified (e.g. `gemini-3.1-flash-lite`, `gcp-chirp3`, `aws-transcribe`), the tool extracts audio from the video via `yt-dlp` and passes it to a Speech-to-Text model for a fresh transcript.
     - For `gcp-` models (Cloud Speech-to-Text V2), `GOOGLE_CLOUD_PROJECT` is required and `YTD_GCS_BUCKET_NAME` is recommended.
     - For `aws-transcribe`, `YTD_S3_BUCKET_NAME` is required.
     - When `--no-youtube-summary` is set, the secondary summary pass from the YouTube transcript is skipped.
@@ -61,7 +61,7 @@ For each video, the specified model performs these tasks:
     *   **Output**: A comma-separated string of tags.
 
 ### 4. Translation Support
-The `--translate {model}-{language}` argument enables multilingual output (e.g., `--translate gemini-3-flash-preview-es`). Use `aws-translate-{language}` (e.g., `--translate aws-translate-es`) to use the AWS Translate service directly, or `gcp-translate-{language}` (e.g., `--translate gcp-translate-es`) to use Google Cloud Translation API directly. Large texts are automatically chunked to respect per-request limits.
+The `--translate {model}-{language}` argument enables multilingual output (e.g., `--translate gemini-3.1-flash-lite-es`). Use `aws-translate-{language}` (e.g., `--translate aws-translate-es`) to use the AWS Translate service directly, or `gcp-translate-{language}` (e.g., `--translate gcp-translate-es`) to use Google Cloud Translation API directly. Large texts are automatically chunked to respect per-request limits.
 
 All content is generated in English first, then the tool iterates over the target language:
 
@@ -71,7 +71,7 @@ All content is generated in English first, then the tool iterates over the targe
 4.  **Infographic & TTS**: When `-i` or `--tts` are also set, assets are produced in both English and the target language.
 5.  **Video**: When `--combine-infographic-audio` is also set, one video is produced per language.
 
-File names use `({model}-{language})` (e.g., `(gemini-3-flash-preview-es)`, `(aws-translate-es)`, or `(gcp-translate-es)`) to identify the translation source. CSV column headers use the shorter `(lang)` suffix (e.g., `(es)`).
+File names use `({model}-{language})` (e.g., `(gemini-3.1-flash-lite-es)`, `(aws-translate-es)`, or `(gcp-translate-es)`) to identify the translation source. CSV column headers use the shorter `(lang)` suffix (e.g., `(es)`).
 
 ### 5. Multimodal Generation
 Beyond text, the tool creates audio and visual assets:
@@ -109,7 +109,7 @@ Currently supported operations:
 ### 7. Suggested Corrected Captions
 The `--suggest-corrected-captions` argument uses an LLM to review an SRT file and suggest WCAG 2.1 Level AA / Section 508 compliant corrections. Output is saved to `suggested-corrected-caption-files/` as a diff-style file (changed segments only).
 
-Format: `{model}` or `{model}-{source}` (e.g., `gemini-3-flash-preview`, `gemini-3-flash-preview-youtube`, `gemini-3-flash-preview-gcp-chirp3`). If source is omitted, the most recent AI-generated SRT is used automatically. If speaker extraction has been run, speaker labels are included on speaker changes.
+Format: `{model}` or `{model}-{source}` (e.g., `gemini-3.1-flash-lite`, `gemini-3.1-flash-lite-youtube`, `gemini-3.1-flash-lite-gcp-chirp3`). If source is omitted, the most recent AI-generated SRT is used automatically. If speaker extraction has been run, speaker labels are included on speaker changes.
 
 ### 8. Output & Storage
 The `--outfile` argument controls where the output CSV is saved:

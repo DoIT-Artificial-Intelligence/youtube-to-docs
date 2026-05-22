@@ -242,7 +242,7 @@ class TestPricing(unittest.TestCase):
         {
             "prices": [
                 {"id": "claude-4.5-haiku", "input": 1.0, "output": 5.0},
-                {"id": "gemini-3-flash-preview", "input": 0.5, "output": 3.0},
+                {"id": "gemini-3.1-flash-lite", "input": 0.5, "output": 3.0},
                 {"id": "gpt-5-mini", "input": 0.25, "output": 2.0},
                 {
                     "id": "amazon-nova-2-lite",
@@ -264,7 +264,7 @@ class TestPricing(unittest.TestCase):
     def test_get_model_pricing_specific_models(self):
         """Test getting pricing for specific models requested by user."""
         models = [
-            "gemini-3-flash-preview",
+            "gemini-3.1-flash-lite",
             "vertex-claude-haiku-4-5@20251001",
             "bedrock-claude-haiku-4-5-20251001-v1",
             "bedrock-nova-2-lite-v1",
@@ -286,6 +286,30 @@ class TestPricing(unittest.TestCase):
         self.assertIsNone(inp)
         self.assertIsNone(outp)
 
+    def test_get_model_pricing_unlisted_model_returns_none(self):
+        """Models absent from prices.py (e.g. gemini-2.0-flash-lite) must
+        return (None, None) so downstream cost calculations skip cleanly."""
+        for model in [
+            "gemini-2.0-flash-lite",
+            "gemini-2.0-flash",
+            "gemini-2.5-flash",
+            "claude-3-opus",
+            "gpt-4o",
+            "totally-fake-model-xyz",
+        ]:
+            with self.subTest(model=model):
+                inp, outp = llms.get_model_pricing(model)
+                self.assertIsNone(inp)
+                self.assertIsNone(outp)
+
+    def test_cost_calc_skipped_when_pricing_missing(self):
+        """Mirrors the guard pattern used throughout main.py — no crash, no cost."""
+        input_price, output_price = llms.get_model_pricing("gemini-2.0-flash-lite")
+        cost = None
+        if input_price is not None and output_price is not None:
+            cost = (1000 / 1_000_000) * input_price + (500 / 1_000_000) * output_price
+        self.assertIsNone(cost)
+
     # --- suggest_corrected_captions ---
 
     @patch("google.genai.Client")
@@ -306,7 +330,7 @@ class TestPricing(unittest.TestCase):
             "monday april 7th happy siny die this\n"
         )
         result, in_tok, out_tok = llms.suggest_corrected_captions(
-            "gemini-3-flash-preview", srt
+            "gemini-3.1-flash-lite", srt
         )
 
         self.assertIn("Good morning. Thank you.", result)
@@ -324,7 +348,7 @@ class TestPricing(unittest.TestCase):
 
         srt = "1\n00:00:00,000 --> 00:00:02,000\nHello, world.\n"
         result, in_tok, out_tok = llms.suggest_corrected_captions(
-            "gemini-3-flash-preview", srt
+            "gemini-3.1-flash-lite", srt
         )
 
         self.assertEqual(result.strip(), "NO_CHANGES")
@@ -342,7 +366,7 @@ class TestPricing(unittest.TestCase):
         srt = "1\n00:00:02,639 --> 00:00:09,040\ngood morning\n"
         speakers = "Jane Smith (Chair)\nJohn Doe (Member)"
         result, in_tok, out_tok = llms.suggest_corrected_captions(
-            "gemini-3-flash-preview", srt, speakers_text=speakers
+            "gemini-3.1-flash-lite", srt, speakers_text=speakers
         )
 
         # Verify the speaker label was included in the corrected output
@@ -398,7 +422,7 @@ class TestPricing(unittest.TestCase):
         mock_client.models.generate_content.return_value = mock_resp
 
         llms.suggest_corrected_captions(
-            "gemini-3-flash-preview", "1\n00:00:00,000 --> 00:00:01,000\nHi.\n"
+            "gemini-3.1-flash-lite", "1\n00:00:00,000 --> 00:00:01,000\nHi.\n"
         )
 
         call_args = mock_client.models.generate_content.call_args

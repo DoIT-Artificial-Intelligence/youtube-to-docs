@@ -44,7 +44,7 @@ Use this when the user wants a visual summary or "infographic" representing the 
     - `model='gemini-3.1-pro-preview'`
     - `infographic_model='gemini-3-pro-image-preview'`
   - **Flash (Speed/Cost)**: Use if "gemini flash" is requested.
-    - `model='gemini-3-flash-preview'`
+    - `model='gemini-3.1-flash-lite'`
     - `infographic_model='gemini-2.5-flash-image'`
 
 * **Alt Text (Accessibility)**: By default, `process_video` generates multimodal alt text using the summary model (image-to-text) for any created infographic. Use `alt_text_model` to override the model for this step.
@@ -61,13 +61,13 @@ Use this when the user asks for "everything", a "kitchen sink" run, or a "video 
   - `all_suite`: Shortcut to set models (`'gemini-flash'` or `'gemini-pro'`).
   - `combine_infographic_audio`: Set to `True` to create the final video (Requires `video` extra).
   - `verbose`: Set to `True` for detailed logging.
-  - `translate`: Translate all outputs to a target language. Format: `{model}-{language}` e.g. `gemini-3-flash-preview-es`, or `aws-translate-{language}` e.g. `aws-translate-es` to use AWS Translate directly, or `gcp-translate-{language}` e.g. `gcp-translate-es` to use Google Cloud Translation directly.
+  - `translate`: Translate all outputs to a target language. Format: `{model}-{language}` e.g. `gemini-3.1-flash-lite-es`, or `aws-translate-{language}` e.g. `aws-translate-es` to use AWS Translate directly, or `gcp-translate-{language}` e.g. `gcp-translate-es` to use Google Cloud Translation directly.
 - **Model Selection Strategy**:
   - **Pro (Default)**: `all_suite='gemini-pro'` (best for video quality).
   - **Flash**: `all_suite='gemini-flash'` (faster).
 - **Language Handling**:
-  - "spanish" or "es" -> `translate='gemini-3-flash-preview-es'`
-  - "french" or "fr" -> `translate='gemini-3-flash-preview-fr'`
+  - "spanish" or "es" -> `translate='gemini-3.1-flash-lite-es'`
+  - "french" or "fr" -> `translate='gemini-3.1-flash-lite-fr'`
   - Default -> omit `translate` (English only)
 
 ### 4. Custom / Advanced Usage
@@ -81,7 +81,7 @@ Use this when the user specifies particular models or output locations.
   - **Memory**: `output_file='memory'` (keeps artifacts in memory, no files on disk).
 - **Transcription Source**:
   - Default is YouTube captions.
-  - To use AI for transcription (STT), set `transcript_source` to a model name (e.g., `'gemini-3-flash-preview'` or `'gcp-chirp3'`).
+  - To use AI for transcription (STT), set `transcript_source` to a model name (e.g., `'gemini-3.1-flash-lite'` or `'gcp-chirp3'`).
   - **Note**: `gcp-` models require `GOOGLE_CLOUD_PROJECT` and optional `YTD_GCS_BUCKET_NAME` environment variables.
 
 ## Tool Reference: `process_video`
@@ -89,16 +89,16 @@ Use this when the user specifies particular models or output locations.
 | Argument                    | Description                                                                                                                          | Required Extra             | Examples                                                             |
 | :-------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- | :------------------------- | :------------------------------------------------------------------- |
 | `url`                       | **Required**. YouTube URL, ID, Playlist ID, or Channel Handle.                                                                       | -                          | `https://youtu.be/...`, `@channel`                                   |
-| `model`                     | LLM for summaries/Q&A.                                                                                                               | `gcp` / `azure`            | `gemini-3-flash-preview`                                             |
+| `model`                     | LLM for summaries/Q&A.                                                                                                               | `gcp` / `azure`            | `gemini-3.1-flash-lite`                                             |
 | `infographic_model`         | Model for generating the infographic image.                                                                                          | `gcp`                      | `gemini-3-pro-image-preview`                                         |
-| `alt_text_model`            | Model for generating multimodal alt text for the infographic.                                                                        | `gcp`                      | `gemini-3-flash-preview`                                             |
+| `alt_text_model`            | Model for generating multimodal alt text for the infographic.                                                                        | `gcp`                      | `gemini-3.1-flash-lite`                                             |
 | `tts_model`                 | Model for text-to-speech audio.                                                                                                      | `gcp`                      | `gemini-2.5-flash-preview-tts-Kore`, `gcp-chirp3-Kore`               |
 | `all_suite`                 | Shortcut to apply a suite of models.                                                                                                 | `gcp`, `audio`, `video`    | `gemini-pro`, `gemini-flash`                                         |
 | `combine_infographic_audio` | Boolean. If True, creates an MP4 video.                                                                                              | `video`                    | `True`                                                               |
-| `translate`                 | Translate all outputs to a target language. Format: `{model}-{language}`, `aws-translate-{language}`, or `gcp-translate-{language}`. | -                          | `gemini-3-flash-preview-es`, `aws-translate-es`, `gcp-translate-es`  |
+| `translate`                 | Translate all outputs to a target language. Format: `{model}-{language}`, `aws-translate-{language}`, or `gcp-translate-{language}`. | -                          | `gemini-3.1-flash-lite-es`, `aws-translate-es`, `gcp-translate-es`  |
 | `post_process`              | Post-process the transcript with JSON operations. Results added as CSV columns.                                                      | -                          | `'{"word count": "apple"}'`, `'{"word count": ["apple", "banana"]}'` |
 | `output_file`               | Destination for the CSV report.                                                                                                      | `workspace` / `m365`       | `workspace`, `sharepoint`, `memory`                                  |
-| `transcript_source`         | Source for transcript (default: 'youtube').                                                                                          | `audio`, `gcp` (for Chirp) | `gemini-3-flash-preview`, `gcp-chirp3`                               |
+| `transcript_source`         | Source for transcript (default: 'youtube').                                                                                          | `audio`, `gcp` (for Chirp) | `gemini-3.1-flash-lite`, `gcp-chirp3`                               |
 
 ## Examples
 
@@ -109,10 +109,10 @@ Use this when the user specifies particular models or output locations.
 **Action**: Call `process_video(url='...', model='gemini-3.1-pro-preview', infographic_model='gemini-3-pro-image-preview')`
 
 **User**: "Do a kitchen sink run on this video in Spanish."
-**Action**: Call `process_video(url='...', all_suite='gemini-pro', combine_infographic_audio=True, verbose=True, translate='gemini-3-flash-preview-es')`
+**Action**: Call `process_video(url='...', all_suite='gemini-pro', combine_infographic_audio=True, verbose=True, translate='gemini-3.1-flash-lite-es')`
 
 **User**: "Summarize this playlist and save it to Drive."
-**Action**: Call `process_video(url='PL...', model='gemini-3-flash-preview', output_file='workspace')`
+**Action**: Call `process_video(url='PL...', model='gemini-3.1-flash-lite', output_file='workspace')`
 
 **User**: "Count how many times 'apple' appears in this video's transcript."
 **Action**: Call `process_video(url='...', post_process='{"word count": "apple"}')`
@@ -136,7 +136,7 @@ uv run youtube-to-docs https://www.youtube.com/watch?v=B0x2I_doX9o
 uv run youtube-to-docs B0x2I_doX9o --all gemini-pro --verbose
 
 # Example: Translate to Spanish
-uv run youtube-to-docs B0x2I_doX9o -m gemini-3-flash-preview -tr gemini-3-flash-preview-es
+uv run youtube-to-docs B0x2I_doX9o -m gemini-3.1-flash-lite -tr gemini-3.1-flash-lite-es
 
 # Example: Post-process transcript to count word occurrences
 uv run youtube-to-docs B0x2I_doX9o -pp '{"word count": ["apple", "banana"]}'

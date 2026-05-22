@@ -32,7 +32,7 @@ def main():
     print(f"\nUsing model: {selected_model}")
 
     # 4. Run Regression
-    transcript_model = "gemini-3-flash-preview"
+    transcript_model = "gemini-3.1-flash-lite"
     infographic_model = "gemini-3.1-flash-image-preview"
     tts_model = "gemini-2.5-flash-preview-tts-Kore"
 
