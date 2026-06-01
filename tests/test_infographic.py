@@ -66,6 +66,41 @@ class TestInfographic(TestCase):
         self.assertEqual(out_tok, 1000)
         mock_client.models.generate_images.assert_called_once()
 
+    def test_build_infographic_prompt(self):
+        prompt = infographic.build_infographic_prompt(
+            "Summary text", "Video Title", language="es"
+        )
+        self.assertIn("Video Title: Video Title", prompt)
+        self.assertIn("Summary:\nSummary text", prompt)
+        self.assertIn("in es.", prompt)
+        self.assertIn("Do not include any people", prompt)
+
+    def test_build_infographic_prompt_default_language(self):
+        prompt = infographic.build_infographic_prompt("Summary text", "Video Title")
+        self.assertIn("in en.", prompt)
+
+    @patch("google.genai.Client")
+    def test_generate_infographic_uses_build_prompt(self, mock_client_cls):
+        # The prompt sent to the model must match build_infographic_prompt
+        # so the persisted prompt file is faithful.
+        mock_client = mock_client_cls.return_value
+        mock_chunk = MagicMock()
+        mock_part = MagicMock()
+        mock_part.inline_data.data = b"fake_gemini_bytes"
+        mock_chunk.candidates = [MagicMock(content=MagicMock(parts=[mock_part]))]
+        mock_chunk.usage_metadata.prompt_token_count = 10
+        mock_chunk.usage_metadata.candidates_token_count = 20
+        mock_client.models.generate_content_stream.return_value = [mock_chunk]
+
+        infographic.generate_infographic(
+            "gemini-3.1-flash-image-preview", "Summary text", "Video Title"
+        )
+
+        _, kwargs = mock_client.models.generate_content_stream.call_args
+        sent_text = kwargs["contents"][0].parts[0].text
+        expected = infographic.build_infographic_prompt("Summary text", "Video Title")
+        self.assertEqual(sent_text, expected)
+
     def test_generate_infographic_none_model(self):
         image_bytes, in_tok, out_tok = infographic.generate_infographic(
             None, "Summary text", "Video Title"

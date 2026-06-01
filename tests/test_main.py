@@ -450,6 +450,22 @@ class TestMain(unittest.TestCase):
                 # Cost should be 0.0 because pricing is mocked to (0.0, 0.0)
                 self.assertEqual(df[0, cost_col], 0.0)
 
+                # Verify infographic-prompts directory was created
+                any_prompt_dir_call = any(
+                    "infographic-prompts" in str(call)
+                    for call in mock_makedirs.call_args_list
+                )
+                self.assertTrue(any_prompt_dir_call)
+
+                # Verify the infographic prompt file path is recorded in CSV
+                prompt_col = (
+                    "Infographic Prompt Path gemini-test from youtube gemini-image"
+                )
+                self.assertIn(prompt_col, df.columns)
+                prompt_path = df[0, prompt_col]
+                self.assertIn("infographic-prompts", prompt_path)
+                self.assertTrue(prompt_path.endswith(".txt"))
+
                 # Verify Speaker Columns (updated format)
                 self.assertIn("Speakers gemini-test from youtube", df.columns)
                 self.assertIn("Speakers File gemini-test from youtube", df.columns)

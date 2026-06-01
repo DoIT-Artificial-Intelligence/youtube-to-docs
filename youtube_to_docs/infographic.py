@@ -5,6 +5,27 @@ from typing import Optional, Tuple
 import requests
 
 
+def build_infographic_prompt(
+    summary_text: str,
+    video_title: str,
+    language: str = "en",
+) -> str:
+    """Build the text prompt used to generate an infographic.
+
+    Kept separate from generate_infographic so callers can persist the exact
+    prompt that was sent to the image model.
+    """
+    return (
+        "Create a visually appealing infographic summarizing the following "
+        "video content. Do not include any people in the infographic.\n"
+        f"Video Title: {video_title}\n\n"
+        f"Summary:\n{summary_text}\n\n"
+        "The infographic should be easy to read, professional, and capture "
+        "the key points. Ensure any text in the infographic is in "
+        f"{language}."
+    )
+
+
 def generate_infographic(
     image_model: Optional[str],
     summary_text: str,
@@ -18,15 +39,7 @@ def generate_infographic(
     if not image_model:
         return None, 0, 0
 
-    prompt = (
-        "Create a visually appealing infographic summarizing the following "
-        "video content. Do not include any people in the infographic.\n"
-        f"Video Title: {video_title}\n\n"
-        f"Summary:\n{summary_text}\n\n"
-        "The infographic should be easy to read, professional, and capture "
-        "the key points. Ensure any text in the infographic is in "
-        f"{language}."
-    )
+    prompt = build_infographic_prompt(summary_text, video_title, language)
 
     try:
         from google import genai

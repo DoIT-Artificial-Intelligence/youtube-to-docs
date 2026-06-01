@@ -68,6 +68,7 @@ Here are the following args for the tool:
     - `tag-files/`: AI-generated tags.
     - `one-sentence-summary-files/`: One-sentence summaries.
     - `infographic-alt-text/`: Multimodal infographic alt text.
+    - `infographic-prompts/`: The exact text prompt sent to the image model to generate each infographic.
     - `srt-files/`: SRT transcript files (both YouTube and AI generated).
     - `qa-files/`: Q&A markdown files (now includes "Timestamp" and "Timestamp URL" as markdown hyperlinks).
     - `suggested-corrected-caption-files/`: LLM-suggested WCAG 2.1 / Section 508 corrected SRT files (diff-style, changed segments only).

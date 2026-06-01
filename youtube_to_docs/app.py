@@ -84,6 +84,7 @@ ARTIFACT_DIRS = [
     "tag-files",
     "one-sentence-summary-files",
     "infographic-alt-text",
+    "infographic-prompts",
     "suggested-corrected-caption-files",
 ]
 

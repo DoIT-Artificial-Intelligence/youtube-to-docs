@@ -10,7 +10,7 @@ import polars as pl
 from rich import print as rprint
 from rich_argparse import RichHelpFormatter
 
-from youtube_to_docs.infographic import generate_infographic
+from youtube_to_docs.infographic import build_infographic_prompt, generate_infographic
 from youtube_to_docs.llms import (
     extract_speakers,
     generate_one_sentence_summary,
@@ -397,6 +397,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     one_sentence_summaries_dir = os.path.join(base_dir, "one-sentence-summary-files")
     tags_dir = os.path.join(base_dir, "tag-files")
     alt_text_dir = os.path.join(base_dir, "infographic-alt-text")
+    infographic_prompts_dir = os.path.join(base_dir, "infographic-prompts")
     srt_dir = os.path.join(base_dir, "srt-files")
     suggested_captions_dir = os.path.join(base_dir, "suggested-corrected-caption-files")
 
@@ -415,6 +416,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     storage.ensure_directory(one_sentence_summaries_dir)
     storage.ensure_directory(tags_dir)
     storage.ensure_directory(alt_text_dir)
+    storage.ensure_directory(infographic_prompts_dir)
     storage.ensure_directory(srt_dir)
     storage.ensure_directory(suggested_captions_dir)
 
@@ -1920,17 +1922,46 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                     alt_text_file_col = (
                         f"Infographic Alt Text Path {m_name} {infographic_arg}"
                     )
+                    prompt_file_col = (
+                        f"Infographic Prompt Path {m_name} {infographic_arg}"
+                    )
+
+                    safe_title = re.sub(r"[\\/*?:\"<>|]", "_", video_title).replace(
+                        "\n", " "
+                    )
+                    safe_title = safe_title.replace("\r", "")
+
+                    # Save the exact prompt sent to the image model. Done before
+                    # generation so the prompt is recorded even if image
+                    # generation later fails.
+                    if not row.get(prompt_file_col):
+                        prompt_text = build_infographic_prompt(
+                            s_text, video_title, language=language
+                        )
+                        prompt_filename = (
+                            f"{m_name} - {infographic_arg} - {video_id} - "
+                            f"{safe_title} - infographic-prompt.txt"
+                        )
+                        prompt_target_path = os.path.join(
+                            infographic_prompts_dir, prompt_filename
+                        )
+                        try:
+                            saved_prompt_path = storage.write_text(
+                                prompt_target_path, prompt_text
+                            )
+                            rprint(
+                                "Saved infographic prompt: "
+                                f"{format_clickable_path(saved_prompt_path)}"
+                            )
+                            row[prompt_file_col] = saved_prompt_path
+                        except Exception as e:
+                            print(f"Error writing infographic prompt: {e}")
 
                     # 1. Check if both already exist in row
                     if row.get(info_col) and row.get(alt_text_col):
                         continue
 
                     # 2. Check disk for infographic
-                    safe_title = re.sub(r"[\\/*?:\"<>|]", "_", video_title).replace(
-                        "\n", " "
-                    )
-                    safe_title = safe_title.replace("\r", "")
-
                     infographic_filename = (
                         f"{m_name} - {infographic_arg} - {video_id} - "
                         f"{safe_title} - infographic.png"
