@@ -60,7 +60,7 @@ m365 = [
     "pypandoc_binary>=1.16.2",
 ]
 audio = [
-    "yt-dlp>=2026.01.29",
+    "yt-dlp>=2026.03.17",
 ]
 video = [
     "static-ffmpeg>=2.13",

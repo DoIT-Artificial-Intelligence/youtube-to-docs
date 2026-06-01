@@ -2541,7 +2541,7 @@ requires-dist = [
     { name = "xlsxwriter", marker = "extra == 'm365'", specifier = ">=3.2.9" },
     { name = "youtube-to-docs", extras = ["aws", "azure", "gcp", "workspace", "m365", "audio", "video", "app"], marker = "extra == 'all'" },
     { name = "youtube-transcript-api", specifier = ">=1.2.3" },
-    { name = "yt-dlp", marker = "extra == 'audio'", specifier = ">=2026.1.29" },
+    { name = "yt-dlp", marker = "extra == 'audio'", specifier = ">=2026.3.17" },
 ]
 provides-extras = ["aws", "azure", "gcp", "workspace", "m365", "audio", "video", "app", "all"]
 
