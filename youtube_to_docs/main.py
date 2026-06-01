@@ -227,7 +227,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
             "`gcp-pro`: summarization (`gemini-3.1-pro-preview`), "
             "TTS (`gcp-chirp3`), "
             "and Infographic (`gemini-3-pro-image-preview`). \n"
-            "`anthropic-opus`: summarization (`claude-opus-4.7`), "
+            "`anthropic-opus`: summarization (`claude-opus-4.8`), "
             "TTS (`aws-polly-Ruth`), "
             "and Infographic (`gemini-3-pro-image-preview`). \n"
             "Also sets `--no-youtube-summary`."

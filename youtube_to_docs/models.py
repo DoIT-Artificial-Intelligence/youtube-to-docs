@@ -24,7 +24,7 @@ MODEL_SUITES = {
         "transcript": "gcp-chirp3",
     },
     "anthropic-opus": {
-        "model": "claude-opus-4.7",
+        "model": "claude-opus-4.8",
         "tts": "aws-polly-Ruth",
         "infographic": "gemini-3-pro-image-preview",
         "transcript": "aws-transcribe",
