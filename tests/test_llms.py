@@ -311,7 +311,9 @@ class TestPricing(unittest.TestCase):
         self.assertIsNone(cost)
 
     def test_get_model_pricing_claude_fable_5(self):
-        """Test that get_model_pricing retrieves the correct prices for claude-fable-5 and its aliases."""
+        """Test that get_model_pricing retrieves the correct prices for
+        claude-fable-5 and its aliases.
+        """
         # Test exact match
         inp, outp = llms.get_model_pricing("claude-fable-5")
         self.assertEqual(inp, 10.0)
