@@ -120,6 +120,7 @@ const pricingData = {
         {"id": "claude-sonnet-4.6-200k", "vendor": "anthropic", "name": "Claude Sonnet 4.6 >200k", "input": 6, "output": 22.5},
         {"id": "claude-opus-4.8", "vendor": "anthropic", "name": "Claude Opus 4.8 \u2264200k", "input": 5, "output": 25},
         {"id": "claude-opus-4.8-200k", "vendor": "anthropic", "name": "Claude Opus 4.8 >200k", "input": 10, "output": 37.5},
+        {"id": "claude-fable-5", "vendor": "anthropic", "name": "Claude Fable 5", "input": 10, "output": 50},
         {"id": "gemini-3.1-pro-preview", "vendor": "google", "name": "Gemini 3.1 Pro \u2264200k", "input": 2, "output": 12},
         {"id": "gemini-3.1-pro-preview-200k", "vendor": "google", "name": "Gemini 3.1 Pro >200k", "input": 4, "output": 18},
         {"id": "gemini-3.5-flash", "vendor": "google", "name": "Gemini 3.5 Flash", "input": 1.5, "output": 9},

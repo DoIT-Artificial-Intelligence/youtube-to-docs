@@ -310,6 +310,20 @@ class TestPricing(unittest.TestCase):
             cost = (1000 / 1_000_000) * input_price + (500 / 1_000_000) * output_price
         self.assertIsNone(cost)
 
+    def test_get_model_pricing_claude_fable_5(self):
+        """Test that get_model_pricing retrieves the correct prices for claude-fable-5 and its aliases."""
+        # Test exact match
+        inp, outp = llms.get_model_pricing("claude-fable-5")
+        self.assertEqual(inp, 10.0)
+        self.assertEqual(outp, 50.0)
+
+        # Test alias matches
+        for alias in ["anthropic-5-fable", "anthrophic-5-fable"]:
+            with self.subTest(alias=alias):
+                inp_alias, outp_alias = llms.get_model_pricing(alias)
+                self.assertEqual(inp_alias, 10.0)
+                self.assertEqual(outp_alias, 50.0)
+
     # --- suggest_corrected_captions ---
 
     @patch("google.genai.Client")

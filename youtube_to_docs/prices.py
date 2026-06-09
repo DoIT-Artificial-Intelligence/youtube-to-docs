@@ -100,6 +100,14 @@ PRICES = {
             "input_cached": None,
         },
         {
+            "id": "claude-fable-5",
+            "vendor": "anthropic",
+            "name": "Claude Fable 5",
+            "input": 10.0,
+            "output": 50.0,
+            "input_cached": None,
+        },
+        {
             "id": "gemini-3.1-pro-preview",
             "vendor": "google",
             "name": "Gemini 3.1 Pro \u2264200k",
@@ -336,5 +344,7 @@ PRICES = {
         "gcp-chirp3": "chirp_3",
         "aws-translate": "aws-translate",
         "gcp-translate": "gcp-translate",
+        "anthropic-5-fable": "claude-fable-5",
+        "anthrophic-5-fable": "claude-fable-5",
     },
 }
