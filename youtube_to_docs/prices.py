@@ -70,33 +70,17 @@ PRICES = {
         {
             "id": "claude-sonnet-4.6",
             "vendor": "anthropic",
-            "name": "Claude Sonnet 4.6 \u2264200k",
+            "name": "Claude Sonnet 4.6",
             "input": 3,
             "output": 15,
             "input_cached": None,
         },
         {
-            "id": "claude-sonnet-4.6-200k",
-            "vendor": "anthropic",
-            "name": "Claude Sonnet 4.6 >200k",
-            "input": 6,
-            "output": 22.5,
-            "input_cached": None,
-        },
-        {
             "id": "claude-opus-4.8",
             "vendor": "anthropic",
-            "name": "Claude Opus 4.8 \u2264200k",
+            "name": "Claude Opus 4.8",
             "input": 5,
             "output": 25,
-            "input_cached": None,
-        },
-        {
-            "id": "claude-opus-4.8-200k",
-            "vendor": "anthropic",
-            "name": "Claude Opus 4.8 >200k",
-            "input": 10,
-            "output": 37.5,
             "input_cached": None,
         },
         {
@@ -110,17 +94,9 @@ PRICES = {
         {
             "id": "gemini-3.1-pro-preview",
             "vendor": "google",
-            "name": "Gemini 3.1 Pro \u2264200k",
+            "name": "Gemini 3.1 Pro",
             "input": 2,
             "output": 12,
-            "input_cached": None,
-        },
-        {
-            "id": "gemini-3.1-pro-preview-200k",
-            "vendor": "google",
-            "name": "Gemini 3.1 Pro >200k",
-            "input": 4,
-            "output": 18,
             "input_cached": None,
         },
         {
@@ -150,7 +126,7 @@ PRICES = {
         {
             "id": "gpt-5.5",
             "vendor": "openai",
-            "name": "GPT-5.5 ≤272k",
+            "name": "GPT-5.5",
             "input": 5.0,
             "output": 30.0,
             "input_cached": 0.5,
@@ -158,7 +134,7 @@ PRICES = {
         {
             "id": "gpt-5.4",
             "vendor": "openai",
-            "name": "GPT-5.4 ≤272k",
+            "name": "GPT-5.4",
             "input": 2.5,
             "output": 15.0,
             "input_cached": 0.25,
