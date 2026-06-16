@@ -320,6 +320,16 @@ class VertexProvider(BaseProvider, LLMProvider, MultimodalProvider):
             actual_model_name = self.model_name.replace("vertex-", "")
 
             if actual_model_name.startswith("claude"):
+                # Map unversioned Vertex Claude model names to their default
+                # versioned counterparts
+                claude_defaults = {
+                    "claude-haiku-4-5": "claude-haiku-4-5@20251001",
+                    "claude-sonnet-4-5": "claude-sonnet-4-5@20250929",
+                }
+                actual_model_name = claude_defaults.get(
+                    actual_model_name, actual_model_name
+                )
+
                 from anthropic import AnthropicVertex
 
                 vertex_location = os.environ.get("VERTEX_LOCATION", "us-east5")
