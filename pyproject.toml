@@ -16,7 +16,7 @@ test = [
 
 [project]
 name = "youtube-to-docs"
-version = "0.0.103"
+version = "0.0.104"
 description = "Convert YouTube videos into structured docs, summaries, audio, and visual assets for easier discovery"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -46,6 +46,7 @@ gcp = [
     "google-cloud-storage",
     "google-cloud-texttospeech",
     "google-cloud-translate>=3.0.0",
+    "anthropic[vertex]",
 ]
 workspace = [
     "google-auth-oauthlib",

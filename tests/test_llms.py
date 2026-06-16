@@ -39,24 +39,24 @@ class TestLLMs(unittest.TestCase):
         self.assertEqual(in_tokens, 100)
         self.assertEqual(out_tokens, 50)
 
-    @patch("google.auth.transport.requests.AuthorizedSession")
+    @patch("anthropic.AnthropicVertex")
     @patch("google.auth.default")
-    def test_generate_summary_vertex(self, mock_auth, mock_authed_session):
+    def test_generate_summary_vertex(self, mock_auth, mock_anthropic_vertex):
         mock_creds = MagicMock()
-        mock_creds.token = "fake_token"
-        mock_creds.expired = False
         mock_auth.return_value = (mock_creds, "proj")
 
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {
-            "content": [{"text": "Vertex Summary"}],
-            "usage": {"input_tokens": 100, "output_tokens": 50},
-        }
+        mock_client = MagicMock()
+        mock_anthropic_vertex.return_value = mock_client
 
-        # Mock the post method of the AuthorizedSession instance.
-        mock_session_instance = mock_authed_session.return_value
-        mock_session_instance.post.return_value = mock_resp
+        mock_message = MagicMock()
+        mock_block = MagicMock()
+        mock_block.type = "text"
+        mock_block.text = "Vertex Summary"
+        mock_message.content = [mock_block]
+        mock_message.usage.input_tokens = 100
+        mock_message.usage.output_tokens = 50
+
+        mock_client.messages.create.return_value = mock_message
 
         summary, in_tokens, out_tokens = llms.generate_summary(
             "vertex-claude-3-5", "transcript", "Title", "url"

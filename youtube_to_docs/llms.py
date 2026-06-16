@@ -315,58 +315,47 @@ class VertexProvider(BaseProvider, LLMProvider, MultimodalProvider):
 
             import google.auth
             from google.auth.exceptions import RefreshError
-            from google.auth.transport.requests import AuthorizedSession
 
             vertex_project_id = os.environ["PROJECT_ID"]
             actual_model_name = self.model_name.replace("vertex-", "")
 
             if actual_model_name.startswith("claude"):
-                endpoint = (
-                    "https://us-east5-aiplatform.googleapis.com/v1/"
-                    f"projects/{vertex_project_id}/locations/us-east5/"
-                    f"publishers/anthropic/models/{actual_model_name}:rawPredict"
-                )
-                payload = {
-                    "anthropic_version": "vertex-2023-10-16",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 64_000,
-                    "stream": False,
-                }
-                headers = {"Content-Type": "application/json; charset=utf-8"}
+                from anthropic import AnthropicVertex
 
-                vertex_api_key = os.environ.get("VERTEXAI_API_KEY")
-                response = None
+                vertex_location = os.environ.get("VERTEX_LOCATION", "us-east5")
 
-                if vertex_api_key:
-                    response = requests.post(
-                        endpoint,
-                        json=payload,
-                        headers=headers,
-                        params={"key": vertex_api_key},
+                def make_anthropic_call(creds):
+                    client = AnthropicVertex(
+                        project_id=vertex_project_id,
+                        region=vertex_location,
+                        credentials=creds,
                     )
-                    if response.status_code != 200:
-                        print(
-                            f"Vertex API Key failed (Status {response.status_code})."
-                            " Falling back to ADC..."
-                        )
-                        response = None
+                    return client.messages.create(
+                        model=actual_model_name,
+                        max_tokens=8192,
+                        messages=[{"role": "user", "content": prompt}],
+                    )
 
-                if response is None:
-                    res = get_gcp_client(google.auth.default, "Vertex AI Credentials")
-                    if res is None:
-                        return (
-                            "Error: Vertex AI Credentials could not be initialized.",
-                            0,
-                            0,
-                        )
-                    vertex_credentials, _ = res
-                    authed_session = AuthorizedSession(vertex_credentials)
+                res = get_gcp_client(google.auth.default, "Vertex AI Credentials")
+                if res is None:
+                    return (
+                        "Error: Vertex AI Credentials could not be initialized.",
+                        0,
+                        0,
+                    )
+                vertex_credentials, _ = res
 
-                    try:
-                        response = authed_session.post(
-                            endpoint, json=payload, headers=headers
-                        )
-                    except RefreshError:
+                try:
+                    message = make_anthropic_call(vertex_credentials)
+                except Exception as e:
+                    from google.auth.exceptions import RefreshError
+
+                    is_refresh_error = (
+                        isinstance(e, RefreshError)
+                        or "RefreshError" in str(e)
+                        or "expired" in str(e).lower()
+                    )
+                    if is_refresh_error:
                         print(
                             "Vertex AI Credentials expired. Launching gcloud login..."
                         )
@@ -381,35 +370,26 @@ class VertexProvider(BaseProvider, LLMProvider, MultimodalProvider):
                             if res is None:
                                 return "Error: Re-authentication failed.", 0, 0
                             vertex_credentials, _ = res
-                            authed_session = AuthorizedSession(vertex_credentials)
-                            response = authed_session.post(
-                                endpoint, json=payload, headers=headers
-                            )
-                        except Exception as e:
-                            error_msg = f"Re-authentication failed: {e}"
+                            message = make_anthropic_call(vertex_credentials)
+                        except Exception as re_err:
+                            error_msg = f"Re-authentication failed: {re_err}"
                             print(error_msg)
                             return f"Error: {error_msg}", 0, 0
-
-                if response.status_code == 200:
-                    response_json = response.json()
-                    content_blocks = response_json.get("content", [])
-                    if (
-                        content_blocks
-                        and isinstance(content_blocks, list)
-                        and "text" in content_blocks[0]
-                    ):
-                        response_text = content_blocks[0]["text"]
                     else:
-                        response_text = f"Unexpected response format: {response.text}"
+                        raise e
 
-                    usage = response_json.get("usage", {})
-                    input_tokens = usage.get("input_tokens", 0)
-                    output_tokens = usage.get("output_tokens", 0)
-                else:
-                    response_text = (
-                        f"Vertex API Error {response.status_code}: {response.text}"
+                if message.content:
+                    response_text = "".join(
+                        block.text
+                        for block in message.content
+                        if getattr(block, "type", None) == "text"
                     )
-                    print(response_text)
+                else:
+                    response_text = f"Unexpected response format: {message}"
+
+                if message.usage:
+                    input_tokens = message.usage.input_tokens or 0
+                    output_tokens = message.usage.output_tokens or 0
             elif actual_model_name.startswith("gemma"):
                 raise NotImplementedError(
                     f"Vertex AI Gemma models ('{self.model_name}') require a "
@@ -422,12 +402,21 @@ class VertexProvider(BaseProvider, LLMProvider, MultimodalProvider):
                 from google.genai import types
 
                 vertex_location = os.environ.get("VERTEX_LOCATION", "us-east5")
-                client = genai.Client(
-                    vertexai=True,
-                    project=vertex_project_id,
-                    location=vertex_location,
-                    http_options=types.HttpOptions(api_version="v1"),
+                vertex_api_key = os.environ.get("VERTEXAI_API_KEY") or os.environ.get(
+                    "VERTEX_API_KEY"
                 )
+                if vertex_api_key:
+                    client = genai.Client(
+                        vertexai=True,
+                        api_key=vertex_api_key,
+                    )
+                else:
+                    client = genai.Client(
+                        vertexai=True,
+                        project=vertex_project_id,
+                        location=vertex_location,
+                        http_options=types.HttpOptions(api_version="v1"),
+                    )
                 response = client.models.generate_content(
                     model=actual_model_name,
                     contents=prompt,
@@ -473,12 +462,21 @@ class VertexProvider(BaseProvider, LLMProvider, MultimodalProvider):
 
             vertex_project_id = os.environ["PROJECT_ID"]
             vertex_location = os.environ.get("VERTEX_LOCATION", "us-east5")
-            client = genai.Client(
-                vertexai=True,
-                project=vertex_project_id,
-                location=vertex_location,
-                http_options=types.HttpOptions(api_version="v1"),
+            vertex_api_key = os.environ.get("VERTEXAI_API_KEY") or os.environ.get(
+                "VERTEX_API_KEY"
             )
+            if vertex_api_key:
+                client = genai.Client(
+                    vertexai=True,
+                    api_key=vertex_api_key,
+                )
+            else:
+                client = genai.Client(
+                    vertexai=True,
+                    project=vertex_project_id,
+                    location=vertex_location,
+                    http_options=types.HttpOptions(api_version="v1"),
+                )
 
             prompt = (
                 f"Please provide a descriptive alt text for this infographic "
