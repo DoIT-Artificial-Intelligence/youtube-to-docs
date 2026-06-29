@@ -70,6 +70,37 @@ class TestTranscript(unittest.TestCase):
         ids = transcript.resolve_video_ids("PL123", mock_service)
         self.assertEqual(ids, ["vid1", "vid2"])
 
+    def test_extract_playlist_id_bare(self):
+        self.assertEqual(transcript.extract_playlist_id("PL123abc"), "PL123abc")
+        self.assertEqual(transcript.extract_playlist_id("UU123abc"), "UU123abc")
+
+    def test_extract_playlist_id_with_slice(self):
+        self.assertEqual(transcript.extract_playlist_id("PL123abcn=0:5"), "PL123abc")
+
+    def test_extract_playlist_id_from_url(self):
+        url = "https://www.youtube.com/playlist?list=PL65XgbSILalU"
+        self.assertEqual(transcript.extract_playlist_id(url), "PL65XgbSILalU")
+
+    def test_extract_playlist_id_non_playlist(self):
+        self.assertIsNone(transcript.extract_playlist_id("KuPc06JgI_A"))
+        self.assertIsNone(transcript.extract_playlist_id(""))
+
+    def test_get_playlist_title_no_service(self):
+        self.assertIsNone(transcript.get_playlist_title("PL123", None))
+
+    def test_get_playlist_title_success(self):
+        mock_service = MagicMock()
+        mock_service.playlists().list().execute.return_value = {
+            "items": [{"snippet": {"title": "Code for America Summit 2026 Recap"}}]
+        }
+        title = transcript.get_playlist_title("PL123", mock_service)
+        self.assertEqual(title, "Code for America Summit 2026 Recap")
+
+    def test_get_playlist_title_not_found(self):
+        mock_service = MagicMock()
+        mock_service.playlists().list().execute.return_value = {"items": []}
+        self.assertIsNone(transcript.get_playlist_title("PL123", mock_service))
+
     @patch("youtube_to_docs.transcript.build")
     def test_resolve_video_ids_channel_handle(self, mock_build):
         mock_service = MagicMock()

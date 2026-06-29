@@ -12,6 +12,7 @@ mcp = FastMCP("youtube-to-docs")
 def process_video(
     url: str,
     output_file: str = "youtube-to-docs-artifacts/youtube-docs.csv",
+    hugging_face_dataset: str | None = None,
     transcript_source: str = "youtube",
     model: str | None = None,
     tts_model: str | None = None,
@@ -39,8 +40,16 @@ def process_video(
             Defaults to 'youtube-to-docs-artifacts/youtube-docs.csv'.
             Can also be 'workspace' or 'w' to store to Google Drive,
             'sharepoint' or 's' to store to Microsoft SharePoint,
+            'hf' to store to a Hugging Face dataset (see hugging_face_dataset),
             'memory' or 'm' to keep artifacts in memory (no files on disk),
             or 'none' or 'n' to skip saving to a file (results will be in the log).
+        hugging_face_dataset: The Hugging Face dataset repository to store artifacts
+            in when output_file is 'hf'. Can be a full repo id (e.g.
+            'username/my-dataset') or a plain name (e.g.
+            'Code for America Summit 2026 Recap') which is slugified and namespaced
+            under the authenticated user. If omitted and the input is a playlist,
+            the playlist's title is used as the dataset name. Requires the HF_TOKEN
+            environment variable.
         transcript_source: The transcript source to use. 'youtube' (default)
             fetches existing transcripts. Provide an AI model name
             (e.g., 'gemini-3.1-flash-lite') to perform STT on extracted audio.
@@ -88,6 +97,9 @@ def process_video(
         "--transcript",
         transcript_source,
     ]
+
+    if hugging_face_dataset:
+        args.extend(["--hugging-face-dataset", hugging_face_dataset])
 
     if translate:
         args.extend(["--translate", translate])

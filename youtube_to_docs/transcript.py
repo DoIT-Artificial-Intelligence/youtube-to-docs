@@ -171,6 +171,51 @@ def resolve_video_ids(video_id_input: str, youtube_service: Optional[Any]) -> Li
     return video_ids
 
 
+def extract_playlist_id(video_id_input: str) -> Optional[str]:
+    """Return the playlist ID from the input, or None if it is not a playlist.
+
+    Handles bare playlist IDs (``PL``/``UU`` prefixed), the ``n=`` slice suffix,
+    and full URLs containing a ``list=`` query parameter.
+    """
+    if not video_id_input:
+        return None
+
+    # Full URL with a list= query parameter.
+    match = re.search(r"[?&]list=([0-9A-Za-z_-]+)", video_id_input)
+    if match:
+        candidate = match.group(1)
+    else:
+        candidate = video_id_input
+
+    # Strip the optional n= slice suffix (e.g. "PL...n=0:5").
+    candidate = candidate.split("n=")[0]
+
+    if candidate.startswith("PL") or candidate.startswith("UU"):
+        return candidate
+    return None
+
+
+def get_playlist_title(
+    playlist_id: str, youtube_service: Optional[Any]
+) -> Optional[str]:
+    """Fetch the human-readable title of a YouTube playlist.
+
+    Returns None if the title cannot be retrieved (no API key, unknown
+    playlist, or an API error).
+    """
+    if not youtube_service:
+        return None
+    try:
+        service = cast(Any, youtube_service)
+        response = service.playlists().list(part="snippet", id=playlist_id).execute()
+        items = response.get("items", [])
+        if items:
+            return items[0]["snippet"]["title"]
+    except Exception as e:
+        print(f"Warning: Could not fetch playlist title for {playlist_id}: {e}")
+    return None
+
+
 def get_video_details(
     video_id: str, youtube_service: Optional[Any]
 ) -> Optional[Tuple[str, str, str, str, str, str, str, float]]:

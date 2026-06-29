@@ -1403,3 +1403,198 @@ class MemoryStorage(Storage):
                 f"{media}; charset=utf-8",
             )
         raise FileNotFoundError(f"MemoryStorage: not found: {path}")
+
+
+class HuggingFaceStorage(Storage):
+    """Implementation of Storage for a Hugging Face Hub dataset repository.
+
+    Artifacts are committed as files to a dataset repo. The repo is selected via
+    the ``--hugging-face-dataset`` argument (a full ``namespace/name`` id or a
+    plain name like ``"Code for America Summit 2026 Recap"`` which is slugified
+    and namespaced under the authenticated user). Authentication uses the
+    ``HF_TOKEN`` environment variable.
+    """
+
+    def __init__(self, dataset: str):
+        from huggingface_hub import HfApi
+
+        token = os.environ.get("HF_TOKEN")
+        if not token:
+            raise ValueError(
+                "HF_TOKEN environment variable is required for Hugging Face storage."
+            )
+        if not dataset:
+            raise ValueError(
+                "A dataset name is required for Hugging Face storage "
+                "(use --hugging-face-dataset, or pass a playlist to use its "
+                "title as the dataset name)."
+            )
+
+        self.token = token
+        self.api = HfApi(token=token)
+        self.repo_id = self._resolve_repo_id(dataset)
+        self.api.create_repo(
+            repo_id=self.repo_id,
+            repo_type="dataset",
+            exist_ok=True,
+            token=token,
+        )
+        rprint(
+            f"Using Hugging Face dataset: https://huggingface.co/datasets/{self.repo_id}"
+        )
+        # Cache of paths known to exist (after a write) to avoid extra API calls.
+        self._exists_cache: dict[str, bool] = {}
+
+    @staticmethod
+    def _slugify(name: str) -> str:
+        """Convert a free-form dataset name into a valid HF repo name."""
+        slug = re.sub(r"[^A-Za-z0-9._-]+", "-", name.strip())
+        slug = re.sub(r"-+", "-", slug).strip("-._")
+        return slug or "youtube-to-docs"
+
+    def _resolve_repo_id(self, dataset: str) -> str:
+        if "/" in dataset:
+            return dataset
+        slug = self._slugify(dataset)
+        try:
+            username = self.api.whoami(token=self.token).get("name")
+        except Exception:
+            username = None
+        return f"{username}/{slug}" if username else slug
+
+    @staticmethod
+    def _norm(path: str) -> str:
+        """Normalise to a forward-slash, repo-relative path in the dataset."""
+        path = path.replace("\\", "/")
+        norm = os.path.normpath(path).replace("\\", "/")
+        if norm == ".":
+            return ""
+        if norm.startswith("./"):
+            norm = norm[2:]
+        return norm
+
+    def _path_from_url(self, url: str) -> str:
+        # .../datasets/{repo_id}/(blob|resolve)/{revision}/{path_in_repo}
+        match = re.search(r"/(?:blob|resolve)/[^/]+/(.+)$", url)
+        return match.group(1) if match else url
+
+    def _url(self, path: str) -> str:
+        norm = self._norm(path)
+        return f"https://huggingface.co/datasets/{self.repo_id}/blob/main/{quote(norm)}"
+
+    def _resolve_path(self, path: str) -> str:
+        return (
+            self._path_from_url(path) if path.startswith("http") else self._norm(path)
+        )
+
+    def exists(self, path: str) -> bool:
+        if path.startswith("http"):
+            return True
+        norm = self._norm(path)
+        if self._exists_cache.get(norm):
+            return True
+        try:
+            return self.api.file_exists(
+                repo_id=self.repo_id,
+                filename=norm,
+                repo_type="dataset",
+                token=self.token,
+            )
+        except Exception:
+            return False
+
+    def _download(self, path: str) -> str:
+        from huggingface_hub import hf_hub_download
+
+        return hf_hub_download(
+            repo_id=self.repo_id,
+            filename=self._resolve_path(path),
+            repo_type="dataset",
+            token=self.token,
+        )
+
+    def read_text(self, path: str) -> str:
+        with open(self._download(path), "r", encoding="utf-8") as f:
+            return f.read()
+
+    def read_bytes(self, path: str) -> bytes:
+        with open(self._download(path), "rb") as f:
+            return f.read()
+
+    def _upload_bytes(self, path: str, content: bytes) -> str:
+        norm = self._norm(path)
+        self.api.upload_file(
+            path_or_fileobj=content,
+            path_in_repo=norm,
+            repo_id=self.repo_id,
+            repo_type="dataset",
+            token=self.token,
+        )
+        self._exists_cache[norm] = True
+        return self._url(norm)
+
+    def write_text(self, path: str, content: str) -> str:
+        return self._upload_bytes(path, content.encode("utf-8"))
+
+    def write_bytes(self, path: str, content: bytes) -> str:
+        return self._upload_bytes(path, content)
+
+    def load_dataframe(self, path: str) -> Optional[pl.DataFrame]:
+        if not self.exists(path):
+            return None
+        try:
+            return pl.read_csv(self._download(path))
+        except Exception as e:
+            print(f"Error loading dataframe from Hugging Face: {e}")
+            return None
+
+    def save_dataframe(self, df: pl.DataFrame, path: str) -> str:
+        buffer = io.BytesIO()
+        df.write_csv(buffer)
+        return self._upload_bytes(path, buffer.getvalue())
+
+    def ensure_directory(self, path: str) -> None:
+        # Hugging Face repos have no standalone directories; paths are created
+        # implicitly when files are committed.
+        pass
+
+    def upload_file(
+        self, local_path: str, target_path: str, content_type: Optional[str] = None
+    ) -> str:
+        norm = self._norm(target_path)
+        self.api.upload_file(
+            path_or_fileobj=local_path,
+            path_in_repo=norm,
+            repo_id=self.repo_id,
+            repo_type="dataset",
+            token=self.token,
+        )
+        self._exists_cache[norm] = True
+        return self._url(norm)
+
+    def get_full_path(self, path: str) -> str:
+        return path if path.startswith("http") else self._url(path)
+
+    def get_name(self, path: str) -> str:
+        if path.startswith("http"):
+            return os.path.basename(self._path_from_url(path))
+        return os.path.basename(path)
+
+    def get_local_file(
+        self, path: str, download_dir: Optional[str] = None
+    ) -> Optional[str]:
+        if not self.exists(path):
+            return None
+        try:
+            cached_path = self._download(path)
+        except Exception as e:
+            print(f"Error downloading {path} from Hugging Face: {e}")
+            return None
+
+        if not download_dir:
+            return cached_path
+
+        os.makedirs(download_dir, exist_ok=True)
+        local_path = os.path.join(download_dir, os.path.basename(cached_path))
+        shutil.copy2(cached_path, local_path)
+        return local_path

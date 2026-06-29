@@ -91,6 +91,7 @@ def run_regression(
     combine_info_audio: bool = False,
     suggest_corrected_captions: Optional[str] = None,
     post_process: Optional[str] = None,
+    hugging_face_dataset: Optional[str] = None,
 ):
     """Runs the full regression suite for a single video."""
     translate_lang = translate.rsplit("-", 1)[1] if translate else None
@@ -121,6 +122,9 @@ def run_regression(
         cmd.extend(["--translate", translate])
 
     cmd.extend(["-o", output_target])
+
+    if hugging_face_dataset:
+        cmd.extend(["--hugging-face-dataset", hugging_face_dataset])
 
     if no_youtube_summary:
         cmd.append("-nys")
@@ -162,6 +166,7 @@ def verify_output(
     verbose: bool = False,
     combine_info_audio: bool = False,
     post_process: Optional[str] = None,
+    hugging_face_dataset: Optional[str] = None,
 ):
     """Verifies that the output CSV exists and contains expected columns and files."""
     translate_lang = translate.rsplit("-", 1)[1] if translate else None
@@ -208,6 +213,13 @@ def verify_output(
 
         storage = M365Storage()
         df = storage.load_dataframe("youtube-docs.csv")
+    elif output_target == "hf":
+        print(f"Loading from Hugging Face dataset: {hugging_face_dataset}")
+        sys.path.append(os.getcwd())
+        from youtube_to_docs.storage import HuggingFaceStorage
+
+        hf_storage = HuggingFaceStorage(hugging_face_dataset)
+        df = hf_storage.load_dataframe("youtube-docs.csv")
     elif output_target and (
         len(output_target) > 20
         and "." not in output_target

@@ -36,7 +36,6 @@ aws = [
     "boto3>=1.42.49",
     "botocore[crt]",
 ]
-
 azure = [
     "openai>=1.56.0",
 ]
@@ -60,6 +59,9 @@ m365 = [
     "pypandoc>=1.16.2",
     "pypandoc_binary>=1.16.2",
 ]
+huggingface = [
+    "huggingface_hub>=1.21.0",
+]
 audio = [
     "yt-dlp>=2026.03.17",
 ]
@@ -71,7 +73,7 @@ app = [
     "uvicorn[standard]>=0.41.0",
 ]
 all = [
-    "youtube-to-docs[aws,azure,gcp,workspace,m365,audio,video,app]",
+    "youtube-to-docs[aws,azure,gcp,workspace,m365,huggingface,audio,video,app]",
 ]
 
 [project.scripts]

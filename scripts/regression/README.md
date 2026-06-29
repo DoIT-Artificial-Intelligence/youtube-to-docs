@@ -37,6 +37,8 @@ This directory contains regression tests for the `youtube-to-docs` tool.
 - **[regression_workspace.py](regression_workspace.py)**: Stores results in Google Drive (folder `youtube-to-docs-test-drive`).
 - **[regression_workspace_es.py](regression_workspace_es.py)**: Spanish run stored in Google Drive using Gemini Pro models.
 - **[regression_sharepoint.py](regression_sharepoint.py)**: Stores results in SharePoint/OneDrive. Uses `foundry-gpt-5-mini` for summarization.
+- **[regression_huggingface.py](regression_huggingface.py)**: Processes a single video and stores results in a Hugging Face dataset (`-o hf`). The cheap smoke test for HF storage. Requires the `HF_TOKEN` env var (write token). Override the dataset with `HF_DATASET` or the YouTube target with `HF_VIDEO`.
+- **[regression_huggingface_playlist.py](regression_huggingface_playlist.py)**: Processes the "Code for America Summit 2026 Recap" YouTube playlist (`PL65XgbSILalUtRMlH4gG8EMY9_yUlSi0_`) and stores results in a same-named Hugging Face dataset (`-o hf`). Exercises the full playlist use case (more expensive — every video is processed). Same env overrides as above.
 
 ### Translation (AWS / GCP)
 
@@ -85,6 +87,12 @@ uv run --extra workspace --extra gcp python scripts/regression/regression_worksp
 
 # SharePoint storage with azure model
 uv run --extra m365 --extra azure python scripts/regression/regression_sharepoint.py
+
+# Hugging Face dataset storage — single video (requires HF_TOKEN)
+uv run --extra huggingface --extra gcp python scripts/regression/regression_huggingface.py
+
+# Hugging Face dataset storage — playlist (requires HF_TOKEN)
+uv run --extra huggingface --extra gcp python scripts/regression/regression_huggingface_playlist.py
 
 # Two videos (gcp model)
 uv run --extra gcp python scripts/regression/regression_two_vids.py

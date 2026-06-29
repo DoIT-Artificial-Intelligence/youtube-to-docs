@@ -25,6 +25,7 @@ To keep the installation light, some features are optional. You can enable them 
 - `video`: Required for video generation (uses `static-ffmpeg`).
 - `workspace`: Required for Google Drive integration.
 - `m365`: Required for Microsoft SharePoint/OneDrive integration.
+- `huggingface`: Required for storing artifacts to a Hugging Face dataset (uses `huggingface_hub`).
 - `aws`: AWS Bedrock support.
 - `azure`: Required for Azure OpenAI models.
 - `gcp`: Required for Google Gemini, Vertex AI models, and GCP Cloud TTS (uses `google-genai` and google-cloud libs).

@@ -29,6 +29,7 @@ from youtube_to_docs.providers import (
 )
 from youtube_to_docs.storage import (
     GoogleDriveStorage,
+    HuggingFaceStorage,
     LocalStorage,
     M365Storage,
     MemoryStorage,
@@ -36,8 +37,10 @@ from youtube_to_docs.storage import (
 )
 from youtube_to_docs.transcript import (
     extract_audio,
+    extract_playlist_id,
     fetch_transcript,
     format_as_srt,
+    get_playlist_title,
     get_video_details,
     get_youtube_service,
     resolve_video_ids,
@@ -100,8 +103,23 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
             "Local file path to save the output CSV file.\n"
             "`workspace` or `w` to store to Google Drive or a workspace folder ID.\n"
             "`sharepoint` or `s` to store to Microsoft SharePoint.\n"
+            "`hf` to store to a Hugging Face dataset (see --hugging-face-dataset).\n"
             "`memory` or `m` to keep artifacts in memory (no files on disk).\n"
             "`none` or `n` to skip saving to a file (results will be in the log)."
+        ),
+    )
+    parser.add_argument(
+        "--hugging-face-dataset",
+        default=None,
+        help=(
+            "The Hugging Face dataset repository to store artifacts in when "
+            "`--outfile hf` is used. \n"
+            "Can be a full repo id (e.g. `username/my-dataset`) or a plain name "
+            "(e.g. `Code for America Summit 2026 Recap`) which is slugified and "
+            "namespaced under the authenticated user. \n"
+            "If omitted and the input is a playlist, the playlist's title is used "
+            "as the dataset name. \n"
+            "Requires the `HF_TOKEN` environment variable."
         ),
     )
     parser.add_argument(
@@ -321,6 +339,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     transcript_arg = args.transcript
     video_id_input = args.video_id
     outfile = args.outfile
+    hugging_face_dataset = args.hugging_face_dataset
     model_names_arg = args.model
     tts_arg = args.tts
     infographic_arg = args.infographic
@@ -366,6 +385,24 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     elif outfile in ("sharepoint", "s"):
         vprint(f"Using SharePoint storage. Output: {outfile}")
         storage = M365Storage()
+        outfile_path = "youtube-docs.csv"
+        base_dir = "."
+    elif outfile.lower() == "hf":
+        # If no dataset name was given and the input is a playlist, fall back to
+        # the playlist's title as the dataset name.
+        hf_dataset = hugging_face_dataset
+        if not hf_dataset:
+            playlist_id = extract_playlist_id(video_id_input)
+            if playlist_id:
+                playlist_title = get_playlist_title(playlist_id, youtube_service)
+                if playlist_title:
+                    vprint(
+                        f"Using playlist title as Hugging Face dataset: "
+                        f"{playlist_title}"
+                    )
+                    hf_dataset = playlist_title
+        vprint(f"Using Hugging Face storage. Dataset: {hf_dataset}")
+        storage = HuggingFaceStorage(hf_dataset)
         outfile_path = "youtube-docs.csv"
         base_dir = "."
     elif outfile in ("workspace", "w") or (
@@ -431,6 +468,8 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     rprint(f"Processing Videos: {video_ids}")
     if outfile in ("s", "sharepoint"):
         display_outfile = "SharePoint"
+    elif isinstance(storage, HuggingFaceStorage):
+        display_outfile = f"Hugging Face dataset ({storage.repo_id})"
     elif outfile in ("w", "workspace"):
         display_outfile = "Google Drive (Workspace)"
     elif outfile in ("n", "none"):
