@@ -3,6 +3,9 @@ name: PyPI Publish
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build-n-publish:
     name: Build and publish to PyPI
