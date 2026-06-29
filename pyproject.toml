@@ -63,7 +63,7 @@ huggingface = [
     "huggingface_hub>=1.21.0",
 ]
 audio = [
-    "yt-dlp>=2026.03.17",
+    "yt-dlp>=2026.6.9",
 ]
 video = [
     "static-ffmpeg>=2.13",
@@ -79,6 +79,16 @@ all = [
 [project.scripts]
 youtube-to-docs = "youtube_to_docs.main:main"
 youtube-to-docs-app = "youtube_to_docs.app:start_server"
+
+[tool.uv]
+# Constraints to pull transitive dependencies up to patched, non-vulnerable
+# versions (Dependabot alerts). These are not direct dependencies.
+constraint-dependencies = [
+    "starlette>=1.3.1",
+    "cryptography>=48.0.1",
+    "pydantic-settings>=2.14.2",
+    "python-multipart>=0.0.31",
+]
 
 [tool.setuptools.package-data]
 youtube_to_docs = ["static/**"]
