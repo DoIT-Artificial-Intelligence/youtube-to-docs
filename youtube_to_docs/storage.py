@@ -1444,6 +1444,14 @@ class HuggingFaceStorage(Storage):
         )
         # Cache of paths known to exist (after a write) to avoid extra API calls.
         self._exists_cache: dict[str, bool] = {}
+        # Artifacts are staged in a local folder and committed in batches via
+        # ``upload_folder`` (one commit per flush) rather than one commit per
+        # file. This keeps a many-video playlist well under Hugging Face's
+        # per-hour commit rate limit. Reads are served from the staging folder
+        # first, falling back to the Hub (e.g. when resuming a prior run).
+        self._staging_dir = tempfile.mkdtemp(prefix="ytd-hf-")
+        self._dirty = False
+        atexit.register(self.flush)
 
     @staticmethod
     def _slugify(name: str) -> str:
@@ -1487,11 +1495,35 @@ class HuggingFaceStorage(Storage):
             self._path_from_url(path) if path.startswith("http") else self._norm(path)
         )
 
+    def _staged_path(self, norm: str) -> str:
+        return os.path.join(self._staging_dir, norm)
+
+    def flush(self) -> None:
+        """Commit all staged artifacts to the Hub in a single commit.
+
+        Called at each progress checkpoint (via ``save_dataframe``) and at exit.
+        A no-op when nothing has changed since the last flush, so it is safe to
+        call repeatedly.
+        """
+        if not self._dirty:
+            return
+        self.api.upload_folder(
+            folder_path=self._staging_dir,
+            repo_id=self.repo_id,
+            repo_type="dataset",
+            token=self.token,
+            commit_message="Add youtube-to-docs artifacts",
+        )
+        self._dirty = False
+
     def exists(self, path: str) -> bool:
         if path.startswith("http"):
             return True
         norm = self._norm(path)
         if self._exists_cache.get(norm):
+            return True
+        if os.path.exists(self._staged_path(norm)):
+            self._exists_cache[norm] = True
             return True
         try:
             return self.api.file_exists(
@@ -1504,11 +1536,15 @@ class HuggingFaceStorage(Storage):
             return False
 
     def _download(self, path: str) -> str:
+        norm = self._resolve_path(path)
+        staged = self._staged_path(norm)
+        if os.path.exists(staged):
+            return staged
         from huggingface_hub import hf_hub_download
 
         return hf_hub_download(
             repo_id=self.repo_id,
-            filename=self._resolve_path(path),
+            filename=norm,
             repo_type="dataset",
             token=self.token,
         )
@@ -1521,23 +1557,21 @@ class HuggingFaceStorage(Storage):
         with open(self._download(path), "rb") as f:
             return f.read()
 
-    def _upload_bytes(self, path: str, content: bytes) -> str:
+    def _stage_bytes(self, path: str, content: bytes) -> str:
         norm = self._norm(path)
-        self.api.upload_file(
-            path_or_fileobj=content,
-            path_in_repo=norm,
-            repo_id=self.repo_id,
-            repo_type="dataset",
-            token=self.token,
-        )
+        staged = self._staged_path(norm)
+        os.makedirs(os.path.dirname(staged) or ".", exist_ok=True)
+        with open(staged, "wb") as f:
+            f.write(content)
         self._exists_cache[norm] = True
+        self._dirty = True
         return self._url(norm)
 
     def write_text(self, path: str, content: str) -> str:
-        return self._upload_bytes(path, content.encode("utf-8"))
+        return self._stage_bytes(path, content.encode("utf-8"))
 
     def write_bytes(self, path: str, content: bytes) -> str:
-        return self._upload_bytes(path, content)
+        return self._stage_bytes(path, content)
 
     def load_dataframe(self, path: str) -> Optional[pl.DataFrame]:
         if not self.exists(path):
@@ -1551,7 +1585,11 @@ class HuggingFaceStorage(Storage):
     def save_dataframe(self, df: pl.DataFrame, path: str) -> str:
         buffer = io.BytesIO()
         df.write_csv(buffer)
-        return self._upload_bytes(path, buffer.getvalue())
+        url = self._stage_bytes(path, buffer.getvalue())
+        # The CSV is written at each progress checkpoint; use it as the trigger
+        # to commit everything staged so far as one commit.
+        self.flush()
+        return url
 
     def ensure_directory(self, path: str) -> None:
         # Hugging Face repos have no standalone directories; paths are created
@@ -1562,14 +1600,12 @@ class HuggingFaceStorage(Storage):
         self, local_path: str, target_path: str, content_type: Optional[str] = None
     ) -> str:
         norm = self._norm(target_path)
-        self.api.upload_file(
-            path_or_fileobj=local_path,
-            path_in_repo=norm,
-            repo_id=self.repo_id,
-            repo_type="dataset",
-            token=self.token,
-        )
+        staged = self._staged_path(norm)
+        os.makedirs(os.path.dirname(staged) or ".", exist_ok=True)
+        if os.path.abspath(local_path) != os.path.abspath(staged):
+            shutil.copy2(local_path, staged)
         self._exists_cache[norm] = True
+        self._dirty = True
         return self._url(norm)
 
     def get_full_path(self, path: str) -> str:

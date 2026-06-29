@@ -50,13 +50,16 @@ class TestHuggingFaceStorage(unittest.TestCase):
             token="secret-token",
         )
 
-    def test_write_text_uploads_and_returns_url(self):
+    def test_write_text_stages_and_returns_url(self):
+        import os
+
         url = self.storage.write_text("summary-files/foo.md", "hello")
-        self.mock_api.upload_file.assert_called_once()
-        kwargs = self.mock_api.upload_file.call_args.kwargs
-        self.assertEqual(kwargs["path_in_repo"], "summary-files/foo.md")
-        self.assertEqual(kwargs["repo_type"], "dataset")
-        self.assertEqual(kwargs["path_or_fileobj"], b"hello")
+        # Writes are staged locally, not committed one-per-file.
+        self.mock_api.upload_file.assert_not_called()
+        staged = os.path.join(self.storage._staging_dir, "summary-files/foo.md")
+        self.assertTrue(os.path.exists(staged))
+        with open(staged, "rb") as f:
+            self.assertEqual(f.read(), b"hello")
         self.assertTrue(
             url.startswith(
                 "https://huggingface.co/datasets/"
@@ -64,18 +67,42 @@ class TestHuggingFaceStorage(unittest.TestCase):
             )
         )
 
+    def test_read_back_staged_write(self):
+        # A staged write is readable without hitting the Hub.
+        self.storage.write_text("summary-files/foo.md", "hello")
+        self.assertEqual(self.storage.read_text("summary-files/foo.md"), "hello")
+
     def test_write_caches_existence(self):
         self.storage.write_bytes("infographic-files/foo.png", b"\x89PNG")
         # exists() should short-circuit via the cache without an API call.
         self.assertTrue(self.storage.exists("infographic-files/foo.png"))
         self.mock_api.file_exists.assert_not_called()
 
-    def test_save_dataframe(self):
+    def test_save_dataframe_flushes_folder(self):
         df = pl.DataFrame({"a": [1, 2]})
         url = self.storage.save_dataframe(df, "youtube-docs.csv")
-        kwargs = self.mock_api.upload_file.call_args.kwargs
-        self.assertEqual(kwargs["path_in_repo"], "youtube-docs.csv")
+        # save_dataframe is the checkpoint: it commits the staged folder once.
+        self.mock_api.upload_folder.assert_called_once()
+        kwargs = self.mock_api.upload_folder.call_args.kwargs
+        self.assertEqual(kwargs["folder_path"], self.storage._staging_dir)
+        self.assertEqual(kwargs["repo_type"], "dataset")
         self.assertIn("youtube-docs.csv", url)
+
+    def test_flush_noop_when_clean(self):
+        # Nothing staged -> no commit.
+        self.storage.flush()
+        self.mock_api.upload_folder.assert_not_called()
+
+    def test_flush_batches_multiple_writes_into_one_commit(self):
+        self.storage.write_text("summary-files/a.md", "a")
+        self.storage.write_text("summary-files/b.md", "b")
+        self.storage.write_bytes("infographic-files/c.png", b"\x89PNG")
+        self.storage.flush()
+        # All three artifacts go up in a single commit.
+        self.mock_api.upload_folder.assert_called_once()
+        # A second flush with nothing new staged is a no-op.
+        self.storage.flush()
+        self.mock_api.upload_folder.assert_called_once()
 
     def test_get_full_path_returns_url(self):
         path = self.storage.get_full_path("srt-files/foo.srt")
