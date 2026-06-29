@@ -172,7 +172,7 @@ PRICES = {
             "input_cached": None,
         },
         {
-            "id": "gemini-3-pro-image-preview",
+            "id": "gemini-3-pro-image",
             "vendor": "google",
             "name": "Gemini 3 Pro Image Preview",
             "input": 2.0,
@@ -180,7 +180,7 @@ PRICES = {
             "input_cached": None,
         },
         {
-            "id": "gemini-3.1-flash-image-preview",
+            "id": "gemini-3.1-flash-image",
             "vendor": "google",
             "name": "Gemini 3.1 Flash Image Preview*",
             "input": 30.0,

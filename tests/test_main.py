@@ -701,10 +701,10 @@ class TestMain(unittest.TestCase):
             mock_tts.call_args.args[1], "gemini-3.1-flash-tts-preview-Kore"
         )
 
-        # Check if generate_infographic was called with gemini-3.1-flash-image-preview
+        # Check if generate_infographic was called with gemini-3.1-flash-image
         mock_gen_info.assert_called()
         self.assertEqual(
-            mock_gen_info.call_args.args[0], "gemini-3.1-flash-image-preview"
+            mock_gen_info.call_args.args[0], "gemini-3.1-flash-image"
         )
 
     @patch("youtube_to_docs.main.get_youtube_service")
@@ -808,9 +808,9 @@ class TestMain(unittest.TestCase):
             mock_tts.call_args.args[1], "gemini-3.1-flash-tts-preview-Kore"
         )
 
-        # Check if generate_infographic was called with gemini-3-pro-image-preview
+        # Check if generate_infographic was called with gemini-3-pro-image
         mock_gen_info.assert_called()
-        self.assertEqual(mock_gen_info.call_args.args[0], "gemini-3-pro-image-preview")
+        self.assertEqual(mock_gen_info.call_args.args[0], "gemini-3-pro-image")
 
     @patch("youtube_to_docs.main.get_youtube_service")
     @patch("youtube_to_docs.main.resolve_video_ids")
@@ -913,9 +913,9 @@ class TestMain(unittest.TestCase):
             mock_tts.call_args.args[1], "gemini-3.1-flash-tts-preview-Kore"
         )
 
-        # Check if generate_infographic was called with gemini-3-pro-image-preview
+        # Check if generate_infographic was called with gemini-3-pro-image
         mock_gen_info.assert_called()
-        self.assertEqual(mock_gen_info.call_args.args[0], "gemini-3-pro-image-preview")
+        self.assertEqual(mock_gen_info.call_args.args[0], "gemini-3-pro-image")
 
     @patch("youtube_to_docs.main.get_youtube_service")
     @patch("youtube_to_docs.main.resolve_video_ids")

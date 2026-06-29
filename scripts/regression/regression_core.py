@@ -178,13 +178,13 @@ def verify_output(
     if all_gemini_arg == "gemini-flash":
         model = "gemini-3.1-flash-lite"
         transcript_model = transcript_model or "gemini-3.1-flash-lite"
-        infographic_model = "gemini-3.1-flash-image-preview"
+        infographic_model = "gemini-3.1-flash-image"
         tts_model = "gemini-3.1-flash-tts-preview-Kore"
         no_youtube_summary = True
     elif all_gemini_arg == "gemini-pro":
         model = "gemini-3.1-pro-preview"
         transcript_model = transcript_model or "gemini-3.1-pro-preview"
-        infographic_model = "gemini-3-pro-image-preview"
+        infographic_model = "gemini-3-pro-image"
         tts_model = "gemini-3.1-flash-tts-preview-Kore"
         no_youtube_summary = True
 

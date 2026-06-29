@@ -89,7 +89,7 @@ def test_process_all_args(client):
                 "transcript_source": "gemini-pro",
                 "model": "gemini-3.1-flash-lite",
                 "tts_model": "gemini-3.1-flash-tts-preview-Kore",
-                "infographic_model": "gemini-3.1-flash-image-preview",
+                "infographic_model": "gemini-3.1-flash-image",
                 "alt_text_model": "gemini-3.1-flash-lite",
                 "no_youtube_summary": True,
                 "translate": "gemini-3.1-flash-lite-es",

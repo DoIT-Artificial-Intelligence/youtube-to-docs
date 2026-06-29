@@ -2672,7 +2672,7 @@ requires-dist = [
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'app'", specifier = ">=0.41.0" },
     { name = "xlsxwriter", marker = "extra == 'm365'", specifier = ">=3.2.9" },
     { name = "youtube-to-docs", extras = ["aws", "azure", "gcp", "workspace", "m365", "huggingface", "audio", "video", "app"], marker = "extra == 'all'" },
-    { name = "youtube-transcript-api", specifier = ">=1.2.3" },
+    { name = "youtube-transcript-api", specifier = ">=1.2.4" },
     { name = "yt-dlp", marker = "extra == 'audio'", specifier = ">=2026.6.9" },
 ]
 provides-extras = ["aws", "azure", "gcp", "workspace", "m365", "huggingface", "audio", "video", "app", "all"]

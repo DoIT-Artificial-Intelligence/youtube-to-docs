@@ -360,7 +360,7 @@
               <div class="grid-col-12 tablet:grid-col-6">
                 <label class="usa-label" for="all_suite">Model Suite</label>
                 <button type="button" class="info-btn" onclick="this.nextElementSibling.classList.toggle('show')" aria-label="More info about Model Suite" aria-describedby="tooltip-all-suite">i</button>
-                <div class="info-tooltip" id="tooltip-all-suite" role="tooltip">Shortcut to use a specific model suite for everything.<br><br><strong>gemini-flash:</strong> summarization (gemini-3-flash-preview), TTS (gemini-2.5-flash-preview-tts-Kore), infographic (gemini-3.1-flash-image-preview).<br><strong>gemini-pro:</strong> summarization (gemini-3.1-pro-preview), TTS (gemini-2.5-pro-preview-tts-Kore), infographic (gemini-3-pro-image-preview).<br><strong>gemini-flash-pro-image:</strong> summarization (gemini-3-flash-preview), TTS (gemini-2.5-flash-preview-tts-Kore), infographic (gemini-3-pro-image-preview).<br><strong>gcp-pro:</strong> summarization (gemini-3.1-pro-preview), TTS (gcp-chirp3), infographic (gemini-3-pro-image-preview).<br><br>Also sets "Skip YouTube summary".</div>
+                <div class="info-tooltip" id="tooltip-all-suite" role="tooltip">Shortcut to use a specific model suite for everything.<br><br><strong>gemini-flash:</strong> summarization (gemini-3-flash-preview), TTS (gemini-2.5-flash-preview-tts-Kore), infographic (gemini-3.1-flash-image).<br><strong>gemini-pro:</strong> summarization (gemini-3.1-pro-preview), TTS (gemini-2.5-pro-preview-tts-Kore), infographic (gemini-3-pro-image).<br><strong>gemini-flash-pro-image:</strong> summarization (gemini-3-flash-preview), TTS (gemini-2.5-flash-preview-tts-Kore), infographic (gemini-3-pro-image).<br><strong>gcp-pro:</strong> summarization (gemini-3.1-pro-preview), TTS (gcp-chirp3), infographic (gemini-3-pro-image).<br><br>Also sets "Skip YouTube summary".</div>
                 <select class="usa-select" id="all_suite" name="all_suite">
                   <option value="">None (transcript only)</option>
                 </select>
@@ -386,7 +386,7 @@
               </div>
               <div class="grid-col-12 tablet:grid-col-6">
                 <label class="usa-label" for="infographic_model">Infographic Model</label>
-                <input class="usa-input" id="infographic_model" name="infographic_model" type="text" list="infographic-options" placeholder="e.g. gemini-3.1-flash-image-preview">
+                <input class="usa-input" id="infographic_model" name="infographic_model" type="text" list="infographic-options" placeholder="e.g. gemini-3.1-flash-image">
                 <datalist id="infographic-options"></datalist>
               </div>
             </div>
@@ -523,8 +523,8 @@
   ];
 
   const INFOGRAPHIC_MODELS = [
-    'gemini-3-pro-image-preview',
-    'gemini-3.1-flash-image-preview',
+    'gemini-3-pro-image',
+    'gemini-3.1-flash-image',
   ];
 
   const TTS_MODELS = [

@@ -42,10 +42,10 @@ Use this when the user wants a visual summary or "infographic" representing the 
 - **Model Selection Strategy**:
   - **Pro (High Quality)**: Use if "gemini pro" is requested.
     - `model='gemini-3.1-pro-preview'`
-    - `infographic_model='gemini-3-pro-image-preview'`
+    - `infographic_model='gemini-3-pro-image'`
   - **Flash (Default/Speed/Cost)**: Use if "gemini flash" is requested or no preference is stated.
     - `model='gemini-3.1-flash-lite'`
-    - `infographic_model='gemini-3.1-flash-image-preview'`
+    - `infographic_model='gemini-3.1-flash-image'`
 
 * **Alt Text (Accessibility)**: By default, `process_video` generates multimodal alt text using the summary model (image-to-text) for any created infographic. Use `alt_text_model` to override the model for this step.
 * **Confirmation**: Proceed without asking for extra confirmation unless parameters are missing.
@@ -90,7 +90,7 @@ Use this when the user specifies particular models or output locations.
 | :-------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- | :------------------------- | :------------------------------------------------------------------- |
 | `url`                       | **Required**. YouTube URL, ID, Playlist ID, or Channel Handle.                                                                       | -                          | `https://youtu.be/...`, `@channel`                                   |
 | `model`                     | LLM for summaries/Q&A.                                                                                                               | `gcp` / `azure`            | `gemini-3.1-flash-lite`                                             |
-| `infographic_model`         | Model for generating the infographic image.                                                                                          | `gcp`                      | `gemini-3-pro-image-preview`                                         |
+| `infographic_model`         | Model for generating the infographic image.                                                                                          | `gcp`                      | `gemini-3-pro-image`                                         |
 | `alt_text_model`            | Model for generating multimodal alt text for the infographic.                                                                        | `gcp`                      | `gemini-3.1-flash-lite`                                             |
 | `tts_model`                 | Model for text-to-speech audio.                                                                                                      | `gcp`                      | `gemini-3.1-flash-tts-preview-Kore`, `gcp-chirp3-Kore`               |
 | `all_suite`                 | Shortcut to apply a suite of models.                                                                                                 | `gcp`, `audio`, `video`    | `gemini-pro`, `gemini-flash`                                         |
@@ -106,7 +106,7 @@ Use this when the user specifies particular models or output locations.
 **Action**: Call `youtube-to-docs:process_video(url='...')`
 
 **User**: "Make an infographic for this video using Gemini Pro."
-**Action**: Call `youtube-to-docs:process_video(url='...', model='gemini-3.1-pro-preview', infographic_model='gemini-3-pro-image-preview')`
+**Action**: Call `youtube-to-docs:process_video(url='...', model='gemini-3.1-pro-preview', infographic_model='gemini-3-pro-image')`
 
 **User**: "Do a kitchen sink run on this video in Spanish."
 **Action**: Call `youtube-to-docs:process_video(url='...', all_suite='gemini-pro', combine_infographic_audio=True, verbose=True, translate='gemini-3.1-flash-lite-es')`
