@@ -178,13 +178,13 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
         "-i",
         "--infographic",
         nargs="?",
-        const="gemini-3.1-flash-image",
+        const="gemini-3-pro-image",
         default=None,
         help=(
             "The image model to use for generating an infographic. "
             "If set as a flag without a value, defaults to "
-            "`gemini-3.1-flash-image`. "
-            "e.g. `gemini-3.1-flash-image` or `gemini-3-pro-image`"
+            "`gemini-3-pro-image`. "
+            "e.g. `gemini-3.1-flash-lite-image` or `gemini-3-pro-image`"
         ),
     )
     parser.add_argument(
@@ -235,7 +235,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
             "Supported values: \n"
             "`gemini-flash`: summarization (`gemini-3.1-flash-lite`), "
             "TTS (`gemini-3.1-flash-tts-preview-Kore`), "
-            "and Infographic (`gemini-3.1-flash-image`). \n"
+            "and Infographic (`gemini-3-pro-image`). \n"
             "`gemini-pro`: summarization (`gemini-3.1-pro-preview`), "
             "TTS (`gemini-3.1-flash-tts-preview-Kore`), "
             "and Infographic (`gemini-3-pro-image`). \n"

@@ -703,9 +703,7 @@ class TestMain(unittest.TestCase):
 
         # Check if generate_infographic was called with gemini-3.1-flash-image
         mock_gen_info.assert_called()
-        self.assertEqual(
-            mock_gen_info.call_args.args[0], "gemini-3.1-flash-image"
-        )
+        self.assertEqual(mock_gen_info.call_args.args[0], "gemini-3-pro-image")
 
     @patch("youtube_to_docs.main.get_youtube_service")
     @patch("youtube_to_docs.main.resolve_video_ids")

@@ -176,15 +176,23 @@ PRICES = {
             "vendor": "google",
             "name": "Gemini 3 Pro Image Preview",
             "input": 2.0,
-            "output": 120.0,
+            "output": 134.0,
             "input_cached": None,
         },
         {
             "id": "gemini-3.1-flash-image",
             "vendor": "google",
             "name": "Gemini 3.1 Flash Image Preview*",
-            "input": 30.0,
-            "output": 30.0,
+            "input": 0.5,
+            "output": 67.2,
+            "input_cached": None,
+        },
+        {
+            "id": "gemini-3.1-flash-lite-image",
+            "vendor": "google",
+            "name": "Gemini 3.1 Flash-Lite Image Preview*",
+            "input": 0.25,
+            "output": 33.6,
             "input_cached": None,
         },
         {
@@ -322,5 +330,6 @@ PRICES = {
         "gcp-translate": "gcp-translate",
         "anthropic-5-fable": "claude-fable-5",
         "anthrophic-5-fable": "claude-fable-5",
+        "nano-banana-2-lite": "gemini-3.1-flash-lite-image",
     },
 }

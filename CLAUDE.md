@@ -16,7 +16,7 @@ Here are the following args for the tool:
 - **transcript_source**: (Optional) Source for the transcript. Defaults to 'youtube' (fetches existing). set to an AI model name (e.g., 'gemini-3.1-flash-lite', 'gcp-chirp3') to perform STT on extracted audio. For `gcp-` models, `YTD_GCS_BUCKET_NAME` env var is recommended.
 - **model**: (Optional) The LLM model(s) to use for summarization, Q&A, speaker extraction and tag generation (e.g., 'gemini-3.1-flash-lite'). Can be a comma-separated list.
 - **tts_model**: (Optional) The TTS model and voice to use (e.g., 'gemini-3.1-flash-tts-preview-Kore', 'gemini-3.1-flash-tts-preview-Kore', 'gcp-chirp3', 'gcp-chirp3-Kore', 'aws-polly', 'aws-polly-Ruth').
-- **infographic_model**: (Optional) The image model to use for generating an infographic (e.g., 'gemini-3.1-flash-image' or 'gemini-3-pro-image').
+- **infographic_model**: (Optional) The image model to use for generating an infographic (e.g., 'gemini-3.1-flash-lite-image' or 'gemini-3-pro-image').
 - **alt_text_model**: (Optional) The LLM model to use for generating multimodal alt text for the infographic. Defaults to the summary model.
 - **no_youtube_summary**: (Optional) If `True`, skips generating a secondary summary from the YouTube transcript when using an AI model for the primary transcript.
 - **translate**: (Optional) Translate all outputs to a target language. Format: `{model}-{language}` (e.g., 'gemini-3.1-flash-lite-es', 'bedrock-nova-2-lite-v1-fr', 'aws-translate-es', 'gcp-translate-es'). Use `aws-translate` to use the AWS Translate service directly, or `gcp-translate` to use Google Cloud Translation API directly. Defaults to English only.
@@ -33,7 +33,7 @@ Here are the following args for the tool:
       - "gemini" or "gemini flash" -> **Flash**:
         - Summary/Transcript: `gemini-3.1-flash-lite`
         - TTS: `gemini-3.1-flash-tts-preview-Kore`
-        - Infographic: `gemini-3.1-flash-image`
+        - Infographic: `gemini-3-pro-image`
       - "gemini pro" -> **Pro**:
         - Summary/Transcript: `gemini-3.1-pro-preview`
         - TTS: `gemini-3.1-flash-tts-preview-Kore`
@@ -41,7 +41,7 @@ Here are the following args for the tool:
       - "aws" -> **AWS**:
         - Summary/Transcript: `bedrock-nova-2-lite-v1`
         - TTS: `aws-polly-Ruth`
-        - Infographic: `gemini-3.1-flash-image` (fallback)
+        - Infographic: `gemini-3-pro-image` (fallback)
 2.  **Skills**:
     - `/youtube-to-docs:ytt <url>`: Fetches only the YouTube transcript.
     - `/youtube-to-docs:infographic <url> <family>`: Generates an infographic and summary.

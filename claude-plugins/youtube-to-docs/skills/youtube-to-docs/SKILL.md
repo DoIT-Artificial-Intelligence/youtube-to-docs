@@ -45,7 +45,7 @@ Use this when the user wants a visual summary or "infographic" representing the 
     - `infographic_model='gemini-3-pro-image'`
   - **Flash (Default/Speed/Cost)**: Use if "gemini flash" is requested or no preference is stated.
     - `model='gemini-3.1-flash-lite'`
-    - `infographic_model='gemini-3.1-flash-image'`
+    - `infographic_model='gemini-3-pro-image'`
 
 * **Alt Text (Accessibility)**: By default, `process_video` generates multimodal alt text using the summary model (image-to-text) for any created infographic. Use `alt_text_model` to override the model for this step.
 * **Confirmation**: Proceed without asking for extra confirmation unless parameters are missing.

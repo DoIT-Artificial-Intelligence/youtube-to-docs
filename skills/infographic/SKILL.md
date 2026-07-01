@@ -9,6 +9,6 @@ Please generate an infographic for the YouTube video at $ARGUMENTS using the `yo
   - `infographic_model='gemini-3-pro-image'`
 - If the argument includes "gemini flash" or just "gemini", or if no model is specified, use:
   - `model='gemini-3.1-flash-lite'`
-  - `infographic_model='gemini-3.1-flash-image'`
+  - `infographic_model='gemini-3-pro-image'`
 
 Do not ask for confirmation.

@@ -16,7 +16,7 @@ Here are the following args for the tool:
 - **transcript_source**: (Optional) Source for the transcript. Defaults to 'youtube' (fetches existing). set to an AI model name (e.g., 'gemini-3.1-flash-lite', 'gcp-chirp3') to perform STT on extracted audio. For `gcp-` models, `YTD_GCS_BUCKET_NAME` env var is recommended.
 - **model**: (Optional) The LLM model(s) to use for summarization, Q&A, speaker extraction and tag generation (e.g., 'gemini-3.1-flash-lite'). Can be a comma-separated list. Defaults to `None` (Transcript only), but using the `-m` flag without an argument defaults to `gemini-3.1-flash-lite`.
 - **tts_model**: (Optional) The TTS model and voice to use (e.g., 'gemini-3.1-flash-tts-preview-Kore', 'gemini-3.1-flash-tts-preview-Kore', 'gcp-chirp3', 'gcp-chirp3-Kore', 'aws-polly', 'aws-polly-Ruth').
-- **infographic_model**: (Optional) The image model to use for generating an infographic (e.g., 'gemini-3.1-flash-image' or 'gemini-3-pro-image').
+- **infographic_model**: (Optional) The image model to use for generating an infographic (e.g., 'gemini-3.1-flash-lite-image' or 'gemini-3-pro-image').
 - **alt_text_model**: (Optional) The LLM model to use for generating multimodal alt text for the infographic. Defaults to the summary model.
 - **no_youtube_summary**: (Optional) If `True`, skips generating a secondary summary from the YouTube transcript when using an AI model for the primary transcript.
 - **translate**: (Optional) Translate all outputs to a target language. Format: `{model}-{language}` (e.g., 'gemini-3.1-flash-lite-es', 'bedrock-nova-2-lite-v1-fr', 'aws-translate-es', 'gcp-translate-es'). Use `aws-translate` to use the AWS Translate service directly, or `gcp-translate` to use Google Cloud Translation API directly. Defaults to English only.
@@ -33,7 +33,7 @@ Here are the following args for the tool:
       - "gemini" or "gemini flash" -> **Flash**:
         - Summary/Transcript: `gemini-3.1-flash-lite`
         - TTS: `gemini-3.1-flash-tts-preview-Kore`
-        - Infographic: `gemini-3.1-flash-image`
+        - Infographic: `gemini-3-pro-image`
       - "gemini pro" -> **Pro**:
         - Summary/Transcript: `gemini-3.1-pro-preview`
         - TTS: `gemini-3.1-flash-tts-preview-Kore`
@@ -41,7 +41,7 @@ Here are the following args for the tool:
       - "aws" -> **AWS**:
         - Summary/Transcript: `bedrock-nova-2-lite-v1`
         - TTS: `aws-polly-Ruth`
-        - Infographic: `gemini-3.1-flash-image` (fallback)
+        - Infographic: `gemini-3-pro-image` (fallback)
 2.  **Slash Commands**:
     - `/ytt <url>`: Fetches only the YouTube transcript (uses `ytt.toml`).
     - `/infographic <url> <family>`: Generates an infographic and summary.
@@ -58,7 +58,7 @@ Here are the following args for the tool:
     - **Model**: Defaults to `gemini-3.1-flash-lite`. If the user has a specific preference not covered by the default, ask: "What model do you want to use for the summary?".
     - **Output Location**: If not specified, ask: "Where you want the output file saved? Is the default location (youtube-to-docs-artifacts/youtube-docs.csv) okay?"
     - **Additional Features**: If appropriate, ask if they want to:
-      - Generate an infographic (needs `infographic_model`). If `-i` is used as a flag without a value (e.g. `uvx youtube-to-docs ... -i`), it defaults to `gemini-3.1-flash-image`.
+      - Generate an infographic (needs `infographic_model`). If `-i` is used as a flag without a value (e.g. `uvx youtube-to-docs ... -i`), it defaults to `gemini-3-pro-image`.
       - Generate multimodal alt text for the infographic (uses `alt_text_model`, defaults to summary model).
       - Generate an audio summary (needs `tts_model`).
       - Create a video summary (needs `combine_infographic_audio`, `tts_model`, and `infographic_model`).
