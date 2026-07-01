@@ -68,9 +68,9 @@ PRICES = {
             "input_cached": None,
         },
         {
-            "id": "claude-sonnet-4.6",
+            "id": "claude-sonnet-5",
             "vendor": "anthropic",
-            "name": "Claude Sonnet 4.6",
+            "name": "Claude Sonnet 5",
             "input": 3,
             "output": 15,
             "input_cached": None,

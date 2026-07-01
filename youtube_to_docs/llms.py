@@ -324,7 +324,7 @@ class VertexProvider(BaseProvider, LLMProvider, MultimodalProvider):
                 # versioned counterparts
                 claude_defaults = {
                     "claude-haiku-4-5": "claude-haiku-4-5@20251001",
-                    "claude-sonnet-4-5": "claude-sonnet-4-5@20250929",
+                    "claude-sonnet-5": "claude-sonnet-5@20260620",
                 }
                 actual_model_name = claude_defaults.get(
                     actual_model_name, actual_model_name
