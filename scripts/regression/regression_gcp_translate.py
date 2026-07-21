@@ -35,7 +35,7 @@ def main():
     clear_artifacts()
 
     # 2. Use Gemini Flash for summarization
-    selected_model = "gemini-3.1-flash-lite"
+    selected_model = "gemini-3.5-flash-lite"
     print(f"\nUsing summarization model: {selected_model}")
     print(f"Translate arg: {translate_arg}")
 

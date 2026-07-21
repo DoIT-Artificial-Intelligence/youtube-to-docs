@@ -329,12 +329,15 @@ class TestPricing(unittest.TestCase):
     # --- suggest_corrected_captions ---
 
     @patch("google.genai.Client")
-    def test_suggest_corrected_captions_gemini_returns_corrections(
-        self, mock_client_cls
-    ):
+    def test_suggest_corrected_captions(self, mock_client_cls):
         mock_client = mock_client_cls.return_value
         mock_resp = MagicMock()
-        mock_resp.text = "1\n00:00:02,639 --> 00:00:09,040\nGood morning. Thank you."
+        mock_resp.text = (
+            "1\n00:00:02,639 --> 00:00:09,040\n"
+            "Good morning. Thank you. It is\n\n"
+            "2\n00:00:09,040 --> 00:00:14,000\n"
+            "Monday April 7th happy sine die this\n"
+        )
         mock_resp.usage_metadata.prompt_token_count = 200
         mock_resp.usage_metadata.candidates_token_count = 40
         mock_client.models.generate_content.return_value = mock_resp
@@ -346,7 +349,7 @@ class TestPricing(unittest.TestCase):
             "monday april 7th happy siny die this\n"
         )
         result, in_tok, out_tok = llms.suggest_corrected_captions(
-            "gemini-3.1-flash-lite", srt
+            "gemini-3.5-flash-lite", srt
         )
 
         self.assertIn("Good morning. Thank you.", result)
@@ -364,7 +367,7 @@ class TestPricing(unittest.TestCase):
 
         srt = "1\n00:00:00,000 --> 00:00:02,000\nHello, world.\n"
         result, in_tok, out_tok = llms.suggest_corrected_captions(
-            "gemini-3.1-flash-lite", srt
+            "gemini-3.5-flash-lite", srt
         )
 
         self.assertEqual(result.strip(), "NO_CHANGES")
@@ -382,7 +385,7 @@ class TestPricing(unittest.TestCase):
         srt = "1\n00:00:02,639 --> 00:00:09,040\ngood morning\n"
         speakers = "Jane Smith (Chair)\nJohn Doe (Member)"
         result, in_tok, out_tok = llms.suggest_corrected_captions(
-            "gemini-3.1-flash-lite", srt, speakers_text=speakers
+            "gemini-3.5-flash-lite", srt, speakers_text=speakers
         )
 
         # Verify the speaker label was included in the corrected output
@@ -438,7 +441,7 @@ class TestPricing(unittest.TestCase):
         mock_client.models.generate_content.return_value = mock_resp
 
         llms.suggest_corrected_captions(
-            "gemini-3.1-flash-lite", "1\n00:00:00,000 --> 00:00:01,000\nHi.\n"
+            "gemini-3.5-flash-lite", "1\n00:00:00,000 --> 00:00:01,000\nHi.\n"
         )
 
         call_args = mock_client.models.generate_content.call_args

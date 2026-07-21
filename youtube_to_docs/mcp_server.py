@@ -52,11 +52,11 @@ def process_video(
             environment variable.
         transcript_source: The transcript source to use. 'youtube' (default)
             fetches existing transcripts. Provide an AI model name
-            (e.g., 'gemini-3.1-flash-lite') to perform STT on extracted audio.
+            (e.g., 'gemini-3.5-flash-lite') to perform STT on extracted audio.
         model: The LLM model to use for speaker extraction, Q&A, and summarization
-            (e.g., 'gemini-3.1-flash-lite'). Can be a comma-separated list.
+            (e.g., 'gemini-3.5-flash-lite'). Can be a comma-separated list.
             Defaults to None (Transcript only).
-            Use 'gemini-3.1-flash-lite' for summarization.
+            Use 'gemini-3.5-flash-lite' for summarization.
         tts_model: The TTS model and voice to use
             (e.g., 'gemini-3.1-flash-tts-preview-Kore', 'gcp-chirp3-Kore',
             'aws-polly-Ruth').
@@ -67,7 +67,7 @@ def process_video(
         no_youtube_summary: If True, skips generating a secondary summary from the
             YouTube transcript when using an AI model for the primary transcript.
         translate: Translate all outputs to a target language after generating in
-            English. Format: `{model}-{language}` e.g. `gemini-3.1-flash-lite-es`,
+            English. Format: `{model}-{language}` e.g. `gemini-3.5-flash-lite-es`,
             `bedrock-nova-2-lite-v1-fr`, `aws-translate-es`, or `gcp-translate-es`.
             Use `aws-translate` to use the AWS Translate service, or `gcp-translate`
             to use Google Cloud Translation API, instead of an LLM. When set,
@@ -81,7 +81,7 @@ def process_video(
         suggest_corrected_captions: Suggest WCAG 2.1 Level AA compliant caption
             corrections for an SRT file, per Section 508 guidance. Format:
             `{model}` or `{model}-{source}`. Source can be 'youtube' or a transcript
-            model name (e.g., 'gcp-chirp3', 'gemini-3.1-flash-lite'). If source is
+            model name (e.g., 'gcp-chirp3', 'gemini-3.5-flash-lite'). If source is
             omitted, the most recent AI-generated SRT is used. Output is saved to
             'suggested-corrected-caption-files/'. If speaker extraction has been run,
             speaker labels are added on speaker changes.

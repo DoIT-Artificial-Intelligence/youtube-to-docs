@@ -23,7 +23,7 @@ from regression_core import (
     verify_output,
 )
 
-TRANSCRIPT_MODEL = "gemini-3.1-flash-lite"
+TRANSCRIPT_MODEL = "gemini-3.5-flash-lite"
 INFOGRAPHIC_MODEL = "gemini-3.1-flash-image"
 TTS_MODEL = "gemini-3.1-flash-tts-preview-Kore"
 

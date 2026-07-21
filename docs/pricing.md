@@ -3,7 +3,7 @@
 Compare the pricing of various Large Language Models. Prices are shown in USD per 1M tokens.
 
 > [!NOTE]
-> Prices last updated on **2026-04-16**. All values are per 1 million tokens unless otherwise specified.
+> Prices last updated on **2026-07-21**. All values are per 1 million tokens unless otherwise specified.
 > Non-token-based models are marked with \* and converted as follows:
 >
 > - **Character-based** (TTS, Translation): $X per 1M chars → assume ~4 chars/token → multiply by 4. Cost split 50/50 input/output.
@@ -106,7 +106,7 @@ Compare the pricing of various Large Language Models. Prices are shown in USD pe
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
 <script>
 const pricingData = {
-    "updated_at": "2026-04-16",
+    "updated_at": "2026-07-21",
     "prices": [
         {"id": "amazon-nova-micro", "vendor": "amazon", "name": "Amazon Nova Micro", "input": 0.035, "output": 0.14},
         {"id": "amazon-nova-premier", "vendor": "amazon", "name": "Amazon Nova Premier", "input": 2.5, "output": 12.5},
@@ -120,8 +120,8 @@ const pricingData = {
         {"id": "claude-opus-4.8", "vendor": "anthropic", "name": "Claude Opus 4.8", "input": 5, "output": 25},
         {"id": "claude-fable-5", "vendor": "anthropic", "name": "Claude Fable 5", "input": 10, "output": 50},
         {"id": "gemini-3.1-pro-preview", "vendor": "google", "name": "Gemini 3.1 Pro", "input": 2, "output": 12},
-        {"id": "gemini-3.5-flash", "vendor": "google", "name": "Gemini 3.5 Flash", "input": 1.5, "output": 9},
-        {"id": "gemini-3.1-flash-lite", "vendor": "google", "name": "Gemini 3.1 Flash-Lite", "input": 0.25, "output": 1.5},
+        {"id": "gemini-3.6-flash", "vendor": "google", "name": "Gemini 3.6 Flash", "input": 1.5, "output": 7.5},
+        {"id": "gemini-3.5-flash-lite", "vendor": "google", "name": "Gemini 3.5 Flash-Lite", "input": 0.3, "output": 2.5},
         {"id": "gemini-3.1-flash-tts-preview", "vendor": "google", "name": "Gemini 3.1 Flash TTS Preview", "input": 1, "output": 20},
         {"id": "gpt-5.5", "vendor": "openai", "name": "GPT-5.5", "input": 5.0, "output": 30.0},
         {"id": "gpt-5.4", "vendor": "openai", "name": "GPT-5.4", "input": 2.5, "output": 15.0},

@@ -1,7 +1,7 @@
 # Taken from https://www.llm-prices.com/
 # Moving to here until PRs are review e.g. https://github.com/simonw/llm-prices/pull/48
 PRICES = {
-    "updated_at": "2026-02-22",
+    "updated_at": "2026-07-21",
     "prices": [
         {
             "id": "amazon-nova-micro",
@@ -100,20 +100,20 @@ PRICES = {
             "input_cached": None,
         },
         {
-            "id": "gemini-3.5-flash",
+            "id": "gemini-3.6-flash",
             "vendor": "google",
-            "name": "Gemini 3.5 Flash",
+            "name": "Gemini 3.6 Flash",
             "input": 1.5,
-            "output": 9,
+            "output": 7.5,
             "input_cached": 0.15,
         },
         {
-            "id": "gemini-3.1-flash-lite",
+            "id": "gemini-3.5-flash-lite",
             "vendor": "google",
-            "name": "Gemini 3.1 Flash-Lite",
-            "input": 0.25,
-            "output": 1.5,
-            "input_cached": 0.025,
+            "name": "Gemini 3.5 Flash-Lite",
+            "input": 0.3,
+            "output": 2.5,
+            "input_cached": 0.03,
         },
         {
             "id": "gemini-3.1-flash-tts-preview",
@@ -331,5 +331,7 @@ PRICES = {
         "anthropic-5-fable": "claude-fable-5",
         "anthrophic-5-fable": "claude-fable-5",
         "nano-banana-2-lite": "gemini-3.1-flash-lite-image",
+        "gemini-3.1-flash-lite": "gemini-3.5-flash-lite",
+        "gemini-3.5-flash": "gemini-3.6-flash",
     },
 }

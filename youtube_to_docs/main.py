@@ -129,7 +129,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
         help=(
             "The transcript source to use. \n"
             "Can be `youtube` (default) to fetch existing YouTube transcripts, \n"
-            "AI model name (e.g. `gemini-3.1-pro-preview`, `gemini-3.1-flash-lite`, "
+            "AI model name (e.g. `gemini-3.1-pro-preview`, `gemini-3.5-flash-lite`, "
             "`gcp-chirp3`, "
             "perform STT on extracted audio. \n"
             "For `gcp-` models (Cloud Speech-to-Text V2), `GOOGLE_CLOUD_PROJECT` "
@@ -141,13 +141,13 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
         "-m",
         "--model",
         nargs="?",
-        const="gemini-3.1-flash-lite",
+        const="gemini-3.5-flash-lite",
         default=None,
         help=(
             "The LLM to use for speaker extraction, Q&A generation, tag generation, "
             "and summarization.\n"
             "Can be one of: \n"
-            "Gemini model (e.g., `gemini-3.1-flash-lite`)\n"
+            "Gemini model (e.g., `gemini-3.5-flash-lite`)\n"
             "GCP Vertex model (prefixed with `vertex-`; e.g. "
             "`vertex-claude-haiku-4-5@20251001`)\n"
             "AWS Bedrock model (prefixed with `bedrock-`; e.g. "
@@ -156,7 +156,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
             "Azure Foundry model (prefix with `foundry-`; e.g. "
             "`foundry-gpt-5-mini`)\n"
             "Can also be a comma-separated list of models (e.g. "
-            "`gemini-3.1-flash-lite,bedrock-claude-haiku-4-5-20251001-v1`).\n"
+            "`gemini-3.5-flash-lite,bedrock-claude-haiku-4-5-20251001-v1`).\n"
             "Defaults to `None` (Transcript only)."
         ),
     )
@@ -210,8 +210,8 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
         default=None,
         help=(
             "Translate LLM outputs to a target language after generating in English. "
-            "Format: `{model}-{language}` e.g. `gemini-3.1-flash-lite-spanish` \n"
-            "or `gemini-3.1-flash-lite-es` or `bedrock-nova-2-lite-v1-fr`\n"
+            "Format: `{model}-{language}` e.g. `gemini-3.5-flash-lite-spanish` \n"
+            "or `gemini-3.5-flash-lite-es` or `bedrock-nova-2-lite-v1-fr`\n"
             "or `aws-translate-spanish` or `gcp-translate-french`\n"
             "Both language names (e.g. 'spanish', 'french', 'korean') and "
             "ISO codes (e.g. 'es', 'fr', 'ko') are accepted.\n"
@@ -233,13 +233,13 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
         help=(
             "Shortcut to use a specific model suite for everything. \n"
             "Supported values: \n"
-            "`gemini-flash`: summarization (`gemini-3.1-flash-lite`), "
+            "`gemini-flash`: summarization (`gemini-3.5-flash-lite`), "
             "TTS (`gemini-3.1-flash-tts-preview-Kore`), "
             "and Infographic (`gemini-3-pro-image`). \n"
             "`gemini-pro`: summarization (`gemini-3.1-pro-preview`), "
             "TTS (`gemini-3.1-flash-tts-preview-Kore`), "
             "and Infographic (`gemini-3-pro-image`). \n"
-            "`gemini-flash-pro-image`: summarization (`gemini-3.1-flash-lite`), "
+            "`gemini-flash-pro-image`: summarization (`gemini-3.5-flash-lite`), "
             "TTS (`gemini-3.1-flash-tts-preview-Kore`), "
             "and Infographic (`gemini-3-pro-image`). \n"
             "`gcp-pro`: summarization (`gemini-3.1-pro-preview`), "
@@ -261,7 +261,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
         "-scc",
         "--suggest-corrected-captions",
         nargs="?",
-        const="gemini-3.1-flash-lite-youtube",
+        const="gemini-3.5-flash-lite-youtube",
         default=None,
         help=(
             "Suggest WCAG 2.1 Level AA compliant caption corrections for an SRT file, "
@@ -276,18 +276,18 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
             "  - Omit source → the most recent AI-generated (non-YouTube) SRT for the "
             "video is used automatically. Useful when `-t {stt-model}` is also set.\n"
             "  - `youtube` → use the YouTube SRT explicitly "
-            "(e.g. `-scc gemini-3.1-flash-lite-youtube`).\n"
+            "(e.g. `-scc gemini-3.5-flash-lite-youtube`).\n"
             "  - Any transcript model name → use the SRT from that STT run "
-            "(e.g. `-scc gemini-3.1-flash-lite-gcp-chirp3`). \n\n"
+            "(e.g. `-scc gemini-3.5-flash-lite-gcp-chirp3`). \n\n"
             "If multiple AI SRTs exist in the row and you need a specific one, "
             "always use the explicit `{model}-{source}` form. \n\n"
             "Examples:\n"
-            "  Correct YouTube captions:       -scc gemini-3.1-flash-lite-youtube\n"
-            "  Correct GCP Chirp3 captions:    -scc gemini-3.1-flash-lite-gcp-chirp3\n"
+            "  Correct YouTube captions:       -scc gemini-3.5-flash-lite-youtube\n"
+            "  Correct GCP Chirp3 captions:    -scc gemini-3.5-flash-lite-gcp-chirp3\n"
             "  STT + correct in one run:  "
-            "-t gcp-chirp3 -scc gemini-3.1-flash-lite\n"
+            "-t gcp-chirp3 -scc gemini-3.5-flash-lite\n"
             "  Correct + speakers in one run:  "
-            "-m gemini-3.1-flash-lite -scc gemini-3.1-flash-lite-youtube"
+            "-m gemini-3.5-flash-lite -scc gemini-3.5-flash-lite-youtube"
         ),
     )
     parser.add_argument(
@@ -304,9 +304,9 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
 
     args = parser.parse_args(args_list)
 
-    # Default to gemini-3.1-flash-lite if -scc or -i is set without explicit -m
+    # Default to gemini-3.5-flash-lite if -scc or -i is set without explicit -m
     if (args.suggest_corrected_captions or args.infographic) and args.model is None:
-        args.model = "gemini-3.1-flash-lite"
+        args.model = "gemini-3.5-flash-lite"
 
     verbose = args.verbose
 
