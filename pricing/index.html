@@ -749,13 +749,22 @@ function getModelType(item) {
 }
 
 function getFilteredData() {
-    const searchTerm = document.getElementById('pricingSearch').value.toLowerCase();
+    const rawSearch = document.getElementById('pricingSearch').value.toLowerCase();
+    const searchTerm = rawSearch.trim();
+    const searchNormalized = searchTerm.replace(/[-_]/g, ' ');
     return pricingData.prices.filter(item => {
+        const nameNorm = item.name.toLowerCase().replace(/[-_]/g, ' ');
+        const idNorm = item.id.toLowerCase().replace(/[-_]/g, ' ');
+        const vendorNorm = item.vendor.toLowerCase();
+        const typeNorm = getModelType(item);
+
         const matchesSearch = !searchTerm ||
             item.name.toLowerCase().includes(searchTerm) ||
             item.vendor.toLowerCase().includes(searchTerm) ||
             item.id.toLowerCase().includes(searchTerm) ||
-            getModelType(item).includes(searchTerm);
+            typeNorm.includes(searchTerm) ||
+            nameNorm.includes(searchNormalized) ||
+            idNorm.includes(searchNormalized);
         const matchesType = !activeTypeFilter || getModelType(item) === activeTypeFilter;
         const matchesVendor = !activeVendorFilter || item.vendor === activeVendorFilter;
         return matchesSearch && matchesType && matchesVendor;
