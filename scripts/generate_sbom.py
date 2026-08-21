@@ -22,7 +22,7 @@ import json
 import subprocess
 import sys
 import tomllib
-from importlib.metadata import Distribution, PackageNotFoundError
+from importlib.metadata import Distribution
 from pathlib import Path
 from typing import Any
 
@@ -40,8 +40,8 @@ CLASSIFIER_TO_SPDX = {
     "MIT License": "MIT",
     "MIT No Attribution License (MIT-0)": "MIT-0",
     "Apache Software License": "Apache-2.0",
-    "BSD 3-Clause \"New\" or \"Revised\" License (BSD-3-Clause)": "BSD-3-Clause",
-    "BSD 2-Clause \"Simplified\" License (BSD-2-Clause)": "BSD-2-Clause",
+    'BSD 3-Clause "New" or "Revised" License (BSD-3-Clause)': "BSD-3-Clause",
+    'BSD 2-Clause "Simplified" License (BSD-2-Clause)': "BSD-2-Clause",
     "ISC License (ISCL)": "ISC",
     "Mozilla Public License 2.0 (MPL 2.0)": "MPL-2.0",
     "Python Software Foundation License": "PSF-2.0",
@@ -153,12 +153,14 @@ def licenses_for(dist: Distribution) -> list[dict[str, Any]]:
         if label == "OSI Approved":
             continue
         spdx = CLASSIFIER_TO_SPDX.get(label)
-        entries.append({"license": {"id": spdx}} if spdx else {"license": {"name": label}})
+        entries.append(
+            {"license": {"id": spdx}} if spdx else {"license": {"name": label}}
+        )
     if entries:
         return entries
 
     legacy = (metadata.get("License") or "").strip()
-    # Some projects dump the whole license text into this field; keep it out of the SBOM.
+    # Some projects dump the whole license text here; keep it out of the SBOM.
     if legacy and "\n" not in legacy and len(legacy) <= 64:
         return [spdx_or_name(legacy)]
     if legacy:

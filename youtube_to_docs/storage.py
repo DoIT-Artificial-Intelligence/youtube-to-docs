@@ -8,7 +8,7 @@ import shutil
 import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, Optional
 from urllib.parse import quote
 
 import polars as pl
@@ -1072,7 +1072,7 @@ class M365Storage(Storage):
             xlsx_path = str(Path(path).with_suffix(".xlsx"))
             try:
                 xlsx_bytes = self.read_bytes(xlsx_path)
-                return cast(pl.DataFrame, pl.read_excel(io.BytesIO(xlsx_bytes)))
+                return pl.read_excel(io.BytesIO(xlsx_bytes))
             except FileNotFoundError:
                 return None
             except Exception as e:
