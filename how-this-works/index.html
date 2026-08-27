@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -953,7 +953,8 @@
 <p>For each video, the tool fetches or generates a transcript:</p>
 <ul>
 <li><strong>YouTube Source</strong> (default): Fetches the existing transcript (auto-captions or manual) directly from YouTube.</li>
-<li><strong>AI STT Source</strong>: If an AI model name is specified (e.g. <code>gemini-3.5-flash-lite</code>, <code>gcp-chirp3</code>, <code>aws-transcribe</code>), the tool extracts audio from the video via <code>yt-dlp</code> and passes it to a Speech-to-Text model for a fresh transcript.<ul>
+<li><strong>AI STT Source</strong>: If an AI model name is specified (e.g. <code>gemini-3.5-transcribe</code>, <code>gemini-3.5-flash-lite</code>, <code>gcp-chirp3</code>, <code>aws-transcribe</code>), the tool extracts audio from the video via <code>yt-dlp</code> and passes it to a Speech-to-Text model for a fresh transcript.<ul>
+<li><code>gemini-3.5-transcribe</code> is Google's dedicated speech-to-text model. Unlike prompting a general Gemini model, it is called with an audio transcription config requesting word timestamps and speaker diarization, so the SRT is built from real word offsets rather than model-guessed times, and <code>[Speaker N]</code> labels are added on speaker changes. Audio over 15MB is uploaded via the Gemini Files API and deleted afterwards. Note that the API reports audio input tokens but not transcript output tokens, so the STT cost column reflects the input side only.</li>
 <li>For <code>gcp-</code> models (Cloud Speech-to-Text V2), <code>GOOGLE_CLOUD_PROJECT</code> is required and <code>YTD_GCS_BUCKET_NAME</code> is recommended.</li>
 <li>For <code>aws-transcribe</code>, <code>YTD_S3_BUCKET_NAME</code> is required.</li>
 <li>When <code>--no-youtube-summary</code> is set, the secondary summary pass from the YouTube transcript is skipped.</li>
@@ -1178,7 +1179,7 @@ Run <code>youtube-to-docs --help</code> for a full list of options.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "navigation.tabs", "navigation.sections", "navigation.top"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
