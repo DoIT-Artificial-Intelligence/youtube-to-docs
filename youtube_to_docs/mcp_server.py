@@ -52,7 +52,10 @@ def process_video(
             environment variable.
         transcript_source: The transcript source to use. 'youtube' (default)
             fetches existing transcripts. Provide an AI model name
-            (e.g., 'gemini-3.5-flash-lite') to perform STT on extracted audio.
+            (e.g., 'gemini-3.5-transcribe', 'gemini-3.5-flash-lite', 'gcp-chirp3')
+            to perform STT on extracted audio. 'gemini-3.5-transcribe' is Google's
+            dedicated STT model and returns word-level timestamps plus speaker
+            diarization, so its SRT has real offsets and '[Speaker N]' labels.
         model: The LLM model to use for speaker extraction, Q&A, and summarization
             (e.g., 'gemini-3.5-flash-lite'). Can be a comma-separated list.
             Defaults to None (Transcript only).
@@ -81,7 +84,7 @@ def process_video(
         suggest_corrected_captions: Suggest WCAG 2.1 Level AA compliant caption
             corrections for an SRT file, per Section 508 guidance. Format:
             `{model}` or `{model}-{source}`. Source can be 'youtube' or a transcript
-            model name (e.g., 'gcp-chirp3', 'gemini-3.5-flash-lite'). If source is
+            model name (e.g., 'gcp-chirp3', 'gemini-3.5-transcribe'). If source is
             omitted, the most recent AI-generated SRT is used. Output is saved to
             'suggested-corrected-caption-files/'. If speaker extraction has been run,
             speaker labels are added on speaker changes.

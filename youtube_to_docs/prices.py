@@ -116,6 +116,14 @@ PRICES = {
             "input_cached": 0.03,
         },
         {
+            "id": "gemini-3.5-transcribe",
+            "vendor": "google",
+            "name": "Gemini 3.5 Transcribe (STT)",
+            "input": 2.0,
+            "output": 12.0,
+            "input_cached": None,
+        },
+        {
             "id": "gemini-3.1-flash-tts-preview",
             "vendor": "google",
             "name": "Gemini 3.1 Flash TTS Preview",

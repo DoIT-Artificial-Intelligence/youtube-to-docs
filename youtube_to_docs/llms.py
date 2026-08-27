@@ -37,6 +37,16 @@ from youtube_to_docs.utils import (
     normalize_model_name,
 )
 
+# Dedicated Gemini speech-to-text models only return word timestamps and speaker
+# labels on the v1alpha surface; v1beta drops `audio_transcription` from each part.
+GEMINI_TRANSCRIBE_API_VERSION = "v1alpha"
+
+# Inline request payloads are capped at 20MB, so larger audio goes via the Files API.
+GEMINI_INLINE_AUDIO_LIMIT_BYTES = 15 * 1024 * 1024
+
+# Characters allowed in an SRT entry before the words are split into a new entry.
+SRT_SEGMENT_CHAR_LIMIT = 80
+
 
 def get_model_pricing(model_name: str) -> Tuple[float | None, float | None]:
     """
@@ -109,6 +119,11 @@ class GeminiProvider(
         duration_seconds: Optional[float] = None,
         **kwargs,
     ) -> Tuple[str, str, int, int]:
+        if is_gemini_transcribe_model(self.model_name):
+            return _transcribe_gemini(
+                self.model_name, audio_path, url, language, duration_seconds
+            )
+
         srt = kwargs.get("srt", False)
         try:
             from google import genai
@@ -1093,6 +1108,47 @@ def _process_gcp_batch_result(
     return transcript_text, srt_entries, next_ctr
 
 
+def _words_to_srt_entries(
+    words: List[Tuple[str, float, float]],
+    srt_counter: int,
+    label: Optional[str] = None,
+) -> Tuple[List[str], int]:
+    """
+    Groups timed words into SRT entries, breaking on sentence-ending punctuation
+    or once an entry passes SRT_SEGMENT_CHAR_LIMIT characters.
+
+    `label` (e.g. `[Speaker 1]`) is prepended to the first entry only.
+    Each word is a (word, start_seconds, end_seconds) tuple.
+    Returns (srt_entries, next_srt_counter).
+    """
+    srt_entries: List[str] = []
+    segment: List[Tuple[str, float, float]] = []
+    segment_len = 0
+
+    def flush() -> None:
+        nonlocal segment, segment_len, srt_counter
+        if not segment:
+            return
+        seg_text = " ".join(word for word, _, _ in segment)
+        if label and not srt_entries:
+            seg_text = f"{label} {seg_text}"
+        seg_start = _format_srt_time(segment[0][1])
+        seg_end = _format_srt_time(segment[-1][2])
+        srt_entries.append(f"{srt_counter}\n{seg_start} --> {seg_end}\n{seg_text}\n")
+        srt_counter += 1
+        segment = []
+        segment_len = 0
+
+    for word, start_sec, end_sec in words:
+        segment.append((word, start_sec, end_sec))
+        segment_len += len(word) + 1
+        if word.endswith((".", "?", "!")) or segment_len > SRT_SEGMENT_CHAR_LIMIT:
+            flush()
+
+    flush()
+    return srt_entries, srt_counter
+
+
 def _process_alternatives(
     results_list: List[Any], current_offset_sec: float, current_srt_idx: int
 ) -> Tuple[str, List[str], int]:
@@ -1122,8 +1178,7 @@ def _process_alternatives(
             else (alt.words if hasattr(alt, "words") else [])
         )
 
-        current_segment_words = []
-        current_segment_len = 0
+        timed_words: List[Tuple[str, float, float]] = []
 
         for word_info in words:
             word = (
@@ -1151,38 +1206,187 @@ def _process_alternatives(
             start_sec = _parse_gcp_time(str(start_raw)) + current_offset_sec
             end_sec = _parse_gcp_time(str(end_raw)) + current_offset_sec
 
-            current_segment_words.append((word, start_sec, end_sec))
-            current_segment_len += len(word) + 1
+            timed_words.append((word, start_sec, end_sec))
 
-            if (
-                word.endswith(".")
-                or word.endswith("?")
-                or word.endswith("!")
-                or current_segment_len > 80
-            ):
-                if current_segment_words:
-                    seg_text = " ".join([w[0] for w in current_segment_words])
-                    seg_start = _format_srt_time(current_segment_words[0][1])
-                    seg_end = _format_srt_time(current_segment_words[-1][2])
-
-                    srt_entries.append(
-                        f"{srt_counter}\n{seg_start} --> {seg_end}\n{seg_text}\n"
-                    )
-                    srt_counter += 1
-                    current_segment_words = []
-                    current_segment_len = 0
-
-        # Flush remaining
-        if current_segment_words:
-            seg_text = " ".join([w[0] for w in current_segment_words])
-            seg_start = _format_srt_time(current_segment_words[0][1])
-            seg_end = _format_srt_time(current_segment_words[-1][2])
-            srt_entries.append(
-                f"{srt_counter}\n{seg_start} --> {seg_end}\n{seg_text}\n"
-            )
-            srt_counter += 1
+        entries, srt_counter = _words_to_srt_entries(timed_words, srt_counter)
+        srt_entries.extend(entries)
 
     return " ".join(full_text_parts), srt_entries, srt_counter
+
+
+def is_gemini_transcribe_model(model_name: str) -> bool:
+    """
+    True for dedicated Gemini speech-to-text models (e.g. `gemini-3.5-transcribe`).
+
+    These are configured with `audio_transcription_config` rather than a text
+    prompt, and return word-level timestamps and speaker labels instead of
+    free-form text.
+    """
+    return model_name.startswith("gemini-") and "transcribe" in model_name
+
+
+def _process_gemini_transcription(response: Any) -> Tuple[str, str]:
+    """
+    Converts a dedicated Gemini STT response into plain text and SRT content.
+
+    Each response part is one diarized turn: `audio_transcription.speaker_label`
+    identifies the speaker and `.words` carries the word-level offsets. Long turns
+    are split across several SRT entries, and a `[Speaker N]` label is added
+    whenever the speaker changes, per Section 508 / WCAG 2.1 speaker
+    identification guidance.
+
+    Returns (transcript_text, srt_content).
+    """
+    candidates = response.candidates or []
+    if not candidates or not candidates[0].content or not candidates[0].content.parts:
+        return "", ""
+
+    text_parts: List[str] = []
+    srt_entries: List[str] = []
+    srt_counter = 1
+    speaker_numbers: Dict[str, int] = {}
+    previous_speaker: Optional[str] = None
+
+    for part in candidates[0].content.parts:
+        transcription = getattr(part, "audio_transcription", None)
+        segment_text = (
+            transcription.text if transcription and transcription.text else part.text
+        ) or ""
+        segment_text = segment_text.strip()
+        if segment_text:
+            text_parts.append(segment_text)
+
+        words = list(transcription.words or []) if transcription else []
+        if not words:
+            continue
+
+        speaker = getattr(transcription, "speaker_label", None)
+        label = None
+        if speaker and speaker != previous_speaker:
+            speaker_numbers.setdefault(speaker, len(speaker_numbers) + 1)
+            label = f"[Speaker {speaker_numbers[speaker]}]"
+        previous_speaker = speaker
+
+        timed_words = [
+            (
+                word_info.word,
+                _parse_gcp_time(str(word_info.start_offset or "0s")),
+                _parse_gcp_time(str(word_info.end_offset or "0s")),
+            )
+            for word_info in words
+            if word_info.word
+        ]
+        entries, srt_counter = _words_to_srt_entries(timed_words, srt_counter, label)
+        srt_entries.extend(entries)
+
+    return " ".join(text_parts), "\n".join(srt_entries)
+
+
+def _transcribe_gemini(
+    model_name: str,
+    audio_path: str,
+    url: str,
+    language: str = "en",
+    duration_seconds: Optional[float] = None,
+) -> Tuple[str, str, int, int]:
+    """
+    Transcribes audio with a dedicated Gemini speech-to-text model
+    (e.g. `gemini-3.5-transcribe`), requesting word timestamps and speaker
+    diarization so the SRT carries real offsets rather than model-guessed ones.
+
+    Returns (transcript_text, srt_content, input_tokens, output_tokens).
+    """
+    if model_name.endswith("-live"):
+        return (
+            f"Error: {model_name} is a streaming-only model served by the Live API. "
+            "Use `gemini-3.5-transcribe` for pre-recorded audio.",
+            "",
+            0,
+            0,
+        )
+
+    try:
+        from google import genai
+        from google.genai import types
+    except ImportError:
+        return (
+            "Error: google-genai is required for Gemini models. "
+            "Install with `pip install '.[gcp]'`",
+            "",
+            0,
+            0,
+        )
+
+    try:
+        api_key = os.environ["GEMINI_API_KEY"]
+    except KeyError:
+        return "Error: GEMINI_API_KEY not found", "", 0, 0
+
+    client = genai.Client(
+        api_key=api_key,
+        http_options=types.HttpOptions(api_version=GEMINI_TRANSCRIBE_API_VERSION),
+    )
+
+    mime_type = mimetypes.guess_type(audio_path)[0] or "audio/mp4"
+    uploaded_file = None
+
+    try:
+        if os.path.getsize(audio_path) > GEMINI_INLINE_AUDIO_LIMIT_BYTES:
+            rprint(
+                "[cyan]Audio is larger than "
+                f"{GEMINI_INLINE_AUDIO_LIMIT_BYTES // (1024 * 1024)}MB. "
+                "Uploading via the Files API...[/cyan]"
+            )
+            uploaded_file = client.files.upload(
+                file=audio_path, config={"mime_type": mime_type}
+            )
+            audio_part = types.Part.from_uri(
+                file_uri=uploaded_file.uri or "", mime_type=mime_type
+            )
+        else:
+            with open(audio_path, "rb") as f:
+                audio_part = types.Part.from_bytes(mime_type=mime_type, data=f.read())
+
+        print(f"Starting transcription with model: {model_name}...")
+        response = client.models.generate_content(
+            model=model_name,
+            contents=[types.Content(role="user", parts=[audio_part])],
+            config=types.GenerateContentConfig(
+                audio_transcription_config=types.AudioTranscriptionConfig(
+                    word_timestamp=True,
+                    diarization=True,
+                    language_codes=["en-US"] if language == "en" else [language],
+                ),
+            ),
+        )
+    except Exception as e:
+        print(f"Gemini STT Error: {e}")
+        return f"Error: {e}", "", 0, 0
+    finally:
+        if uploaded_file is not None and uploaded_file.name:
+            try:
+                client.files.delete(name=uploaded_file.name)
+            except Exception:
+                pass  # Best-effort cleanup of the temporary uploaded audio
+
+    # The API reports audio input tokens but not transcript output tokens, so the
+    # STT cost in the CSV reflects the input side only.
+    input_tokens = 0
+    output_tokens = 0
+    if response.usage_metadata:
+        input_tokens = response.usage_metadata.prompt_token_count or 0
+        output_tokens = response.usage_metadata.candidates_token_count or 0
+
+    transcript_text, srt_content = _process_gemini_transcription(response)
+    if not transcript_text:
+        return (
+            f"Error: {model_name} returned no transcript for {url}",
+            "",
+            input_tokens,
+            output_tokens,
+        )
+
+    return transcript_text, srt_content, input_tokens, output_tokens
 
 
 def _transcribe_gcp(

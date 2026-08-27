@@ -20,7 +20,8 @@ The entry point (`youtube_to_docs/main.py`) accepts flexible inputs:
 For each video, the tool fetches or generates a transcript:
 
 - **YouTube Source** (default): Fetches the existing transcript (auto-captions or manual) directly from YouTube.
-- **AI STT Source**: If an AI model name is specified (e.g. `gemini-3.5-flash-lite`, `gcp-chirp3`, `aws-transcribe`), the tool extracts audio from the video via `yt-dlp` and passes it to a Speech-to-Text model for a fresh transcript.
+- **AI STT Source**: If an AI model name is specified (e.g. `gemini-3.5-transcribe`, `gemini-3.5-flash-lite`, `gcp-chirp3`, `aws-transcribe`), the tool extracts audio from the video via `yt-dlp` and passes it to a Speech-to-Text model for a fresh transcript.
+    - `gemini-3.5-transcribe` is Google's dedicated speech-to-text model. Unlike prompting a general Gemini model, it is called with an audio transcription config requesting word timestamps and speaker diarization, so the SRT is built from real word offsets rather than model-guessed times, and `[Speaker N]` labels are added on speaker changes. Audio over 15MB is uploaded via the Gemini Files API and deleted afterwards. Note that the API reports audio input tokens but not transcript output tokens, so the STT cost column reflects the input side only.
     - For `gcp-` models (Cloud Speech-to-Text V2), `GOOGLE_CLOUD_PROJECT` is required and `YTD_GCS_BUCKET_NAME` is recommended.
     - For `aws-transcribe`, `YTD_S3_BUCKET_NAME` is required.
     - When `--no-youtube-summary` is set, the secondary summary pass from the YouTube transcript is skipped.

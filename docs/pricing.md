@@ -122,6 +122,7 @@ const pricingData = {
         {"id": "gemini-3.1-pro-preview", "vendor": "google", "name": "Gemini 3.1 Pro", "input": 2, "output": 12},
         {"id": "gemini-3.6-flash", "vendor": "google", "name": "Gemini 3.6 Flash", "input": 1.5, "output": 7.5},
         {"id": "gemini-3.5-flash-lite", "vendor": "google", "name": "Gemini 3.5 Flash-Lite", "input": 0.3, "output": 2.5},
+        {"id": "gemini-3.5-transcribe", "vendor": "google", "name": "Gemini 3.5 Transcribe (STT)", "input": 2.0, "output": 12.0},
         {"id": "gemini-3.1-flash-tts-preview", "vendor": "google", "name": "Gemini 3.1 Flash TTS Preview", "input": 1, "output": 20},
         {"id": "gpt-5.5", "vendor": "openai", "name": "GPT-5.5", "input": 5.0, "output": 30.0},
         {"id": "gpt-5.4", "vendor": "openai", "name": "GPT-5.4", "input": 2.5, "output": 15.0},

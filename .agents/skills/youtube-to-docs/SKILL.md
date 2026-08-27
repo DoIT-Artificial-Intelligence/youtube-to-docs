@@ -81,7 +81,7 @@ Use this when the user specifies particular models or output locations.
   - **Memory**: `output_file='memory'` (keeps artifacts in memory, no files on disk).
 - **Transcription Source**:
   - Default is YouTube captions.
-  - To use AI for transcription (STT), set `transcript_source` to a model name (e.g., `'gemini-3.5-flash-lite'` or `'gcp-chirp3'`).
+  - To use AI for transcription (STT), set `transcript_source` to a model name (e.g., `'gemini-3.5-transcribe'`, `'gemini-3.5-flash-lite'` or `'gcp-chirp3'`). `gemini-3.5-transcribe` is Google's dedicated STT model and gives word-level timestamps plus `[Speaker N]` diarization labels in the SRT.
   - **Note**: `gcp-` models require `GOOGLE_CLOUD_PROJECT` and optional `YTD_GCS_BUCKET_NAME` environment variables.
 
 ## Tool Reference: `process_video`
@@ -98,7 +98,7 @@ Use this when the user specifies particular models or output locations.
 | `translate`                 | Translate all outputs to a target language. Format: `{model}-{language}`, `aws-translate-{language}`, or `gcp-translate-{language}`. | -                          | `gemini-3.5-flash-lite-es`, `aws-translate-es`, `gcp-translate-es`  |
 | `post_process`              | Post-process the transcript with JSON operations. Results added as CSV columns.                                                      | -                          | `'{"word count": "apple"}'`, `'{"word count": ["apple", "banana"]}'` |
 | `output_file`               | Destination for the CSV report.                                                                                                      | `workspace` / `m365`       | `workspace`, `sharepoint`, `memory`                                  |
-| `transcript_source`         | Source for transcript (default: 'youtube').                                                                                          | `audio`, `gcp` (for Chirp) | `gemini-3.5-flash-lite`, `gcp-chirp3`                               |
+| `transcript_source`         | Source for transcript (default: 'youtube').                                                                                          | `audio`, `gcp` (for Chirp) | `gemini-3.5-transcribe`, `gemini-3.5-flash-lite`, `gcp-chirp3`                               |
 
 ## Examples
 
