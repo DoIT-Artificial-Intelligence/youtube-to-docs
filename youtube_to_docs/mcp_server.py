@@ -1,11 +1,17 @@
 import contextlib
+import importlib.metadata
 import io
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from youtube_to_docs.main import main as app_main
 
-mcp = FastMCP("youtube-to-docs")
+try:
+    _version = importlib.metadata.version("youtube-to-docs")
+except importlib.metadata.PackageNotFoundError:
+    _version = "unknown"
+
+mcp = MCPServer("youtube-to-docs", version=_version)
 
 
 @mcp.tool()

@@ -2,9 +2,9 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
   "version": 1,
-  "serialNumber": "urn:uuid:99db3d53-2523-4a70-9852-1b315a54debe",
+  "serialNumber": "urn:uuid:5ad087e3-8c16-4d7b-be19-fb9d8efbd3a5",
   "metadata": {
-    "timestamp": "2026-08-21T19:34:08.293362230Z",
+    "timestamp": "2026-08-31T20:41:37.537923192Z",
     "tools": [
       {
         "vendor": "Astral Software Inc.",
@@ -14,21 +14,21 @@
       {
         "vendor": "DoIT - Artificial Intelligence",
         "name": "scripts/generate_sbom.py",
-        "version": "0.0.111"
+        "version": "0.0.112"
       }
     ],
     "component": {
       "type": "library",
-      "bom-ref": "youtube-to-docs-1@0.0.111",
+      "bom-ref": "youtube-to-docs-1@0.0.112",
       "name": "youtube-to-docs",
-      "version": "0.0.111",
+      "version": "0.0.112",
       "properties": [
         {
           "name": "uv:package:is_project_root",
           "value": "true"
         }
       ],
-      "purl": "pkg:pypi/youtube-to-docs@0.0.111",
+      "purl": "pkg:pypi/youtube-to-docs@0.0.112",
       "description": "Convert YouTube videos into structured docs, summaries, audio, and visual assets for easier discovery",
       "licenses": [
         {
@@ -5427,43 +5427,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "httpx-sse-52@0.4.3",
-      "name": "httpx-sse",
-      "version": "0.4.3",
-      "purl": "pkg:pypi/httpx-sse@0.4.3",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "distribution",
-          "url": "https://files.pythonhosted.org/packages/0f/4c/751061ffa58615a32c31b2d82e8482be8dd4a89154f003147acee90f2be9/httpx_sse-0.4.3.tar.gz",
-          "hashes": [
-            {
-              "alg": "SHA-256",
-              "content": "9b1ed0127459a66014aec3c56bebd93da3c1bc8bb6618c8082039a44889a755d"
-            }
-          ]
-        },
-        {
-          "type": "distribution",
-          "url": "https://files.pythonhosted.org/packages/d2/fd/6668e5aec43ab844de6fc74927e155a3b37bf40d7c3790e49fc0406b6578/httpx_sse-0.4.3-py3-none-any.whl",
-          "hashes": [
-            {
-              "alg": "SHA-256",
-              "content": "0ac1c9fe3c0afad2e0ebb25a934a59f4c7823b60792691f779fad2c5568830fc"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bom-ref": "httpx2-53@2.12.0",
+      "bom-ref": "httpx2-52@2.12.0",
       "name": "httpx2",
       "version": "2.12.0",
       "purl": "pkg:pypi/httpx2@2.12.0",
@@ -5497,7 +5461,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "httpx2-jsfetch-54@1.0",
+      "bom-ref": "httpx2-jsfetch-53@1.0",
       "name": "httpx2-jsfetch",
       "version": "1.0",
       "purl": "pkg:pypi/httpx2-jsfetch@1.0",
@@ -5532,7 +5496,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "huggingface-hub-55@1.28.0",
+      "bom-ref": "huggingface-hub-54@1.28.0",
       "name": "huggingface-hub",
       "version": "1.28.0",
       "purl": "pkg:pypi/huggingface-hub@1.28.0",
@@ -5568,7 +5532,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "id-56@1.6.1",
+      "bom-ref": "id-55@1.6.1",
       "name": "id",
       "version": "1.6.1",
       "purl": "pkg:pypi/id@1.6.1",
@@ -5604,7 +5568,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "idna-57@3.19",
+      "bom-ref": "idna-56@3.19",
       "name": "idna",
       "version": "3.19",
       "purl": "pkg:pypi/idna@3.19",
@@ -5638,7 +5602,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "iniconfig-58@2.3.0",
+      "bom-ref": "iniconfig-57@2.3.0",
       "name": "iniconfig",
       "version": "2.3.0",
       "purl": "pkg:pypi/iniconfig@2.3.0",
@@ -5672,7 +5636,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "isodate-59@0.7.2",
+      "bom-ref": "isodate-58@0.7.2",
       "name": "isodate",
       "version": "0.7.2",
       "purl": "pkg:pypi/isodate@0.7.2",
@@ -5708,7 +5672,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "jaraco-classes-60@3.4.0",
+      "bom-ref": "jaraco-classes-59@3.4.0",
       "name": "jaraco-classes",
       "version": "3.4.0",
       "purl": "pkg:pypi/jaraco-classes@3.4.0",
@@ -5750,7 +5714,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "jaraco-context-61@6.1.2",
+      "bom-ref": "jaraco-context-60@6.1.2",
       "name": "jaraco-context",
       "version": "6.1.2",
       "purl": "pkg:pypi/jaraco-context@6.1.2",
@@ -5790,7 +5754,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "jaraco-functools-62@4.6.0",
+      "bom-ref": "jaraco-functools-61@4.6.0",
       "name": "jaraco-functools",
       "version": "4.6.0",
       "purl": "pkg:pypi/jaraco-functools@4.6.0",
@@ -5830,7 +5794,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "jeepney-63@0.9.0",
+      "bom-ref": "jeepney-62@0.9.0",
       "name": "jeepney",
       "version": "0.9.0",
       "purl": "pkg:pypi/jeepney@0.9.0",
@@ -5870,7 +5834,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "jinja2-64@3.1.6",
+      "bom-ref": "jinja2-63@3.1.6",
       "name": "jinja2",
       "version": "3.1.6",
       "purl": "pkg:pypi/jinja2@3.1.6",
@@ -5906,7 +5870,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "jiter-65@0.16.0",
+      "bom-ref": "jiter-64@0.16.0",
       "name": "jiter",
       "version": "0.16.0",
       "purl": "pkg:pypi/jiter@0.16.0",
@@ -6530,7 +6494,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "jmespath-66@1.1.0",
+      "bom-ref": "jmespath-65@1.1.0",
       "name": "jmespath",
       "version": "1.1.0",
       "purl": "pkg:pypi/jmespath@1.1.0",
@@ -6566,7 +6530,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "jsonschema-67@4.26.0",
+      "bom-ref": "jsonschema-66@4.26.0",
       "name": "jsonschema",
       "version": "4.26.0",
       "purl": "pkg:pypi/jsonschema@4.26.0",
@@ -6600,7 +6564,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "jsonschema-specifications-68@2025.9.1",
+      "bom-ref": "jsonschema-specifications-67@2025.9.1",
       "name": "jsonschema-specifications",
       "version": "2025.9.1",
       "purl": "pkg:pypi/jsonschema-specifications@2025.9.1",
@@ -6634,7 +6598,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "keyring-69@25.7.0",
+      "bom-ref": "keyring-68@25.7.0",
       "name": "keyring",
       "version": "25.7.0",
       "purl": "pkg:pypi/keyring@25.7.0",
@@ -6674,7 +6638,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "markdown-70@3.10.3",
+      "bom-ref": "markdown-69@3.10.3",
       "name": "markdown",
       "version": "3.10.3",
       "purl": "pkg:pypi/markdown@3.10.3",
@@ -6708,7 +6672,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "markdown-it-py-71@4.2.0",
+      "bom-ref": "markdown-it-py-70@4.2.0",
       "name": "markdown-it-py",
       "version": "4.2.0",
       "purl": "pkg:pypi/markdown-it-py@4.2.0",
@@ -6744,7 +6708,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "markupsafe-72@3.0.3",
+      "bom-ref": "markupsafe-71@3.0.3",
       "name": "markupsafe",
       "version": "3.0.3",
       "purl": "pkg:pypi/markupsafe@3.0.3",
@@ -7318,10 +7282,10 @@
     },
     {
       "type": "library",
-      "bom-ref": "mcp-73@1.29.0",
+      "bom-ref": "mcp-72@2.1.1",
       "name": "mcp",
-      "version": "1.29.0",
-      "purl": "pkg:pypi/mcp@1.29.0",
+      "version": "2.1.1",
+      "purl": "pkg:pypi/mcp@2.1.1",
       "licenses": [
         {
           "license": {
@@ -7332,21 +7296,57 @@
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://files.pythonhosted.org/packages/30/d3/f9acc21dfc886e4f78e2add1a47db46ce16884346afde53f8a064c02c891/mcp-1.29.0.tar.gz",
+          "url": "https://files.pythonhosted.org/packages/d4/6e/21fb8e5d579dbe21d96ea4d5034200d46d8bdf2261053b5bd041f3c2f612/mcp-2.1.1.tar.gz",
           "hashes": [
             {
               "alg": "SHA-256",
-              "content": "52d01f334de1868cc3bb2d6604931126a67631f99a6c5d3b82ba47290315ec36"
+              "content": "50b7ba1ebbe117008ea7bdd288234043e69c20b403d6851d19661e6d431a75ef"
             }
           ]
         },
         {
           "type": "distribution",
-          "url": "https://files.pythonhosted.org/packages/01/c8/248b201f6d753d69fd5d6506011abbb35a946d9142b2ae311a948fd0be3d/mcp-1.29.0-py3-none-any.whl",
+          "url": "https://files.pythonhosted.org/packages/50/af/8644cc5fa26a59afd2df2e98eeb19e72926887fa4b7441aba4ff661140db/mcp-2.1.1-py3-none-any.whl",
           "hashes": [
             {
               "alg": "SHA-256",
-              "content": "f5a075bb611f23d6f4d080c6a1699fa62772eebc562ba9e66b306ddde1c755f7"
+              "content": "1c6c31c5d6471c58db76af3af8af67f46d11d01f0a59077d0a308cbdb3d3e915"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "mcp-types-73@2.1.1",
+      "name": "mcp-types",
+      "version": "2.1.1",
+      "purl": "pkg:pypi/mcp-types@2.1.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://files.pythonhosted.org/packages/6a/dd/1c4417dc0b722c23a1669032d5f044e41170fe5d4773b488a50fcce98c32/mcp_types-2.1.1.tar.gz",
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "77dcbe48fba73cca71a673f2646a5f037a017b7a0a07ac89cec1113028890eda"
+            }
+          ]
+        },
+        {
+          "type": "distribution",
+          "url": "https://files.pythonhosted.org/packages/71/d0/242e63c510f4a17381f55b1549a3f94f5687a0595984febd2b6f87a687a0/mcp_types-2.1.1-py3-none-any.whl",
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "26f9f7f03f2a5730717a5b98e2ab7eb640ac352d05a00cdc725c311864778295"
             }
           ]
         }
@@ -7994,7 +7994,41 @@
     },
     {
       "type": "library",
-      "bom-ref": "packaging-85@26.3",
+      "bom-ref": "opentelemetry-api-85@1.44.0",
+      "name": "opentelemetry-api",
+      "version": "1.44.0",
+      "purl": "pkg:pypi/opentelemetry-api@1.44.0",
+      "licenses": [
+        {
+          "expression": "Apache-2.0"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://files.pythonhosted.org/packages/ee/8b/aa9e2d8b8dfa7c946f7dec5d1f8f6ba8eca062f43509a06bdb5ce93d26c0/opentelemetry_api-1.44.0.tar.gz",
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "67647e5e9566edcf421166fdf022b3537f818635daa852b289e34604dc6fb33a"
+            }
+          ]
+        },
+        {
+          "type": "distribution",
+          "url": "https://files.pythonhosted.org/packages/ca/6f/a04e900f465ff3221ccc395522503e2d10e79fa21f2723c8e177aae1e0d1/opentelemetry_api-1.44.0-py3-none-any.whl",
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "94b98c893a91b88657eaac1e3ba89618cdb85be6918196705354f34728b2cdef"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "packaging-86@26.3",
       "name": "packaging",
       "version": "26.3",
       "purl": "pkg:pypi/packaging@26.3",
@@ -8028,7 +8062,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "paginate-86@0.5.7",
+      "bom-ref": "paginate-87@0.5.7",
       "name": "paginate",
       "version": "0.5.7",
       "purl": "pkg:pypi/paginate@0.5.7",
@@ -8064,7 +8098,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "pathspec-87@1.1.1",
+      "bom-ref": "pathspec-88@1.1.1",
       "name": "pathspec",
       "version": "1.1.1",
       "purl": "pkg:pypi/pathspec@1.1.1",
@@ -8100,7 +8134,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "platformdirs-88@4.11.3",
+      "bom-ref": "platformdirs-89@4.11.3",
       "name": "platformdirs",
       "version": "4.11.3",
       "purl": "pkg:pypi/platformdirs@4.11.3",
@@ -8134,7 +8168,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "pluggy-89@1.6.0",
+      "bom-ref": "pluggy-90@1.6.0",
       "name": "pluggy",
       "version": "1.6.0",
       "purl": "pkg:pypi/pluggy@1.6.0",
@@ -8170,7 +8204,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "polars-90@1.43.2",
+      "bom-ref": "polars-91@1.43.2",
       "name": "polars",
       "version": "1.43.2",
       "purl": "pkg:pypi/polars@1.43.2",
@@ -8206,7 +8240,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "polars-runtime-32-91@1.43.2",
+      "bom-ref": "polars-runtime-32-92@1.43.2",
       "name": "polars-runtime-32",
       "version": "1.43.2",
       "purl": "pkg:pypi/polars-runtime-32@1.43.2",
@@ -8312,7 +8346,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "prek-92@0.4.14",
+      "bom-ref": "prek-93@0.4.14",
       "name": "prek",
       "version": "0.4.14",
       "purl": "pkg:pypi/prek@0.4.14",
@@ -8496,7 +8530,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "progress-93@1.6.1",
+      "bom-ref": "progress-94@1.6.1",
       "name": "progress",
       "version": "1.6.1",
       "purl": "pkg:pypi/progress@1.6.1",
@@ -8530,7 +8564,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "proto-plus-94@1.28.3",
+      "bom-ref": "proto-plus-95@1.28.3",
       "name": "proto-plus",
       "version": "1.28.3",
       "purl": "pkg:pypi/proto-plus@1.28.3",
@@ -8566,7 +8600,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "protobuf-95@7.36.0",
+      "bom-ref": "protobuf-96@7.36.0",
       "name": "protobuf",
       "version": "7.36.0",
       "purl": "pkg:pypi/protobuf@7.36.0",
@@ -8662,7 +8696,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "pyasn1-96@0.6.4",
+      "bom-ref": "pyasn1-97@0.6.4",
       "name": "pyasn1",
       "version": "0.6.4",
       "purl": "pkg:pypi/pyasn1@0.6.4",
@@ -8698,7 +8732,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "pyasn1-modules-97@0.4.2",
+      "bom-ref": "pyasn1-modules-98@0.4.2",
       "name": "pyasn1-modules",
       "version": "0.4.2",
       "purl": "pkg:pypi/pyasn1-modules@0.4.2",
@@ -8734,7 +8768,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "pycparser-98@3.0",
+      "bom-ref": "pycparser-99@3.0",
       "name": "pycparser",
       "version": "3.0",
       "purl": "pkg:pypi/pycparser@3.0",
@@ -8774,7 +8808,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "pydantic-99@2.13.4",
+      "bom-ref": "pydantic-100@2.13.4",
       "name": "pydantic",
       "version": "2.13.4",
       "purl": "pkg:pypi/pydantic@2.13.4",
@@ -8808,7 +8842,7 @@
     },
     {
       "type": "library",
-      "bom-ref": "pydantic-core-100@2.46.4",
+      "bom-ref": "pydantic-core-101@2.46.4",
       "name": "pydantic-core",
       "version": "2.46.4",
       "purl": "pkg:pypi/pydantic-core@2.46.4",
@@ -9465,40 +9499,6 @@
             {
               "alg": "SHA-256",
               "content": "00c603d540afdd6b80eb39f078f33ebd46211f02f33e34a32d9f053bba711de0"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bom-ref": "pydantic-settings-101@2.15.0",
-      "name": "pydantic-settings",
-      "version": "2.15.0",
-      "purl": "pkg:pypi/pydantic-settings@2.15.0",
-      "licenses": [
-        {
-          "expression": "MIT"
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "distribution",
-          "url": "https://files.pythonhosted.org/packages/68/ca/31c57507b13119d7d3cfa1576dad2911a4861e3be07b579395f4e9d393f9/pydantic_settings-2.15.0.tar.gz",
-          "hashes": [
-            {
-              "alg": "SHA-256",
-              "content": "694b793e84f766ba76a90ebdefc01d0a9a045dab0382bee70393da93712ad117"
-            }
-          ]
-        },
-        {
-          "type": "distribution",
-          "url": "https://files.pythonhosted.org/packages/30/a4/2bffa9f8e804325a09867f0e9d30795c80ea9f8d62560bd1b6ad6220eb2f/pydantic_settings-2.15.0-py3-none-any.whl",
-          "hashes": [
-            {
-              "alg": "SHA-256",
-              "content": "0ba092c291c94baceb5eff768aa0d56400a457585bc0175925a5a5510303da42"
             }
           ]
         }
@@ -14407,9 +14407,9 @@
         "anyio-5@4.14.2",
         "docstring-parser-20@0.18.0",
         "google-auth-30@2.56.3",
-        "httpx2-53@2.12.0",
-        "jiter-65@0.16.0",
-        "pydantic-99@2.13.4",
+        "httpx2-52@2.12.0",
+        "jiter-64@0.16.0",
+        "pydantic-100@2.13.4",
         "sniffio-130@1.3.1",
         "typing-extensions-138@4.16.0"
       ]
@@ -14417,7 +14417,7 @@
     {
       "ref": "anyio-5@4.14.2",
       "dependsOn": [
-        "idna-57@3.19",
+        "idna-56@3.19",
         "typing-extensions-138@4.16.0"
       ]
     },
@@ -14437,7 +14437,7 @@
       "ref": "boto3-10@1.43.77",
       "dependsOn": [
         "botocore-11@1.43.77",
-        "jmespath-66@1.1.0",
+        "jmespath-65@1.1.0",
         "s3transfer-127@0.19.2"
       ]
     },
@@ -14445,7 +14445,7 @@
       "ref": "botocore-11@1.43.77",
       "dependsOn": [
         "awscrt-7@0.36.0",
-        "jmespath-66@1.1.0",
+        "jmespath-65@1.1.0",
         "python-dateutil-111@2.9.0.post0",
         "urllib3-141@2.7.0"
       ]
@@ -14456,7 +14456,7 @@
     {
       "ref": "cffi-13@2.1.1",
       "dependsOn": [
-        "pycparser-98@3.0"
+        "pycparser-99@3.0"
       ]
     },
     {
@@ -14496,7 +14496,7 @@
       "ref": "fastapi-23@0.141.1",
       "dependsOn": [
         "annotated-doc-2@0.0.5",
-        "pydantic-99@2.13.4",
+        "pydantic-100@2.13.4",
         "starlette-132@1.6.0",
         "typing-extensions-138@4.16.0",
         "typing-inspection-139@0.4.4"
@@ -14524,8 +14524,8 @@
         "googleapis-common-protos-41@1.75.1",
         "grpcio-43@1.83.0",
         "grpcio-status-44@1.83.0",
-        "proto-plus-94@1.28.3",
-        "protobuf-95@7.36.0",
+        "proto-plus-95@1.28.3",
+        "protobuf-96@7.36.0",
         "requests-120@2.34.2"
       ]
     },
@@ -14543,7 +14543,7 @@
       "ref": "google-auth-30@2.56.3",
       "dependsOn": [
         "cryptography-17@50.0.0",
-        "pyasn1-modules-97@0.4.2",
+        "pyasn1-modules-98@0.4.2",
         "requests-120@2.34.2"
       ]
     },
@@ -14574,8 +14574,8 @@
         "google-api-core-28@2.34.0",
         "google-auth-30@2.56.3",
         "grpcio-43@1.83.0",
-        "proto-plus-94@1.28.3",
-        "protobuf-95@7.36.0"
+        "proto-plus-95@1.28.3",
+        "protobuf-96@7.36.0"
       ]
     },
     {
@@ -14595,8 +14595,8 @@
         "google-api-core-28@2.34.0",
         "google-auth-30@2.56.3",
         "grpcio-43@1.83.0",
-        "proto-plus-94@1.28.3",
-        "protobuf-95@7.36.0"
+        "proto-plus-95@1.28.3",
+        "protobuf-96@7.36.0"
       ]
     },
     {
@@ -14607,8 +14607,8 @@
         "google-cloud-core-33@2.6.1",
         "grpc-google-iam-v1-42@0.14.5",
         "grpcio-43@1.83.0",
-        "proto-plus-94@1.28.3",
-        "protobuf-95@7.36.0"
+        "proto-plus-95@1.28.3",
+        "protobuf-96@7.36.0"
       ]
     },
     {
@@ -14621,7 +14621,7 @@
         "distro-19@1.9.0",
         "google-auth-30@2.56.3",
         "httpx-51@0.28.1",
-        "pydantic-99@2.13.4",
+        "pydantic-100@2.13.4",
         "requests-120@2.34.2",
         "sniffio-130@1.3.1",
         "tenacity-134@9.1.4",
@@ -14639,7 +14639,7 @@
       "ref": "googleapis-common-protos-41@1.75.1",
       "dependsOn": [
         "grpcio-43@1.83.0",
-        "protobuf-95@7.36.0"
+        "protobuf-96@7.36.0"
       ]
     },
     {
@@ -14647,7 +14647,7 @@
       "dependsOn": [
         "googleapis-common-protos-41@1.75.1",
         "grpcio-43@1.83.0",
-        "protobuf-95@7.36.0"
+        "protobuf-96@7.36.0"
       ]
     },
     {
@@ -14661,7 +14661,7 @@
       "dependsOn": [
         "googleapis-common-protos-41@1.75.1",
         "grpcio-43@1.83.0",
-        "protobuf-95@7.36.0"
+        "protobuf-96@7.36.0"
       ]
     },
     {
@@ -14699,132 +14699,129 @@
         "anyio-5@4.14.2",
         "certifi-12@2026.7.22",
         "httpcore-47@1.0.9",
-        "idna-57@3.19"
+        "idna-56@3.19"
       ]
     },
     {
-      "ref": "httpx-sse-52@0.4.3"
-    },
-    {
-      "ref": "httpx2-53@2.12.0",
+      "ref": "httpx2-52@2.12.0",
       "dependsOn": [
         "anyio-5@4.14.2",
         "httpcore2-48@2.12.0",
-        "httpx2-jsfetch-54@1.0",
-        "idna-57@3.19",
+        "httpx2-jsfetch-53@1.0",
+        "idna-56@3.19",
         "truststore-136@0.10.4",
         "typing-extensions-138@4.16.0"
       ]
     },
     {
-      "ref": "httpx2-jsfetch-54@1.0"
+      "ref": "httpx2-jsfetch-53@1.0"
     },
     {
-      "ref": "huggingface-hub-55@1.28.0",
+      "ref": "huggingface-hub-54@1.28.0",
       "dependsOn": [
         "click-15@8.4.2",
         "filelock-25@3.32.3",
         "fsspec-26@2026.7.0",
         "hf-xet-46@1.6.0",
         "httpx-51@0.28.1",
-        "packaging-85@26.3",
+        "packaging-86@26.3",
         "pyyaml-116@6.0.3",
         "tqdm-135@4.70.0",
         "typing-extensions-138@4.16.0"
       ]
     },
     {
-      "ref": "id-56@1.6.1",
+      "ref": "id-55@1.6.1",
       "dependsOn": [
         "urllib3-141@2.7.0"
       ]
     },
     {
-      "ref": "idna-57@3.19"
+      "ref": "idna-56@3.19"
     },
     {
-      "ref": "iniconfig-58@2.3.0"
+      "ref": "iniconfig-57@2.3.0"
     },
     {
-      "ref": "isodate-59@0.7.2"
+      "ref": "isodate-58@0.7.2"
     },
     {
-      "ref": "jaraco-classes-60@3.4.0",
+      "ref": "jaraco-classes-59@3.4.0",
       "dependsOn": [
         "more-itertools-80@11.1.0"
       ]
     },
     {
-      "ref": "jaraco-context-61@6.1.2"
+      "ref": "jaraco-context-60@6.1.2"
     },
     {
-      "ref": "jaraco-functools-62@4.6.0",
+      "ref": "jaraco-functools-61@4.6.0",
       "dependsOn": [
         "more-itertools-80@11.1.0"
       ]
     },
     {
-      "ref": "jeepney-63@0.9.0"
+      "ref": "jeepney-62@0.9.0"
     },
     {
-      "ref": "jinja2-64@3.1.6",
+      "ref": "jinja2-63@3.1.6",
       "dependsOn": [
-        "markupsafe-72@3.0.3"
+        "markupsafe-71@3.0.3"
       ]
     },
     {
-      "ref": "jiter-65@0.16.0"
+      "ref": "jiter-64@0.16.0"
     },
     {
-      "ref": "jmespath-66@1.1.0"
+      "ref": "jmespath-65@1.1.0"
     },
     {
-      "ref": "jsonschema-67@4.26.0",
+      "ref": "jsonschema-66@4.26.0",
       "dependsOn": [
         "attrs-6@26.1.0",
-        "jsonschema-specifications-68@2025.9.1",
+        "jsonschema-specifications-67@2025.9.1",
         "referencing-119@0.37.0",
         "rpds-py-126@2026.6.3"
       ]
     },
     {
-      "ref": "jsonschema-specifications-68@2025.9.1",
+      "ref": "jsonschema-specifications-67@2025.9.1",
       "dependsOn": [
         "referencing-119@0.37.0"
       ]
     },
     {
-      "ref": "keyring-69@25.7.0",
+      "ref": "keyring-68@25.7.0",
       "dependsOn": [
-        "jaraco-classes-60@3.4.0",
-        "jaraco-context-61@6.1.2",
-        "jaraco-functools-62@4.6.0",
-        "jeepney-63@0.9.0",
+        "jaraco-classes-59@3.4.0",
+        "jaraco-context-60@6.1.2",
+        "jaraco-functools-61@4.6.0",
+        "jeepney-62@0.9.0",
         "pywin32-ctypes-115@0.2.3",
         "secretstorage-128@3.5.0"
       ]
     },
     {
-      "ref": "markdown-70@3.10.3"
+      "ref": "markdown-69@3.10.3"
     },
     {
-      "ref": "markdown-it-py-71@4.2.0",
+      "ref": "markdown-it-py-70@4.2.0",
       "dependsOn": [
         "mdurl-74@0.1.2"
       ]
     },
     {
-      "ref": "markupsafe-72@3.0.3"
+      "ref": "markupsafe-71@3.0.3"
     },
     {
-      "ref": "mcp-73@1.29.0",
+      "ref": "mcp-72@2.1.1",
       "dependsOn": [
         "anyio-5@4.14.2",
-        "httpx-51@0.28.1",
-        "httpx-sse-52@0.4.3",
-        "jsonschema-67@4.26.0",
-        "pydantic-99@2.13.4",
-        "pydantic-settings-101@2.15.0",
+        "httpx2-52@2.12.0",
+        "jsonschema-66@4.26.0",
+        "mcp-types-73@2.1.1",
+        "opentelemetry-api-85@1.44.0",
+        "pydantic-100@2.13.4",
         "pyjwt-103@2.13.0",
         "python-multipart-113@0.0.32",
         "pywin32-114@312",
@@ -14833,6 +14830,13 @@
         "typing-extensions-138@4.16.0",
         "typing-inspection-139@0.4.4",
         "uvicorn-142@0.52.4"
+      ]
+    },
+    {
+      "ref": "mcp-types-73@2.1.1",
+      "dependsOn": [
+        "pydantic-100@2.13.4",
+        "typing-extensions-138@4.16.0"
       ]
     },
     {
@@ -14847,13 +14851,13 @@
         "click-15@8.4.2",
         "colorama-16@0.4.6",
         "ghp-import-27@2.1.0",
-        "jinja2-64@3.1.6",
-        "markdown-70@3.10.3",
-        "markupsafe-72@3.0.3",
+        "jinja2-63@3.1.6",
+        "markdown-69@3.10.3",
+        "markupsafe-71@3.0.3",
         "mergedeep-75@1.3.4",
         "mkdocs-get-deps-77@0.2.2",
-        "packaging-85@26.3",
-        "pathspec-87@1.1.1",
+        "packaging-86@26.3",
+        "pathspec-88@1.1.1",
         "pyyaml-116@6.0.3",
         "pyyaml-env-tag-117@1.1",
         "watchdog-144@6.0.0"
@@ -14863,7 +14867,7 @@
       "ref": "mkdocs-get-deps-77@0.2.2",
       "dependsOn": [
         "mergedeep-75@1.3.4",
-        "platformdirs-88@4.11.3",
+        "platformdirs-89@4.11.3",
         "pyyaml-116@6.0.3"
       ]
     },
@@ -14873,11 +14877,11 @@
         "babel-8@2.18.0",
         "backrefs-9@8.0",
         "colorama-16@0.4.6",
-        "jinja2-64@3.1.6",
-        "markdown-70@3.10.3",
+        "jinja2-63@3.1.6",
+        "markdown-69@3.10.3",
         "mkdocs-76@1.6.1",
         "mkdocs-material-extensions-79@1.3.1",
-        "paginate-86@0.5.7",
+        "paginate-87@0.5.7",
         "pygments-102@2.21.0",
         "pymdown-extensions-104@11.0.1",
         "requests-120@2.34.2"
@@ -14907,85 +14911,83 @@
       "ref": "openai-84@3.3.1",
       "dependsOn": [
         "anyio-5@4.14.2",
-        "httpx2-53@2.12.0",
-        "jiter-65@0.16.0",
-        "pydantic-99@2.13.4",
+        "httpx2-52@2.12.0",
+        "jiter-64@0.16.0",
+        "pydantic-100@2.13.4",
         "sniffio-130@1.3.1",
         "typing-extensions-138@4.16.0"
       ]
     },
     {
-      "ref": "packaging-85@26.3"
-    },
-    {
-      "ref": "paginate-86@0.5.7"
-    },
-    {
-      "ref": "pathspec-87@1.1.1"
-    },
-    {
-      "ref": "platformdirs-88@4.11.3"
-    },
-    {
-      "ref": "pluggy-89@1.6.0"
-    },
-    {
-      "ref": "polars-90@1.43.2",
-      "dependsOn": [
-        "polars-runtime-32-91@1.43.2"
-      ]
-    },
-    {
-      "ref": "polars-runtime-32-91@1.43.2"
-    },
-    {
-      "ref": "prek-92@0.4.14"
-    },
-    {
-      "ref": "progress-93@1.6.1"
-    },
-    {
-      "ref": "proto-plus-94@1.28.3",
-      "dependsOn": [
-        "protobuf-95@7.36.0"
-      ]
-    },
-    {
-      "ref": "protobuf-95@7.36.0"
-    },
-    {
-      "ref": "pyasn1-96@0.6.4"
-    },
-    {
-      "ref": "pyasn1-modules-97@0.4.2",
-      "dependsOn": [
-        "pyasn1-96@0.6.4"
-      ]
-    },
-    {
-      "ref": "pycparser-98@3.0"
-    },
-    {
-      "ref": "pydantic-99@2.13.4",
-      "dependsOn": [
-        "annotated-types-3@0.8.0",
-        "pydantic-core-100@2.46.4",
-        "typing-extensions-138@4.16.0",
-        "typing-inspection-139@0.4.4"
-      ]
-    },
-    {
-      "ref": "pydantic-core-100@2.46.4",
+      "ref": "opentelemetry-api-85@1.44.0",
       "dependsOn": [
         "typing-extensions-138@4.16.0"
       ]
     },
     {
-      "ref": "pydantic-settings-101@2.15.0",
+      "ref": "packaging-86@26.3"
+    },
+    {
+      "ref": "paginate-87@0.5.7"
+    },
+    {
+      "ref": "pathspec-88@1.1.1"
+    },
+    {
+      "ref": "platformdirs-89@4.11.3"
+    },
+    {
+      "ref": "pluggy-90@1.6.0"
+    },
+    {
+      "ref": "polars-91@1.43.2",
       "dependsOn": [
-        "pydantic-99@2.13.4",
-        "python-dotenv-112@1.2.3",
+        "polars-runtime-32-92@1.43.2"
+      ]
+    },
+    {
+      "ref": "polars-runtime-32-92@1.43.2"
+    },
+    {
+      "ref": "prek-93@0.4.14"
+    },
+    {
+      "ref": "progress-94@1.6.1"
+    },
+    {
+      "ref": "proto-plus-95@1.28.3",
+      "dependsOn": [
+        "protobuf-96@7.36.0"
+      ]
+    },
+    {
+      "ref": "protobuf-96@7.36.0"
+    },
+    {
+      "ref": "pyasn1-97@0.6.4"
+    },
+    {
+      "ref": "pyasn1-modules-98@0.4.2",
+      "dependsOn": [
+        "pyasn1-97@0.6.4"
+      ]
+    },
+    {
+      "ref": "pycparser-99@3.0"
+    },
+    {
+      "ref": "pydantic-100@2.13.4",
+      "dependsOn": [
+        "annotated-types-3@0.8.0",
+        "pydantic-core-101@2.46.4",
+        "typing-extensions-138@4.16.0",
         "typing-inspection-139@0.4.4"
+      ]
+    },
+    {
+      "ref": "pydantic-core-101@2.46.4",
+      "dependsOn": [
+        "typing-extensions-138@4.16.0"
       ]
     },
     {
@@ -15000,7 +15002,7 @@
     {
       "ref": "pymdown-extensions-104@11.0.1",
       "dependsOn": [
-        "markdown-70@3.10.3",
+        "markdown-69@3.10.3",
         "pyyaml-116@6.0.3"
       ]
     },
@@ -15017,9 +15019,9 @@
       "ref": "pytest-108@9.1.1",
       "dependsOn": [
         "colorama-16@0.4.6",
-        "iniconfig-58@2.3.0",
-        "packaging-85@26.3",
-        "pluggy-89@1.6.0",
+        "iniconfig-57@2.3.0",
+        "packaging-86@26.3",
+        "pluggy-90@1.6.0",
         "pygments-102@2.21.0"
       ]
     },
@@ -15084,7 +15086,7 @@
       "dependsOn": [
         "certifi-12@2026.7.22",
         "charset-normalizer-14@3.5.1",
-        "idna-57@3.19",
+        "idna-56@3.19",
         "urllib3-141@2.7.0"
       ]
     },
@@ -15107,7 +15109,7 @@
     {
       "ref": "rich-124@15.0.0",
       "dependsOn": [
-        "markdown-it-py-71@4.2.0",
+        "markdown-it-py-70@4.2.0",
         "pygments-102@2.21.0"
       ]
     },
@@ -15130,7 +15132,7 @@
       "ref": "secretstorage-128@3.5.0",
       "dependsOn": [
         "cryptography-17@50.0.0",
-        "jeepney-63@0.9.0"
+        "jeepney-62@0.9.0"
       ]
     },
     {
@@ -15157,7 +15159,7 @@
       "ref": "static-ffmpeg-133@3.0",
       "dependsOn": [
         "filelock-25@3.32.3",
-        "progress-93@1.6.1",
+        "progress-94@1.6.1",
         "requests-120@2.34.2",
         "twine-137@7.0.0"
       ]
@@ -15177,9 +15179,9 @@
     {
       "ref": "twine-137@7.0.0",
       "dependsOn": [
-        "id-56@1.6.1",
-        "keyring-69@25.7.0",
-        "packaging-85@26.3",
+        "id-55@1.6.1",
+        "keyring-68@25.7.0",
+        "packaging-86@26.3",
         "readme-renderer-118@45.0",
         "requests-120@2.34.2",
         "requests-toolbelt-122@1.0.0",
@@ -15235,7 +15237,7 @@
       "ref": "xlsxwriter-147@3.2.9"
     },
     {
-      "ref": "youtube-to-docs-1@0.0.111",
+      "ref": "youtube-to-docs-1@0.0.112",
       "dependsOn": [
         "anthropic-4@1.0.0",
         "boto3-10@1.43.77",
@@ -15249,15 +15251,15 @@
         "google-cloud-texttospeech-36@2.37.0",
         "google-cloud-translate-37@3.27.0",
         "google-genai-39@2.19.0",
-        "huggingface-hub-55@1.28.0",
-        "isodate-59@0.7.2",
-        "mcp-73@1.29.0",
+        "huggingface-hub-54@1.28.0",
+        "isodate-58@0.7.2",
+        "mcp-72@2.1.1",
         "mkdocs-76@1.6.1",
         "mkdocs-material-78@9.7.7",
         "msal-81@1.37.0",
         "openai-84@3.3.1",
-        "polars-90@1.43.2",
-        "prek-92@0.4.14",
+        "polars-91@1.43.2",
+        "prek-93@0.4.14",
         "pypandoc-105@1.17",
         "pypandoc-binary-106@1.17",
         "pytest-108@9.1.1",
