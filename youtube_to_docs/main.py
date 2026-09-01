@@ -54,6 +54,7 @@ from youtube_to_docs.translate import (
 from youtube_to_docs.tts import process_tts
 from youtube_to_docs.utils import (
     format_clickable_path,
+    get_version,
     normalize_model_name,
     reorder_columns,
 )
@@ -81,7 +82,16 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     RichHelpFormatter.styles["argparse.groups"] = "bold yellow"
     RichHelpFormatter.styles["argparse.metavar"] = "bold magenta"
 
+    version = get_version()
+
     parser = argparse.ArgumentParser(formatter_class=RichHelpFormatter)
+    parser.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version=f"YouTube-to-docs version: {version}",
+        help="Show the YouTube-to-docs version and exit.",
+    )
     parser.add_argument(
         "video_id",
         nargs="?",
@@ -307,6 +317,8 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     )
 
     args = parser.parse_args(args_list)
+
+    rprint(f"Running YouTube-to-docs version: {version}")
 
     # Default to gemini-3.5-flash-lite if -scc or -i is set without explicit -m
     if (args.suggest_corrected_captions or args.infographic) and args.model is None:

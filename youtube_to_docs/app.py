@@ -440,7 +440,8 @@ def _is_port_in_use(port: int, host: str = "0.0.0.0") -> bool:
 def start_server():
     """Entry point for the youtube-to-docs-app command."""
     import argparse
-    import importlib.metadata
+
+    from youtube_to_docs.utils import get_version
 
     parser = argparse.ArgumentParser(description="YouTube to Docs Web App")
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
@@ -448,11 +449,7 @@ def start_server():
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload")
     args = parser.parse_args()
 
-    # Get version
-    try:
-        version = importlib.metadata.version("youtube-to-docs")
-    except importlib.metadata.PackageNotFoundError:
-        version = "unknown"
+    version = get_version()
 
     port = args.port
     # If the user didn't specify a port (it's the default 8000), or even if they did,

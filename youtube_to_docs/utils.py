@@ -1,3 +1,4 @@
+import importlib.metadata
 import os
 import re
 from collections.abc import Callable
@@ -8,6 +9,14 @@ import polars as pl
 from rich import print as rprint
 
 T = TypeVar("T")
+
+
+def get_version() -> str:
+    """Return the installed package version, or "unknown" if not installed."""
+    try:
+        return importlib.metadata.version("youtube-to-docs")
+    except importlib.metadata.PackageNotFoundError:
+        return "unknown"
 
 
 def get_gcp_client(
