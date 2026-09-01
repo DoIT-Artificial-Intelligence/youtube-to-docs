@@ -216,6 +216,7 @@ srt-files/
 qa-files/
 speaker-extraction-files/
 summary-files/
+summary-prompts/
 tag-files/
 transcript-files/
 video-files/

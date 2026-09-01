@@ -1866,6 +1866,26 @@ def _transcribe_aws(
     return transcript_text, srt_content, 0, 0
 
 
+def build_summary_prompt(
+    transcript: str,
+    video_title: str,
+    url: str,
+    language: str = "en",
+) -> str:
+    """Build the text prompt used to generate a summary.
+
+    Kept separate from generate_summary so callers can persist the exact
+    prompt that was sent to the LLM.
+    """
+    return (
+        f"I have included a transcript for {url} ({video_title})"
+        "\n\n"
+        f"Can you please summarize this in {language}?"
+        "\n\n"
+        f"{transcript}"
+    )
+
+
 def generate_summary(
     model_name: str,
     transcript: str,
@@ -1874,13 +1894,7 @@ def generate_summary(
     language: str = "en",
 ) -> Tuple[str, int, int]:
     """Generates a summary and returns (summary_text, input_tokens, output_tokens)."""
-    prompt = (
-        f"I have included a transcript for {url} ({video_title})"
-        "\n\n"
-        f"Can you please summarize this in {language}?"
-        "\n\n"
-        f"{transcript}"
-    )
+    prompt = build_summary_prompt(transcript, video_title, url, language=language)
     return _query_llm(model_name, prompt)
 
 

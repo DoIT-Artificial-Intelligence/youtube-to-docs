@@ -12,6 +12,7 @@ from rich_argparse import RichHelpFormatter
 
 from youtube_to_docs.infographic import build_infographic_prompt, generate_infographic
 from youtube_to_docs.llms import (
+    build_summary_prompt,
     extract_speakers,
     generate_one_sentence_summary,
     generate_qa,
@@ -438,6 +439,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     tags_dir = os.path.join(base_dir, "tag-files")
     alt_text_dir = os.path.join(base_dir, "infographic-alt-text")
     infographic_prompts_dir = os.path.join(base_dir, "infographic-prompts")
+    summary_prompts_dir = os.path.join(base_dir, "summary-prompts")
     srt_dir = os.path.join(base_dir, "srt-files")
     suggested_captions_dir = os.path.join(base_dir, "suggested-corrected-caption-files")
 
@@ -457,6 +459,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     storage.ensure_directory(tags_dir)
     storage.ensure_directory(alt_text_dir)
     storage.ensure_directory(infographic_prompts_dir)
+    storage.ensure_directory(summary_prompts_dir)
     storage.ensure_directory(srt_dir)
     storage.ensure_directory(suggested_captions_dir)
 
@@ -1160,6 +1163,35 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                     f"{normalize_model_name(model_name)} "
                     f"Speaker extraction cost from {transcript_arg} ($)"
                 )
+                summary_prompt_file_col_name = (
+                    f"Summary Prompt Path {model_name} from "
+                    f"{transcript_arg}{col_suffix}"
+                )
+
+                # Save the exact prompt sent to the LLM. Done before generation
+                # so the prompt is recorded even if summarization later fails.
+                if not row.get(summary_prompt_file_col_name):
+                    summary_prompt_text = build_summary_prompt(
+                        transcript, video_title, url, language=language
+                    )
+                    summary_prompt_filename = (
+                        f"{model_name} - {video_id} - {safe_title} - "
+                        f"summary-prompt (from {transcript_arg}){lang_str}.txt"
+                    )
+                    target_path = os.path.join(
+                        summary_prompts_dir, summary_prompt_filename
+                    )
+                    try:
+                        saved_prompt_path = storage.write_text(
+                            target_path, summary_prompt_text
+                        )
+                        rprint(
+                            "Saved summary prompt: "
+                            f"{format_clickable_path(saved_prompt_path)}"
+                        )
+                        row[summary_prompt_file_col_name] = saved_prompt_path
+                    except Exception as e:
+                        print(f"Error writing summary prompt: {e}")
 
                 # Speaker Extraction
                 speakers_text = ""
@@ -1783,6 +1815,33 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                         f"{normalize_model_name(model_name)} summary cost from "
                         f"youtube{col_suffix} ($)"
                     )
+                    yt_sum_prompt_file_col_name = (
+                        f"Summary Prompt Path {model_name} from youtube{col_suffix}"
+                    )
+
+                    # Save the exact prompt sent to the LLM before generating.
+                    if not row.get(yt_sum_prompt_file_col_name):
+                        yt_summary_prompt_text = build_summary_prompt(
+                            youtube_transcript, video_title, url, language=language
+                        )
+                        summary_prompt_filename = (
+                            f"{model_name} - {video_id} - {safe_title} - "
+                            f"summary-prompt (from youtube){lang_str}.txt"
+                        )
+                        target_path = os.path.join(
+                            summary_prompts_dir, summary_prompt_filename
+                        )
+                        try:
+                            saved_prompt_path = storage.write_text(
+                                target_path, yt_summary_prompt_text
+                            )
+                            rprint(
+                                "Saved summary prompt: "
+                                f"{format_clickable_path(saved_prompt_path)}"
+                            )
+                            row[yt_sum_prompt_file_col_name] = saved_prompt_path
+                        except Exception as e:
+                            print(f"Error writing summary prompt: {e}")
 
                     # Check disk for YT Summary file
                     if not row.get(yt_sum_file_col_name):

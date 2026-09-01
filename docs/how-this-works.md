@@ -173,6 +173,7 @@ youtube-to-docs-artifacts/
 ├── speaker-extraction-files/     # Identified speakers lists
 ├── qa-files/                     # Markdown Q&A tables with timestamps
 ├── summary-files/                # Markdown summaries
+├── summary-prompts/              # The exact prompts sent to the LLM for summaries
 ├── one-sentence-summary-files/   # Concisely summarized content
 ├── tag-files/                    # AI-generated tags files
 ├── infographic-files/            # Generated infographic images

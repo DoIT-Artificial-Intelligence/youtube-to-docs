@@ -23,6 +23,35 @@ class TestLLMs(unittest.TestCase):
     def tearDown(self):
         self.env_patcher.stop()
 
+    def test_build_summary_prompt(self):
+        prompt = llms.build_summary_prompt(
+            "transcript text",
+            "Video Title",
+            "https://youtu.be/abc",
+            language="es",
+        )
+        self.assertIn("https://youtu.be/abc (Video Title)", prompt)
+        self.assertIn("summarize this in es?", prompt)
+        self.assertIn("transcript text", prompt)
+
+    def test_build_summary_prompt_default_language(self):
+        prompt = llms.build_summary_prompt("transcript", "Title", "url")
+        self.assertIn("summarize this in en?", prompt)
+
+    @patch("youtube_to_docs.llms._query_llm")
+    def test_generate_summary_uses_build_prompt(self, mock_query):
+        # The prompt sent to the model must match build_summary_prompt
+        # so the persisted prompt file is faithful.
+        mock_query.return_value = ("Summary", 1, 2)
+
+        llms.generate_summary("gemini-pro", "transcript", "Title", "url", language="fr")
+
+        sent_prompt = mock_query.call_args[0][1]
+        expected = llms.build_summary_prompt(
+            "transcript", "Title", "url", language="fr"
+        )
+        self.assertEqual(sent_prompt, expected)
+
     @patch("google.genai.Client")
     def test_generate_summary_gemini(self, mock_client_cls):
         mock_client = mock_client_cls.return_value

@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, mock_open, patch
 import polars as pl
 
 from youtube_to_docs import main
+from youtube_to_docs.llms import build_summary_prompt
 
 
 class TestMain(unittest.TestCase):
@@ -472,6 +473,62 @@ class TestMain(unittest.TestCase):
                 self.assertIn(
                     "gemini-test Speaker extraction cost from youtube ($)", df.columns
                 )
+
+    @patch("youtube_to_docs.main.get_youtube_service")
+    @patch("youtube_to_docs.main.resolve_video_ids")
+    @patch("youtube_to_docs.main.get_video_details")
+    @patch("youtube_to_docs.main.fetch_transcript")
+    @patch("youtube_to_docs.main.generate_summary")
+    @patch("youtube_to_docs.main.get_model_pricing")
+    @patch("youtube_to_docs.main.generate_tags")
+    def test_summary_prompt_storage(
+        self,
+        mock_gen_tags,
+        mock_get_pricing,
+        mock_gen_summary,
+        mock_fetch_trans,
+        mock_details,
+        mock_resolve,
+        mock_svc,
+    ):
+        mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
+        mock_resolve.return_value = ["vid1"]
+        mock_details.return_value = (
+            "Title 1",
+            "Desc",
+            "2023-01-01",
+            "Chan",
+            "Tags",
+            "0:01:00",
+            "url1",
+            60.0,
+        )
+        mock_fetch_trans.return_value = ("Transcript 1", False, "")
+        mock_gen_summary.return_value = ("Summary 1", 100, 50)
+        mock_get_pricing.return_value = (0.0, 0.0)
+
+        with patch(
+            "sys.argv",
+            ["main.py", "vid1", "-o", self.outfile, "-m", "gemini-test"],
+        ):
+            main.main()
+
+        df = pl.read_csv(self.outfile)
+        prompt_col = "Summary Prompt Path gemini-test from youtube"
+        self.assertIn(prompt_col, df.columns)
+        prompt_path = df[0, prompt_col]
+        self.assertIn("summary-prompts", prompt_path)
+        self.assertTrue(prompt_path.endswith(".txt"))
+
+        # The persisted prompt must match what was sent to the model
+        with open(prompt_path) as f:
+            saved_prompt = f.read()
+        self.assertEqual(
+            saved_prompt,
+            build_summary_prompt(
+                "Transcript 1", "Title 1", "https://www.youtube.com/watch?v=vid1"
+            ),
+        )
 
     @patch("youtube_to_docs.main.get_youtube_service")
     @patch("youtube_to_docs.main.resolve_video_ids")
