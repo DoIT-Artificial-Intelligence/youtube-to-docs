@@ -180,7 +180,7 @@ def _validate_output_file(output_file: str) -> str:
         return output_file
 
     resolved = _safe_resolve_within_cwd(output_file)
-    return os.path.relpath(resolved, os.getcwd())
+    return Path(os.path.relpath(resolved, os.getcwd())).as_posix()
 
 
 @app.post("/api/process")
