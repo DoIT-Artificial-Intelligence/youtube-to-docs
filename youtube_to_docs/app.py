@@ -334,14 +334,13 @@ async def stream_job(job_id: str):
 @app.get("/api/artifacts/{path:path}")
 async def get_artifact(path: str):
     # Only serve files under OUTPUT_ROOT. realpath follows symlinks, so a link
-    # inside OUTPUT_ROOT that points elsewhere is rejected too.
+    # inside OUTPUT_ROOT that points elsewhere is rejected too. The check is
+    # inline (realpath + startswith) so CodeQL recognises it as a sanitizer.
     cwd = os.path.realpath(os.getcwd())
-    try:
-        safe_path = resolve_within(
-            os.path.join(cwd, OUTPUT_ROOT), os.path.join(cwd, path)
-        )
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Access denied") from None
+    root = os.path.realpath(os.path.join(cwd, OUTPUT_ROOT))
+    safe_path = os.path.realpath(os.path.join(cwd, path))
+    if not safe_path.startswith(root + os.sep):
+        raise HTTPException(status_code=400, detail="Access denied")
 
     if not os.path.isfile(safe_path):
         raise HTTPException(status_code=404, detail="File not found")
