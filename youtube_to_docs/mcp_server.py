@@ -4,7 +4,7 @@ import io
 from mcp.server.mcpserver import MCPServer
 
 from youtube_to_docs.main import main as app_main
-from youtube_to_docs.utils import get_version
+from youtube_to_docs.utils import get_version, validate_output_file
 
 mcp = MCPServer("youtube-to-docs", version=get_version())
 
@@ -39,6 +39,7 @@ def process_video(
             or comma-separated list of IDs.
         output_file: Path to save the output CSV file.
             Defaults to 'youtube-to-docs-artifacts/youtube-docs.csv'.
+            Local paths must be a .csv file inside 'youtube-to-docs-artifacts/'.
             Can also be 'workspace' or 'w' to store to Google Drive,
             'sharepoint' or 's' to store to Microsoft SharePoint,
             'hf' to store to a Hugging Face dataset (see hugging_face_dataset),
@@ -94,6 +95,11 @@ def process_video(
             Values can be a list for multiple words.
         verbose: If True, enables verbose logging in the output.
     """
+    try:
+        output_file = validate_output_file(output_file)
+    except ValueError as e:
+        return f"Error processing {url}: {e}"
+
     args = [
         url,
         "--outfile",

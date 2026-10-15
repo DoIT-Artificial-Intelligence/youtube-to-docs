@@ -10,6 +10,75 @@ from rich import print as rprint
 
 T = TypeVar("T")
 
+# Local output written by untrusted callers (web app, MCP server) must stay
+# inside this directory, relative to the working directory.
+OUTPUT_ROOT = "youtube-to-docs-artifacts"
+
+# Remote/special output_file values that are not local paths
+REMOTE_OUTPUT_VALUES = {
+    "workspace",
+    "w",
+    "sharepoint",
+    "s",
+    "hf",
+    "memory",
+    "m",
+    "none",
+    "n",
+}
+
+
+def is_remote_output(output_file: str) -> bool:
+    """Return True if main() treats output_file as non-local storage."""
+    if output_file.lower() in REMOTE_OUTPUT_VALUES:
+        return True
+    # Mirrors the Google Drive folder ID heuristic in main()
+    return (
+        len(output_file) > 20
+        and "." not in output_file
+        and "/" not in output_file
+        and "\\" not in output_file
+    )
+
+
+def resolve_within(base: str, user_path: str) -> str:
+    """Resolve user_path against base (following symlinks) and ensure the
+    result is base itself or inside it. Raises ValueError otherwise.
+    """
+    real_base = os.path.realpath(base)
+    resolved = os.path.realpath(os.path.join(real_base, user_path))
+    if not (resolved == real_base or resolved.startswith(real_base + os.sep)):
+        raise ValueError(f"Invalid path: must be within {base}")
+    return resolved
+
+
+def validate_output_file(output_file: str) -> str:
+    """Validate an output_file supplied by an untrusted caller.
+
+    Remote/special values pass through unchanged. Local paths are resolved
+    relative to the working directory and must be a ``.csv`` file inside
+    OUTPUT_ROOT, so generated output can never overwrite source, config, or
+    credential files. Returns the path as ``OUTPUT_ROOT/<relative path>``.
+    Raises ValueError for invalid paths.
+    """
+    if is_remote_output(output_file):
+        return output_file
+
+    cwd = os.path.realpath(os.getcwd())
+    resolved = os.path.realpath(os.path.join(cwd, output_file))
+    root = os.path.join(cwd, OUTPUT_ROOT)
+    real_root = os.path.realpath(root)
+    try:
+        resolve_within(root, resolved)
+    except ValueError:
+        raise ValueError(
+            f"Invalid output_file: must be inside '{OUTPUT_ROOT}/' "
+            f"(e.g. '{OUTPUT_ROOT}/youtube-docs.csv')"
+        ) from None
+    if resolved == real_root or not resolved.lower().endswith(".csv"):
+        raise ValueError("Invalid output_file: must be a .csv file")
+    return os.path.join(OUTPUT_ROOT, os.path.relpath(resolved, real_root))
+
 
 def get_version() -> str:
     """Return the installed package version, or "unknown" if not installed."""

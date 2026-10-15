@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+import pytest
+
 from youtube_to_docs.mcp_server import mcp, process_video
 
 
@@ -27,7 +29,7 @@ def test_process_video_all_args():
         url = "https://www.youtube.com/watch?v=123"
         result = process_video(
             url=url,
-            output_file="custom.csv",
+            output_file="youtube-to-docs-artifacts/custom.csv",
             transcript_source="gemini-pro",
             model="gemini-2.5-pro",
             tts_model="tts-1",
@@ -39,7 +41,7 @@ def test_process_video_all_args():
         expected_args = [
             url,
             "--outfile",
-            "custom.csv",
+            "youtube-to-docs-artifacts/custom.csv",
             "--transcript",
             "gemini-pro",
             "--translate",
@@ -55,6 +57,31 @@ def test_process_video_all_args():
 
         mock_main.assert_called_once_with(expected_args)
         assert f"Successfully processed {url}" in result
+
+
+@pytest.mark.parametrize(
+    "output_file",
+    [
+        "../../.bashrc",
+        "../../.ssh/authorized_keys",
+        "/etc/cron.d/malicious",
+        "youtube-to-docs-artifacts/../pyproject.toml",
+        "youtube-to-docs-artifacts/notes.txt",
+    ],
+)
+def test_process_video_rejects_unsafe_output_file(output_file):
+    """output_file must be a .csv inside youtube-to-docs-artifacts/."""
+    with patch("youtube_to_docs.mcp_server.app_main") as mock_main:
+        result = process_video(url="abc12345678", output_file=output_file)
+    mock_main.assert_not_called()
+    assert "Invalid output_file" in result
+
+
+@pytest.mark.parametrize("output_file", ["workspace", "hf", "memory", "none"])
+def test_process_video_allows_remote_output(output_file):
+    with patch("youtube_to_docs.mcp_server.app_main") as mock_main:
+        process_video(url="abc12345678", output_file=output_file)
+    assert mock_main.call_args.args[0][2] == output_file
 
 
 def test_process_video_all_suite():

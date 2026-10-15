@@ -85,7 +85,7 @@ def test_process_all_args(client):
             "/api/process",
             json={
                 "url": "abc12345678",
-                "output_file": "custom.csv",
+                "output_file": "youtube-to-docs-artifacts/custom.csv",
                 "transcript_source": "gemini-pro",
                 "model": "gemini-3.5-flash-lite",
                 "tts_model": "gemini-3.1-flash-tts-preview-Kore",
@@ -114,6 +114,19 @@ def test_process_path_traversal_rejected(client):
         json={"url": "abc12345678", "output_file": "../../etc/evil.csv"},
     )
     assert resp.status_code == 400
+
+
+@pytest.mark.parametrize(
+    "output_file",
+    ["victim-private-key.pem", "pyproject.toml", ".env", "custom.csv"],
+)
+def test_process_rejects_files_outside_output_root(client, output_file):
+    with patch("youtube_to_docs.app._run_job", new_callable=AsyncMock) as run:
+        resp = client.post(
+            "/api/process", json={"url": "abc12345678", "output_file": output_file}
+        )
+    assert resp.status_code == 400
+    run.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
@@ -215,6 +228,41 @@ def test_artifact_not_found(client):
     assert resp.status_code == 404
 
 
+def test_artifact_served_from_output_root(client, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    qa_dir = tmp_path / "youtube-to-docs-artifacts" / "qa-files"
+    qa_dir.mkdir(parents=True)
+    (qa_dir / "abc12345678.md").write_text("qa")
+    resp = client.get(
+        "/api/artifacts/youtube-to-docs-artifacts/qa-files/abc12345678.md"
+    )
+    assert resp.status_code == 200
+    assert resp.text == "qa"
+
+
+def test_artifact_outside_output_root_denied(client, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "youtube-to-docs-artifacts").mkdir()
+    (tmp_path / ".env").write_text("SECRET=1")
+    (tmp_path / "src.py").write_text("print()")
+    for path in (".env", "src.py"):
+        resp = client.get(f"/api/artifacts/{path}")
+        assert resp.status_code == 400
+
+
+def test_artifact_symlink_escape_denied(client, tmp_path, monkeypatch):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "secret.txt").write_text("secret")
+    server_root = tmp_path / "server"
+    root = server_root / "youtube-to-docs-artifacts"
+    root.mkdir(parents=True)
+    (root / "escape").symlink_to(outside)
+    monkeypatch.chdir(server_root)
+    resp = client.get("/api/artifacts/youtube-to-docs-artifacts/escape/secret.txt")
+    assert resp.status_code == 400
+
+
 # ---------------------------------------------------------------------------
 # _extract_video_id
 # ---------------------------------------------------------------------------
@@ -264,8 +312,8 @@ def test_scan_artifacts_empty(tmp_path, monkeypatch):
 
 def test_scan_artifacts_finds_files(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    summary_dir = tmp_path / "summary-files"
-    summary_dir.mkdir()
+    summary_dir = tmp_path / "youtube-to-docs-artifacts" / "summary-files"
+    summary_dir.mkdir(parents=True)
     (summary_dir / "gemini - abc12345678 - summary.md").write_text("test")
 
     result = _scan_artifacts(
@@ -273,13 +321,25 @@ def test_scan_artifacts_finds_files(tmp_path, monkeypatch):
     )
     assert len(result) == 1
     assert result[0]["name"] == "gemini - abc12345678 - summary.md"
-    assert result[0]["directory"] == "summary-files"
+    assert result[0]["directory"] == "youtube-to-docs-artifacts/summary-files"
+
+
+def test_scan_artifacts_ignores_files_outside_output_root(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    summary_dir = tmp_path / "summary-files"
+    summary_dir.mkdir()
+    (summary_dir / "gemini - abc12345678 - summary.md").write_text("test")
+
+    result = _scan_artifacts(
+        "abc12345678", "youtube-to-docs-artifacts/youtube-docs.csv"
+    )
+    assert result == []
 
 
 def test_scan_artifacts_ignores_unrelated_files(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    summary_dir = tmp_path / "summary-files"
-    summary_dir.mkdir()
+    summary_dir = tmp_path / "youtube-to-docs-artifacts" / "summary-files"
+    summary_dir.mkdir(parents=True)
     (summary_dir / "gemini - other_id - summary.md").write_text("test")
 
     result = _scan_artifacts(
@@ -290,10 +350,11 @@ def test_scan_artifacts_ignores_unrelated_files(tmp_path, monkeypatch):
 
 def test_scan_artifacts_custom_output_file(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    custom_csv = tmp_path / "custom.csv"
-    custom_csv.write_text("header")
+    root = tmp_path / "youtube-to-docs-artifacts"
+    root.mkdir()
+    (root / "custom.csv").write_text("header")
 
-    result = _scan_artifacts("abc12345678", "custom.csv")
+    result = _scan_artifacts("abc12345678", "youtube-to-docs-artifacts/custom.csv")
     assert len(result) == 1
     assert result[0]["name"] == "custom.csv"
 
@@ -310,9 +371,19 @@ def test_scan_artifacts_remote_output_file(tmp_path, monkeypatch):
 
 
 class TestValidateOutputFile:
-    def test_valid_relative_path(self):
-        result = _validate_output_file("custom.csv")
-        assert result == "custom.csv"
+    def test_bare_filename_rejected(self):
+        from fastapi import HTTPException
+
+        with pytest.raises(HTTPException) as exc_info:
+            _validate_output_file("custom.csv")
+        assert exc_info.value.status_code == 400
+
+    def test_non_csv_rejected(self):
+        from fastapi import HTTPException
+
+        with pytest.raises(HTTPException) as exc_info:
+            _validate_output_file("youtube-to-docs-artifacts/key.pem")
+        assert exc_info.value.status_code == 400
 
     def test_valid_nested_path(self):
         result = _validate_output_file("youtube-to-docs-artifacts/youtube-docs.csv")
