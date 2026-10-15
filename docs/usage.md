@@ -365,7 +365,7 @@ This starts a local server at [http://localhost:8000](http://localhost:8000).
 
 | Flag       | Description                  | Default     |
 | :--------- | :--------------------------- | :---------- |
-| `--host`   | Host to bind to.             | `0.0.0.0`  |
+| `--host`   | Host to bind to. Use `0.0.0.0` to expose on your network (the app has no authentication). | `127.0.0.1` |
 | `--port`   | Port to bind to.             | `8000`      |
 | `--reload` | Enable auto-reload for dev.  | `False`     |
 

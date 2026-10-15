@@ -9,7 +9,7 @@ Usage::
     uv run youtube-to-docs-app
 
     # Custom host/port with auto-reload for development
-    uv run youtube-to-docs-app --host 127.0.0.1 --port 9000 --reload
+    uv run youtube-to-docs-app --port 9000 --reload
 """
 
 import asyncio
@@ -26,6 +26,12 @@ from pathlib import Path
 from youtube_to_docs.main import main as app_main
 from youtube_to_docs.models import MODEL_SUITES
 from youtube_to_docs.storage import MemoryStorage
+from youtube_to_docs.utils import (
+    OUTPUT_ROOT,
+    is_remote_output,
+    resolve_within,
+    validate_output_file,
+)
 
 try:
     import uvicorn
@@ -64,31 +70,7 @@ class Job:
     storage: MemoryStorage | None = None
 
 
-# Remote/special output_file values that are not local paths
-REMOTE_OUTPUT_VALUES = {"workspace", "w", "sharepoint", "s", "memory", "m", "none", "n"}
-
-
 jobs: dict[str, Job] = {}
-
-# Known artifact directories to scan
-ARTIFACT_DIRS = [
-    "youtube-to-docs-artifacts",
-    "summary-files",
-    "transcript-files",
-    "audio-files",
-    "infographic-files",
-    "speaker-extraction-files",
-    "qa-files",
-    "video-files",
-    "srt-files",
-    "tag-files",
-    "one-sentence-summary-files",
-    "infographic-alt-text",
-    "infographic-prompts",
-    "summary-prompts",
-    "suggested-corrected-caption-files",
-]
-
 
 # ---------------------------------------------------------------------------
 # Pydantic request model
@@ -153,34 +135,12 @@ async def model_suites():
     return MODEL_SUITES
 
 
-def _safe_resolve_within_cwd(user_path: str) -> str:
-    """Resolve a user-provided path and ensure it stays within cwd.
-
-    Returns the resolved absolute path string. Raises HTTPException if the
-    path escapes the working directory.
-
-    Uses os.path.realpath + startswith, which is the pattern recognised by
-    CodeQL as a path-traversal sanitizer.
-    """
-    cwd = os.path.realpath(os.getcwd())
-    resolved = os.path.realpath(os.path.join(cwd, user_path))
-    # Ensure the resolved path is within cwd (cwd itself or a child)
-    if not (resolved == cwd or resolved.startswith(cwd + os.sep)):
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid path: must be within the working directory",
-        )
-    return resolved
-
-
 def _validate_output_file(output_file: str) -> str:
-    """Validate and sanitize the output_file parameter to prevent path traversal."""
-    # Allow known remote/special values as-is
-    if output_file.lower() in REMOTE_OUTPUT_VALUES:
-        return output_file
-
-    resolved = _safe_resolve_within_cwd(output_file)
-    return os.path.relpath(resolved, os.getcwd())
+    """Validate output_file, confining local CSVs to OUTPUT_ROOT."""
+    try:
+        return validate_output_file(output_file)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from None
 
 
 @app.post("/api/process")
@@ -277,36 +237,33 @@ async def _run_job(job: Job, args: list[str]):
 
 
 def _scan_artifacts(video_id: str, output_file: str) -> list[dict]:
-    """Scan known artifact directories for files matching the video ID."""
+    """Scan OUTPUT_ROOT for files matching the video ID. Only paths that
+    get_artifact() will serve are returned."""
     artifacts = []
-    for dir_name in ARTIFACT_DIRS:
-        dir_path = Path(dir_name)
-        if not dir_path.exists():
+    root = Path(OUTPUT_ROOT)
+    files = sorted(root.rglob("*")) if root.is_dir() else []
+    if not is_remote_output(output_file):
+        files.append(Path(output_file))
+    seen = set()
+    for file_path in files:
+        is_csv = file_path == Path(output_file)
+        if not file_path.is_file() or not (is_csv or video_id in file_path.name):
             continue
-        for file_path in sorted(dir_path.rglob("*")):
-            if file_path.is_file() and video_id in file_path.name:
-                artifacts.append(
-                    {
-                        "path": file_path.as_posix(),
-                        "name": file_path.name,
-                        "directory": dir_name,
-                        "size": file_path.stat().st_size,
-                    }
-                )
-    # Also check the output CSV (skip remote storage values)
-    if output_file.lower() not in REMOTE_OUTPUT_VALUES:
-        safe_csv = _safe_resolve_within_cwd(output_file)
-        if os.path.isfile(safe_csv):
-            csv_path = Path(safe_csv)
-            rel = Path(os.path.relpath(safe_csv, os.getcwd()))
-            artifacts.append(
-                {
-                    "path": rel.as_posix(),
-                    "name": csv_path.name,
-                    "directory": rel.parent.as_posix(),
-                    "size": csv_path.stat().st_size,
-                }
-            )
+        try:
+            resolve_within(OUTPUT_ROOT, os.path.abspath(file_path))
+        except ValueError:
+            continue
+        if file_path.as_posix() in seen:
+            continue
+        seen.add(file_path.as_posix())
+        artifacts.append(
+            {
+                "path": file_path.as_posix(),
+                "name": file_path.name,
+                "directory": file_path.parent.as_posix(),
+                "size": file_path.stat().st_size,
+            }
+        )
     return artifacts
 
 
@@ -376,13 +333,15 @@ async def stream_job(job_id: str):
 
 @app.get("/api/artifacts/{path:path}")
 async def get_artifact(path: str):
-    # Sanitize: normalise the joined path and confirm it stays within cwd.
-    # Uses os.path.normpath + startswith, the pattern CodeQL recognises as a
-    # path-traversal sanitizer for py/path-injection.
-    base_dir = os.path.normpath(os.getcwd())
-    safe_path = os.path.normpath(os.path.join(base_dir, path))
-    if not safe_path.startswith(base_dir + os.sep):
-        raise HTTPException(status_code=400, detail="Access denied")
+    # Only serve files under OUTPUT_ROOT. realpath follows symlinks, so a link
+    # inside OUTPUT_ROOT that points elsewhere is rejected too.
+    cwd = os.path.realpath(os.getcwd())
+    try:
+        safe_path = resolve_within(
+            os.path.join(cwd, OUTPUT_ROOT), os.path.join(cwd, path)
+        )
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Access denied") from None
 
     if not os.path.isfile(safe_path):
         raise HTTPException(status_code=404, detail="File not found")
@@ -425,7 +384,7 @@ def _extract_video_id(url: str) -> str | None:
     return None
 
 
-def _is_port_in_use(port: int, host: str = "0.0.0.0") -> bool:
+def _is_port_in_use(port: int, host: str = "127.0.0.1") -> bool:
     """Check if a port is already in use on the given host."""
     import socket
 
@@ -444,7 +403,12 @@ def start_server():
     from youtube_to_docs.utils import get_version
 
     parser = argparse.ArgumentParser(description="YouTube to Docs Web App")
-    parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Host to bind to. Use 0.0.0.0 to expose on the network "
+        "(the app has no authentication).",
+    )
     parser.add_argument("--port", type=int, default=8000, help="Port to bind to")
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload")
     args = parser.parse_args()
@@ -467,9 +431,15 @@ def start_server():
     if port != args.port:
         print(f"Port {args.port} is in use, using port {port} instead.")
 
-    if args.host == "0.0.0.0":
+    if args.host in ("127.0.0.1", "localhost", "0.0.0.0"):
         print(f"YouTube to Docs v{version}")
         print(f"App available at: http://localhost:{port}")
+    if args.host not in ("127.0.0.1", "localhost", "::1"):
+        print(
+            f"Warning: binding to {args.host} exposes the app to the network. "
+            "It has no authentication; anyone who can reach it can run jobs "
+            "and read generated artifacts."
+        )
 
     uvicorn.run(
         "youtube_to_docs.app:app",

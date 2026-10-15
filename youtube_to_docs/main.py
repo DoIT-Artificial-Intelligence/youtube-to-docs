@@ -706,7 +706,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                 srt_path = row[col_srt]
                 if srt_path and storage.exists(str(srt_path)):
                     srt_content = storage.read_text(str(srt_path))
-            elif youtube_transcript and not srt_content:
+            elif youtube_transcript:
                 # Try to find it on disk
                 expected_srt_path = os.path.join(
                     srt_dir,
@@ -917,7 +917,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                     srt_path = row[ai_srt_col]
                     if srt_path and storage.exists(str(srt_path)):
                         ai_srt_content = storage.read_text(str(srt_path))
-                elif ai_transcript and not ai_srt_content:
+                elif ai_transcript:
                     # Try to find it on disk
                     expected_ai_srt_path = os.path.join(
                         srt_dir,

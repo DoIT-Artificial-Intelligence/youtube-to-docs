@@ -31,7 +31,7 @@ repos:
 
       - id: html-validate
         name: HTML Validate (a11y lint)
-        entry: bash -c 'npx html-validate@10.11.1 youtube_to_docs/static/index.html'
+        entry: bash -c 'npx --yes --legacy-peer-deps html-validate@10.11.1 youtube_to_docs/static/index.html'
         language: system
         types: [html]
         pass_filenames: false
