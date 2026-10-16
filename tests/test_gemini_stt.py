@@ -361,6 +361,7 @@ class TestMinutePseudoTokens(unittest.TestCase):
         """60 minutes of Chirp 3 at $0.016/minute costs $0.96."""
         tokens = llms.minute_pseudo_tokens(3600)
         input_price, output_price = llms.get_model_pricing("gcp-chirp3")
+        assert input_price is not None and output_price is not None
         cost = tokens / 1_000_000 * input_price + tokens / 1_000_000 * output_price
         self.assertAlmostEqual(cost, 0.96, places=3)
         self.assertEqual(llms.minute_pseudo_tokens(None), 0)

@@ -30,7 +30,9 @@ class TestParsing(unittest.TestCase):
     def test_video_mode_error(self):
         self.assertIsNone(vu.video_mode_error("gemini-3.5-flash-lite"))
         self.assertIsNone(vu.video_mode_error("gemini-4-argon"))
-        self.assertIn("Gemini API model", vu.video_mode_error("vertex-claude-opus-5-5"))
+        error = vu.video_mode_error("vertex-claude-opus-5-5")
+        assert error is not None
+        self.assertIn("Gemini API model", error)
 
     def test_usage_tokens_counts_thought_and_tool_use(self):
         """Thought tokens bill as output and tool-use tokens as input."""

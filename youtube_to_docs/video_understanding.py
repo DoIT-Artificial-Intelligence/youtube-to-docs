@@ -88,7 +88,9 @@ class VideoSession:
             }
             kwargs["input"] = [video_part, text_part]
 
-        interaction = self.client.interactions.create(**kwargs)
+        # Not streamed, so this is an Interaction (the SDK's return type also
+        # covers streams).
+        interaction: Any = self.client.interactions.create(**kwargs)
         deadline = time.time() + VIDEO_TIMEOUT_SECONDS
         while interaction.status in ("in_progress", "queued"):
             if time.time() > deadline:
@@ -99,7 +101,7 @@ class VideoSession:
                     0,
                 )
             time.sleep(VIDEO_POLL_SECONDS)
-            interaction = self.client.interactions.get(interaction.id)
+            interaction = self.client.interactions.get(str(interaction.id))
 
         if interaction.status != "completed":
             return f"Error: video request ended with status {interaction.status}", 0, 0
