@@ -1692,6 +1692,12 @@
 <td style="text-align: left;"><code>--no-youtube-summary</code></td>
 </tr>
 <tr>
+<td style="text-align: left;"><code>-fv</code>, <code>--from-video</code></td>
+<td style="text-align: left;">Also generate the summary, one sentence summary, speakers and Q&amp;A directly from the video with Gemini video understanding (no download needed). Value is the processing mode: <code>agentic</code> (the model navigates the video, loading only what it needs; Gemini 3.5 Flash-Lite and later, e.g. <code>gemini-3.8-flash</code>, <code>gemini-4-argon</code>) or <code>static</code> (frames at 1 FPS; any Gemini model). Use <code>agentic,static</code> to compare. Outputs are labelled <code>from video-agentic</code> / <code>from video-static</code>.</td>
+<td style="text-align: left;"><code>None</code></td>
+<td style="text-align: left;"><code>-fv agentic</code></td>
+</tr>
+<tr>
 <td style="text-align: left;"><code>-tr</code>, <code>--translate</code></td>
 <td style="text-align: left;">Translate all outputs to a target language after generating in English. Format: <code>{model}-{language}</code> e.g. <code>gemini-3.5-flash-lite-es</code>, or <code>aws-translate-{language}</code> / <code>gcp-translate-{language}</code> to use AWS Translate or Google Cloud Translation directly (e.g. <code>aws-translate-es</code>, <code>gcp-translate-es</code>). The tool first tries to fetch a native YouTube transcript in the target language; if unavailable, it translates the English transcript. Summaries, Q&amp;A, tags, one-sentence summaries, transcripts, and SRT files are all translated. When combined with <code>--tts</code> or <code>--infographic</code>, assets are produced in both English and the target language.</td>
 <td style="text-align: left;"><code>None</code></td>
