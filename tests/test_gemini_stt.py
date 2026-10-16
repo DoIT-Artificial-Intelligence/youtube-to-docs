@@ -296,5 +296,76 @@ class TestGeminiTranscribePricing(unittest.TestCase):
         self.assertEqual(output_price, 12.0)
 
 
+class TestTranscribeGeminiChunking(unittest.TestCase):
+    """Audio longer than the 30-minute diarization limit is split into chunks."""
+
+    @patch("youtube_to_docs.llms.subprocess.run")
+    @patch("youtube_to_docs.llms._gemini_transcribe_file")
+    @patch("google.genai.Client")
+    def test_long_audio_is_chunked_with_offsets(
+        self, mock_client_cls, mock_transcribe_file, mock_run
+    ):
+        mock_transcribe_file.return_value = _response(
+            TWO_SPEAKER_PARTS, prompt_tokens=100, candidate_tokens=10
+        )
+        chunk = llms.GEMINI_TRANSCRIBE_CHUNK_SECONDS
+
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "fake"}):
+            transcript, srt, in_tok, out_tok = llms._transcribe_gemini(
+                "gemini-3.5-transcribe",
+                "meeting.m4a",
+                "http://url",
+                duration_seconds=chunk * 2 + 60,
+            )
+
+        # Three chunks, each cut from the right offset
+        self.assertEqual(mock_transcribe_file.call_count, 3)
+        offsets = [call.args[0][2] for call in mock_run.call_args_list]
+        self.assertEqual(offsets, ["0", str(chunk), str(chunk * 2)])
+        self.assertEqual((in_tok, out_tok), (300, 30))
+        self.assertEqual(transcript.count("Good morning."), 3)
+
+        entries = srt.strip().split("\n\n")
+        _, single_srt = llms._process_gemini_transcription(_response(TWO_SPEAKER_PARTS))
+        per_chunk = len(single_srt.strip().split("\n\n"))
+        # Numbering continues across chunks
+        self.assertEqual(
+            [e.split("\n")[0] for e in entries],
+            [str(n) for n in range(1, 3 * per_chunk + 1)],
+        )
+        # The second chunk's first caption is shifted by one chunk length
+        second = entries[per_chunk]
+        hours, minutes = divmod(chunk // 60, 60)
+        self.assertIn(f"{hours:02d}:{minutes:02d}:00,300", second)
+        # Speakers from different chunks are never merged into one label
+        self.assertIn("[Speaker 3]", second)
+        self.assertIn("[Speaker 6]", "\n".join(entries[2 * per_chunk :]))
+
+    @patch("youtube_to_docs.llms._gemini_transcribe_file")
+    @patch("google.genai.Client")
+    def test_short_audio_is_not_chunked(self, mock_client_cls, mock_transcribe_file):
+        mock_transcribe_file.return_value = _response(TWO_SPEAKER_PARTS)
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "fake"}):
+            transcript, _, _, _ = llms._transcribe_gemini(
+                "gemini-3.5-transcribe",
+                "clip.m4a",
+                "http://url",
+                duration_seconds=llms.GEMINI_TRANSCRIBE_CHUNK_SECONDS,
+            )
+        mock_transcribe_file.assert_called_once()
+        self.assertIn("Good morning.", transcript)
+
+
+class TestMinutePseudoTokens(unittest.TestCase):
+    def test_chirp_cost_matches_per_minute_price(self):
+        """60 minutes of Chirp 3 at $0.016/minute costs $0.96."""
+        tokens = llms.minute_pseudo_tokens(3600)
+        input_price, output_price = llms.get_model_pricing("gcp-chirp3")
+        assert input_price is not None and output_price is not None
+        cost = tokens / 1_000_000 * input_price + tokens / 1_000_000 * output_price
+        self.assertAlmostEqual(cost, 0.96, places=3)
+        self.assertEqual(llms.minute_pseudo_tokens(None), 0)
+
+
 if __name__ == "__main__":
     unittest.main()

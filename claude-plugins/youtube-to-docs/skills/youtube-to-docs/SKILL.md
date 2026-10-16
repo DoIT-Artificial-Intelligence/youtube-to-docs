@@ -99,6 +99,7 @@ Use this when the user specifies particular models or output locations.
 | `post_process`              | Post-process the transcript with JSON operations. Results added as CSV columns.                                                      | -                          | `'{"word count": "apple"}'`, `'{"word count": ["apple", "banana"]}'` |
 | `output_file`               | Destination for the CSV report.                                                                                                      | `workspace` / `m365`       | `workspace`, `sharepoint`, `memory`                                  |
 | `transcript_source`         | Source for transcript (default: 'youtube').                                                                                          | `audio`, `gcp` (for Chirp) | `gemini-3.5-transcribe`, `gemini-3.5-flash-lite`, `gcp-chirp3`                               |
+| `from_video`                 | Also generate summary, speakers, Q&A and on-screen context directly from the video (Gemini video understanding, no download). `agentic` navigates the video; `static` samples frames at 1 FPS. On-screen names and terms are also used by `suggest_corrected_captions`. Gemini models only. | - | `agentic`, `static`, `agentic,static` |
 
 ## Examples
 
@@ -116,6 +117,9 @@ Use this when the user specifies particular models or output locations.
 
 **User**: "Count how many times 'apple' appears in this video's transcript."
 **Action**: Call `youtube-to-docs:process_video(url='...', post_process='{"word count": "apple"}')`
+
+**User**: "Summarize this hearing from the video itself and get the speakers' names right."
+**Action**: Call `youtube-to-docs:process_video(url='...', model='gemini-4-argon', from_video='agentic')`
 
 ## Development & CLI Usage
 

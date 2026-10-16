@@ -1,4 +1,5 @@
 import json
+import math
 import mimetypes
 import os
 import re
@@ -43,6 +44,10 @@ GEMINI_TRANSCRIBE_API_VERSION = "v1alpha"
 
 # Inline request payloads are capped at 20MB, so larger audio goes via the Files API.
 GEMINI_INLINE_AUDIO_LIMIT_BYTES = 15 * 1024 * 1024
+
+# Speaker diarization and word timestamps limit Gemini STT to 30 minutes per
+# request, so longer audio is split into chunks of this many seconds.
+GEMINI_TRANSCRIBE_CHUNK_SECONDS = 1140
 
 # Characters allowed in an SRT entry before the words are split into a new entry.
 SRT_SEGMENT_CHAR_LIMIT = 80
@@ -1313,26 +1318,35 @@ def is_gemini_transcribe_model(model_name: str) -> bool:
     return model_name.startswith("gemini-") and "transcribe" in model_name
 
 
-def _process_gemini_transcription(response: Any) -> Tuple[str, str]:
+def _gemini_transcription_entries(
+    response: Any,
+    offset_seconds: float = 0.0,
+    srt_counter: int = 1,
+    speaker_numbers: Optional[Dict[str, int]] = None,
+    speaker_scope: str = "",
+) -> Tuple[List[str], List[str], int]:
     """
-    Converts a dedicated Gemini STT response into plain text and SRT content.
+    Converts a dedicated Gemini STT response into transcript segments and SRT
+    entries, shifting word times by `offset_seconds` (used when long audio is
+    transcribed in chunks).
 
     Each response part is one diarized turn: `audio_transcription.speaker_label`
     identifies the speaker and `.words` carries the word-level offsets. Long turns
     are split across several SRT entries, and a `[Speaker N]` label is added
     whenever the speaker changes, per Section 508 / WCAG 2.1 speaker
-    identification guidance.
+    identification guidance. Speaker labels are only consistent within one
+    request, so `speaker_scope` keeps labels from different chunks apart.
 
-    Returns (transcript_text, srt_content).
+    Returns (text_parts, srt_entries, next_srt_counter).
     """
+    if speaker_numbers is None:
+        speaker_numbers = {}
     candidates = response.candidates or []
     if not candidates or not candidates[0].content or not candidates[0].content.parts:
-        return "", ""
+        return [], [], srt_counter
 
     text_parts: List[str] = []
     srt_entries: List[str] = []
-    srt_counter = 1
-    speaker_numbers: Dict[str, int] = {}
     previous_speaker: Optional[str] = None
 
     for part in candidates[0].content.parts:
@@ -1351,15 +1365,16 @@ def _process_gemini_transcription(response: Any) -> Tuple[str, str]:
         speaker = getattr(transcription, "speaker_label", None)
         label = None
         if speaker and speaker != previous_speaker:
-            speaker_numbers.setdefault(speaker, len(speaker_numbers) + 1)
-            label = f"[Speaker {speaker_numbers[speaker]}]"
+            key = f"{speaker_scope}{speaker}"
+            speaker_numbers.setdefault(key, len(speaker_numbers) + 1)
+            label = f"[Speaker {speaker_numbers[key]}]"
         previous_speaker = speaker
 
         timed_words = [
             (
                 word_info.word,
-                _parse_gcp_time(str(word_info.start_offset or "0s")),
-                _parse_gcp_time(str(word_info.end_offset or "0s")),
+                _parse_gcp_time(str(word_info.start_offset or "0s")) + offset_seconds,
+                _parse_gcp_time(str(word_info.end_offset or "0s")) + offset_seconds,
             )
             for word_info in words
             if word_info.word
@@ -1367,6 +1382,16 @@ def _process_gemini_transcription(response: Any) -> Tuple[str, str]:
         entries, srt_counter = _words_to_srt_entries(timed_words, srt_counter, label)
         srt_entries.extend(entries)
 
+    return text_parts, srt_entries, srt_counter
+
+
+def _process_gemini_transcription(response: Any) -> Tuple[str, str]:
+    """
+    Converts a dedicated Gemini STT response into plain text and SRT content.
+
+    Returns (transcript_text, srt_content).
+    """
+    text_parts, srt_entries, _ = _gemini_transcription_entries(response)
     return " ".join(text_parts), "\n".join(srt_entries)
 
 
@@ -1415,6 +1440,106 @@ def _transcribe_gemini(
         http_options=types.HttpOptions(api_version=GEMINI_TRANSCRIBE_API_VERSION),
     )
 
+    # Speaker labels and word timestamps limit one request to 30 minutes of
+    # audio (and ~98k input tokens), so longer audio is transcribed in chunks.
+    if duration_seconds and duration_seconds > GEMINI_TRANSCRIBE_CHUNK_SECONDS:
+        chunk_count = math.ceil(duration_seconds / GEMINI_TRANSCRIBE_CHUNK_SECONDS)
+        rprint(
+            f"[cyan]Audio is long ({duration_seconds:.0f}s). Transcribing in "
+            f"{chunk_count} chunks...[/cyan]"
+        )
+        text_parts: List[str] = []
+        srt_entries: List[str] = []
+        srt_counter = 1
+        speaker_numbers: Dict[str, int] = {}
+        input_tokens = output_tokens = 0
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for i in range(chunk_count):
+                offset = i * GEMINI_TRANSCRIBE_CHUNK_SECONDS
+                chunk_path = os.path.join(temp_dir, f"chunk_{i:03d}.flac")
+                try:
+                    subprocess.run(
+                        [
+                            "ffmpeg",
+                            "-ss",
+                            str(offset),
+                            "-t",
+                            str(GEMINI_TRANSCRIBE_CHUNK_SECONDS),
+                            "-i",
+                            audio_path,
+                            "-c:a",
+                            "flac",
+                            "-ac",
+                            "1",
+                            "-ar",
+                            "16000",
+                            "-loglevel",
+                            "error",
+                            chunk_path,
+                        ],
+                        check=True,
+                    )
+                except (subprocess.CalledProcessError, FileNotFoundError) as e:
+                    return f"Error splitting audio with ffmpeg: {e}", "", 0, 0
+
+                rprint(f"  Transcribing chunk {i + 1}/{chunk_count}...")
+                response = _gemini_transcribe_file(
+                    client, types, model_name, chunk_path, language
+                )
+                if isinstance(response, str):
+                    return response, "", input_tokens, output_tokens
+                in_tok, out_tok = _gemini_usage(response)
+                input_tokens += in_tok
+                output_tokens += out_tok
+                parts, entries, srt_counter = _gemini_transcription_entries(
+                    response,
+                    offset_seconds=offset,
+                    srt_counter=srt_counter,
+                    speaker_numbers=speaker_numbers,
+                    speaker_scope=f"chunk{i}:",
+                )
+                text_parts.extend(parts)
+                srt_entries.extend(entries)
+        transcript_text = " ".join(text_parts)
+        srt_content = "\n".join(srt_entries)
+    else:
+        response = _gemini_transcribe_file(
+            client, types, model_name, audio_path, language
+        )
+        if isinstance(response, str):
+            return response, "", 0, 0
+        input_tokens, output_tokens = _gemini_usage(response)
+        transcript_text, srt_content = _process_gemini_transcription(response)
+
+    if not transcript_text:
+        return (
+            f"Error: {model_name} returned no transcript for {url}",
+            "",
+            input_tokens,
+            output_tokens,
+        )
+
+    return transcript_text, srt_content, input_tokens, output_tokens
+
+
+def _gemini_usage(response: Any) -> Tuple[int, int]:
+    # The API reports audio input tokens but not transcript output tokens, so the
+    # STT cost in the CSV reflects the input side only.
+    if not response.usage_metadata:
+        return 0, 0
+    return (
+        response.usage_metadata.prompt_token_count or 0,
+        response.usage_metadata.candidates_token_count or 0,
+    )
+
+
+def _gemini_transcribe_file(
+    client: Any, types: Any, model_name: str, audio_path: str, language: str
+) -> Any:
+    """
+    Sends one audio file to a dedicated Gemini STT model, requesting word
+    timestamps and speaker diarization. Returns the response, or an error string.
+    """
     mime_type = mimetypes.guess_type(audio_path)[0] or "audio/mp4"
     uploaded_file = None
 
@@ -1436,7 +1561,7 @@ def _transcribe_gemini(
                 audio_part = types.Part.from_bytes(mime_type=mime_type, data=f.read())
 
         print(f"Starting transcription with model: {model_name}...")
-        response = client.models.generate_content(
+        return client.models.generate_content(
             model=model_name,
             contents=[types.Content(role="user", parts=[audio_part])],
             config=types.GenerateContentConfig(
@@ -1449,7 +1574,7 @@ def _transcribe_gemini(
         )
     except Exception as e:
         print(f"Gemini STT Error: {e}")
-        return f"Error: {e}", "", 0, 0
+        return f"Error: {e}"
     finally:
         if uploaded_file is not None and uploaded_file.name:
             try:
@@ -1457,24 +1582,17 @@ def _transcribe_gemini(
             except Exception:
                 pass  # Best-effort cleanup of the temporary uploaded audio
 
-    # The API reports audio input tokens but not transcript output tokens, so the
-    # STT cost in the CSV reflects the input side only.
-    input_tokens = 0
-    output_tokens = 0
-    if response.usage_metadata:
-        input_tokens = response.usage_metadata.prompt_token_count or 0
-        output_tokens = response.usage_metadata.candidates_token_count or 0
 
-    transcript_text, srt_content = _process_gemini_transcription(response)
-    if not transcript_text:
-        return (
-            f"Error: {model_name} returned no transcript for {url}",
-            "",
-            input_tokens,
-            output_tokens,
-        )
-
-    return transcript_text, srt_content, input_tokens, output_tokens
+def minute_pseudo_tokens(duration_seconds: Optional[float]) -> int:
+    """
+    Pseudo-tokens for per-minute priced services (e.g. Chirp STT), matching the
+    convention in prices.py: 200 tokens per minute, counted as both input and
+    output, so a $X/minute price stored as X*5000/2 per 1M input and output
+    tokens costs exactly $X per minute.
+    """
+    if not duration_seconds:
+        return 0
+    return int(duration_seconds / 60 * 200)
 
 
 def _transcribe_gcp(
@@ -1709,15 +1827,8 @@ def _transcribe_gcp(
                 except Exception:
                     pass  # Best-effort cleanup of temporary GCS blob
 
-        # Calculate duration-based cost (represented as pseudo-tokens for main.py)
-        # 1,000,000 pseudo-tokens = 1 minute of audio
-        # Split 50/50 between input and output
-        pseudo_in_tok = 0
-        pseudo_out_tok = 0
-        if duration_seconds:
-            total_pseudo = int(duration_seconds * (1_000_000 / 60))
-            pseudo_in_tok = total_pseudo // 2
-            pseudo_out_tok = total_pseudo - pseudo_in_tok
+        # Duration-based cost, represented as pseudo-tokens for main.py
+        pseudo_in_tok = pseudo_out_tok = minute_pseudo_tokens(duration_seconds)
 
         return (
             " ".join(full_transcript_parts),
@@ -1782,15 +1893,8 @@ def _transcribe_gcp(
         except Exception:
             pass  # Best-effort cleanup of temporary GCS blob
 
-        # Calculate duration-based cost (represented as pseudo-tokens for main.py)
-        # 1,000,000 pseudo-tokens = 1 minute of audio
-        # Split 50/50 between input and output
-        pseudo_in_tok = 0
-        pseudo_out_tok = 0
-        if duration_seconds:
-            total_pseudo = int(duration_seconds * (1_000_000 / 60))
-            pseudo_in_tok = total_pseudo // 2
-            pseudo_out_tok = total_pseudo - pseudo_in_tok
+        # Duration-based cost, represented as pseudo-tokens for main.py
+        pseudo_in_tok = pseudo_out_tok = minute_pseudo_tokens(duration_seconds)
 
         return t_text, t_srt, pseudo_in_tok, pseudo_out_tok
 
@@ -2136,13 +2240,17 @@ def suggest_corrected_captions(
     model_name: str,
     srt_content: str,
     speakers_text: str = "",
+    video_context: str = "",
 ) -> Tuple[str, int, int]:
     """
     Suggests WCAG 2.1 Level AA compliant corrected captions for an SRT file,
     per Section 508 guidance (https://www.section508.gov/create/captions-transcripts/).
 
     Fixes punctuation, capitalization, and adds speaker identification when a
-    known speaker list is provided. Returns only segments that require changes.
+    known speaker list is provided. When `video_context` (on-screen names, times
+    and terms from `--from-video`) is provided, it is used to correct misheard
+    names and terms and to replace diarization labels like [Speaker 3] with real
+    names. Returns only segments that require changes.
 
     If no corrections are needed, the response will be the string 'NO_CHANGES'.
     Returns (corrected_srt_or_no_changes, input_tokens, output_tokens).
@@ -2160,6 +2268,26 @@ def suggest_corrected_captions(
             "do not add a speaker label.\n"
         )
 
+    video_section = ""
+    if video_context and video_context.strip():
+        video_section = (
+            "\nOn-screen context from the video (authoritative, read from name "
+            "plates, captions and slides):\n"
+            f"{video_context.strip()}\n\n"
+            "On-screen context rules:\n"
+            "- Spell names, titles, bill numbers and other terms exactly as in the "
+            "on-screen context, correcting misheard versions in the captions "
+            "(e.g. a garbled surname or a wrong bill number).\n"
+            "- Captions may contain automatic speaker labels such as [Speaker 3]. "
+            "Replace a label with the person's [Name] when the segment's timestamp "
+            "falls at or near a time that person is listed as speaking, or the "
+            "context makes the speaker clear. The same person may have different "
+            "numbers in different parts of the recording. If you cannot identify "
+            "the speaker confidently, leave the label unchanged.\n"
+            "- Captions transcribe what is heard: do not add on-screen text that "
+            "was not spoken.\n"
+        )
+
     prompt = (
         "You are a professional caption editor producing captions compliant with "
         "WCAG 2.1 Level AA and Section 508 guidelines "
@@ -2167,6 +2295,7 @@ def suggest_corrected_captions(
         "I have provided an SRT subtitle file generated by speech-to-text software "
         "that needs corrections.\n"
         f"{speakers_section}"
+        f"{video_section}"
         "Correction rules:\n"
         "1. Fix punctuation (commas, periods, question marks, colons, em dashes, "
         "ellipses) and capitalization throughout.\n"

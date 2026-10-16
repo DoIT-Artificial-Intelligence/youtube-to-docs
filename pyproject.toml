@@ -17,7 +17,7 @@ test = [
 
 [project]
 name = "youtube-to-docs"
-version = "0.0.118"
+version = "0.0.119"
 description = "Convert YouTube videos into structured docs, summaries, audio, and visual assets for easier discovery"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -43,7 +43,7 @@ azure = [
     "openai>=1.56.0",
 ]
 gcp = [
-    "google-genai",
+    "google-genai>=2.31.0",
     "google-cloud-speech>=2.29.0",
     "google-cloud-storage",
     "google-cloud-texttospeech",

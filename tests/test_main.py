@@ -371,6 +371,60 @@ class TestMain(unittest.TestCase):
         for i, col in enumerate(expected_start):
             self.assertEqual(cols[i], col)
 
+    @patch("youtube_to_docs.main.process_from_video")
+    @patch("youtube_to_docs.main.get_youtube_service")
+    @patch("youtube_to_docs.main.resolve_video_ids")
+    @patch("youtube_to_docs.main.get_video_details")
+    @patch("youtube_to_docs.main.fetch_transcript")
+    @patch("youtube_to_docs.main.generate_summary")
+    @patch("youtube_to_docs.main.generate_tags")
+    @patch("os.makedirs")
+    def test_from_video_runs_when_summary_already_exists(
+        self,
+        mock_makedirs,
+        mock_gen_tags,
+        mock_gen_summary,
+        mock_fetch_trans,
+        mock_details,
+        mock_resolve,
+        mock_svc,
+        mock_from_video,
+    ):
+        """--from-video must run even when transcript outputs already exist (the
+        per-model loop skips ahead in that case)."""
+        mock_gen_tags.return_value = ("tag1", 1, 1)
+        mock_resolve.return_value = ["vid1"]
+        mock_details.return_value = (
+            "Title 1",
+            "Desc",
+            "2023-01-01",
+            "Chan",
+            "Tags",
+            "0:01:00",
+            "url1",
+            60.0,
+        )
+        mock_fetch_trans.return_value = ("Transcript 1", False, "")
+        mock_gen_summary.return_value = ("Summary 1", 1, 1)
+        argv = [
+            "main.py",
+            "vid1",
+            "-o",
+            self.outfile,
+            "-m",
+            "gemini-test",
+            "--from-video",
+            "agentic",
+        ]
+        with patch("builtins.open", mock_open()):
+            for _ in range(2):
+                with patch("sys.argv", argv):
+                    main.main()
+
+        self.assertEqual(mock_from_video.call_count, 2)
+        self.assertEqual(mock_from_video.call_args.kwargs["modes"], ["agentic"])
+        self.assertEqual(mock_from_video.call_args.kwargs["model_name"], "gemini-test")
+
     @patch("youtube_to_docs.main.get_youtube_service")
     @patch("youtube_to_docs.main.resolve_video_ids")
     @patch("youtube_to_docs.main.get_video_details")

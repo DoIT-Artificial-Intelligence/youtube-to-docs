@@ -13,5 +13,6 @@ Please suggest corrected captions for the YouTube video at $ARGUMENTS using the 
   - If "gemini pro" or "pro" is mentioned, use `gemini-4-argon` as the model.
   - If no model is specified, default to `gemini-3.5-flash-lite`.
 - If an STT source model is specified, also set `transcript_source` to that model so both steps run together.
+- For the most accurate speaker names and terms, if "video" or "on-screen" names are mentioned, also set `from_video='agentic'` (with `model='gemini-4-argon'`) so corrections use names and spellings read from the video's name plates and captions.
 
 Do not ask for confirmation.

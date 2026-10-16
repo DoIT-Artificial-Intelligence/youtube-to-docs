@@ -20,6 +20,7 @@ def process_video(
     infographic_model: str | None = None,
     alt_text_model: str | None = None,
     no_youtube_summary: bool = False,
+    from_video: str | None = None,
     translate: str | None = None,
     combine_infographic_audio: bool = False,
     all_suite: str | None = None,
@@ -72,6 +73,11 @@ def process_video(
             infographic. Defaults to the summary model.
         no_youtube_summary: If True, skips generating a secondary summary from the
             YouTube transcript when using an AI model for the primary transcript.
+        from_video: Also generate the summary, one sentence summary, speakers and
+            Q&A directly from the video with Gemini video understanding. Value is
+            the processing mode: 'agentic' (the model navigates the video; Gemini
+            3.5 Flash-Lite and later, e.g. gemini-3.8-flash, gemini-4-argon), 'static'
+            (frames at 1 FPS; any Gemini model), or 'agentic,static' for both.
         translate: Translate all outputs to a target language after generating in
             English. Format: `{model}-{language}` e.g. `gemini-3.5-flash-lite-es`,
             `bedrock-nova-2-lite-v1-fr`, `aws-translate-es`, or `gcp-translate-es`.
@@ -129,6 +135,9 @@ def process_video(
 
     if no_youtube_summary:
         args.append("--no-youtube-summary")
+
+    if from_video:
+        args.extend(["--from-video", from_video])
 
     if combine_infographic_audio:
         args.append("--combine-infographic-audio")
