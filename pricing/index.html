@@ -652,29 +652,25 @@ const pricingData = {
         {"id": "amazon-nova-2-lite", "vendor": "amazon", "name": "Amazon Nova 2 Lite", "input": 0.3, "output": 2.5},
         {"id": "amazon.titan-image-generator-v2:0", "vendor": "amazon", "name": "Titan Image Generator v2*", "input": 5.0, "output": 5.0},
         {"id": "amazon.nova-canvas-v1:0", "vendor": "amazon", "name": "Amazon Nova Canvas v1*", "input": 20.0, "output": 20.0},
-        {"id": "claude-4.5-haiku", "vendor": "anthropic", "name": "Claude 4.5 Haiku", "input": 1, "output": 5},
-        {"id": "claude-sonnet-5", "vendor": "anthropic", "name": "Claude Sonnet 5", "input": 3, "output": 15},
-        {"id": "claude-opus-4.8", "vendor": "anthropic", "name": "Claude Opus 4.8", "input": 5, "output": 25},
-        {"id": "claude-fable-5", "vendor": "anthropic", "name": "Claude Fable 5", "input": 10, "output": 50},
-        {"id": "gemini-3.1-pro-preview", "vendor": "google", "name": "Gemini 3.1 Pro", "input": 2, "output": 12},
-        {"id": "gemini-3.6-flash", "vendor": "google", "name": "Gemini 3.6 Flash", "input": 1.5, "output": 7.5},
+        {"id": "claude-haiku-5.5", "vendor": "anthropic", "name": "Claude Haiku 5.5", "input": 0.1, "output": 0.5},
+        {"id": "claude-sonnet-5.5", "vendor": "anthropic", "name": "Claude Sonnet 5.5", "input": 2, "output": 10},
+        {"id": "claude-opus-5.5", "vendor": "anthropic", "name": "Claude Opus 5.5", "input": 4, "output": 20},
+        {"id": "claude-fable-5.1", "vendor": "anthropic", "name": "Claude Fable 5.1", "input": 10, "output": 50},
+        {"id": "gemini-4-argon", "vendor": "google", "name": "Gemini 4 Argon", "input": 2, "output": 10},
+        {"id": "gemini-3.8-flash", "vendor": "google", "name": "Gemini 3.8 Flash", "input": 0.75, "output": 3.75},
         {"id": "gemini-3.5-flash-lite", "vendor": "google", "name": "Gemini 3.5 Flash-Lite", "input": 0.3, "output": 2.5},
         {"id": "gemini-3.5-transcribe", "vendor": "google", "name": "Gemini 3.5 Transcribe (STT)", "input": 2.0, "output": 12.0},
-        {"id": "gemini-3.1-flash-tts-preview", "vendor": "google", "name": "Gemini 3.1 Flash TTS Preview", "input": 1, "output": 20},
-        {"id": "gpt-5.5", "vendor": "openai", "name": "GPT-5.5", "input": 5.0, "output": 30.0},
-        {"id": "gpt-5.4", "vendor": "openai", "name": "GPT-5.4", "input": 2.5, "output": 15.0},
-        {"id": "gpt-5.4-mini", "vendor": "openai", "name": "GPT-5.4 Mini", "input": 0.75, "output": 4.5},
+        {"id": "gemini-3.8-flash-tts", "vendor": "google", "name": "Gemini 3.8 Flash TTS", "input": 1.0, "output": 18.0},
+        {"id": "gemini-3.8-flash-lite-tts", "vendor": "google", "name": "Gemini 3.8 Flash-Lite TTS", "input": 1.0, "output": 12.0},
+        {"id": "gpt-6-astra", "vendor": "openai", "name": "GPT-6 Astra", "input": 10.0, "output": 50.0},
+        {"id": "gpt-6.1-sol", "vendor": "openai", "name": "GPT-6.1 Sol", "input": 2.0, "output": 10.0},
+        {"id": "gpt-6-luna", "vendor": "openai", "name": "GPT-6 Luna", "input": 0.1, "output": 0.5},
         {"id": "gpt-image-1", "vendor": "openai", "name": "gpt-image-1 (image gen)", "input": 10, "output": 40},
         {"id": "gpt-image-1-mini", "vendor": "openai", "name": "gpt-image-1-mini (image gen)", "input": 2, "output": 8},
         {"id": "gpt-image-1.5", "vendor": "openai", "name": "gpt-image-1.5 (image gen)", "input": 5, "output": 34},
-        {"id": "gemini-3-pro-image", "vendor": "google", "name": "Gemini 3 Pro Image Preview", "input": 2.0, "output": 134.0},
-        {"id": "gemini-3.1-flash-image", "vendor": "google", "name": "Gemini 3.1 Flash Image Preview*", "input": 0.5, "output": 67.2},
-        {"id": "gemini-3.1-flash-lite-image", "vendor": "google", "name": "Gemini 3.1 Flash-Lite Image Preview*", "input": 0.25, "output": 33.6},
-        {"id": "imagen-4", "vendor": "google", "name": "Imagen 4*", "input": 20.0, "output": 20.0},
-        {"id": "imagen-4-fast", "vendor": "google", "name": "Imagen 4 Fast*", "input": 10.0, "output": 10.0},
-        {"id": "imagen-4-ultra", "vendor": "google", "name": "Imagen 4 Ultra*", "input": 30.0, "output": 30.0},
-        {"id": "imagen-4.0-ultra-generate-001", "vendor": "google", "name": "Imagen 4.0 Ultra Generate 001*", "input": 30.0, "output": 30.0},
-        {"id": "imagen-4.0-fast-generate-001", "vendor": "google", "name": "Imagen 4.0 Fast Generate 001*", "input": 10.0, "output": 10.0},
+        {"id": "gemini-3-pro-image", "vendor": "google", "name": "Gemini 3 Pro Image (Nano Banana Pro)", "input": 2.0, "output": 120.0},
+        {"id": "gemini-nano-banana-2.1", "vendor": "google", "name": "Gemini Nano Banana 2.1", "input": 1.5, "output": 30.0},
+        {"id": "gemini-3.1-flash-lite-image", "vendor": "google", "name": "Gemini 3.1 Flash-Lite Image (Nano Banana 2 Lite)", "input": 0.25, "output": 30.0},
         {"id": "chirp_3", "vendor": "google", "name": "GCP Chirp 3 (STT)*", "input": 40.0, "output": 40.0},
         {"id": "aws-polly", "vendor": "amazon", "name": "AWS Polly*", "input": 32.0, "output": 32.0},
         {"id": "aws-transcribe", "vendor": "amazon", "name": "AWS Transcribe*", "input": 60.0, "output": 60.0},
@@ -742,7 +738,7 @@ function updateResultCount(data) {
 function getModelType(item) {
     const n = item.name.toLowerCase();
     const id = item.id.toLowerCase();
-    if (n.includes('image') || n.includes('canvas') || n.includes('imagen')) return 'image';
+    if (n.includes('image') || n.includes('canvas')) return 'image';
     if (n.includes('tts') || n.includes('polly')) return 'speech';
     if (n.includes('stt') || n.includes('transcribe')) return 'transcription';
     if (n.includes('translate') || id.includes('translate')) return 'translate';

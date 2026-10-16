@@ -1665,19 +1665,19 @@
 <td style="text-align: left;"><code>-m</code>, <code>--model</code></td>
 <td style="text-align: left;">The LLM(s) to use for speaker extraction, Q&amp;A generation, tag generation, and summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. <strong>Can be a comma-separated list.</strong></td>
 <td style="text-align: left;"><code>None</code> (Transcript only)</td>
-<td style="text-align: left;"><code>-m gemini-3.5-flash-lite,vertex-claude-haiku-4-5@20251001</code></td>
+<td style="text-align: left;"><code>-m gemini-3.5-flash-lite,vertex-claude-haiku-5-5</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>--tts</code></td>
-<td style="text-align: left;">The TTS model and voice to use for generating audio summaries. Format: <code>{model}-{voice}</code>. Supports Gemini models (e.g., <code>gemini-3.1-flash-tts-preview-Kore</code>, <code>gemini-3.1-flash-tts-preview-Kore</code>) and GCP Cloud TTS (e.g., <code>gcp-chirp3-Kore</code>).</td>
+<td style="text-align: left;">The TTS model and voice to use for generating audio summaries. Format: <code>{model}-{voice}</code>. Supports Gemini models (e.g., <code>gemini-3.8-flash-lite-tts-Kore</code>, <code>gemini-3.8-flash-lite-tts-Kore</code>) and GCP Cloud TTS (e.g., <code>gcp-chirp3-Kore</code>).</td>
 <td style="text-align: left;"><code>None</code></td>
-<td style="text-align: left;"><code>--tts gemini-3.1-flash-tts-preview-Kore</code></td>
+<td style="text-align: left;"><code>--tts gemini-3.8-flash-lite-tts-Kore</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>-i</code>, <code>--infographic</code></td>
-<td style="text-align: left;">The image model to use for generating a visual summary. Supports models from Google (Gemini, Imagen), AWS Bedrock (Titan, Nova Canvas), and Azure Foundry.</td>
+<td style="text-align: left;">The image model to use for generating a visual summary. Supports models from Google (Gemini), AWS Bedrock (Titan, Nova Canvas), and Azure Foundry. <strong>Can be a comma-separated list</strong> (one infographic per model).</td>
 <td style="text-align: left;"><code>None</code></td>
-<td style="text-align: left;"><code>--infographic gemini-3.1-flash-image</code></td>
+<td style="text-align: left;"><code>--infographic gemini-nano-banana-2.1,gemini-3-pro-image</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>--alt-text-model</code></td>
@@ -1740,22 +1740,22 @@
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>youtube-to-docs<span class="w"> </span>-o<span class="w"> </span>my-docs.csv
 </code></pre></div>
 <p><strong>4. Summarize a Playlist using multiple models (Gemini and Vertex):</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>youtube-to-docs<span class="w"> </span>PLGKTTEqwhiHHWO-jdxM1KtzTbWo6h0Ycl<span class="w"> </span>-m<span class="w"> </span>gemini-3.5-flash-lite,vertex-claude-haiku-4-5@20251001
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>youtube-to-docs<span class="w"> </span>PLGKTTEqwhiHHWO-jdxM1KtzTbWo6h0Ycl<span class="w"> </span>-m<span class="w"> </span>gemini-3.5-flash-lite,vertex-claude-haiku-5-5
 </code></pre></div>
 <p><strong>5. Process a Channel with Summaries, TTS, and Infographics:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>youtube-to-docs<span class="w"> </span>@mga-othercommittees6625<span class="w"> </span>-m<span class="w"> </span>vertex-claude-haiku-4-5@20251001<span class="w"> </span>--tts<span class="w"> </span>gemini-3.1-flash-tts-preview-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-3.1-flash-image
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>youtube-to-docs<span class="w"> </span>@mga-othercommittees6625<span class="w"> </span>-m<span class="w"> </span>vertex-claude-haiku-5-5<span class="w"> </span>--tts<span class="w"> </span>gemini-3.8-flash-lite-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-nano-banana-2.1
 </code></pre></div>
 <p><strong>6. Generate an Infographic using AWS Bedrock:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>--infographic<span class="w"> </span>bedrock-titan-image-generator-v2:0
 </code></pre></div>
 <p><strong>7. Create a Video (Infographic + Audio Summary):</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3.5-flash-lite<span class="w"> </span>--tts<span class="w"> </span>gemini-3.1-flash-tts-preview-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-3.1-flash-image<span class="w"> </span>--combine-infographic-audio
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3.5-flash-lite<span class="w"> </span>--tts<span class="w"> </span>gemini-3.8-flash-lite-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-nano-banana-2.1<span class="w"> </span>--combine-infographic-audio
 </code></pre></div>
 <p><strong>8. Translate all outputs to Spanish:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3.5-flash-lite<span class="w"> </span>-tr<span class="w"> </span>gemini-3.5-flash-lite-es
 </code></pre></div>
 <p><strong>9. Full multilingual pipeline — English + Spanish summaries, audio, infographics, and videos:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3.5-flash-lite<span class="w"> </span>-tr<span class="w"> </span>gemini-3.5-flash-lite-es<span class="w"> </span>--tts<span class="w"> </span>gemini-3.1-flash-tts-preview-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-3.1-flash-image<span class="w"> </span>--combine-infographic-audio
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3.5-flash-lite<span class="w"> </span>-tr<span class="w"> </span>gemini-3.5-flash-lite-es<span class="w"> </span>--tts<span class="w"> </span>gemini-3.8-flash-lite-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-nano-banana-2.1<span class="w"> </span>--combine-infographic-audio
 </code></pre></div>
 <p><strong>10. Suggest corrected captions for YouTube SRT:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-scc<span class="w"> </span>gemini-3.5-flash-lite-youtube

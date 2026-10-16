@@ -968,9 +968,9 @@
 <h3 id="3-the-llm-pipeline">3. The LLM Pipeline</h3>
 <p>Text processing is handled by Large Language Models (LLMs) defined in <code>youtube_to_docs/llms.py</code>. The pipeline is model-agnostic, supporting:
 - <strong>Google Gemini / Gemma</strong> (direct API, models prefixed <code>gemini-</code> or <code>gemma-</code>)
-- <strong>GCP Vertex AI</strong> (prefixed with <code>vertex-</code>, e.g. <code>vertex-claude-haiku-4-5@20251001</code>)
-- <strong>AWS Bedrock</strong> (prefixed with <code>bedrock-</code>, e.g. <code>bedrock-nova-2-lite-v1</code>)
-- <strong>Azure Foundry</strong> (prefixed with <code>foundry-</code>, e.g. <code>foundry-gpt-5-mini</code>)</p>
+- <strong>GCP Vertex AI</strong> (prefixed with <code>vertex-</code>, e.g. <code>vertex-claude-haiku-5-5</code>)
+- <strong>AWS Bedrock</strong> (prefixed with <code>bedrock-</code>, e.g. <code>bedrock-nova-2-lite-v1</code>, <code>bedrock-claude-haiku-5-5</code>, or <code>bedrock-gpt-6-luna</code>; OpenAI GPT models are called through the Bedrock Mantle Chat Completions endpoint)
+- <strong>Azure Foundry</strong> (prefixed with <code>foundry-</code>, e.g. <code>foundry-gpt-6-luna</code>)</p>
 <p>You can also pass a comma-separated list to run multiple models simultaneously, or use the <code>--all</code> flag with a named suite (e.g. <code>gemini-flash</code>, <code>gemini-pro</code>, <code>gemini-flash-pro-image</code>, <code>gcp-pro</code>) to set the model, TTS, infographic model, and transcript source all at once.</p>
 <p>For each video, the specified model performs these tasks:</p>
 <ol>
@@ -1025,7 +1025,7 @@
 <li>
 <p><strong>Text-to-Speech (TTS)</strong>:</p>
 <ul>
-<li>Uses TTS models (e.g. <code>gemini-3.1-flash-tts-preview-Kore</code>, <code>gcp-chirp3</code>, <code>aws-polly-Ruth</code>) to convert the generated summary into an audio file.</li>
+<li>Uses TTS models (e.g. <code>gemini-3.8-flash-lite-tts-Kore</code>, <code>gcp-chirp3</code>, <code>aws-polly-Ruth</code>) to convert the generated summary into an audio file.</li>
 <li>This allows users to "listen" to the video summary.</li>
 </ul>
 </li>
@@ -1034,7 +1034,7 @@
 <ul>
 <li>Uses image generation models to create a visual representation of the summary.</li>
 <li><strong>Supported Providers</strong>:<ul>
-<li><strong>Google</strong>: Gemini, Imagen.</li>
+<li><strong>Google</strong>: Gemini (Nano Banana).</li>
 <li><strong>AWS Bedrock</strong>: Titan Image Generator, Nova Canvas (requires <code>AWS_BEARER_TOKEN_BEDROCK</code>).</li>
 <li><strong>Azure Foundry</strong>: GPT Image models (requires <code>AZURE_FOUNDRY_ENDPOINT</code> and <code>AZURE_FOUNDRY_API_KEY</code>).</li>
 </ul>
