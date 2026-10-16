@@ -29,14 +29,14 @@ This directory contains regression tests for the `youtube-to-docs` tool.
 
 ### Text-to-Speech (TTS)
 
-- **[regression_gcp_tts.py](regression_gcp_tts.py)**: Tests GCP Cloud Text-to-Speech (`gcp-chirp3`) with Gemini Pro summarization (`gemini-3.1-pro-preview`). Requires `GEMINI_API_KEY`.
+- **[regression_gcp_tts.py](regression_gcp_tts.py)**: Tests GCP Cloud Text-to-Speech (`gcp-chirp3`) with Gemini Pro summarization (`gemini-4-argon`). Requires `GEMINI_API_KEY`.
 - **[regression_aws_polly.py](regression_aws_polly.py)**: Tests AWS Polly TTS (`aws-polly`) with AWS Bedrock summarization (`bedrock-nova-2-lite-v1`). Requires AWS credentials.
 
 ### Storage
 
 - **[regression_workspace.py](regression_workspace.py)**: Stores results in Google Drive (folder `youtube-to-docs-test-drive`).
 - **[regression_workspace_es.py](regression_workspace_es.py)**: Spanish run stored in Google Drive using Gemini Pro models.
-- **[regression_sharepoint.py](regression_sharepoint.py)**: Stores results in SharePoint/OneDrive. Uses `foundry-gpt-5-mini` for summarization.
+- **[regression_sharepoint.py](regression_sharepoint.py)**: Stores results in SharePoint/OneDrive. Uses `foundry-gpt-6-luna` for summarization.
 - **[regression_huggingface.py](regression_huggingface.py)**: Processes a single video and stores results in a Hugging Face dataset (`-o hf`). The cheap smoke test for HF storage. Requires the `HF_TOKEN` env var (write token). Override the dataset with `HF_DATASET` or the YouTube target with `HF_VIDEO`.
 - **[regression_huggingface_playlist.py](regression_huggingface_playlist.py)**: Processes the "Code for America Summit 2026 Recap" YouTube playlist (`PL65XgbSILalUtRMlH4gG8EMY9_yUlSi0_`) and stores results in a same-named Hugging Face dataset (`-o hf`). Exercises the full playlist use case (more expensive — every video is processed). Same env overrides as above.
 

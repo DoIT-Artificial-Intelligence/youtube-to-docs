@@ -21,6 +21,18 @@ def wave_file(filename, pcm, channels=1, rate=24000, sample_width=2):
         wf.writeframes(pcm)
 
 
+def pcm_from_audio(data: bytes, default_rate: int = 24000) -> Tuple[bytes, int]:
+    """
+    Returns (raw PCM bytes, sample_rate) from Gemini TTS audio.
+    Gemini 3.8+ TTS models return a complete WAV file, while earlier models
+    return headerless PCM, so strip the header to keep chunks concatenable.
+    """
+    if data[:4] == b"RIFF" and data[8:12] == b"WAVE":
+        with wave.open(io.BytesIO(data), "rb") as wf:
+            return wf.readframes(wf.getnframes()), wf.getframerate()
+    return data, default_rate
+
+
 def _chunk_text_by_bytes(text: str, max_bytes: int = 5000) -> List[str]:
     """Helper to chunk text into pieces below the byte limit."""
     if not text:
@@ -127,7 +139,8 @@ def generate_speech_gcp(
                 voice=voice,
                 audio_config=audio_config,
             )
-            return response.audio_content, 24000
+            # LINEAR16 responses include a WAV header; strip it.
+            return pcm_from_audio(response.audio_content)
         else:
             # GCP TTS has a 5000 byte limit for synthesize_speech.
             # We chunk the text and concatenate the PCM results.
@@ -145,7 +158,8 @@ def generate_speech_gcp(
                     voice=voice,
                     audio_config=audio_config,
                 )
-                all_audio += response.audio_content
+                # Strip each chunk's WAV header so none land mid-audio.
+                all_audio += pcm_from_audio(response.audio_content)[0]
 
             return all_audio, 24000
 
@@ -262,7 +276,9 @@ def generate_speech(
             and response.candidates[0].content.parts[0].inline_data
             and response.candidates[0].content.parts[0].inline_data.data
         ):
-            return response.candidates[0].content.parts[0].inline_data.data, 24000
+            return pcm_from_audio(
+                response.candidates[0].content.parts[0].inline_data.data
+            )
         else:
             print("Error: No audio data in response.")
             return b"", 0
@@ -287,7 +303,7 @@ def parse_tts_arg(tts_arg: str) -> Tuple[str, str]:
     Parses the --tts argument into (model_name, voice_name).
 
     For Gemini models:
-        gemini-3.1-flash-tts-preview-Kore -> (gemini-3.1-flash-tts-preview, Kore)
+        gemini-3.8-flash-lite-tts-Kore -> (gemini-3.8-flash-lite-tts, Kore)
     For GCP Chirp3 models:
         gcp-chirp3-Kore -> (gcp-chirp3, Kore)
         gcp-chirp3 -> (gcp-chirp3, Kore)  # Default voice
@@ -496,7 +512,7 @@ def main() -> None:
         default=None,
         help=(
             "The TTS model and voice to use. "
-            "Format: {model}-{voice} e.g. 'gemini-3.1-flash-tts-preview-Kore'"
+            "Format: {model}-{voice} e.g. 'gemini-3.8-flash-lite-tts-Kore'"
         ),
     )
 

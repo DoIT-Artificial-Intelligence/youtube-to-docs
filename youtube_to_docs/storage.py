@@ -520,6 +520,8 @@ class GoogleDriveStorage(Storage):
             mime_type = "audio/wav"
         elif filename.endswith(".png"):
             mime_type = "image/png"
+        elif filename.endswith((".jpg", ".jpeg")):
+            mime_type = "image/jpeg"
         media = MediaIoBaseUpload(fh, mimetype=mime_type, resumable=True)
 
         if existing_id:
@@ -1060,6 +1062,8 @@ class M365Storage(Storage):
             mime_type = "audio/mp4"
         elif path.endswith(".png"):
             mime_type = "image/png"
+        elif path.endswith((".jpg", ".jpeg")):
+            mime_type = "image/jpeg"
 
         item = self._upload(remote_path, content, mime_type)
 

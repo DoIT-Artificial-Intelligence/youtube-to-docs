@@ -4,6 +4,17 @@ from typing import Optional, Tuple
 
 import requests
 
+from youtube_to_docs.llms import BEDROCK_TIMEOUT_SECONDS
+
+
+def image_file_extension(image_bytes: bytes) -> str:
+    """Returns the file extension matching the image data's actual format."""
+    if image_bytes.startswith(b"\xff\xd8\xff"):
+        return ".jpg"
+    if image_bytes[:4] == b"RIFF" and image_bytes[8:12] == b"WEBP":
+        return ".webp"
+    return ".png"
+
 
 def build_infographic_prompt(
     summary_text: str,
@@ -66,7 +77,8 @@ def generate_infographic(
                     "IMAGE",
                     "TEXT",
                 ],
-                image_config=types.ImageConfig(),
+                # Landscape to match the MP4 video and keep models consistent.
+                image_config=types.ImageConfig(aspect_ratio="16:9"),
             )
 
             image_data = None
@@ -99,37 +111,6 @@ def generate_infographic(
                 if output_tokens == 0:
                     output_tokens = 1290
                 return image_data, input_tokens, output_tokens
-
-            print(f"No image data found in response from {image_model}")
-            return None, 0, 0
-
-        elif image_model.startswith("imagen"):
-            if len(prompt) > 1000:
-                print(
-                    f"Warning: Prompt length ({len(prompt)}) exceeds Imagen "
-                    "limit (1000). Skipping infographic generation for "
-                    f"{image_model}."
-                )
-                return None, 0, 0
-
-            response = client.models.generate_images(
-                model=image_model,
-                prompt=prompt,
-                config=types.GenerateImagesConfig(
-                    number_of_images=1,
-                    output_mime_type="image/jpeg",
-                    person_generation=types.PersonGeneration.DONT_ALLOW,
-                    aspect_ratio="16:9",
-                ),
-            )
-
-            if (
-                response
-                and response.generated_images
-                and response.generated_images[0].image
-                and response.generated_images[0].image.image_bytes
-            ):
-                return response.generated_images[0].image.image_bytes, 0, 1000
 
             print(f"No image data found in response from {image_model}")
             return None, 0, 0
@@ -180,6 +161,7 @@ def generate_infographic(
                         "Authorization": f"Bearer {aws_bearer_token_bedrock}",
                     },
                     json=payload,
+                    timeout=BEDROCK_TIMEOUT_SECONDS,
                 )
                 if response.status_code == 200:
                     response_json = response.json()

@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import time
+from itertools import product
 from pathlib import Path
 
 import isodate
@@ -10,7 +11,11 @@ import polars as pl
 from rich import print as rprint
 from rich_argparse import RichHelpFormatter
 
-from youtube_to_docs.infographic import build_infographic_prompt, generate_infographic
+from youtube_to_docs.infographic import (
+    build_infographic_prompt,
+    generate_infographic,
+    image_file_extension,
+)
 from youtube_to_docs.llms import (
     build_summary_prompt,
     extract_speakers,
@@ -140,7 +145,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
         help=(
             "The transcript source to use. \n"
             "Can be `youtube` (default) to fetch existing YouTube transcripts, \n"
-            "AI model name (e.g. `gemini-3.5-transcribe`, `gemini-3.1-pro-preview`, "
+            "AI model name (e.g. `gemini-3.5-transcribe`, `gemini-4-argon`, "
             "`gemini-3.5-flash-lite`, `gcp-chirp3`, `aws-transcribe`) to "
             "perform STT on extracted audio. \n"
             "`gemini-3.5-transcribe` is Google's dedicated STT model: it returns "
@@ -163,14 +168,14 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
             "Can be one of: \n"
             "Gemini model (e.g., `gemini-3.5-flash-lite`)\n"
             "GCP Vertex model (prefixed with `vertex-`; e.g. "
-            "`vertex-claude-haiku-4-5@20251001`)\n"
+            "`vertex-claude-haiku-5-5`)\n"
             "AWS Bedrock model (prefixed with `bedrock-`; e.g. "
-            "`bedrock-claude-haiku-4-5-20251001-v1`\n"
+            "`bedrock-claude-haiku-5-5`\n"
             "`bedrock-nova-2-lite-v1`)\n"
             "Azure Foundry model (prefix with `foundry-`; e.g. "
-            "`foundry-gpt-5-mini`)\n"
+            "`foundry-gpt-6-luna`)\n"
             "Can also be a comma-separated list of models (e.g. "
-            "`gemini-3.5-flash-lite,bedrock-claude-haiku-4-5-20251001-v1`).\n"
+            "`gemini-3.5-flash-lite,bedrock-claude-haiku-5-5`).\n"
             "Defaults to `None` (Transcript only)."
         ),
     )
@@ -181,7 +186,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
             "Generate an audio file for each summary by reading it aloud with a "
             "text-to-speech model. When used with --translate, audio is also "
             "generated for the translated summaries in the target language. \n"
-            "Format: `{model}-{voice}` e.g. `gemini-3.1-flash-tts-preview-Kore` \n"
+            "Format: `{model}-{voice}` e.g. `gemini-3.8-flash-lite-tts-Kore` \n"
             "GCP Cloud TTS: `gcp-chirp3` or `gcp-chirp3-{voice}` "
             "(e.g. `gcp-chirp3-Kore`)\n"
             "AWS Polly: `aws-polly` (defaults to Ruth) or `aws-polly-{voice}` "
@@ -198,7 +203,9 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
             "The image model to use for generating an infographic. "
             "If set as a flag without a value, defaults to "
             "`gemini-3-pro-image`. "
-            "e.g. `gemini-3.1-flash-lite-image` or `gemini-3-pro-image`"
+            "e.g. `gemini-nano-banana-2.1` or `gemini-3-pro-image`. "
+            "Can be a comma-separated list to generate one infographic per model "
+            "(e.g. `gemini-nano-banana-2.1,gemini-3-pro-image`)."
         ),
     )
     parser.add_argument(
@@ -248,18 +255,18 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
             "Shortcut to use a specific model suite for everything. \n"
             "Supported values: \n"
             "`gemini-flash`: summarization (`gemini-3.5-flash-lite`), "
-            "TTS (`gemini-3.1-flash-tts-preview-Kore`), "
-            "and Infographic (`gemini-3-pro-image`). \n"
-            "`gemini-pro`: summarization (`gemini-3.1-pro-preview`), "
-            "TTS (`gemini-3.1-flash-tts-preview-Kore`), "
+            "TTS (`gemini-3.8-flash-lite-tts-Kore`), "
+            "and Infographic (`gemini-nano-banana-2.1`). \n"
+            "`gemini-pro`: summarization (`gemini-4-argon`), "
+            "TTS (`gemini-3.8-flash-tts-Kore`), "
             "and Infographic (`gemini-3-pro-image`). \n"
             "`gemini-flash-pro-image`: summarization (`gemini-3.5-flash-lite`), "
-            "TTS (`gemini-3.1-flash-tts-preview-Kore`), "
+            "TTS (`gemini-3.8-flash-lite-tts-Kore`), "
             "and Infographic (`gemini-3-pro-image`). \n"
-            "`gcp-pro`: summarization (`gemini-3.1-pro-preview`), "
+            "`gcp-pro`: summarization (`gemini-4-argon`), "
             "TTS (`gcp-chirp3`), "
             "and Infographic (`gemini-3-pro-image`). \n"
-            "`anthropic-opus`: summarization (`claude-opus-4.8`), "
+            "`anthropic-opus`: summarization (`claude-opus-5-5`), "
             "TTS (`aws-polly-Ruth`), "
             "and Infographic (`gemini-3-pro-image`). \n"
             "Also sets `--no-youtube-summary`."
@@ -367,6 +374,11 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     suggest_captions_arg = args.suggest_corrected_captions
     post_process_arg = args.post_process
     model_names = model_names_arg.split(",") if model_names_arg else []
+    infographic_models = (
+        [m.strip() for m in infographic_arg.split(",") if m.strip()]
+        if infographic_arg
+        else []
+    )
     translate_model = None
     translate_lang = None
     if translate_arg:
@@ -2001,7 +2013,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                                 )
 
             # Infographic Generation
-            if infographic_arg:
+            if infographic_models:
                 summary_targets = []
 
                 # Target ALL summaries in the row (both existing and newly created)
@@ -2023,20 +2035,22 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
 
                         summary_targets.append((k, m_name, row[k]))
 
-                for sum_col, m_name, s_text in summary_targets:
+                for (sum_col, m_name, s_text), infographic_model in product(
+                    summary_targets, infographic_models
+                ):
                     if not s_text:
                         continue
 
-                    info_col = f"Summary Infographic File {m_name} {infographic_arg}"
+                    info_col = f"Summary Infographic File {m_name} {infographic_model}"
 
                     alt_text_col = (
-                        f"Summary Infographic Alt Text {m_name} {infographic_arg}"
+                        f"Summary Infographic Alt Text {m_name} {infographic_model}"
                     )
                     alt_text_file_col = (
-                        f"Infographic Alt Text Path {m_name} {infographic_arg}"
+                        f"Infographic Alt Text Path {m_name} {infographic_model}"
                     )
                     prompt_file_col = (
-                        f"Infographic Prompt Path {m_name} {infographic_arg}"
+                        f"Infographic Prompt Path {m_name} {infographic_model}"
                     )
 
                     safe_title = re.sub(r"[\\/*?:\"<>|]", "_", video_title).replace(
@@ -2052,7 +2066,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                             s_text, video_title, language=language
                         )
                         prompt_filename = (
-                            f"{m_name} - {infographic_arg} - {video_id} - "
+                            f"{m_name} - {infographic_model} - {video_id} - "
                             f"{safe_title} - infographic-prompt.txt"
                         )
                         prompt_target_path = os.path.join(
@@ -2074,15 +2088,24 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                     if row.get(info_col) and row.get(alt_text_col):
                         continue
 
-                    # 2. Check disk for infographic
-                    infographic_filename = (
-                        f"{m_name} - {infographic_arg} - {video_id} - "
-                        f"{safe_title} - infographic.png"
+                    # 2. Check disk for infographic (saved with the extension of
+                    # the image format the model returned)
+                    infographic_stem = os.path.join(
+                        infographics_dir,
+                        f"{m_name} - {infographic_model} - {video_id} - "
+                        f"{safe_title} - infographic",
                     )
-                    expected_path = os.path.join(infographics_dir, infographic_filename)
+                    expected_path = next(
+                        (
+                            infographic_stem + ext
+                            for ext in (".png", ".jpg", ".webp")
+                            if storage.exists(infographic_stem + ext)
+                        ),
+                        None,
+                    )
 
                     image_bytes = None
-                    if storage.exists(expected_path):
+                    if expected_path:
                         row[info_col] = expected_path
                         # If we need alt text, we need the bytes
                         if not row.get(alt_text_col):
@@ -2100,16 +2123,18 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                             else "unknown file"
                         )
                         rprint(
-                            f"Generating infographic using model {infographic_arg} "
+                            f"Generating infographic using model {infographic_model} "
                             f"from {summary_filename}"
                         )
                         image_bytes, input_tokens, output_tokens = generate_infographic(
-                            infographic_arg, s_text, video_title, language=language
+                            infographic_model, s_text, video_title, language=language
                         )
                         if image_bytes:
                             try:
                                 saved_path = storage.write_bytes(
-                                    expected_path, image_bytes
+                                    infographic_stem
+                                    + image_file_extension(image_bytes),
+                                    image_bytes,
                                 )
                                 rprint(
                                     "Saved infographic: "
@@ -2120,7 +2145,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                                 # Calculate Infographic Cost
                                 if verbose:
                                     input_price, output_price = get_model_pricing(
-                                        infographic_arg
+                                        infographic_model
                                     )
                                     if (
                                         input_price is not None
@@ -2134,7 +2159,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                                         cost = round(cost, 2)
                                         cost_col = (
                                             f"Summary Infographic Cost {m_name} "
-                                            f"{infographic_arg} ($)"
+                                            f"{infographic_model} ($)"
                                         )
                                         row[cost_col] = cost
                                         vprint(f"Infographic cost: ${cost:.2f}")
@@ -2169,7 +2194,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                         # Save Alt Text File
                         if alt_text and not alt_text.startswith("Error"):
                             alt_text_filename = (
-                                f"{m_name} - {infographic_arg} - {video_id} - "
+                                f"{m_name} - {infographic_model} - {video_id} - "
                                 f"{safe_title} - alt-text.md"
                             )
                             target_path = os.path.join(alt_text_dir, alt_text_filename)
@@ -2195,7 +2220,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                                 at_cost = round(at_cost, 2)
                                 at_cost_col = (
                                     "Summary Infographic Alt Text Cost "
-                                    f"{m_name} {infographic_arg} ($)"
+                                    f"{m_name} {infographic_model} ($)"
                                 )
                                 row[at_cost_col] = at_cost
                                 vprint(f"Alt text cost: ${at_cost:.2f}")

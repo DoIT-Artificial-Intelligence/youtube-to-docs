@@ -12,15 +12,54 @@ from youtube_to_docs.tts import (
     is_aws_polly_model,
     is_gcp_tts_model,
     parse_tts_arg,
+    pcm_from_audio,
     process_tts,
+    wave_file,
 )
 
 
 class TestTTS(unittest.TestCase):
+    def test_pcm_from_audio(self):
+        """WAV audio (Gemini 3.8+) is unwrapped to PCM; raw PCM passes through."""
+        import io
+
+        pcm = b"\x01\x02" * 100
+        wav_io = io.BytesIO()
+        wave_file(wav_io, pcm, rate=16000)
+
+        self.assertEqual(pcm_from_audio(wav_io.getvalue()), (pcm, 16000))
+        self.assertEqual(pcm_from_audio(pcm), (pcm, 24000))
+
+    @patch("google.genai.Client")
+    def test_gemini_provider_strips_wav_headers_between_chunks(self, mock_client):
+        """Concatenated WAV chunks must not leave RIFF headers inside the audio."""
+        import io
+
+        from youtube_to_docs.llms import GeminiProvider
+
+        pcm = b"\x01\x02" * 100
+        wav_io = io.BytesIO()
+        wave_file(wav_io, pcm)
+        mock_resp = MagicMock()
+        mock_resp.candidates[0].content.parts[0].inline_data.data = wav_io.getvalue()
+        mock_client.return_value.models.generate_content.return_value = mock_resp
+
+        long_text = "Hello world. " * 800  # > 5000 bytes, forces chunking
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "fake"}):
+            audio, rate = GeminiProvider("gemini-3.8-flash-lite-tts").generate_speech(
+                long_text, "Kore"
+            )
+
+        chunks = mock_client.return_value.models.generate_content.call_count
+        self.assertGreater(chunks, 1)
+        self.assertEqual(audio, pcm * chunks)
+        self.assertNotIn(b"RIFF", audio)
+        self.assertEqual(rate, 24000)
+
     def test_parse_tts_arg(self):
         # Test with hyphen
-        model, voice = parse_tts_arg("gemini-3.1-flash-tts-preview-Kore")
-        self.assertEqual(model, "gemini-3.1-flash-tts-preview")
+        model, voice = parse_tts_arg("gemini-3.8-flash-lite-tts-Kore")
+        self.assertEqual(model, "gemini-3.8-flash-lite-tts")
         self.assertEqual(voice, "Kore")
 
         # Test with simple hyphen
@@ -222,7 +261,7 @@ class TestGCPTTS(unittest.TestCase):
         """Test GCP model detection helper."""
         self.assertTrue(is_gcp_tts_model("gcp-chirp3"))
         self.assertTrue(is_gcp_tts_model("gcp-chirp3-Kore"))
-        self.assertFalse(is_gcp_tts_model("gemini-3.1-flash-tts-preview"))
+        self.assertFalse(is_gcp_tts_model("gemini-3.8-flash-lite-tts"))
         self.assertFalse(is_gcp_tts_model("some-other-model"))
 
     @patch("youtube_to_docs.tts.texttospeech", create=True)
@@ -248,6 +287,31 @@ class TestGCPTTS(unittest.TestCase):
             # Verify
             self.assertEqual(audio_data, b"fake_pcm_audio_data")
             self.assertEqual(rate, 24000)
+
+    @patch("youtube_to_docs.tts.texttospeech", create=True)
+    def test_generate_speech_gcp_strips_wav_headers(self, mock_tts_module):
+        """GCP LINEAR16 audio arrives as WAV; headers must not end up in the PCM."""
+        import io
+
+        pcm = b"\x01\x02" * 100
+        wav_io = io.BytesIO()
+        wave_file(wav_io, pcm)
+
+        with patch.dict("sys.modules", {"google.cloud.texttospeech": mock_tts_module}):
+            mock_client = MagicMock()
+            mock_tts_module.TextToSpeechClient.return_value = mock_client
+            mock_response = MagicMock()
+            mock_response.audio_content = wav_io.getvalue()
+            mock_client.synthesize_speech.return_value = mock_response
+
+            for text in ["Hello world", "Hello world. " * 800]:
+                with self.subTest(chunked=len(text) > 5000):
+                    mock_client.synthesize_speech.reset_mock()
+                    audio_data, rate = generate_speech_gcp(text, "Kore", "en-US")
+                    calls = mock_client.synthesize_speech.call_count
+                    self.assertEqual(audio_data, pcm * calls)
+                    self.assertNotIn(b"RIFF", audio_data)
+                    self.assertEqual(rate, 24000)
 
     def test_generate_speech_gcp_import_error(self):
         """Test GCP TTS when google-cloud-texttospeech is not installed."""
@@ -323,7 +387,7 @@ class TestAWSPolly(unittest.TestCase):
         self.assertTrue(is_aws_polly_model("aws-polly"))
         self.assertTrue(is_aws_polly_model("aws-polly-Ruth"))
         self.assertFalse(is_aws_polly_model("gcp-chirp3"))
-        self.assertFalse(is_aws_polly_model("gemini-3.1-flash-tts-preview"))
+        self.assertFalse(is_aws_polly_model("gemini-3.8-flash-lite-tts"))
 
     @patch("youtube_to_docs.tts.boto3", create=True)
     def test_generate_speech_aws_polly_success(self, mock_boto3):

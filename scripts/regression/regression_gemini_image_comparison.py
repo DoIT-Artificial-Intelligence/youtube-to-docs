@@ -1,7 +1,7 @@
 """
 Regression test to compare all Gemini image models:
 - gemini-3.1-flash-lite-image
-- gemini-3.1-flash-image
+- gemini-nano-banana-2.1
 - gemini-3-pro-image
 
 Run with:
@@ -22,7 +22,7 @@ from regression_core import (
 
 IMAGE_MODELS = [
     "gemini-3.1-flash-lite-image",
-    "gemini-3.1-flash-image",
+    "gemini-nano-banana-2.1",
     "gemini-3-pro-image",
 ]
 

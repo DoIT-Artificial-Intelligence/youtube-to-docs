@@ -561,8 +561,8 @@ class TestParseSuggestCaptionsArg(unittest.TestCase):
 
     def test_various_model_only_cases(self):
         cases = [
-            "gemini-3.1-pro-preview",
-            "foundry-gpt-5-mini",
+            "gemini-4-argon",
+            "foundry-gpt-6-luna",
         ]
         for arg in cases:
             with self.subTest(arg=arg):
