@@ -64,6 +64,7 @@ from youtube_to_docs.utils import (
     reorder_columns,
 )
 from youtube_to_docs.video import process_videos
+from youtube_to_docs.video_understanding import parse_video_modes, process_from_video
 
 
 class VerboseRow(dict):
@@ -226,6 +227,21 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
         ),
     )
     parser.add_argument(
+        "-fv",
+        "--from-video",
+        default=None,
+        help=(
+            "Also generate the summary, one sentence summary, speakers and Q&A "
+            "directly from the video using Gemini video understanding (no "
+            "download needed). Value is the processing mode: `agentic` (the model "
+            "navigates the video, loading only what it needs; Gemini 3.5 "
+            "Flash-Lite and later, e.g. gemini-3.8-flash, gemini-4-argon) or "
+            "`static` (frames at 1 FPS; any Gemini model). Use `agentic,static` "
+            "to run both for comparison. Outputs are labelled "
+            "`from video-agentic` / `from video-static`."
+        ),
+    )
+    parser.add_argument(
         "-tr",
         "--translate",
         default=None,
@@ -327,9 +343,16 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
 
     rprint(f"Running YouTube-to-docs version: {version}")
 
-    # Default to gemini-3.5-flash-lite if -scc or -i is set without explicit -m
-    if (args.suggest_corrected_captions or args.infographic) and args.model is None:
+    # Default to gemini-3.5-flash-lite if -scc, -i or -fv is set without explicit -m
+    if (
+        args.suggest_corrected_captions or args.infographic or args.from_video
+    ) and args.model is None:
         args.model = "gemini-3.5-flash-lite"
+
+    try:
+        from_video_modes = parse_video_modes(args.from_video)
+    except ValueError as e:
+        parser.error(str(e))
 
     verbose = args.verbose
 
@@ -466,6 +489,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     summary_prompts_dir = os.path.join(base_dir, "summary-prompts")
     srt_dir = os.path.join(base_dir, "srt-files")
     suggested_captions_dir = os.path.join(base_dir, "suggested-corrected-caption-files")
+    video_context_dir = os.path.join(base_dir, "video-context-files")
 
     # Local temp dir for processing (Audio/TTS require local files)
     local_temp_dir = "temp_processing_artifacts"
@@ -486,6 +510,8 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     storage.ensure_directory(summary_prompts_dir)
     storage.ensure_directory(srt_dir)
     storage.ensure_directory(suggested_captions_dir)
+    if from_video_modes:
+        storage.ensure_directory(video_context_dir)
 
     # Load existing CSV if it exists
     existing_df = storage.load_dataframe(outfile_path)
@@ -1153,11 +1179,43 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                     ai_transcript
                 )
 
+            def run_from_video(model_name: str) -> None:
+                """Generates outputs directly from the video (`--from-video`)."""
+                if not from_video_modes:
+                    return
+                process_from_video(
+                    row=row,
+                    storage=storage,
+                    model_name=model_name,
+                    modes=from_video_modes,
+                    video_id=video_id,
+                    video_title=video_title,
+                    safe_title=safe_title,
+                    url=url,
+                    language=language,
+                    col_suffix=col_suffix,
+                    lang_str=lang_str,
+                    dirs={
+                        "summaries": summaries_dir,
+                        "summary_prompts": summary_prompts_dir,
+                        "one_sentence": one_sentence_summaries_dir,
+                        "speakers": speakers_dir,
+                        "qa": qa_dir,
+                        "video_context": video_context_dir,
+                    },
+                    verbose=verbose,
+                    vprint=vprint,
+                )
+
             if not transcript:
                 vprint(
                     f"No transcript (YouTube or AI) available for {video_id} "
-                    f"({language}). Skipping further processing for this language."
+                    f"({language}). Skipping transcript-based processing for this "
+                    "language."
                 )
+                # The video itself can still be summarized without a transcript.
+                for model_name in model_names:
+                    run_from_video(model_name)
                 continue
 
             # --- Post-processing ---
@@ -1169,6 +1227,11 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
 
             # Summarize for each requested model
             for model_name in model_names:
+                # Outputs generated directly from the video. Run first: the
+                # transcript-based steps below `continue` early when their
+                # outputs already exist, which would otherwise skip this.
+                run_from_video(model_name)
+
                 summary_col_name = (
                     f"Summary Text {model_name} from {transcript_arg}{col_suffix}"
                 )
@@ -2299,28 +2362,50 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                         print(f"Warning: Could not scan srt-files/: {e}")
 
             if source_srt_content:
-                # Collect any available speakers text from the row
-                speakers_for_scc = next(
+                # Collect any available speakers text from the row, preferring
+                # speakers read from the video (name plates and captions) over
+                # speakers inferred from a transcript.
+                speaker_items = [
+                    (k, v)
+                    for k, v in row.items()
+                    if k.startswith("Speakers ") and isinstance(v, str) and v
+                ]
+                speaker_items.sort(key=lambda kv: " from video-" not in kv[0])
+                speakers_for_scc = speaker_items[0][1] if speaker_items else ""
+                # On-screen names, speaking times and terms from --from-video
+                video_context_for_scc = next(
                     (
                         v
                         for k, v in row.items()
-                        if k.startswith("Speakers ") and isinstance(v, str) and v
+                        if k.startswith("Video Context ")
+                        and not k.startswith("Video Context File ")
+                        and isinstance(v, str)
+                        and v
                     ),
                     "",
                 )
+                context_note = (
+                    ", with on-screen context from the video"
+                    if video_context_for_scc
+                    else ""
+                )
                 rprint(
                     f"Suggesting corrected captions using {suggest_captions_model} "
-                    f"(source: {source_srt_description})..."
+                    f"(source: {source_srt_description}{context_note})..."
                 )
                 corrected_srt, scc_input, scc_output = suggest_corrected_captions(
                     suggest_captions_model,
                     source_srt_content,
                     speakers_text=speakers_for_scc,
+                    video_context=video_context_for_scc,
                 )
 
                 if corrected_srt and corrected_srt.strip() != "NO_CHANGES":
+                    scc_label = suggest_captions_model + (
+                        " with video context" if video_context_for_scc else ""
+                    )
                     scc_filename = (
-                        f"{suggest_captions_model} suggested corrections - "
+                        f"{scc_label} suggested corrections - "
                         f"{video_id} - {safe_title}.srt"
                     )
                     scc_target = os.path.join(suggested_captions_dir, scc_filename)
@@ -2330,10 +2415,9 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                             "Saved suggested caption corrections: "
                             f"{format_clickable_path(saved_scc_path)}"
                         )
-                        row[
-                            f"Suggested Corrected Captions File "
-                            f"({suggest_captions_model})"
-                        ] = saved_scc_path
+                        row[f"Suggested Corrected Captions File ({scc_label})"] = (
+                            saved_scc_path
+                        )
                     except Exception as e:
                         print(f"Error writing suggested corrections: {e}")
                 else:

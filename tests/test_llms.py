@@ -178,6 +178,21 @@ class TestLLMs(unittest.TestCase):
                     llms.BEDROCK_TIMEOUT_SECONDS,
                 )
 
+    @patch("youtube_to_docs.llms._query_llm")
+    def test_suggest_corrected_captions_with_video_context(self, mock_query):
+        """On-screen context adds spelling and [Speaker N] replacement rules."""
+        mock_query.return_value = ("NO_CHANGES", 1, 1)
+        context = "## People\n- Sen. Cheryl C. Kagan — speaking at 07:37"
+
+        llms.suggest_corrected_captions("model", "1\n00:00:01,000 --> ...", "", context)
+        prompt = mock_query.call_args.args[1]
+        self.assertIn("Sen. Cheryl C. Kagan", prompt)
+        self.assertIn("[Speaker 3]", prompt)
+        self.assertIn("do not add on-screen text", prompt)
+
+        llms.suggest_corrected_captions("model", "1\n00:00:01,000 --> ...")
+        self.assertNotIn("On-screen context", mock_query.call_args.args[1])
+
     def test_is_bedrock_openai_model(self):
         self.assertTrue(llms._is_bedrock_openai_model("gpt-6-luna"))
         self.assertTrue(llms._is_bedrock_openai_model("openai.gpt-6.1-sol"))

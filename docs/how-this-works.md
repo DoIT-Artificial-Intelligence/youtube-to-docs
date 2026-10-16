@@ -112,6 +112,16 @@ The `--suggest-corrected-captions` argument uses an LLM to review an SRT file an
 
 Format: `{model}` or `{model}-{source}` (e.g., `gemini-3.5-flash-lite`, `gemini-3.5-flash-lite-youtube`, `gemini-3.5-flash-lite-gcp-chirp3`). If source is omitted, the most recent AI-generated SRT is used automatically. If speaker extraction has been run, speaker labels are included on speaker changes.
 
+When `--from-video` is also set, the corrections use the video's **on-screen context**: names and titles read from name plates and captions with the times each person speaks, exact spellings of bill numbers and other terms, and visible-only events. This lets the model correct misheard names, replace automatic `[Speaker N]` labels with real names by timestamp, and avoid inventing details. These corrections are saved separately as `{model} with video context suggested corrections - ...srt`.
+
+### 7a. Video Understanding (`--from-video`)
+`--from-video agentic|static` (or `agentic,static`) sends the YouTube URL to a Gemini model through the Interactions API, without downloading the video, and generates a summary, one sentence summary, speakers, Q&A and on-screen context (`video-context-files/`) from the video itself. These are stored next to the transcript-based outputs under the source `video-agentic` / `video-static`, so infographics and audio are generated for them too.
+
+- **Agentic** (Gemini 3.5 Flash-Lite and later, e.g. `gemini-3.8-flash`, `gemini-4-argon`): the model navigates the video, loading transcript, frames or audio only as needed. Works on long (multi-hour) videos.
+- **Static**: frames are sampled at 1 FPS for the whole video. Limited to videos that fit in the model's context window (roughly 3 hours at default resolution).
+
+The first request loads the video and later requests continue the same server-side session. Requests run in the background and are polled (30 minute timeout). Costs include the model's navigation reasoning (thought tokens) and content it loads (tool use tokens). The transcript-based pipeline still runs; video outputs are added alongside it.
+
 ### 8. Output & Storage
 The `--outfile` argument controls where the output CSV is saved:
 - **Local path** (default): `youtube-to-docs-artifacts/youtube-docs.csv`.

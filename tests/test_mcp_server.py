@@ -35,6 +35,7 @@ def test_process_video_all_args():
             tts_model="tts-1",
             infographic_model="gemini-nano-banana-2.1",
             no_youtube_summary=True,
+            from_video="agentic",
             translate="gemini-2.5-pro-es",
         )
 
@@ -53,6 +54,8 @@ def test_process_video_all_args():
             "--infographic",
             "gemini-nano-banana-2.1",
             "--no-youtube-summary",
+            "--from-video",
+            "agentic",
         ]
 
         mock_main.assert_called_once_with(expected_args)
