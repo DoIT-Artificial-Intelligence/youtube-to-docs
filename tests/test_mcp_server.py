@@ -33,7 +33,7 @@ def test_process_video_all_args():
             transcript_source="gemini-pro",
             model="gemini-2.5-pro",
             tts_model="tts-1",
-            infographic_model="imagen",
+            infographic_model="gemini-nano-banana-2.1",
             no_youtube_summary=True,
             translate="gemini-2.5-pro-es",
         )
@@ -51,7 +51,7 @@ def test_process_video_all_args():
             "--tts",
             "tts-1",
             "--infographic",
-            "imagen",
+            "gemini-nano-banana-2.1",
             "--no-youtube-summary",
         ]
 

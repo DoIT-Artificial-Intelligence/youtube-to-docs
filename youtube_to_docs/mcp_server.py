@@ -63,10 +63,11 @@ def process_video(
             Defaults to None (Transcript only).
             Use 'gemini-3.5-flash-lite' for summarization.
         tts_model: The TTS model and voice to use
-            (e.g., 'gemini-3.1-flash-tts-preview-Kore', 'gcp-chirp3-Kore',
+            (e.g., 'gemini-3.8-flash-lite-tts-Kore', 'gcp-chirp3-Kore',
             'aws-polly-Ruth').
         infographic_model: The image model to use for generating an infographic
-            (e.g., 'gemini-3.1-flash-lite-image' or 'gemini-3-pro-image').
+            (e.g., 'gemini-nano-banana-2.1' or 'gemini-3-pro-image'). Can be a
+            comma-separated list to generate one infographic per model.
         alt_text_model: The LLM model to use for generating alt text for the
             infographic. Defaults to the summary model.
         no_youtube_summary: If True, skips generating a secondary summary from the

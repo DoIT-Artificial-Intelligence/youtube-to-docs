@@ -360,7 +360,7 @@
               <div class="grid-col-12 tablet:grid-col-6">
                 <label class="usa-label" for="all_suite">Model Suite</label>
                 <button type="button" class="info-btn" onclick="this.nextElementSibling.classList.toggle('show')" aria-label="More info about Model Suite" aria-describedby="tooltip-all-suite">i</button>
-                <div class="info-tooltip" id="tooltip-all-suite" role="tooltip">Shortcut to use a specific model suite for everything.<br><br><strong>gemini-flash:</strong> summarization (gemini-3-flash-preview), TTS (gemini-2.5-flash-preview-tts-Kore), infographic (gemini-3.1-flash-image).<br><strong>gemini-pro:</strong> summarization (gemini-3.1-pro-preview), TTS (gemini-2.5-pro-preview-tts-Kore), infographic (gemini-3-pro-image).<br><strong>gemini-flash-pro-image:</strong> summarization (gemini-3-flash-preview), TTS (gemini-2.5-flash-preview-tts-Kore), infographic (gemini-3-pro-image).<br><strong>gcp-pro:</strong> summarization (gemini-3.1-pro-preview), TTS (gcp-chirp3), infographic (gemini-3-pro-image).<br><br>Also sets "Skip YouTube summary".</div>
+                <div class="info-tooltip" id="tooltip-all-suite" role="tooltip">Shortcut to use a specific model suite for everything.<br><br><strong>gemini-flash:</strong> summarization (gemini-3.5-flash-lite), TTS (gemini-3.8-flash-lite-tts-Kore), infographic (gemini-nano-banana-2.1).<br><strong>gemini-pro:</strong> summarization (gemini-4-argon), TTS (gemini-3.8-flash-lite-tts-Kore), infographic (gemini-3-pro-image).<br><strong>gemini-flash-pro-image:</strong> summarization (gemini-3.5-flash-lite), TTS (gemini-3.8-flash-lite-tts-Kore), infographic (gemini-3-pro-image).<br><strong>gcp-pro:</strong> summarization (gemini-4-argon), TTS (gcp-chirp3), infographic (gemini-3-pro-image).<br><strong>anthropic-opus:</strong> summarization (claude-opus-5-5), TTS (aws-polly-Ruth), infographic (gemini-3-pro-image).<br><br>Also sets "Skip YouTube summary".</div>
                 <select class="usa-select" id="all_suite" name="all_suite">
                   <option value="">None (transcript only)</option>
                 </select>
@@ -381,12 +381,12 @@
             <div class="grid-row grid-gap margin-top-2">
               <div class="grid-col-12 tablet:grid-col-6">
                 <label class="usa-label" for="tts_model">Text-To-Speech Model</label>
-                <input class="usa-input" id="tts_model" name="tts_model" type="text" list="tts-options" placeholder="e.g. gemini-2.5-flash-preview-tts-Kore">
+                <input class="usa-input" id="tts_model" name="tts_model" type="text" list="tts-options" placeholder="e.g. gemini-3.8-flash-lite-tts-Kore">
                 <datalist id="tts-options"></datalist>
               </div>
               <div class="grid-col-12 tablet:grid-col-6">
                 <label class="usa-label" for="infographic_model">Infographic Model</label>
-                <input class="usa-input" id="infographic_model" name="infographic_model" type="text" list="infographic-options" placeholder="e.g. gemini-3.1-flash-image">
+                <input class="usa-input" id="infographic_model" name="infographic_model" type="text" list="infographic-options" placeholder="e.g. gemini-nano-banana-2.1">
                 <datalist id="infographic-options"></datalist>
               </div>
             </div>
@@ -486,12 +486,12 @@
   const $ = id => document.getElementById(id);
 
   const SUMMARY_MODELS = [
-    'bedrock-claude-haiku-4-5-20251001-v1',
+    'bedrock-claude-haiku-5-5',
     'bedrock-nova-2-lite-v1',
-    'foundry-gpt-5-mini',
+    'foundry-gpt-6-luna',
     'gemini-3-flash-preview',
-    'gemini-3.1-pro-preview',
-    'vertex-claude-haiku-4-5@20251001',
+    'gemini-4-argon',
+    'vertex-claude-haiku-5-5',
   ];
 
   // Load model suites and populate dropdowns
@@ -524,7 +524,8 @@
 
   const INFOGRAPHIC_MODELS = [
     'gemini-3-pro-image',
-    'gemini-3.1-flash-image',
+    'gemini-nano-banana-2.1',
+    'gemini-3.1-flash-lite-image',
   ];
 
   const TTS_MODELS = [
@@ -532,8 +533,8 @@
     'aws-polly-Ruth',
     'gcp-chirp3',
     'gcp-chirp3-Kore',
-    'gemini-2.5-flash-preview-tts-Kore',
-    'gemini-2.5-pro-preview-tts-Kore',
+    'gemini-3.8-flash-lite-tts-Kore',
+    'gemini-3.8-flash-tts-Kore',
   ];
 
   // Populate datalists

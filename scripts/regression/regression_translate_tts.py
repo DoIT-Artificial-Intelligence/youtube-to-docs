@@ -24,7 +24,7 @@ from regression_core import (
     verify_output,
 )
 
-TTS_MODEL = "gemini-3.1-flash-tts-preview-Kore"
+TTS_MODEL = "gemini-3.8-flash-lite-tts-Kore"
 
 
 def main():

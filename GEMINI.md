@@ -15,8 +15,8 @@ Here are the following args for the tool:
 - **hugging_face_dataset**: (Optional) The Hugging Face dataset repository to store artifacts in when `output_file` is `hf`. Can be a full repo id (e.g. `username/my-dataset`) or a plain name (e.g. `Code for America Summit 2026 Recap`) which is slugified and namespaced under the authenticated user. If omitted and the input is a playlist, the playlist's title is used as the dataset name. Requires the `HF_TOKEN` environment variable.
 - **transcript_source**: (Optional) Source for the transcript. Defaults to 'youtube' (fetches existing). set to an AI model name (e.g., 'gemini-3.5-transcribe', 'gemini-3.5-flash-lite', 'gcp-chirp3') to perform STT on extracted audio. `gemini-3.5-transcribe` is Google's dedicated STT model and returns word-level timestamps plus speaker diarization, so its SRT has real offsets and `[Speaker N]` labels on speaker changes. For `gcp-` models, `YTD_GCS_BUCKET_NAME` env var is recommended.
 - **model**: (Optional) The LLM model(s) to use for summarization, Q&A, speaker extraction and tag generation (e.g., 'gemini-3.5-flash-lite'). Can be a comma-separated list. Defaults to `None` (Transcript only), but using the `-m` flag without an argument defaults to `gemini-3.5-flash-lite`.
-- **tts_model**: (Optional) The TTS model and voice to use (e.g., 'gemini-3.1-flash-tts-preview-Kore', 'gemini-3.1-flash-tts-preview-Kore', 'gcp-chirp3', 'gcp-chirp3-Kore', 'aws-polly', 'aws-polly-Ruth').
-- **infographic_model**: (Optional) The image model to use for generating an infographic (e.g., 'gemini-3.5-flash-lite-image' or 'gemini-3-pro-image').
+- **tts_model**: (Optional) The TTS model and voice to use (e.g., 'gemini-3.8-flash-lite-tts-Kore', 'gemini-3.8-flash-lite-tts-Kore', 'gcp-chirp3', 'gcp-chirp3-Kore', 'aws-polly', 'aws-polly-Ruth').
+- **infographic_model**: (Optional) The image model to use for generating an infographic (e.g., 'gemini-nano-banana-2.1' or 'gemini-3-pro-image'). Can be a comma-separated list to generate one infographic per model.
 - **alt_text_model**: (Optional) The LLM model to use for generating multimodal alt text for the infographic. Defaults to the summary model.
 - **no_youtube_summary**: (Optional) If `True`, skips generating a secondary summary from the YouTube transcript when using an AI model for the primary transcript.
 - **translate**: (Optional) Translate all outputs to a target language. Format: `{model}-{language}` (e.g., 'gemini-3.5-flash-lite-es', 'bedrock-nova-2-lite-v1-fr', 'aws-translate-es', 'gcp-translate-es'). Use `aws-translate` to use the AWS Translate service directly, or `gcp-translate` to use Google Cloud Translation API directly. Defaults to English only.
@@ -32,11 +32,11 @@ Here are the following args for the tool:
     - **Model Shorthand**:
       - "gemini" or "gemini flash" -> **Flash**:
         - Summary/Transcript: `gemini-3.5-flash-lite`
-        - TTS: `gemini-3.1-flash-tts-preview-Kore`
-        - Infographic: `gemini-3-pro-image`
+        - TTS: `gemini-3.8-flash-lite-tts-Kore`
+        - Infographic: `gemini-nano-banana-2.1`
       - "gemini pro" -> **Pro**:
-        - Summary/Transcript: `gemini-3.1-pro-preview`
-        - TTS: `gemini-3.1-flash-tts-preview-Kore`
+        - Summary/Transcript: `gemini-4-argon`
+        - TTS: `gemini-3.8-flash-tts-Kore`
         - Infographic: `gemini-3-pro-image`
       - "aws" -> **AWS**:
         - Summary/Transcript: `bedrock-nova-2-lite-v1`

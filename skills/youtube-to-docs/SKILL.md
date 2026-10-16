@@ -41,11 +41,11 @@ Use this when the user wants a visual summary or "infographic" representing the 
   - `model`: The text model for summarization (required context for the image).
 - **Model Selection Strategy**:
   - **Pro (High Quality)**: Use if "gemini pro" is requested.
-    - `model='gemini-3.1-pro-preview'`
+    - `model='gemini-4-argon'`
     - `infographic_model='gemini-3-pro-image'`
   - **Flash (Default/Speed/Cost)**: Use if "gemini flash" is requested or no preference is stated.
     - `model='gemini-3.5-flash-lite'`
-    - `infographic_model='gemini-3-pro-image'`
+    - `infographic_model='gemini-nano-banana-2.1'`
 
 * **Alt Text (Accessibility)**: By default, `process_video` generates multimodal alt text using the summary model (image-to-text) for any created infographic. Use `alt_text_model` to override the model for this step.
 * **Confirmation**: Proceed without asking for extra confirmation unless parameters are missing.
@@ -106,7 +106,7 @@ Use this when the user specifies particular models or output locations.
 | `model`                      | LLM for summaries/Q&A.                                                                                                               | `gcp` / `azure`            | `gemini-3.5-flash-lite`                                                                        |
 | `infographic_model`          | Model for generating the infographic image.                                                                                          | `gcp`                      | `gemini-3-pro-image`                                                                    |
 | `alt_text_model`             | Model for generating multimodal alt text for the infographic.                                                                        | `gcp`                      | `gemini-3.5-flash-lite`                                                                        |
-| `tts_model`                  | Model for text-to-speech audio.                                                                                                      | `gcp`                      | `gemini-3.1-flash-tts-preview-Kore`, `gcp-chirp3-Kore`                                          |
+| `tts_model`                  | Model for text-to-speech audio.                                                                                                      | `gcp`                      | `gemini-3.8-flash-lite-tts-Kore`, `gcp-chirp3-Kore`                                          |
 | `all_suite`                  | Shortcut to apply a suite of models.                                                                                                 | `gcp`, `audio`, `video`    | `gemini-pro`, `gemini-flash`                                                                    |
 | `combine_infographic_audio`  | Boolean. If True, creates an MP4 video.                                                                                              | `video`                    | `True`                                                                                          |
 | `translate`                  | Translate all outputs to a target language. Format: `{model}-{language}`, `aws-translate-{language}`, or `gcp-translate-{language}`. | -                          | `gemini-3.5-flash-lite-es`, `aws-translate-es`, `gcp-translate-es`                             |
@@ -121,7 +121,7 @@ Use this when the user specifies particular models or output locations.
 **Action**: Call `youtube-to-docs:process_video(url='...')`
 
 **User**: "Make an infographic for this video using Gemini Pro."
-**Action**: Call `youtube-to-docs:process_video(url='...', model='gemini-3.1-pro-preview', infographic_model='gemini-3-pro-image')`
+**Action**: Call `youtube-to-docs:process_video(url='...', model='gemini-4-argon', infographic_model='gemini-3-pro-image')`
 
 **User**: "Do a kitchen sink run on this video in Spanish."
 **Action**: Call `youtube-to-docs:process_video(url='...', all_suite='gemini-pro', combine_infographic_audio=True, verbose=True, translate='gemini-3.5-flash-lite-es')`

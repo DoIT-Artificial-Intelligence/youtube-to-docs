@@ -24,7 +24,7 @@ from regression_core import (
     verify_output,
 )
 
-INFOGRAPHIC_MODEL = "gemini-3.1-flash-image"
+INFOGRAPHIC_MODEL = "gemini-nano-banana-2.1"
 
 
 def main():

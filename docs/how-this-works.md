@@ -32,9 +32,9 @@ For each video, the tool fetches or generates a transcript:
 ### 3. The LLM Pipeline
 Text processing is handled by Large Language Models (LLMs) defined in `youtube_to_docs/llms.py`. The pipeline is model-agnostic, supporting:
 - **Google Gemini / Gemma** (direct API, models prefixed `gemini-` or `gemma-`)
-- **GCP Vertex AI** (prefixed with `vertex-`, e.g. `vertex-claude-haiku-4-5@20251001`)
-- **AWS Bedrock** (prefixed with `bedrock-`, e.g. `bedrock-nova-2-lite-v1`)
-- **Azure Foundry** (prefixed with `foundry-`, e.g. `foundry-gpt-5-mini`)
+- **GCP Vertex AI** (prefixed with `vertex-`, e.g. `vertex-claude-haiku-5-5`)
+- **AWS Bedrock** (prefixed with `bedrock-`, e.g. `bedrock-nova-2-lite-v1`, `bedrock-claude-haiku-5-5`, or `bedrock-gpt-6-luna`; OpenAI GPT models are called through the Bedrock Mantle Chat Completions endpoint)
+- **Azure Foundry** (prefixed with `foundry-`, e.g. `foundry-gpt-6-luna`)
 
 You can also pass a comma-separated list to run multiple models simultaneously, or use the `--all` flag with a named suite (e.g. `gemini-flash`, `gemini-pro`, `gemini-flash-pro-image`, `gcp-pro`) to set the model, TTS, infographic model, and transcript source all at once.
 
@@ -78,13 +78,13 @@ File names use `({model}-{language})` (e.g., `(gemini-3.5-flash-lite-es)`, `(aws
 Beyond text, the tool creates audio and visual assets:
 
 - **Text-to-Speech (TTS)**:
-    *   Uses TTS models (e.g. `gemini-3.1-flash-tts-preview-Kore`, `gcp-chirp3`, `aws-polly-Ruth`) to convert the generated summary into an audio file.
+    *   Uses TTS models (e.g. `gemini-3.8-flash-lite-tts-Kore`, `gcp-chirp3`, `aws-polly-Ruth`) to convert the generated summary into an audio file.
     *   This allows users to "listen" to the video summary.
 
 - **Infographics**:
     *   Uses image generation models to create a visual representation of the summary.
     *   **Supported Providers**:
-        *   **Google**: Gemini, Imagen.
+        *   **Google**: Gemini (Nano Banana).
         *   **AWS Bedrock**: Titan Image Generator, Nova Canvas (requires `AWS_BEARER_TOKEN_BEDROCK`).
         *   **Azure Foundry**: GPT Image models (requires `AZURE_FOUNDRY_ENDPOINT` and `AZURE_FOUNDRY_API_KEY`).
     *   The prompt includes the video title and the generated summary text to ensure relevance.

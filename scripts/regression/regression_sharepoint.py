@@ -28,7 +28,7 @@ def main():
 
     # 4. Run Regression with SharePoint Target
     run_regression(
-        "foundry-gpt-5-mini",  # model
+        "foundry-gpt-6-luna",  # model
         None,  # transcript_model
         None,  # infographic_model
         None,  # tts_model
@@ -38,7 +38,7 @@ def main():
 
     # 5. Verify Output from SharePoint
     verify_output(
-        "foundry-gpt-5-mini",
+        "foundry-gpt-6-luna",
         None,
         None,
         None,

@@ -88,7 +88,7 @@ def test_process_all_args(client):
                 "output_file": "youtube-to-docs-artifacts/custom.csv",
                 "transcript_source": "gemini-pro",
                 "model": "gemini-3.5-flash-lite",
-                "tts_model": "gemini-3.1-flash-tts-preview-Kore",
+                "tts_model": "gemini-3.8-flash-lite-tts-Kore",
                 "infographic_model": "gemini-3.5-flash-lite-image",
                 "alt_text_model": "gemini-3.5-flash-lite",
                 "no_youtube_summary": True,
@@ -525,7 +525,7 @@ def test_missing_azure_credentials_job_completes(
             "--transcript",
             "youtube",
             "--model",
-            "foundry-gpt-5-mini",
+            "foundry-gpt-6-luna",
         ]
         env = {
             k: v

@@ -33,8 +33,8 @@ def main():
 
     # 4. Run Regression
     transcript_model = "gemini-3.5-flash-lite"
-    infographic_model = "gemini-3.1-flash-image"
-    tts_model = "gemini-3.1-flash-tts-preview-Kore"
+    infographic_model = "gemini-nano-banana-2.1"
+    tts_model = "gemini-3.8-flash-lite-tts-Kore"
 
     run_regression(
         selected_model,

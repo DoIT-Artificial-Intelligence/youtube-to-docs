@@ -15,9 +15,9 @@ VIDEO_ID = "B0x2I_doX9o"
 ARTIFACTS_DIR = "youtube-to-docs-test"
 MODELS_TO_CHECK = {
     "gemini-3.5-flash-lite": "Gemini (GCP)",
-    "vertex-claude-haiku-4-5@20251001": "Claude (Vertex GCP)",
+    "vertex-claude-haiku-5-5": "Claude (Vertex GCP)",
     "bedrock-nova-2-lite-v1": "Nova 2 Lite (AWS)",
-    "foundry-gpt-5-mini": "GPT-5 Mini (Azure)",
+    "foundry-gpt-6-luna": "GPT-6 Luna (Azure)",
 }
 
 
@@ -178,14 +178,14 @@ def verify_output(
     if all_gemini_arg == "gemini-flash":
         model = "gemini-3.5-flash-lite"
         transcript_model = transcript_model or "gemini-3.5-flash-lite"
-        infographic_model = "gemini-3.1-flash-image"
-        tts_model = "gemini-3.1-flash-tts-preview-Kore"
+        infographic_model = "gemini-nano-banana-2.1"
+        tts_model = "gemini-3.8-flash-lite-tts-Kore"
         no_youtube_summary = True
     elif all_gemini_arg == "gemini-pro":
-        model = "gemini-3.1-pro-preview"
-        transcript_model = transcript_model or "gemini-3.1-pro-preview"
+        model = "gemini-4-argon"
+        transcript_model = transcript_model or "gemini-4-argon"
         infographic_model = "gemini-3-pro-image"
-        tts_model = "gemini-3.1-flash-tts-preview-Kore"
+        tts_model = "gemini-3.8-flash-lite-tts-Kore"
         no_youtube_summary = True
 
     # Ensure model and transcript_model are not None for normalization

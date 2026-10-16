@@ -24,8 +24,8 @@ from regression_core import (
 )
 
 TRANSCRIPT_MODEL = "gemini-3.5-flash-lite"
-INFOGRAPHIC_MODEL = "gemini-3.1-flash-image"
-TTS_MODEL = "gemini-3.1-flash-tts-preview-Kore"
+INFOGRAPHIC_MODEL = "gemini-nano-banana-2.1"
+TTS_MODEL = "gemini-3.8-flash-lite-tts-Kore"
 
 
 def main():

@@ -37,34 +37,22 @@ class TestInfographic(TestCase):
         mock_client.models.generate_content_stream.return_value = [mock_chunk]
 
         image_bytes, in_tok, out_tok = infographic.generate_infographic(
-            "gemini-3.1-flash-image", "Summary text", "Video Title"
+            "gemini-nano-banana-2.1", "Summary text", "Video Title"
         )
 
         self.assertEqual(image_bytes, b"fake_gemini_bytes")
         self.assertEqual(in_tok, 10)
         self.assertEqual(out_tok, 20)
         mock_client.models.generate_content_stream.assert_called_once()
+        config = mock_client.models.generate_content_stream.call_args.kwargs["config"]
+        self.assertEqual(config.image_config.aspect_ratio, "16:9")
 
-    @patch("google.genai.Client")
-    def test_generate_infographic_imagen(self, mock_client_cls):
-        mock_client = mock_client_cls.return_value
-        mock_resp = MagicMock()
-
-        # Mocking the response structure for generate_images
-        mock_image = MagicMock()
-        mock_image.image.image_bytes = b"fake_imagen_bytes"
-        mock_resp.generated_images = [mock_image]
-
-        mock_client.models.generate_images.return_value = mock_resp
-
-        image_bytes, in_tok, out_tok = infographic.generate_infographic(
-            "imagen-4.0-generate-001", "Summary text", "Video Title"
+    def test_image_file_extension(self):
+        self.assertEqual(infographic.image_file_extension(b"\xff\xd8\xff\xe0"), ".jpg")
+        self.assertEqual(infographic.image_file_extension(b"\x89PNG\r\n\x1a\n"), ".png")
+        self.assertEqual(
+            infographic.image_file_extension(b"RIFF\x00\x00\x00\x00WEBPVP8 "), ".webp"
         )
-
-        self.assertEqual(image_bytes, b"fake_imagen_bytes")
-        self.assertEqual(in_tok, 0)
-        self.assertEqual(out_tok, 1000)
-        mock_client.models.generate_images.assert_called_once()
 
     def test_build_infographic_prompt(self):
         prompt = infographic.build_infographic_prompt(
@@ -93,7 +81,7 @@ class TestInfographic(TestCase):
         mock_client.models.generate_content_stream.return_value = [mock_chunk]
 
         infographic.generate_infographic(
-            "gemini-3.1-flash-image", "Summary text", "Video Title"
+            "gemini-nano-banana-2.1", "Summary text", "Video Title"
         )
 
         _, kwargs = mock_client.models.generate_content_stream.call_args
@@ -118,20 +106,6 @@ class TestInfographic(TestCase):
         self.assertEqual(out_tok, 0)
 
     @patch("google.genai.Client")
-    def test_generate_infographic_imagen_no_images(self, mock_client_cls):
-        mock_client = mock_client_cls.return_value
-        mock_resp = MagicMock()
-        mock_resp.generated_images = []
-        mock_client.models.generate_images.return_value = mock_resp
-
-        image_bytes, in_tok, out_tok = infographic.generate_infographic(
-            "imagen-4.0-generate-001", "Summary text", "Video Title"
-        )
-        self.assertIsNone(image_bytes)
-        self.assertEqual(in_tok, 0)
-        self.assertEqual(out_tok, 0)
-
-    @patch("google.genai.Client")
     def test_generate_infographic_gemini_no_data(self, mock_client_cls):
         mock_client = mock_client_cls.return_value
 
@@ -145,7 +119,7 @@ class TestInfographic(TestCase):
         mock_client.models.generate_content_stream.return_value = [mock_chunk]
 
         image_bytes, in_tok, out_tok = infographic.generate_infographic(
-            "gemini-3.1-flash-image", "Summary text", "Video Title"
+            "gemini-nano-banana-2.1", "Summary text", "Video Title"
         )
         self.assertIsNone(image_bytes)
         self.assertEqual(in_tok, 0)

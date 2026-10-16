@@ -380,6 +380,75 @@ class TestMain(unittest.TestCase):
     @patch("youtube_to_docs.main.generate_infographic")
     @patch("youtube_to_docs.main.generate_tags")
     @patch("os.makedirs")
+    def test_multiple_infographic_models(
+        self,
+        mock_makedirs,
+        mock_gen_tags,
+        mock_gen_info,
+        mock_get_pricing,
+        mock_gen_summary,
+        mock_fetch_trans,
+        mock_details,
+        mock_resolve,
+        mock_svc,
+    ):
+        """A comma-separated -i makes one infographic per model, saved with the
+        extension of the returned image format."""
+        mock_gen_tags.return_value = ("tag1, tag2", 10, 5)
+        mock_resolve.return_value = ["vid1"]
+        mock_details.return_value = (
+            "Title 1",
+            "Desc",
+            "2023-01-01",
+            "Chan",
+            "Tags",
+            "0:01:00",
+            "url1",
+            60.0,
+        )
+        mock_fetch_trans.return_value = ("Transcript 1", False, "")
+        mock_gen_summary.return_value = ("Summary 1", 100, 50)
+        mock_get_pricing.return_value = (0.0, 0.0)
+        mock_gen_info.return_value = (b"\xff\xd8\xff\xe0fake_jpeg", 100, 1290)
+
+        with patch(
+            "sys.argv",
+            [
+                "main.py",
+                "vid1",
+                "-o",
+                self.outfile,
+                "-m",
+                "gemini-test",
+                "--infographic",
+                "image-a, image-b",
+            ],
+        ):
+            with patch("builtins.open", mock_open()):
+                main.main()
+
+                called_models = [c.args[0] for c in mock_gen_info.call_args_list]
+                self.assertEqual(called_models, ["image-a", "image-b"])
+
+                df = pl.read_csv(self.outfile)
+                for image_model in ["image-a", "image-b"]:
+                    col = (
+                        "Summary Infographic File gemini-test from youtube "
+                        f"{image_model}"
+                    )
+                    self.assertIn(col, df.columns)
+                    self.assertIn(f" - {image_model} - ", df[0, col])
+                    self.assertTrue(df[0, col].endswith("infographic.jpg"))
+
+    @patch("youtube_to_docs.main.get_youtube_service")
+    @patch("youtube_to_docs.main.resolve_video_ids")
+    @patch("youtube_to_docs.main.get_video_details")
+    @patch("youtube_to_docs.main.fetch_transcript")
+    @patch("youtube_to_docs.main.generate_summary")
+    @patch("youtube_to_docs.main.get_model_pricing")
+    @patch("youtube_to_docs.main.generate_infographic")
+    @patch("youtube_to_docs.main.generate_tags")
+    @patch("os.makedirs")
     def test_infographic_storage(
         self,
         mock_makedirs,
@@ -752,15 +821,13 @@ class TestMain(unittest.TestCase):
         )
         self.assertTrue(any_flash_summary)
 
-        # Check if process_tts was called with gemini-3.1-flash-tts-preview-Kore
+        # Check if process_tts was called with gemini-3.8-flash-lite-tts-Kore
         mock_tts.assert_called()
-        self.assertEqual(
-            mock_tts.call_args.args[1], "gemini-3.1-flash-tts-preview-Kore"
-        )
+        self.assertEqual(mock_tts.call_args.args[1], "gemini-3.8-flash-lite-tts-Kore")
 
-        # Check if generate_infographic was called with gemini-3.1-flash-image
+        # Check if generate_infographic was called with gemini-nano-banana-2.1
         mock_gen_info.assert_called()
-        self.assertEqual(mock_gen_info.call_args.args[0], "gemini-3-pro-image")
+        self.assertEqual(mock_gen_info.call_args.args[0], "gemini-nano-banana-2.1")
 
     @patch("youtube_to_docs.main.get_youtube_service")
     @patch("youtube_to_docs.main.resolve_video_ids")
@@ -849,19 +916,16 @@ class TestMain(unittest.TestCase):
         ):
             main.main()
 
-        # Check if generate_summary was called with gemini-3.1-pro-preview
+        # Check if generate_summary was called with gemini-4-argon
         mock_gen_summary.assert_called()
         any_pro_summary = any(
-            call.args[0] == "gemini-3.1-pro-preview"
-            for call in mock_gen_summary.call_args_list
+            call.args[0] == "gemini-4-argon" for call in mock_gen_summary.call_args_list
         )
         self.assertTrue(any_pro_summary)
 
-        # Check if process_tts was called with gemini-3.1-flash-tts-preview-Kore
+        # Check if process_tts was called with gemini-3.8-flash-tts-Kore
         mock_tts.assert_called()
-        self.assertEqual(
-            mock_tts.call_args.args[1], "gemini-3.1-flash-tts-preview-Kore"
-        )
+        self.assertEqual(mock_tts.call_args.args[1], "gemini-3.8-flash-tts-Kore")
 
         # Check if generate_infographic was called with gemini-3-pro-image
         mock_gen_info.assert_called()
@@ -962,11 +1026,9 @@ class TestMain(unittest.TestCase):
         )
         self.assertTrue(any_flash_summary)
 
-        # Check if process_tts was called with gemini-3.1-flash-tts-preview-Kore
+        # Check if process_tts was called with gemini-3.8-flash-lite-tts-Kore
         mock_tts.assert_called()
-        self.assertEqual(
-            mock_tts.call_args.args[1], "gemini-3.1-flash-tts-preview-Kore"
-        )
+        self.assertEqual(mock_tts.call_args.args[1], "gemini-3.8-flash-lite-tts-Kore")
 
         # Check if generate_infographic was called with gemini-3-pro-image
         mock_gen_info.assert_called()

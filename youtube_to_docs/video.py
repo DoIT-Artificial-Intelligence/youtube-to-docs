@@ -173,7 +173,10 @@ def process_videos(
 
                 rprint(f"Creating video: {video_filename}")
 
-                local_info_path = os.path.join(temp_dir, f"input_image_{lang}.png")
+                info_ext = os.path.splitext(infographic)[1] or ".png"
+                local_info_path = os.path.join(
+                    temp_dir, f"input_image_{lang}{info_ext}"
+                )
                 ext = os.path.splitext(audio)[1] or ".m4a"
                 local_audio_path = os.path.join(temp_dir, f"input_audio_{lang}{ext}")
                 local_video_path = os.path.join(temp_dir, f"output_video_{lang}.mp4")

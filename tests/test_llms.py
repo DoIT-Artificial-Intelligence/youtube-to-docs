@@ -111,6 +111,114 @@ class TestLLMs(unittest.TestCase):
         self.assertEqual(in_tokens, 100)
         self.assertEqual(out_tokens, 50)
 
+    @patch("youtube_to_docs.llms.requests.post")
+    def test_bedrock_claude_model_ids(self, mock_post):
+        """Dated Claude IDs get a ':0' suffix; newer undated IDs don't."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "output": {"message": {"content": [{"text": "ok"}]}},
+            "usage": {"inputTokens": 1, "outputTokens": 1},
+        }
+        mock_post.return_value = mock_resp
+
+        cases = {
+            "bedrock-claude-opus-5-5": "us.anthropic.claude-opus-5-5",
+            "bedrock-claude-haiku-4-5-20251001-v1": (
+                "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+            ),
+        }
+        for model, expected_id in cases.items():
+            with self.subTest(model=model):
+                llms.generate_summary(model, "transcript", "Title", "url")
+                url = mock_post.call_args.args[0]
+                self.assertIn(f"/model/{expected_id}/", url)
+
+    @patch("youtube_to_docs.llms.requests.post")
+    def test_bedrock_openai_uses_mantle(self, mock_post):
+        """OpenAI GPT models on Bedrock go to the Mantle chat completions API."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "choices": [{"message": {"content": "Mantle Summary"}}],
+            "usage": {"prompt_tokens": 100, "completion_tokens": 50},
+        }
+        mock_post.return_value = mock_resp
+
+        for model in ["bedrock-gpt-6-luna", "bedrock-openai.gpt-6-luna"]:
+            with self.subTest(model=model):
+                summary, in_tokens, out_tokens = llms.generate_summary(
+                    model, "transcript", "Title", "url"
+                )
+                self.assertEqual(summary, "Mantle Summary")
+                self.assertEqual((in_tokens, out_tokens), (100, 50))
+                self.assertEqual(
+                    mock_post.call_args.args[0],
+                    "https://bedrock-mantle.us-east-1.api.aws/openai/v1/chat/completions",
+                )
+                self.assertEqual(
+                    mock_post.call_args.kwargs["json"]["model"], "openai.gpt-6-luna"
+                )
+
+    @patch("youtube_to_docs.llms.requests.post")
+    def test_bedrock_timeout(self, mock_post):
+        """Bedrock calls set a timeout and report a stalled request as an error."""
+        import requests
+
+        mock_post.side_effect = requests.exceptions.ReadTimeout("read timed out")
+        for model in ["bedrock-claude-haiku-5-5", "bedrock-gpt-6-luna"]:
+            with self.subTest(model=model):
+                summary, in_tokens, out_tokens = llms.generate_summary(
+                    model, "transcript", "Title", "url"
+                )
+                self.assertIn("read timed out", summary)
+                self.assertEqual((in_tokens, out_tokens), (0, 0))
+                self.assertEqual(
+                    mock_post.call_args.kwargs["timeout"],
+                    llms.BEDROCK_TIMEOUT_SECONDS,
+                )
+
+    def test_is_bedrock_openai_model(self):
+        self.assertTrue(llms._is_bedrock_openai_model("gpt-6-luna"))
+        self.assertTrue(llms._is_bedrock_openai_model("openai.gpt-6.1-sol"))
+        self.assertFalse(llms._is_bedrock_openai_model("openai.gpt-oss-120b-1:0"))
+        self.assertFalse(llms._is_bedrock_openai_model("claude-opus-5-5"))
+
+    @patch("anthropic.AnthropicVertex")
+    @patch("google.auth.default")
+    def test_vertex_claude_default_region(self, mock_auth, mock_anthropic_vertex):
+        """Undated Claude models default to the global endpoint on Vertex."""
+        mock_auth.return_value = (MagicMock(), "proj")
+        mock_message = MagicMock()
+        mock_message.content = []
+        mock_anthropic_vertex.return_value.messages.create.return_value = mock_message
+
+        cases = {
+            "vertex-claude-opus-5-5": "global",
+            "vertex-claude-haiku-4-5@20251001": "us-east5",
+        }
+        env = {k: v for k, v in os.environ.items() if k != "VERTEX_LOCATION"}
+        for model, expected_region in cases.items():
+            with self.subTest(model=model), patch.dict(os.environ, env, clear=True):
+                llms.generate_summary(model, "transcript", "Title", "url")
+                self.assertEqual(
+                    mock_anthropic_vertex.call_args.kwargs["region"], expected_region
+                )
+
+    def test_get_model_pricing_claude_5_5(self):
+        """Claude 5.5 models resolve to prices via Bedrock and Vertex names."""
+        cases = {
+            "bedrock-claude-opus-5-5": (4, 20),
+            "vertex-claude-opus-5-5": (4, 20),
+            "bedrock-claude-sonnet-5-5": (2, 10),
+            "vertex-claude-sonnet-5-5": (2, 10),
+            "bedrock-claude-haiku-5-5": (0.1, 0.5),
+            "vertex-claude-haiku-5-5": (0.1, 0.5),
+        }
+        for model, expected in cases.items():
+            with self.subTest(model=model):
+                self.assertEqual(llms.get_model_pricing(model), expected)
+
     @patch("openai.OpenAI")
     def test_generate_summary_foundry(self, mock_openai):
         mock_client = mock_openai.return_value
@@ -279,9 +387,9 @@ class TestPricing(unittest.TestCase):
                     "output": 2.5,
                 },
                 {
-                    "id": "imagen-4",
-                    "input": 0.0,
-                    "output": 40.0,
+                    "id": "gemini-nano-banana-2.1",
+                    "input": 1.5,
+                    "output": 30.0,
                 },
             ],
             "aliases": {
@@ -298,7 +406,7 @@ class TestPricing(unittest.TestCase):
             "bedrock-claude-haiku-4-5-20251001-v1",
             "bedrock-nova-2-lite-v1",
             "foundry-gpt-5-mini",
-            "imagen-4",
+            "gemini-nano-banana-2.1",
         ]
 
         for model in models:
@@ -339,17 +447,37 @@ class TestPricing(unittest.TestCase):
             cost = (1000 / 1_000_000) * input_price + (500 / 1_000_000) * output_price
         self.assertIsNone(cost)
 
-    def test_get_model_pricing_claude_fable_5(self):
+    def test_get_model_pricing_openai_gpt_6(self):
+        """OpenAI models resolve to prices via Foundry names and old aliases."""
+        cases = {
+            "foundry-gpt-6-astra": (10.0, 50.0),
+            "foundry-gpt-6.1-sol": (2.0, 10.0),
+            "foundry-gpt-6-luna": (0.1, 0.5),
+            "gpt-5.5": (10.0, 50.0),
+            "gpt-5.4": (2.0, 10.0),
+            "gpt-5.4-mini": (0.1, 0.5),
+        }
+        for model, expected in cases.items():
+            with self.subTest(model=model):
+                self.assertEqual(llms.get_model_pricing(model), expected)
+
+    def test_get_model_pricing_claude_fable_5_1(self):
         """Test that get_model_pricing retrieves the correct prices for
-        claude-fable-5 and its aliases.
+        claude-fable-5.1 and its aliases.
         """
         # Test exact match
-        inp, outp = llms.get_model_pricing("claude-fable-5")
+        inp, outp = llms.get_model_pricing("claude-fable-5.1")
         self.assertEqual(inp, 10.0)
         self.assertEqual(outp, 50.0)
 
         # Test alias matches
-        for alias in ["anthropic-5-fable", "anthrophic-5-fable"]:
+        for alias in [
+            "bedrock-claude-fable-5-1",
+            "vertex-claude-fable-5-1",
+            "claude-fable-5",
+            "anthropic-5-fable",
+            "anthrophic-5-fable",
+        ]:
             with self.subTest(alias=alias):
                 inp_alias, outp_alias = llms.get_model_pricing(alias)
                 self.assertEqual(inp_alias, 10.0)

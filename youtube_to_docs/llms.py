@@ -47,6 +47,11 @@ GEMINI_INLINE_AUDIO_LIMIT_BYTES = 15 * 1024 * 1024
 # Characters allowed in an SRT entry before the words are split into a new entry.
 SRT_SEGMENT_CHAR_LIMIT = 80
 
+# (connect, read) timeout in seconds for Bedrock HTTP calls. The read timeout is
+# long because large summaries from reasoning models can take many minutes; it
+# exists so a stalled request fails instead of hanging forever.
+BEDROCK_TIMEOUT_SECONDS = (30, 15 * 60)
+
 
 def get_model_pricing(model_name: str) -> Tuple[float | None, float | None]:
     """
@@ -269,7 +274,10 @@ class GeminiProvider(
 
                 chunks = _chunk_text_by_bytes(text, chunk_size)
 
+            from youtube_to_docs.tts import pcm_from_audio
+
             all_audio = b""
+            sample_rate = 24000
             for i, chunk in enumerate(chunks):
                 if len(chunks) > 1:
                     rprint(f"  Synthesizing Gemini chunk {i + 1}/{len(chunks)}...")
@@ -297,13 +305,14 @@ class GeminiProvider(
                     and response.candidates[0].content.parts[0].inline_data
                     and response.candidates[0].content.parts[0].inline_data.data
                 ):
-                    all_audio += (
+                    pcm, sample_rate = pcm_from_audio(
                         response.candidates[0].content.parts[0].inline_data.data
                     )
+                    all_audio += pcm
                 else:
                     print(f"Error: No audio data in response for chunk {i + 1}.")
 
-            return all_audio, 24000
+            return all_audio, sample_rate
 
         except Exception as e:
             print(f"Error generating Gemini speech: {e}")
@@ -347,7 +356,10 @@ class VertexProvider(BaseProvider, LLMProvider, MultimodalProvider):
 
                 from anthropic import AnthropicVertex
 
-                vertex_location = os.environ.get("VERTEX_LOCATION", "us-east5")
+                # Newer Claude models (e.g. claude-opus-5-5) are only served
+                # from the global or multi-region endpoints, not us-east5.
+                default_location = "us-east5" if "@" in actual_model_name else "global"
+                vertex_location = os.environ.get("VERTEX_LOCATION", default_location)
 
                 def make_anthropic_call(creds):
                     client = AnthropicVertex(
@@ -546,7 +558,50 @@ class VertexProvider(BaseProvider, LLMProvider, MultimodalProvider):
             return f"Error: {e}", 0, 0
 
 
+def _is_bedrock_openai_model(model_name: str) -> bool:
+    """
+    True for OpenAI GPT models on Bedrock (e.g. `gpt-6-luna`), which are served
+    from the OpenAI-compatible Mantle endpoint rather than Converse.
+    The open-weight gpt-oss models still use Converse.
+    """
+    name = model_name.removeprefix("openai.")
+    return name.startswith("gpt-") and not name.startswith("gpt-oss")
+
+
 class BedrockProvider(BaseProvider, LLMProvider, MultimodalProvider):
+    def _mantle_chat(
+        self, content: Any, aws_bearer_token_bedrock: str
+    ) -> Tuple[str, int, int]:
+        """Calls the Bedrock Mantle Chat Completions endpoint."""
+        actual_model_name = self.model_name.replace("bedrock-", "")
+        if not actual_model_name.startswith("openai."):
+            actual_model_name = f"openai.{actual_model_name}"
+        response = requests.post(
+            "https://bedrock-mantle.us-east-1.api.aws/openai/v1/chat/completions",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {aws_bearer_token_bedrock}",
+            },
+            json={
+                "model": actual_model_name,
+                "messages": [{"role": "user", "content": content}],
+            },
+            timeout=BEDROCK_TIMEOUT_SECONDS,
+        )
+        if response.status_code != 200:
+            return f"Bedrock API Error {response.status_code}: {response.text}", 0, 0
+        response_json = response.json()
+        try:
+            response_text = response_json["choices"][0]["message"]["content"] or ""
+        except (KeyError, IndexError):
+            return f"Unexpected response structure: {response_json}", 0, 0
+        usage = response_json.get("usage") or {}
+        return (
+            response_text,
+            usage.get("prompt_tokens", 0),
+            usage.get("completion_tokens", 0),
+        )
+
     def generate_content(self, prompt: str, **kwargs) -> Tuple[str, int, int]:
         response_text: str = ""
         input_tokens: int = 0
@@ -554,11 +609,17 @@ class BedrockProvider(BaseProvider, LLMProvider, MultimodalProvider):
         try:
             aws_bearer_token_bedrock = os.environ["AWS_BEARER_TOKEN_BEDROCK"]
             actual_model_name = self.model_name.replace("bedrock-", "")
+            if _is_bedrock_openai_model(actual_model_name):
+                return self._mantle_chat(prompt, aws_bearer_token_bedrock)
             if "claude" in actual_model_name:
                 if not actual_model_name.startswith(
                     "anthropic."
                 ) and not actual_model_name.startswith("us.anthropic."):
-                    actual_model_name = f"us.anthropic.{actual_model_name}:0"
+                    actual_model_name = f"us.anthropic.{actual_model_name}"
+                    # Older dated IDs (e.g. claude-haiku-4-5-20251001-v1) need
+                    # a ":0" suffix; newer IDs (e.g. claude-opus-5-5) don't.
+                    if re.search(r"-v\d+$", actual_model_name):
+                        actual_model_name = f"{actual_model_name}:0"
             elif "nova" in actual_model_name:
                 if not actual_model_name.startswith(
                     "amazon."
@@ -589,6 +650,7 @@ class BedrockProvider(BaseProvider, LLMProvider, MultimodalProvider):
                     ],
                     "max_tokens": 64_000,
                 },
+                timeout=BEDROCK_TIMEOUT_SECONDS,
             )
             if response.status_code == 200:
                 response_json = response.json()
@@ -633,11 +695,40 @@ class BedrockProvider(BaseProvider, LLMProvider, MultimodalProvider):
             aws_bearer_token_bedrock = os.environ["AWS_BEARER_TOKEN_BEDROCK"]
             actual_model_name = self.model_name.replace("bedrock-", "")
 
+            prompt = (
+                f"Please provide a descriptive alt text for this infographic "
+                f"in {language}. "
+                "The alt text should describe the visual layout and key information "
+                "presented, making it accessible for someone who cannot see the image. "
+                "Start the response immediately with the alt text."
+            )
+
+            if _is_bedrock_openai_model(actual_model_name):
+                image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+                response_text, input_tokens, output_tokens = self._mantle_chat(
+                    [
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/png;base64,{image_b64}"},
+                        },
+                        {"type": "text", "text": prompt},
+                    ],
+                    aws_bearer_token_bedrock,
+                )
+                response_text = re.sub(
+                    r"^(Alt text[:\-\s]+)", "", response_text, flags=re.IGNORECASE
+                ).strip()
+                return response_text, input_tokens, output_tokens
+
             if "claude" in actual_model_name:
                 if not actual_model_name.startswith(
                     "anthropic."
                 ) and not actual_model_name.startswith("us.anthropic."):
-                    actual_model_name = f"us.anthropic.{actual_model_name}:0"
+                    actual_model_name = f"us.anthropic.{actual_model_name}"
+                    # Older dated IDs (e.g. claude-haiku-4-5-20251001-v1) need
+                    # a ":0" suffix; newer IDs (e.g. claude-opus-5-5) don't.
+                    if re.search(r"-v\d+$", actual_model_name):
+                        actual_model_name = f"{actual_model_name}:0"
             elif "nova" in actual_model_name:
                 if not actual_model_name.startswith(
                     "amazon."
@@ -652,14 +743,6 @@ class BedrockProvider(BaseProvider, LLMProvider, MultimodalProvider):
             )
 
             image_base64 = base64.b64encode(image_bytes).decode("utf-8")
-
-            prompt = (
-                f"Please provide a descriptive alt text for this infographic "
-                f"in {language}. "
-                "The alt text should describe the visual layout and key information "
-                "presented, making it accessible for someone who cannot see the image. "
-                "Start the response immediately with the alt text."
-            )
 
             payload = {
                 "messages": [
@@ -686,6 +769,7 @@ class BedrockProvider(BaseProvider, LLMProvider, MultimodalProvider):
                     "Authorization": f"Bearer {aws_bearer_token_bedrock}",
                 },
                 json=payload,
+                timeout=BEDROCK_TIMEOUT_SECONDS,
             )
 
             if response.status_code == 200:
@@ -827,13 +911,16 @@ class GCPProvider(BaseProvider, STTProvider, TTSProvider, TranslationProvider):
                     voice=voice_params,
                     audio_config=audio_config,
                 )
-                return response.audio_content, 24000
+                from youtube_to_docs.tts import pcm_from_audio
+
+                # LINEAR16 responses include a WAV header; strip it.
+                return pcm_from_audio(response.audio_content)
             else:
                 rprint(
                     f"[yellow]Text is long ({len(text_bytes)} bytes). "
                     "Chunking for GCP TTS...[/yellow]"
                 )
-                from youtube_to_docs.tts import _chunk_text_by_bytes
+                from youtube_to_docs.tts import _chunk_text_by_bytes, pcm_from_audio
 
                 chunks = _chunk_text_by_bytes(text, 4800)
                 all_audio = b""
@@ -845,7 +932,8 @@ class GCPProvider(BaseProvider, STTProvider, TTSProvider, TranslationProvider):
                         voice=voice_params,
                         audio_config=audio_config,
                     )
-                    all_audio += response.audio_content
+                    # Strip each chunk's WAV header so none land mid-audio.
+                    all_audio += pcm_from_audio(response.audio_content)[0]
 
                 return all_audio, 24000
 
