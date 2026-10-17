@@ -152,8 +152,7 @@ youtube-to-docs
 | `-tr`, `--translate`                   | Translate all outputs to a target language after generating in English. Format: `{model}-{language}` e.g. `gemini-3.5-flash-lite-es`, or `aws-translate-{language}` / `gcp-translate-{language}` to use AWS Translate or Google Cloud Translation directly (e.g. `aws-translate-es`, `gcp-translate-es`). The tool first tries to fetch a native YouTube transcript in the target language; if unavailable, it translates the English transcript. Summaries, Q&A, tags, one-sentence summaries, transcripts, and SRT files are all translated. When combined with `--tts` or `--infographic`, assets are produced in both English and the target language. | `None`                                       | `-tr gemini-3.5-flash-lite-es`, `-tr aws-translate-es`, `-tr gcp-translate-es` |
 | `-cia`, `--combine-infographic-audio`  | Combine the infographic and audio summary into a video file (MP4). Requires both `--tts` and `--infographic` to be effective. When used with `--translate`, one video is created per language.                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `False`                                      | `--combine-infographic-audio`                                                   |
 | `--all`                                | Shortcut to use a specific model suite for everything. Supported: `'gemini-flash'`, `'gemini-pro'`, `'gemini-flash-pro-image'`, `'gcp-pro'`, `'anthropic-opus'`. Sets models for summary, TTS, and infographic, and enables `--no-youtube-summary`.                                                                                                                                                                                                                                                                                                                                                                                                                             | `None`                                       | `--all gemini-flash`                                                            |
-| `-cc`, `--corrected-captions`          | Write a complete, corrected SRT caption file that meets WCAG 2.1 Level AA and [Section 508](https://www.section508.gov/create/captions-transcripts/): real speaker names, corrected words and spellings, non-speech sounds, readable layout and repaired timing. Format: `{model}` or `{model}-{source}`; without a value uses `gemini-4-argon-gemini-3.5-transcribe`. See [Corrected Captions](#corrected-captions).                                                                                                                                                                                                                                       | `None`                                       | `-cc`                                                                           |
-| `-ccv`, `--corrected-captions-video`   | Also save a copy of the video with the corrected captions burned in (open captions: white text on an 80% opaque black box) to `video-files/`. Implies `-cc` with its default if `-cc` isn't set. Downloads the video (H.264, up to 1080p) and re-encodes it.                                                                                                                                                                                                                                                                                                                                                                                                | `False`                                      | `-ccv`                                                                          |
+| `-cc`, `--corrected-captions`          | Make the video accessible (WCAG 2.1 AA / [Section 508](https://www.section508.gov/create/captions-transcripts/)): corrected captions (SRT + WebVTT) with speakers named, audio description (WebVTT tracks + descriptive transcript), the original video, a copy with captions burned in and descriptions narrated, and an Able Player test page. Format: `{model}` or `{model}-{source}`; without a value uses `gemini-4-argon-gemini-3.5-transcribe`. See [Corrected Captions and Audio Description](#corrected-captions-and-audio-description).                                                                                                           | `None`                                       | `-cc`                                                                           |
 | `-pp`, `--post-process`                | Post-process the transcript with JSON operations. Supported operations: `word count` (case-insensitive, whole-word). Values can be a single string or a list. Results are added as new columns in the output CSV (e.g. `Post-process: word count(apple)`).                                                                                                                                                                                                                                                                                                                                                                                                  | `None`                                       | `-pp '{"word count": ["apple", "banana"]}'`                                     |
 | `--verbose`                            | Enable verbose output.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `False`                                      | `--verbose`                                                                     |
 
@@ -213,7 +212,7 @@ youtube-to-docs atmGAHYpf_c -m gemini-3.5-flash-lite -tr gemini-3.5-flash-lite-e
 youtube-to-docs atmGAHYpf_c -m gemini-3.5-flash-lite -tr gemini-3.5-flash-lite-es --tts gemini-3.8-flash-lite-tts-Kore --infographic gemini-nano-banana-2.1 --combine-infographic-audio
 ```
 
-**10. Produce the best corrected captions (transcribes with `gemini-3.5-transcribe`, corrects with `gemini-4-argon`):**
+**10. Make the video accessible: corrected captions, audio description and accessible videos (transcribes with `gemini-3.5-transcribe`, corrects and describes with `gemini-4-argon`):**
 
 ```bash
 youtube-to-docs atmGAHYpf_c -cc
@@ -225,25 +224,19 @@ youtube-to-docs atmGAHYpf_c -cc
 youtube-to-docs atmGAHYpf_c -cc gemini-4-argon-youtube
 ```
 
-**12. Corrected captions plus a copy of the video with them burned in:**
-
-```bash
-youtube-to-docs atmGAHYpf_c -ccv
-```
-
-**13. Correct an existing GCP Chirp 3 transcript with a cheaper model:**
+**12. Correct an existing GCP Chirp 3 transcript with a cheaper model:**
 
 ```bash
 youtube-to-docs atmGAHYpf_c -t gcp-chirp3 -cc gemini-3.5-flash-lite-gcp-chirp3
 ```
 
-**14. Post-process a transcript to count word occurrences:**
+**13. Post-process a transcript to count word occurrences:**
 
 ```bash
 youtube-to-docs atmGAHYpf_c -pp '{"word count": ["apple", "banana"]}'
 ```
 
-**15. Transcribe with Gemini 3.5 Transcribe (word timestamps + speaker diarization):**
+**14. Transcribe with Gemini 3.5 Transcribe (word timestamps + speaker diarization):**
 
 ```bash
 youtube-to-docs atmGAHYpf_c -t gemini-3.5-transcribe
@@ -252,15 +245,28 @@ youtube-to-docs atmGAHYpf_c -t gemini-3.5-transcribe
 The resulting SRT is built from the model's word-level offsets and carries a
 `[Speaker N]` label wherever the speaker changes. Requires `GEMINI_API_KEY`.
 
-## Corrected Captions
+## Corrected Captions and Audio Description
 
-The `-cc` / `--corrected-captions` flag writes a **complete, ready-to-use SRT file** that meets WCAG 2.1 Level AA (1.2.2 Captions) and [Section 508 guidance](https://www.section508.gov/create/captions-transcripts/), following the DCMP Captioning Key.
+`-cc` / `--corrected-captions` makes a video accessible under WCAG 2.1 Level AA (1.2.2 Captions, 1.2.5 Audio Description) and [Section 508](https://www.section508.gov/create/captions-transcripts/), following the DCMP Captioning and Description Keys.
 
 ```bash
 youtube-to-docs VIDEO_ID -cc
 ```
 
-Without a value, `-cc` uses `gemini-4-argon-gemini-3.5-transcribe`: the audio is transcribed with `gemini-3.5-transcribe` (word timestamps and speaker diarization) unless `-t` is set, and the transcript is corrected with `gemini-4-argon`. With a Gemini model, `-cc` also makes one agentic video request for the on-screen context (names, titles, speaking times, spellings), unless `--from-video` already produced it.
+Without a value it uses `gemini-4-argon-gemini-3.5-transcribe`: the audio is transcribed with `gemini-3.5-transcribe` (word timestamps and speaker diarization) unless `-t` is set, and `gemini-4-argon` reads on-screen context from the video, corrects the captions and describes the visual information. A 3-hour meeting takes about 20 minutes and roughly $3 in API calls.
+
+### Outputs
+
+| Output | Folder | Use |
+| :--- | :--- | :--- |
+| `… corrected captions (from {source}).srt` | `corrected-caption-files/` | Captions for YouTube or any player |
+| `… captions (from {source}).vtt` | `vtt-files/` | Website: `<track kind="captions">` (browsers don't read SRT) |
+| `… descriptions.vtt` | `vtt-files/` | Website: `<track kind="descriptions">`, descriptions fitted into pauses (standard audio description, AA) |
+| `… extended descriptions.vtt` | `vtt-files/` | Website: every description where its visual appears, for players that pause the video while reading (Able Player does by default; extended audio description, WCAG 1.2.7) |
+| `… descriptive transcript.md` | `descriptive-transcript-files/` | The dialogue by speaker with every description; publish next to the video (WCAG 1.2.3 and 1.2.8) |
+| `{id} - {title} - original video.mp4` | `video-files/` | The source video for a website player |
+| `… captioned and described video (from {source}).mp4` | `video-files/` | A standalone accessible copy: captions burned in (white on an 80% opaque box) and the descriptions narrated in the pauses |
+| `… player.html` | `vtt-files/` | An Able Player page with the original video and the WebVTT tracks, for checking them and as a template for a website |
 
 ### How it works
 
@@ -268,6 +274,9 @@ Without a value, `-cc` uses `gemini-4-argon-gemini-3.5-transcribe`: the audio is
 2. **Speakers.** The speaker of every cue is identified in ~20-minute windows from the diarization labels, the second transcript's speaker changes (`>>`), the times the video shows each person speaking, introductions, hand-offs and roles. Names come from on-screen name plates where available.
 3. **Text.** Sections of ~150 cues are corrected in parallel against the second transcript and the on-screen spellings: misheard words, names, organizations and acronyms, punctuation and capitalization, clean verbatim (fillers and stutters removed, false starts marked with em dashes), numbers, and non-speech sounds such as `[laughter]`. Speech missing from the source but present in the second transcript (often short replies) is restored. The model edits text by cue id and never writes timestamps, so long videos can't be truncated or drift out of sync.
 4. **Layout.** The corrected words are re-segmented into captions of at most two lines of 42 characters, 1–7 seconds long, broken at sentence and clause boundaries (not inside names or after articles). `[Name]` labels mark every change of speaker, crosstalk is placed at the nearest sentence break, quick exchanges share a two-line caption, and captions never overlap.
+5. **Audio description.** The video is downloaded and scanned for scene changes (new slides, changes of shot); the model looks at the frame at each change with the dialogue around it and writes a short spoken version and a full description of what isn't said aloud: slide titles, key on-screen text, the main figures in charts and tables, votes and video clips. Standard audio description is spoken only in pauses, so the short versions are fitted into pauses while their visual is on screen (most important first, shortened if needed), narrated with `--tts` (default `gemini-3.8-flash-tts-Kore`) and mixed in with the programme audio lowered. Nothing is narrated over speech; the extended track and the descriptive transcript carry every description.
+
+Audio description needs a Gemini model; with other models `-cc` produces the captions only.
 
 ### Source argument rules
 
@@ -279,15 +288,25 @@ The format is `-cc {model}` or `-cc {model}-{source}`.
 | `youtube`      | Corrects the YouTube SRT, using any STT SRT for the video as the second transcript.                                                   | `-cc gemini-4-argon-youtube`            |
 | Omitted        | Corrects the `-t` STT SRT, else the most recent AI SRT, else the YouTube SRT.                                                         | `-cc gemini-4-argon`                    |
 
-If the requested source SRT doesn't exist (for example, `-t youtube -cc`), the available SRT is corrected instead, with a warning.
+If the requested source SRT doesn't exist (for example, `-t youtube -cc`), the available SRT is corrected instead, with a warning. Outputs that already exist aren't regenerated; delete them to run again. Parallel requests default to 6; set `YTD_CC_WORKERS` to lower this if you hit rate limits.
 
-### Output
+### Publishing
 
-The SRT is saved to `corrected-caption-files/` as `{model} - {video id} - {title} - corrected captions (from {source}).srt` and recorded in the CSV under `Corrected Captions File {model} from {source}`. If that file already exists it isn't regenerated; delete it to run again. Parallel requests default to 6; set `YTD_CC_WORKERS` to lower this if you hit rate limits.
+- **Website:** host the original video with `captions.vtt` and a descriptions track in a player that speaks descriptions, such as [Able Player](https://ableplayer.github.io/ableplayer/); the generated `player.html` shows the markup. Link the descriptive transcript next to the video.
+- **YouTube:** upload the captioned and described video, or upload the original with the corrected SRT as its captions (YouTube has no description tracks, so audio description needs the described copy).
 
-### Captioned video (`-ccv`)
+### Checking the WebVTT files
 
-`-ccv` / `--corrected-captions-video` also saves a copy of the video with the corrected captions burned in ("open captions", visible in any player) to `video-files/` as `{model} - {video id} - {title} - captioned video (from {source}).mp4`, recorded under `Captioned Video File {model} from {source}`. Captions are white Arial on an 80% opaque black box at the bottom centre (well above the WCAG 4.5:1 contrast minimum over any picture), sized to about 1/16 of the frame height. The video is downloaded with yt-dlp (H.264, up to 1080p) and re-encoded with ffmpeg; the audio is copied unchanged. Re-encoding a 3-hour 720p video takes about 8–10 minutes. `-ccv` implies `-cc` if it isn't set, and an existing captioned video isn't regenerated.
+1. **Validate them.** Paste a `.vtt` file into the [W3C WebVTT validator](https://w3c.github.io/webvtt.js/parser.html); it should report no errors.
+2. **Play them.** Browsers won't load tracks from `file://` pages, so serve the artifacts folder and open the player page:
+
+   ```bash
+   cd youtube-to-docs-artifacts
+   uv run --no-project python -m http.server 8000
+   ```
+
+   Then open `http://localhost:8000/vtt-files/` and select the `… player.html` file. Captions are on; select the Description button to hear the descriptions read aloud (the video pauses while each is read). To hear them through a screen reader instead, add `data-desc-reader="screenreader"` to the `<video>` element and turn on NVDA, JAWS or VoiceOver.
+3. **Spot-check timing.** In VLC, open the original video and add the captions `.vtt` (Subtitle > Add Subtitle File...) to check that captions line up with the speech.
 
 ## CSV Column Reference
 
@@ -321,8 +340,9 @@ The output CSV file contains a variety of columns depending on the arguments pro
 - **Summary Audio File {model} {tts_model} File**: Path to the generated TTS audio file. Suffix `(lang)` added for non-English.
 - **Video File**: Path to the generated MP4 video combining the English infographic and audio.
 - **Video File (lang)**: Path to the translated language video (e.g., `Video File (es)`). Only present when `--translate` and `--combine-infographic-audio` are both used.
-- **Corrected Captions File {model} from {source}**: Path to the complete corrected SRT file produced by `-cc`.
-- **Captioned Video File {model} from {source}**: Path to the copy of the video with the corrected captions burned in, produced by `-ccv`.
+- **Corrected Captions File {model} from {source}**, **Captions VTT File {model} from {source}**: The corrected captions as SRT and WebVTT (`-cc`).
+- **Descriptions VTT File {model}**, **Extended Descriptions VTT File {model}**, **Descriptive Transcript File {model}**: The audio description (`-cc`).
+- **Original Video File**, **Captioned And Described Video File {model} from {source}**, **Player Page**: The original video, the copy with captions burned in and descriptions narrated, and the Able Player page (`-cc`).
 - **Post-process: word count({word})**: Count of occurrences of `{word}` in the transcript (case-insensitive, whole-word match). One column per word when using `-pp`.
 
 ### AI Outputs & Costs
@@ -339,7 +359,7 @@ The output CSV file contains a variety of columns depending on the arguments pro
 - **Summary Infographic Alt Text Cost {model} {infographic_model} ($)**: The estimated API cost for alt text generation.
 - **{normalized_model} tags cost from {transcript} ($)**: The estimated API cost for AI tag generation.
 - **{normalized_model} STT cost ($)**: The estimated API cost for Speech-to-Text generation. For `gemini-3.5-transcribe` the API reports audio input tokens but not transcript output tokens, so this figure covers the input side only and understates the true cost.
-- **{normalized_model} corrected captions cost from {source} ($)**: The estimated API cost of `-cc` (speaker identification and text correction, including thinking tokens). The on-screen context request is recorded separately as `{normalized_model} video context cost from video-agentic ($)`.
+- **{normalized_model} corrected captions cost from {source} ($)**: The estimated API cost of correcting the captions with `-cc` (speaker identification and text correction, including thinking tokens). The on-screen context request and the audio description are recorded separately as `{normalized_model} video context cost from video-agentic ($)` and `{normalized_model} audio description cost ($)` (narration not included).
 
 > **Note**: `{normalized_model}` refers to the model name with prefixes (like `vertex-`) and date suffixes removed for cleaner column headers.
 

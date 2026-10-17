@@ -5,8 +5,8 @@ from mcp.server.mcpserver import MCPServer
 
 from youtube_to_docs.main import main as app_main
 from youtube_to_docs.utils import (
-    corrected_captions_args,
     get_version,
+    optional_value_args,
     validate_output_file,
 )
 
@@ -29,7 +29,6 @@ def process_video(
     combine_infographic_audio: bool = False,
     all_suite: str | None = None,
     corrected_captions: str | None = None,
-    corrected_captions_video: bool = False,
     post_process: str | None = None,
     verbose: bool = False,
 ) -> str:
@@ -97,20 +96,21 @@ def process_video(
         all_suite: Shortcut to use a specific model suite for everything.
             e.g., 'gemini-flash', 'gemini-pro', 'gemini-flash-pro-image', 'gcp-pro',
             or 'anthropic-opus'.
-        corrected_captions: Write a complete, corrected SRT caption file that
-            meets WCAG 2.1 Level AA and Section 508: real speaker names on every
-            change, corrected words and spellings, non-speech sounds, repaired
-            timing and readable two-line layout. Use 'default' for the best
-            captions (gemini-4-argon correcting a gemini-3.5-transcribe
-            transcript, transcribed in the same run). Or `{model}` /
-            `{model}-{source}`, where source is 'youtube' or a transcript model
-            name (e.g. 'gemini-4-argon-youtube'). With a Gemini model, on-screen
-            context (names, speaking times) is read from the video. Output is
-            saved to 'corrected-caption-files/'.
-        corrected_captions_video: If True, also saves a copy of the video with
-            the corrected captions burned in (open captions) to 'video-files/'.
-            Implies corrected_captions='default' if corrected_captions isn't set.
-            Downloads and re-encodes the video, so it takes a while.
+        corrected_captions: Make the video accessible (WCAG 2.1 Level AA and
+            Section 508): corrected captions (SRT in 'corrected-caption-files/',
+            WebVTT in 'vtt-files/') with real speaker names on every change and
+            corrected words, sounds and timing; audio description of the slides
+            and other visual information (WebVTT descriptions tracks in
+            'vtt-files/' and a descriptive transcript in
+            'descriptive-transcript-files/'); and in 'video-files/' the original
+            video plus a copy with the captions burned in and the descriptions
+            narrated (tts_model, default 'gemini-3.8-flash-tts-Kore'). Also
+            writes an Able Player page in 'vtt-files/' for checking the WebVTT
+            tracks. Use 'default' for the best results (gemini-4-argon on a
+            gemini-3.5-transcribe transcript, transcribed in the same run), or
+            `{model}` / `{model}-{source}` where source is 'youtube' or a
+            transcript model name (e.g. 'gemini-4-argon-youtube'). Takes about
+            20 minutes for a 3-hour video.
         post_process: Post-process the transcript with JSON operations.
             Example: '{"word count": "apple"}' counts occurrences of 'apple'.
             Values can be a list for multiple words.
@@ -157,10 +157,7 @@ def process_video(
         args.extend(["--all", all_suite])
 
     if corrected_captions:
-        args.extend(corrected_captions_args(corrected_captions))
-
-    if corrected_captions_video:
-        args.append("--corrected-captions-video")
+        args.extend(optional_value_args("--corrected-captions", corrected_captions))
 
     if post_process:
         args.extend(["--post-process", post_process])

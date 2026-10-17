@@ -442,12 +442,25 @@ class TestProcessCorrectedCaptions(unittest.TestCase):
         storage = MagicMock()
         storage.exists.side_effect = lambda path: path in files
         storage.read_text.side_effect = lambda path: files[path]
-        storage.write_text.side_effect = lambda path, text: path
+        files = dict(files)
+
+        def write(path, text):
+            files[path] = text
+            return path
+
+        storage.write_text.side_effect = write
         with (
             patch.object(cc, "ensure_video_context", return_value="## People") as ctx,
             patch.object(cc, "correct_captions") as correct,
         ):
-            correct.return_value = cc.CorrectedCaptions("1\n...", *tokens, 1, 0, 0, 0)
+            correct.return_value = cc.CorrectedCaptions(
+                "1\n00:00:01,000 --> 00:00:02,000\n[Jane Doe] Hi & bye.\n",
+                *tokens,
+                1,
+                0,
+                0,
+                0,
+            )
             cc.process_corrected_captions(
                 row=row,
                 storage=storage,
@@ -458,7 +471,12 @@ class TestProcessCorrectedCaptions(unittest.TestCase):
                 video_title="Title",
                 safe_title="Title",
                 url="https://www.youtube.com/watch?v=vid",
-                dirs={"srt": "srt", "corrected_captions": "cc", "video_context": "ctx"},
+                dirs={
+                    "srt": "srt",
+                    "corrected_captions": "cc",
+                    "vtt": "vtt",
+                    "video_context": "ctx",
+                },
                 verbose=verbose,
                 vprint=lambda *a, **k: None,
             )
@@ -470,7 +488,7 @@ class TestProcessCorrectedCaptions(unittest.TestCase):
             "srt/youtube generated - vid - Title.srt": "YT",
         }
         row = {"Speakers gemini-4-argon from video-agentic": "Jane Doe (Chair)"}
-        correct, ctx, _ = self._run(
+        correct, ctx, storage = self._run(
             row, "gemini-3.5-transcribe", "gemini-3.5-transcribe", files
         )
         args, kwargs = correct.call_args
@@ -485,6 +503,17 @@ class TestProcessCorrectedCaptions(unittest.TestCase):
             row["Corrected Captions File gemini-4-argon from gemini-3.5-transcribe"],
             "cc/gemini-4-argon - vid - Title - "
             "corrected captions (from gemini-3.5-transcribe).srt",
+        )
+        # A WebVTT copy for websites (<track kind="captions">).
+        vtt_path, vtt = storage.write_text.call_args_list[-1].args
+        self.assertEqual(
+            vtt_path,
+            "vtt/gemini-4-argon - vid - Title - "
+            "captions (from gemini-3.5-transcribe).vtt",
+        )
+        self.assertIn("[Jane Doe] Hi &amp; bye.", vtt)
+        self.assertEqual(
+            row["Captions VTT File gemini-4-argon from gemini-3.5-transcribe"], vtt_path
         )
 
     def test_missing_source_falls_back_to_youtube(self):

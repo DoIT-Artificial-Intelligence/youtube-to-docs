@@ -140,12 +140,6 @@ def test_process_video_corrected_captions_with_source():
         assert call_args[idx + 1] == "gemini-4-argon-youtube"
 
 
-def test_process_video_corrected_captions_video():
-    with patch("youtube_to_docs.mcp_server.app_main") as mock_main:
-        process_video(url="abc12345678", corrected_captions_video=True)
-        assert mock_main.call_args[0][0][-1] == "--corrected-captions-video"
-
-
 def test_process_video_corrected_captions_not_passed_when_none():
     with patch("youtube_to_docs.mcp_server.app_main") as mock_main:
         process_video(url="https://www.youtube.com/watch?v=123")

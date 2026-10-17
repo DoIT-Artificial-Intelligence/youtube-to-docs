@@ -7,10 +7,12 @@ import polars as pl
 
 from youtube_to_docs.storage import Storage
 from youtube_to_docs.video import (
-    burn_captions,
     create_video,
-    process_captioned_video,
+    process_accessible_video,
     process_videos,
+    render_accessible_video,
+    save_original_video,
+    write_player_page,
 )
 
 
@@ -107,7 +109,7 @@ class TestVideo(unittest.TestCase):
             mock_storage.upload_file.assert_called()
 
 
-class TestCaptionedVideo(unittest.TestCase):
+class TestAccessibleVideo(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
         self.srt = os.path.join(self.temp_dir, "c.srt")
@@ -122,29 +124,35 @@ class TestCaptionedVideo(unittest.TestCase):
 
         shutil.rmtree(self.temp_dir)
 
-    @patch("youtube_to_docs.video.subprocess.Popen")
-    @patch(
-        "static_ffmpeg.run.get_or_fetch_platform_executables_else_raise",
-        return_value=("/usr/bin/ffmpeg", None),
-    )
-    def test_burn_captions_command_and_progress(self, mock_get, mock_popen):
+    def _render(self, narration=None, returncode=0):
         seen = {}
 
         def fake_popen(command, **kwargs):
             seen["command"] = command
             with open(os.path.join(kwargs["cwd"], "captions.srt")) as f:
                 seen["srt"] = f.read()
-            process = MagicMock(returncode=0)
+            process = MagicMock(returncode=returncode)
             process.stdout = iter(
                 ["out_time_us=5000000\n", "progress=continue\n", "out_time_us=x\n"]
             )
             return process
 
-        mock_popen.side_effect = fake_popen
         output = os.path.join(self.temp_dir, "out.mp4")
-        with patch("youtube_to_docs.video.rprint") as mock_print:
-            self.assertTrue(burn_captions(self.video, self.srt, output, 10.0))
+        with (
+            patch(
+                "static_ffmpeg.run.get_or_fetch_platform_executables_else_raise",
+                return_value=("/usr/bin/ffmpeg", None),
+            ),
+            patch("youtube_to_docs.video.subprocess.Popen", side_effect=fake_popen),
+            patch("youtube_to_docs.video.rprint") as mock_print,
+        ):
+            ok = render_accessible_video(self.video, self.srt, output, 10.0, narration)
+        printed = [call.args[0] for call in mock_print.call_args_list]
+        return ok, seen, printed, output
 
+    def test_render_captions_only(self):
+        ok, seen, printed, output = self._render()
+        self.assertTrue(ok)
         command = seen["command"]
         video_filter = command[command.index("-vf") + 1]
         self.assertTrue(video_filter.startswith("subtitles=captions.srt:"))
@@ -152,87 +160,150 @@ class TestCaptionedVideo(unittest.TestCase):
         self.assertEqual(command[command.index("-c:a") + 1], "copy")
         self.assertEqual(command[-1], os.path.abspath(output))
         self.assertIn("[Jane Doe] Hi.", seen["srt"])
-        printed = [call.args[0] for call in mock_print.call_args_list]
-        self.assertIn("  Burning captions: 50%", printed)
+        self.assertIn("  Rendering video: 50%", printed)
 
-    @patch("youtube_to_docs.video.subprocess.Popen")
-    @patch(
-        "static_ffmpeg.run.get_or_fetch_platform_executables_else_raise",
-        return_value=("/usr/bin/ffmpeg", None),
-    )
-    def test_burn_captions_failure(self, mock_get, mock_popen):
-        mock_popen.return_value = MagicMock(returncode=1, stdout=iter([]))
-        self.assertFalse(burn_captions(self.video, self.srt, "out.mp4"))
+    def test_render_with_narration_ducks_programme_audio(self):
+        ok, seen, _, _ = self._render(narration="narration.wav")
+        self.assertTrue(ok)
+        command = seen["command"]
+        self.assertIn(os.path.abspath("narration.wav"), command)
+        graph = command[command.index("-filter_complex") + 1]
+        self.assertIn("subtitles=captions.srt", graph)
+        self.assertIn("sidechaincompress", graph)
+        self.assertIn("amix=inputs=2", graph)
+        self.assertEqual(command[command.index("-c:a") + 1], "aac")
 
-    def _storage(self, existing=()):
+    def test_render_failure(self):
+        ok, _, _, _ = self._render(returncode=1)
+        self.assertFalse(ok)
+
+    def _storage(self, existing=(), texts=None):
         storage = MagicMock()
         storage.exists.side_effect = lambda path: path in existing
         storage.get_full_path.side_effect = lambda path: path
         storage.get_local_file.side_effect = lambda path, download_dir=None: (
             self.srt if path == "cc.srt" else None
         )
+        storage.read_text.side_effect = lambda path: (texts or {})[path]
         storage.upload_file.side_effect = lambda local, target, content_type=None: (
             target
         )
         return storage
 
-    def _process(self, row, storage, source="gemini-3.5-transcribe"):
-        process_captioned_video(
+    def _process(self, row, storage, descriptions=None, vtt=None, video="v"):
+        get_video = MagicMock(return_value=self.video if video == "v" else video)
+        process_accessible_video(
             row=row,
             storage=storage,
             captions_path="cc.srt",
             model_name="gemini-4-argon",
-            source=source,
+            source="gemini-3.5-transcribe",
+            descriptions=descriptions,
+            descriptions_vtt=vtt,
+            tts_arg=None,
+            get_video=get_video,
             video_id="vid",
             safe_title="Title",
             video_dir="video-files",
             duration_seconds=60.0,
             vprint=lambda *a, **k: None,
         )
+        return get_video
 
-    @patch("youtube_to_docs.video.burn_captions", return_value=True)
-    @patch("youtube_to_docs.video.download_video")
-    def test_process_captioned_video_saves(self, mock_download, mock_burn):
-        mock_download.return_value = self.video
+    TARGET = os.path.join(
+        "video-files",
+        "gemini-4-argon - vid - Title - captioned and described video "
+        "(from gemini-3.5-transcribe).mp4",
+    )
+    COLUMN = (
+        "Captioned And Described Video File gemini-4-argon from gemini-3.5-transcribe"
+    )
+
+    @patch("youtube_to_docs.video.render_accessible_video", return_value=True)
+    @patch("youtube_to_docs.audio_description.write_narration_track", return_value=True)
+    def test_uses_this_runs_narration(self, mock_track, mock_render):
         row = {}
         storage = self._storage()
-        self._process(row, storage)
-        target = os.path.join(
-            "video-files",
-            "gemini-4-argon - vid - Title - captioned video "
-            "(from gemini-3.5-transcribe).mp4",
-        )
-        self.assertEqual(
-            row["Captioned Video File gemini-4-argon from gemini-3.5-transcribe"],
-            target,
-        )
-        self.assertEqual(storage.upload_file.call_args.args[1], target)
-        self.assertEqual(
-            storage.upload_file.call_args.kwargs["content_type"], "video/mp4"
-        )
-        self.assertEqual(mock_burn.call_args.args[:2], (self.video, self.srt))
-        self.assertEqual(mock_burn.call_args.args[3], 60.0)
+        described = [MagicMock()]
+        self._process(row, storage, descriptions=described)
+        self.assertEqual(row[self.COLUMN], self.TARGET)
+        self.assertIs(mock_track.call_args.args[0], described)
+        video, srt, _, duration, narration = mock_render.call_args.args
+        self.assertEqual((video, srt, duration), (self.video, self.srt, 60.0))
+        self.assertTrue(narration.endswith("narration.wav"))
+        self.assertEqual(storage.upload_file.call_args.args[1], self.TARGET)
 
-    @patch("youtube_to_docs.video.download_video")
-    def test_process_captioned_video_skips_existing(self, mock_download):
-        target = os.path.join(
-            "video-files",
-            "gemini-4-argon - vid - Title - captioned video (from youtube).mp4",
-        )
-        row = {}
-        self._process(row, self._storage({target}), source="youtube")
-        mock_download.assert_not_called()
+    @patch("youtube_to_docs.video.render_accessible_video", return_value=True)
+    @patch("youtube_to_docs.audio_description.write_narration_track", return_value=True)
+    @patch("youtube_to_docs.audio_description.synthesize")
+    def test_narrates_the_saved_descriptions_track(
+        self, mock_tts, mock_track, mock_render
+    ):
+        vtt = "WEBVTT\n\n00:00:05.000 --> 00:00:07.000\nSlide: Q&amp;A.\n"
+        storage = self._storage(existing={"d.vtt"}, texts={"d.vtt": vtt})
+        self._process({}, storage, descriptions=None, vtt="d.vtt")
+        narrated = mock_tts.call_args.args[0]
         self.assertEqual(
-            row["Captioned Video File gemini-4-argon from youtube"], target
+            [(d.start, d.spoken) for d in narrated], [(5.0, "Slide: Q&A.")]
         )
+        self.assertEqual(mock_tts.call_args.args[1], "gemini-3.8-flash-tts-Kore")
 
-    @patch("youtube_to_docs.video.burn_captions")
-    @patch("youtube_to_docs.video.download_video", return_value=None)
-    def test_process_captioned_video_download_failure(self, mock_download, mock_burn):
+    def test_skips_existing(self):
         row = {}
-        self._process(row, self._storage())
-        mock_burn.assert_not_called()
+        get_video = self._process(row, self._storage({self.TARGET}))
+        get_video.assert_not_called()
+        self.assertEqual(row[self.COLUMN], self.TARGET)
+
+    @patch("youtube_to_docs.video.render_accessible_video")
+    def test_download_failure(self, mock_render):
+        row = {}
+        self._process(row, self._storage(), video=None)
+        mock_render.assert_not_called()
         self.assertEqual(row, {})
+
+    def test_save_original_video(self):
+        row = {}
+        storage = self._storage()
+        save_original_video(
+            row=row,
+            storage=storage,
+            get_video=lambda: self.video,
+            path="video-files/vid - Title - original video.mp4",
+        )
+        self.assertEqual(
+            row["Original Video File"], "video-files/vid - Title - original video.mp4"
+        )
+        storage.upload_file.assert_called_once_with(
+            self.video,
+            "video-files/vid - Title - original video.mp4",
+            content_type="video/mp4",
+        )
+
+    def test_player_page(self):
+        row = {}
+        storage = MagicMock()
+        storage.write_text.side_effect = lambda path, text: path
+        write_player_page(
+            row=row,
+            storage=storage,
+            path=os.path.join("out", "vtt-files", "page.html"),
+            title="AIB Meeting & More",
+            video_path=os.path.join("out", "video-files", "vid - original video.mp4"),
+            captions_path=os.path.join("out", "vtt-files", "captions.vtt"),
+            descriptions_path=os.path.join("out", "vtt-files", "extended.vtt"),
+            transcript_path=os.path.join("out", "dt", "transcript.md"),
+        )
+        page = storage.write_text.call_args.args[1]
+        self.assertIn("<title>AIB Meeting &amp; More: accessible player</title>", page)
+        self.assertIn('src="../video-files/vid%20-%20original%20video.mp4"', page)
+        self.assertIn('<track kind="captions" src="captions.vtt"', page)
+        self.assertIn('<track kind="descriptions" src="extended.vtt"', page)
+        self.assertIn('data-desc-pause-default="on"', page)
+        self.assertIn('href="../dt/transcript.md"', page)
+        self.assertIn("ableplayer@5.0.0/build/ableplayer.min.js", page)
+        self.assertEqual(
+            row["Player Page"], os.path.join("out", "vtt-files", "page.html")
+        )
 
 
 if __name__ == "__main__":

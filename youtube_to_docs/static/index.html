@@ -405,7 +405,7 @@
 
             <div class="grid-row grid-gap margin-top-2">
               <div class="grid-col-12 tablet:grid-col-6">
-                <label class="usa-label" for="corrected_captions">Corrected Captions</label>
+                <label class="usa-label" for="corrected_captions">Corrected Captions &amp; Audio Description</label>
                 <input class="usa-input" id="corrected_captions" name="corrected_captions" type="text" list="corrected-captions-options" placeholder="default, or e.g. gemini-4-argon-youtube">
                 <datalist id="corrected-captions-options">
                   <option value="default"></option>
@@ -425,10 +425,6 @@
               <div class="usa-checkbox">
                 <input class="usa-checkbox__input" id="combine_infographic_audio" type="checkbox" name="combine_infographic_audio">
                 <label class="usa-checkbox__label" for="combine_infographic_audio">Combine infographic + audio</label>
-              </div>
-              <div class="usa-checkbox">
-                <input class="usa-checkbox__input" id="corrected_captions_video" type="checkbox" name="corrected_captions_video">
-                <label class="usa-checkbox__label" for="corrected_captions_video">Captioned video (burn in corrected captions)</label>
               </div>
               <div class="usa-checkbox">
                 <input class="usa-checkbox__input" id="no_youtube_summary" type="checkbox" name="no_youtube_summary">
@@ -591,7 +587,6 @@
     }
 
     body.combine_infographic_audio = $('combine_infographic_audio').checked;
-    body.corrected_captions_video = $('corrected_captions_video').checked;
     body.no_youtube_summary = $('no_youtube_summary').checked;
     body.verbose = $('verbose').checked;
 

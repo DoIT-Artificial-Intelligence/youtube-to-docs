@@ -11,6 +11,7 @@ import polars as pl
 from rich import print as rprint
 from rich_argparse import RichHelpFormatter
 
+from youtube_to_docs.audio_description import process_audio_description
 from youtube_to_docs.captions import process_corrected_captions
 from youtube_to_docs.infographic import (
     build_infographic_prompt,
@@ -42,6 +43,7 @@ from youtube_to_docs.storage import (
     NullStorage,
 )
 from youtube_to_docs.transcript import (
+    download_video,
     extract_audio,
     extract_playlist_id,
     fetch_transcript,
@@ -63,7 +65,12 @@ from youtube_to_docs.utils import (
     normalize_model_name,
     reorder_columns,
 )
-from youtube_to_docs.video import process_captioned_video, process_videos
+from youtube_to_docs.video import (
+    process_accessible_video,
+    process_videos,
+    save_original_video,
+    write_player_page,
+)
 from youtube_to_docs.video_understanding import parse_video_modes, process_from_video
 
 # `-cc` without a value: correct the dedicated Gemini STT transcript (word
@@ -308,20 +315,28 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
         const=CORRECTED_CAPTIONS_DEFAULT,
         default=None,
         help=(
-            "Write a complete, corrected SRT caption file that meets WCAG 2.1 "
-            "Level AA and Section 508 "
-            "(https://www.section508.gov/create/captions-transcripts/). \n"
-            "The source SRT's timing is checked word by word against a second "
-            "transcript (usually YouTube's) and broken timestamps are re-timed; "
-            "speakers are named on every change (`[Name]`) using diarization, "
-            "on-screen names and speaking times from the video, and "
-            "introductions; misheard words, names and terms, punctuation, "
-            "fillers, non-speech sounds and missed speech are corrected; and the "
-            "captions are laid out at no more than two lines of 42 characters "
-            "over 1-7 seconds. \n"
-            "With a Gemini model, on-screen context is extracted from the video "
-            "(one agentic request) unless `--from-video` already did. \n"
-            "Output is saved to `corrected-caption-files/`. \n\n"
+            "Make the video accessible under WCAG 2.1 Level AA and Section 508 "
+            "(https://www.section508.gov/create/captions-transcripts/): \n"
+            "- Corrected captions (`corrected-caption-files/` SRT and "
+            "`vtt-files/` WebVTT): timing checked word by word against a second "
+            "transcript, every speaker named on each change (`[Name]`) from "
+            "diarization and the names and speaking times seen in the video, "
+            "misheard words, names, punctuation, fillers, sounds and missed "
+            "speech corrected, laid out as two lines of 42 characters over 1-7 "
+            "seconds. \n"
+            "- Audio description of the visual information a blind viewer would "
+            "miss (slides, chart figures, on-screen text, votes): WebVTT "
+            "descriptions tracks in `vtt-files/` (standard, fitted into pauses, "
+            "and extended) and a descriptive transcript in "
+            "`descriptive-transcript-files/`. \n"
+            "- `video-files/`: the original video, and a copy with the captions "
+            "burned in and the descriptions narrated in the pauses (`--tts`, "
+            "default `gemini-3.8-flash-tts-Kore`). \n"
+            "- `vtt-files/... player.html`: an Able Player page to check the "
+            "WebVTT tracks in a browser (serve the folder over HTTP). \n"
+            "The model reads on-screen context from the video, describes it and "
+            "corrects the text (Gemini models; other models correct the text "
+            "only). \n\n"
             f"Without a value, uses `{CORRECTED_CAPTIONS_DEFAULT}` (and transcribes "
             "with `gemini-3.5-transcribe` unless `-t` is set). \n\n"
             "Format: `{model}` or `{model}-{source}` \n\n"
@@ -334,22 +349,10 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
             "  - Omit source → the `-t` STT SRT, else the most recent AI SRT, "
             "else the YouTube SRT. \n\n"
             "Examples:\n"
-            "  Best captions:                 -cc\n"
+            "  Everything, best quality:      -cc\n"
             "  Correct YouTube captions:      -cc gemini-4-argon-youtube\n"
             "  Cheaper model:                 "
             "-cc gemini-3.5-flash-lite-gemini-3.5-transcribe"
-        ),
-    )
-    parser.add_argument(
-        "-ccv",
-        "--corrected-captions-video",
-        action="store_true",
-        help=(
-            "Also save a copy of the video with the corrected captions burned in "
-            "(open captions: white text on a dark box) to `video-files/`. "
-            "Implies `-cc` (with its default) if `-cc` isn't set. Downloads the "
-            "video (H.264 up to 1080p) and re-encodes it, which takes about 1/20 "
-            "of the video's length at 720p."
         ),
     )
     parser.add_argument(
@@ -367,9 +370,6 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     args = parser.parse_args(args_list)
 
     rprint(f"Running YouTube-to-docs version: {version}")
-
-    if args.corrected_captions_video and not args.corrected_captions:
-        args.corrected_captions = CORRECTED_CAPTIONS_DEFAULT
 
     # Default to gemini-3.5-flash-lite if -cc, -i or -fv is set without explicit -m
     if (
@@ -525,6 +525,8 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     summary_prompts_dir = os.path.join(base_dir, "summary-prompts")
     srt_dir = os.path.join(base_dir, "srt-files")
     corrected_captions_dir = os.path.join(base_dir, "corrected-caption-files")
+    vtt_dir = os.path.join(base_dir, "vtt-files")
+    descriptive_transcripts_dir = os.path.join(base_dir, "descriptive-transcript-files")
     video_context_dir = os.path.join(base_dir, "video-context-files")
 
     # Local temp dir for processing (Audio/TTS require local files)
@@ -547,6 +549,8 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     storage.ensure_directory(srt_dir)
     if corrected_captions_model:
         storage.ensure_directory(corrected_captions_dir)
+        storage.ensure_directory(vtt_dir)
+        storage.ensure_directory(descriptive_transcripts_dir)
     if from_video_modes or corrected_captions_model:
         storage.ensure_directory(video_context_dir)
 
@@ -2340,25 +2344,101 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                 dirs={
                     "srt": srt_dir,
                     "corrected_captions": corrected_captions_dir,
+                    "vtt": vtt_dir,
                     "video_context": video_context_dir,
                 },
                 verbose=verbose,
                 vprint=vprint,
             )
-            if corrected and args.corrected_captions_video:
-                captions_path, captions_source = corrected
-                process_captioned_video(
+            if corrected:
+                original_path = os.path.join(
+                    video_dir, f"{video_id} - {safe_title} - original video.mp4"
+                )
+                temp_video_dir = os.path.join(local_temp_dir, "video-files")
+                downloaded: list[str | None] = []
+
+                def get_video() -> str | None:
+                    """The video, downloaded once (or the saved original)."""
+                    if not downloaded:
+                        local = (
+                            storage.get_local_file(
+                                original_path, download_dir=temp_video_dir
+                            )
+                            if storage.exists(original_path)
+                            else None
+                        )
+                        if not local:
+                            rprint(f"Downloading video {video_id}...")
+                            local = download_video(video_id, temp_video_dir)
+                        downloaded.append(local)
+                    return downloaded[0]
+
+                save_original_video(
+                    row=row, storage=storage, get_video=get_video, path=original_path
+                )
+                descriptions = process_audio_description(
                     row=row,
                     storage=storage,
-                    captions_path=captions_path,
                     model_name=corrected_captions_model,
-                    source=captions_source,
+                    captions=corrected,
+                    get_video=get_video,
+                    tts_arg=tts_arg,
+                    video_id=video_id,
+                    video_title=video_title,
+                    safe_title=safe_title,
+                    dirs={
+                        "vtt": vtt_dir,
+                        "descriptive_transcripts": descriptive_transcripts_dir,
+                    },
+                    duration_seconds=video_duration_seconds,
+                    verbose=verbose,
+                    vprint=vprint,
+                )
+                ad_model = corrected_captions_model
+                descriptions_vtt = row.get(f"Descriptions VTT File {ad_model}")
+                process_accessible_video(
+                    row=row,
+                    storage=storage,
+                    captions_path=corrected.path,
+                    model_name=corrected_captions_model,
+                    source=corrected.source,
+                    descriptions=descriptions,
+                    descriptions_vtt=descriptions_vtt,
+                    tts_arg=tts_arg,
+                    get_video=get_video,
                     video_id=video_id,
                     safe_title=safe_title,
                     video_dir=video_dir,
                     duration_seconds=video_duration_seconds,
                     vprint=vprint,
                 )
+                write_player_page(
+                    row=row,
+                    storage=storage,
+                    path=os.path.join(
+                        vtt_dir,
+                        f"{corrected_captions_model} - {video_id} - {safe_title}"
+                        " - player.html",
+                    ),
+                    title=video_title,
+                    video_path=original_path,
+                    captions_path=row.get(
+                        f"Captions VTT File {corrected_captions_model} from "
+                        f"{corrected.source}",
+                        "",
+                    ),
+                    descriptions_path=row.get(
+                        f"Extended Descriptions VTT File {ad_model}"
+                    ),
+                    transcript_path=row.get(f"Descriptive Transcript File {ad_model}"),
+                )
+                # Downloads are large; don't keep them across a playlist (the
+                # saved original stays in video-files/).
+                for path in downloaded:
+                    if path and os.path.abspath(path).startswith(
+                        os.path.abspath(temp_video_dir)
+                    ):
+                        os.remove(path)
 
         if not verbose:
             oss = next(

@@ -108,15 +108,11 @@ def test_process_corrected_captions_follow_cli_defaults(client):
     with patch("youtube_to_docs.app._run_job", new_callable=AsyncMock) as run:
         resp = client.post(
             "/api/process",
-            json={
-                "url": "abc12345678",
-                "corrected_captions": "default",
-                "corrected_captions_video": True,
-            },
+            json={"url": "abc12345678", "corrected_captions": "default"},
         )
     assert resp.status_code == 200
     args = run.call_args.args[1]
-    assert args[-2:] == ["--corrected-captions", "--corrected-captions-video"]
+    assert args[-1] == "--corrected-captions"
     assert "--transcript" not in args
 
 

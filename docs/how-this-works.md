@@ -117,7 +117,7 @@ Format: `{model}` or `{model}-{source}` (e.g. `gemini-4-argon-youtube`, `gemini-
 3. Corrects the text in parallel sections against the second transcript and the on-screen spellings (misheard words and names, punctuation, fillers, non-speech sounds, missed speech). The model edits text by cue id and never writes timestamps.
 4. Lays the words out as captions of at most two 42-character lines over 1–7 seconds, broken at sentence and clause boundaries, with `[Name]` on each change of speaker and no overlapping cues.
 
-With `--corrected-captions-video` (`-ccv`), the video is also downloaded and re-encoded with the corrected captions burned in (white text on a dark box), saved to `video-files/`.
+The same run also describes the visual information a blind viewer would miss (audio description): scene changes in the downloaded video are described by the model from the frames and nearby dialogue, fitted into pauses in the speech, and written as WebVTT descriptions tracks (`vtt-files/`, standard and extended) and a descriptive transcript (`descriptive-transcript-files/`). `video-files/` gets the original video and a copy with the captions burned in and the descriptions narrated, and `vtt-files/` gets an Able Player page for checking the WebVTT tracks in a browser.
 
 ### 7a. Video Understanding (`--from-video`)
 `--from-video agentic|static` (or `agentic,static`) sends the YouTube URL to a Gemini model through the Interactions API, without downloading the video, and generates a summary, one sentence summary, speakers, Q&A and on-screen context (`video-context-files/`) from the video itself. These are stored next to the transcript-based outputs under the source `video-agentic` / `video-static`, so infographics and audio are generated for them too.
@@ -194,6 +194,8 @@ youtube-to-docs-artifacts/
 ├── infographic-files/            # Generated infographic images
 ├── infographic-alt-text/         # Multimodal alt text for infographics
 ├── corrected-caption-files/      # Corrected WCAG 2.1 / Section 508 SRT files (-cc)
+├── vtt-files/                    # WebVTT captions and descriptions tracks for websites
+├── descriptive-transcript-files/ # Dialogue plus visual descriptions (-cc)
 └── video-files/                  # Combined infographic + audio videos
 ```
 

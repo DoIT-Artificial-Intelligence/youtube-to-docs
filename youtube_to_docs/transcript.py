@@ -403,7 +403,12 @@ def fetch_transcript(
 
 
 def format_as_srt(transcript_data: List[Any]) -> str:
-    """Formats raw transcript data (list of dicts/objects) as an SRT string."""
+    """
+    Formats raw transcript data (list of dicts/objects) as an SRT string.
+    YouTube's automatic captions "roll" (each line stays up until the line
+    after next appears), so a cue ends when the next one starts, as
+    youtube_transcript_api's SRTFormatter does; otherwise players stack them.
+    """
     srt_output = []
 
     def get_val(item, key):
@@ -413,6 +418,10 @@ def format_as_srt(transcript_data: List[Any]) -> str:
         start = get_val(entry, "start")
         duration = get_val(entry, "duration")
         end = start + duration
+        if i < len(transcript_data):
+            next_start = get_val(transcript_data[i], "start")
+            if start < next_start < end:
+                end = next_start
         text = get_val(entry, "text")
 
         start_time = format_srt_timestamp(start)
