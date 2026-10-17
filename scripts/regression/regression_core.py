@@ -89,7 +89,8 @@ def run_regression(
     all_gemini_arg: Optional[str] = None,
     verbose: bool = False,
     combine_info_audio: bool = False,
-    suggest_corrected_captions: Optional[str] = None,
+    corrected_captions: Optional[str] = None,
+    corrected_captions_video: bool = False,
     post_process: Optional[str] = None,
     hugging_face_dataset: Optional[str] = None,
 ):
@@ -138,8 +139,13 @@ def run_regression(
     if combine_info_audio:
         cmd.append("-cia")
 
-    if suggest_corrected_captions:
-        cmd.extend(["-scc", suggest_corrected_captions])
+    if corrected_captions == "default":
+        cmd.append("-cc")
+    elif corrected_captions:
+        cmd.extend(["-cc", corrected_captions])
+
+    if corrected_captions_video:
+        cmd.append("-ccv")
 
     if post_process:
         cmd.extend(["-pp", post_process])
@@ -479,3 +485,46 @@ def resolve_drive_folder(folder_name: str, delete_if_exists: bool = False) -> st
         folder = service.files().create(body=file_metadata, fields="id").execute()
         print(f"Created new Drive folder: {folder_name} ({folder.get('id')})")
         return folder.get("id")
+
+
+def verify_corrected_captions(csv_path: str, column: str) -> None:
+    """Checks a -cc output: a complete SRT whose speakers are named, with no
+    diarization labels, two-line captions of at most 42 characters and no
+    overlapping cues."""
+    from youtube_to_docs.captions import parse_srt
+
+    if not os.path.exists(csv_path):
+        print(f"ERROR: CSV not found at {csv_path}")
+        sys.exit(1)
+    df = pl.read_csv(csv_path)
+    if column not in df.columns:
+        print(f"ERROR: Expected column not found: {column!r}")
+        print(f"Available columns: {df.columns}")
+        sys.exit(1)
+    for path in df[column]:
+        if not path:
+            continue
+        with open(path, encoding="utf-8") as f:
+            content = f.read()
+        cues = parse_srt(content)
+        lines = [
+            line
+            for block in content.strip().split("\n\n")
+            for line in block.split("\n")[2:]
+        ]
+        problems = []
+        if not cues:
+            problems.append("no cues")
+        if re.search(r"\[Speaker \d+\]", content):
+            problems.append("diarization labels left in")
+        if not re.search(r"^\[[A-Z][^\]]*\]", content, re.M):
+            problems.append("no speaker labels")
+        if any(len(line) > 42 for line in lines):
+            problems.append("lines over 42 characters")
+        if any(b.start < a.end - 1e-6 for a, b in zip(cues, cues[1:])):
+            problems.append("overlapping cues")
+        if problems:
+            print(f"  ERROR: {path}: {', '.join(problems)}")
+            sys.exit(1)
+        print(f"  OK  {path} ({len(cues)} captions, ends {cues[-1].end:.0f}s)")
+    print("Verification PASSED.")

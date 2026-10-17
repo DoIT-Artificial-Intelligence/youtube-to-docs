@@ -95,12 +95,29 @@ def test_process_all_args(client):
                 "translate": "gemini-3.5-flash-lite-es",
                 "combine_infographic_audio": True,
                 "all_suite": "gemini-flash",
-                "suggest_corrected_captions": "gemini-3.5-flash-lite",
+                "corrected_captions": "default",
                 "post_process": '{"word count": "apple"}',
                 "verbose": True,
             },
         )
     assert resp.status_code == 200
+
+
+def test_process_corrected_captions_follow_cli_defaults(client):
+    """No transcript source and 'default' captions leave the choice to the CLI."""
+    with patch("youtube_to_docs.app._run_job", new_callable=AsyncMock) as run:
+        resp = client.post(
+            "/api/process",
+            json={
+                "url": "abc12345678",
+                "corrected_captions": "default",
+                "corrected_captions_video": True,
+            },
+        )
+    assert resp.status_code == 200
+    args = run.call_args.args[1]
+    assert args[-2:] == ["--corrected-captions", "--corrected-captions-video"]
+    assert "--transcript" not in args
 
 
 def test_process_missing_url(client):

@@ -11,6 +11,7 @@ import polars as pl
 from rich import print as rprint
 from rich_argparse import RichHelpFormatter
 
+from youtube_to_docs.captions import process_corrected_captions
 from youtube_to_docs.infographic import (
     build_infographic_prompt,
     generate_infographic,
@@ -24,7 +25,6 @@ from youtube_to_docs.llms import (
     generate_summary,
     generate_tags,
     get_model_pricing,
-    suggest_corrected_captions,
 )
 from youtube_to_docs.models import MODEL_SUITES
 from youtube_to_docs.post_process import post_process_transcript
@@ -52,7 +52,7 @@ from youtube_to_docs.transcript import (
     resolve_video_ids,
 )
 from youtube_to_docs.translate import (
-    parse_suggest_captions_arg,
+    parse_corrected_captions_arg,
     parse_translate_arg,
     translate_text,
 )
@@ -63,8 +63,12 @@ from youtube_to_docs.utils import (
     normalize_model_name,
     reorder_columns,
 )
-from youtube_to_docs.video import process_videos
+from youtube_to_docs.video import process_captioned_video, process_videos
 from youtube_to_docs.video_understanding import parse_video_modes, process_from_video
+
+# `-cc` without a value: correct the dedicated Gemini STT transcript (word
+# timestamps and diarization) with Gemini's strongest model.
+CORRECTED_CAPTIONS_DEFAULT = "gemini-4-argon-gemini-3.5-transcribe"
 
 
 class VerboseRow(dict):
@@ -142,7 +146,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     parser.add_argument(
         "-t",
         "--transcript",
-        default="youtube",
+        default=None,
         help=(
             "The transcript source to use. \n"
             "Can be `youtube` (default) to fetch existing YouTube transcripts, \n"
@@ -152,6 +156,9 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
             "`gemini-3.5-transcribe` is Google's dedicated STT model: it returns "
             "word-level timestamps and speaker diarization, so the SRT carries real "
             "offsets and `[Speaker N]` labels on speaker changes. \n"
+            "When `-cc` corrects an STT transcript (by default "
+            "`gemini-3.5-transcribe`), that model is the default instead, so it "
+            "is transcribed in the same run. \n"
             "For `gcp-` models (Cloud Speech-to-Text V2), `GOOGLE_CLOUD_PROJECT` "
             "is required and `YTD_GCS_BUCKET_NAME` is optional/recommended. \n"
             "For `aws-transcribe`, `YTD_S3_BUCKET_NAME` is required."
@@ -295,36 +302,54 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
         help="Enable verbose output.",
     )
     parser.add_argument(
-        "-scc",
-        "--suggest-corrected-captions",
+        "-cc",
+        "--corrected-captions",
         nargs="?",
-        const="gemini-3.5-flash-lite-youtube",
+        const=CORRECTED_CAPTIONS_DEFAULT,
         default=None,
         help=(
-            "Suggest WCAG 2.1 Level AA compliant caption corrections for an SRT file, "
-            "per Section 508 guidance "
+            "Write a complete, corrected SRT caption file that meets WCAG 2.1 "
+            "Level AA and Section 508 "
             "(https://www.section508.gov/create/captions-transcripts/). \n"
-            "Fixes punctuation, capitalisation, and adds [Name] speaker labels on "
-            "speaker changes (when speaker extraction has already been run). \n"
-            "Output is saved to `suggested-corrected-caption-files/` and contains "
-            "only the changed segments (or `NO_CHANGES` if nothing needs fixing). \n\n"
+            "The source SRT's timing is checked word by word against a second "
+            "transcript (usually YouTube's) and broken timestamps are re-timed; "
+            "speakers are named on every change (`[Name]`) using diarization, "
+            "on-screen names and speaking times from the video, and "
+            "introductions; misheard words, names and terms, punctuation, "
+            "fillers, non-speech sounds and missed speech are corrected; and the "
+            "captions are laid out at no more than two lines of 42 characters "
+            "over 1-7 seconds. \n"
+            "With a Gemini model, on-screen context is extracted from the video "
+            "(one agentic request) unless `--from-video` already did. \n"
+            "Output is saved to `corrected-caption-files/`. \n\n"
+            f"Without a value, uses `{CORRECTED_CAPTIONS_DEFAULT}` (and transcribes "
+            "with `gemini-3.5-transcribe` unless `-t` is set). \n\n"
             "Format: `{model}` or `{model}-{source}` \n\n"
             "Source rules:\n"
-            "  - Omit source → the most recent AI-generated (non-YouTube) SRT for the "
-            "video is used automatically. Useful when `-t {stt-model}` is also set.\n"
-            "  - `youtube` → use the YouTube SRT explicitly "
-            "(e.g. `-scc gemini-3.5-flash-lite-youtube`).\n"
-            "  - Any transcript model name → use the SRT from that STT run "
-            "(e.g. `-scc gemini-3.5-flash-lite-gcp-chirp3`). \n\n"
-            "If multiple AI SRTs exist in the row and you need a specific one, "
-            "always use the explicit `{model}-{source}` form. \n\n"
+            "  - `youtube` → correct the YouTube SRT "
+            "(e.g. `-cc gemini-4-argon-youtube`).\n"
+            "  - Any transcript model name → correct the SRT from that STT run, "
+            "transcribing in the same run unless `-t` is set "
+            "(e.g. `-cc gemini-4-argon-gcp-chirp3`).\n"
+            "  - Omit source → the `-t` STT SRT, else the most recent AI SRT, "
+            "else the YouTube SRT. \n\n"
             "Examples:\n"
-            "  Correct YouTube captions:       -scc gemini-3.5-flash-lite-youtube\n"
-            "  Correct GCP Chirp3 captions:    -scc gemini-3.5-flash-lite-gcp-chirp3\n"
-            "  STT + correct in one run:  "
-            "-t gcp-chirp3 -scc gemini-3.5-flash-lite\n"
-            "  Correct + speakers in one run:  "
-            "-m gemini-3.5-flash-lite -scc gemini-3.5-flash-lite-youtube"
+            "  Best captions:                 -cc\n"
+            "  Correct YouTube captions:      -cc gemini-4-argon-youtube\n"
+            "  Cheaper model:                 "
+            "-cc gemini-3.5-flash-lite-gemini-3.5-transcribe"
+        ),
+    )
+    parser.add_argument(
+        "-ccv",
+        "--corrected-captions-video",
+        action="store_true",
+        help=(
+            "Also save a copy of the video with the corrected captions burned in "
+            "(open captions: white text on a dark box) to `video-files/`. "
+            "Implies `-cc` (with its default) if `-cc` isn't set. Downloads the "
+            "video (H.264 up to 1080p) and re-encodes it, which takes about 1/20 "
+            "of the video's length at 720p."
         ),
     )
     parser.add_argument(
@@ -343,11 +368,27 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
 
     rprint(f"Running YouTube-to-docs version: {version}")
 
-    # Default to gemini-3.5-flash-lite if -scc, -i or -fv is set without explicit -m
+    if args.corrected_captions_video and not args.corrected_captions:
+        args.corrected_captions = CORRECTED_CAPTIONS_DEFAULT
+
+    # Default to gemini-3.5-flash-lite if -cc, -i or -fv is set without explicit -m
     if (
-        args.suggest_corrected_captions or args.infographic or args.from_video
+        args.corrected_captions or args.infographic or args.from_video
     ) and args.model is None:
         args.model = "gemini-3.5-flash-lite"
+
+    corrected_captions_model = None
+    corrected_captions_source = None
+    if args.corrected_captions:
+        corrected_captions_model, corrected_captions_source = (
+            parse_corrected_captions_arg(args.corrected_captions)
+        )
+        # Transcribe the SRT that -cc corrects in the same run, unless -t is set.
+        if args.transcript is None and corrected_captions_source not in (
+            None,
+            "youtube",
+        ):
+            args.transcript = corrected_captions_source
 
     try:
         from_video_modes = parse_video_modes(args.from_video)
@@ -378,9 +419,11 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
             args.tts = suite["tts"]
         if args.infographic is None:
             args.infographic = suite["infographic"]
-        if args.transcript == "youtube":
+        if args.transcript is None:
             args.transcript = suite["transcript"]
         args.no_youtube_summary = True
+    if args.transcript is None:
+        args.transcript = "youtube"
 
     transcript_arg = args.transcript
     video_id_input = args.video_id
@@ -394,7 +437,6 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     translate_arg = args.translate
 
     combine_info_audio = args.combine_infographic_audio
-    suggest_captions_arg = args.suggest_corrected_captions
     post_process_arg = args.post_process
     model_names = model_names_arg.split(",") if model_names_arg else []
     infographic_models = (
@@ -406,12 +448,6 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     translate_lang = None
     if translate_arg:
         translate_model, translate_lang = parse_translate_arg(translate_arg)
-    suggest_captions_model = None
-    suggest_captions_source = None
-    if suggest_captions_arg:
-        suggest_captions_model, suggest_captions_source = parse_suggest_captions_arg(
-            suggest_captions_arg
-        )
 
     languages = ["en"]
     if translate_lang:
@@ -488,7 +524,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     infographic_prompts_dir = os.path.join(base_dir, "infographic-prompts")
     summary_prompts_dir = os.path.join(base_dir, "summary-prompts")
     srt_dir = os.path.join(base_dir, "srt-files")
-    suggested_captions_dir = os.path.join(base_dir, "suggested-corrected-caption-files")
+    corrected_captions_dir = os.path.join(base_dir, "corrected-caption-files")
     video_context_dir = os.path.join(base_dir, "video-context-files")
 
     # Local temp dir for processing (Audio/TTS require local files)
@@ -509,8 +545,9 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     storage.ensure_directory(infographic_prompts_dir)
     storage.ensure_directory(summary_prompts_dir)
     storage.ensure_directory(srt_dir)
-    storage.ensure_directory(suggested_captions_dir)
-    if from_video_modes:
+    if corrected_captions_model:
+        storage.ensure_directory(corrected_captions_dir)
+    if from_video_modes or corrected_captions_model:
         storage.ensure_directory(video_context_dir)
 
     # Load existing CSV if it exists
@@ -2288,144 +2325,39 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                                 row[at_cost_col] = at_cost
                                 vprint(f"Alt text cost: ${at_cost:.2f}")
 
-        # --- Suggested Corrected Captions ---
-        if suggest_captions_model:
-            source_srt_content = ""
-            source_srt_description = ""
-
-            if suggest_captions_source == "youtube":
-                srt_path = row.get("SRT File youtube")
-                if srt_path and storage.exists(str(srt_path)):
-                    source_srt_content = storage.read_text(str(srt_path))
-                    source_srt_description = "youtube"
-                else:
-                    expected = os.path.join(
-                        srt_dir,
-                        f"youtube generated - {video_id} - {safe_title}.srt",
-                    )
-                    if storage.exists(expected):
-                        source_srt_content = storage.read_text(expected)
-                        source_srt_description = "youtube"
-            elif suggest_captions_source:
-                srt_col = f"SRT File {suggest_captions_source}"
-                srt_path = row.get(srt_col)
-                if srt_path and storage.exists(str(srt_path)):
-                    source_srt_content = storage.read_text(str(srt_path))
-                    source_srt_description = suggest_captions_source
-                else:
-                    expected = os.path.join(
-                        srt_dir,
-                        f"{suggest_captions_source} generated - "
-                        f"{video_id} - {safe_title}.srt",
-                    )
-                    if storage.exists(expected):
-                        source_srt_content = storage.read_text(expected)
-                        source_srt_description = suggest_captions_source
-            else:
-                # Default: most recent non-youtube AI SRT — check row columns first
-                for col_key, col_val in row.items():
-                    if (
-                        col_key.startswith("SRT File ")
-                        and "youtube" not in col_key.lower()
-                        and "translated" not in col_key.lower()
-                        and col_val
-                        and storage.exists(str(col_val))
-                    ):
-                        source_srt_content = storage.read_text(str(col_val))
-                        source_srt_description = col_key[len("SRT File ") :]
-                        break
-
-                if not source_srt_content:
-                    # Fallback: scan srt_dir on disk
-                    try:
-                        srt_candidates = [
-                            f
-                            for f in os.listdir(srt_dir)
-                            if video_id in f
-                            and not f.startswith("youtube")
-                            and "translated" not in f
-                            and f.endswith(".srt")
-                        ]
-                        if srt_candidates:
-                            srt_candidates.sort(
-                                key=lambda f: os.path.getmtime(
-                                    os.path.join(srt_dir, f)
-                                ),
-                                reverse=True,
-                            )
-                            best = os.path.join(srt_dir, srt_candidates[0])
-                            source_srt_content = storage.read_text(best)
-                            source_srt_description = srt_candidates[0].split(
-                                " generated"
-                            )[0]
-                    except Exception as e:
-                        print(f"Warning: Could not scan srt-files/: {e}")
-
-            if source_srt_content:
-                # Collect any available speakers text from the row, preferring
-                # speakers read from the video (name plates and captions) over
-                # speakers inferred from a transcript.
-                speaker_items = [
-                    (k, v)
-                    for k, v in row.items()
-                    if k.startswith("Speakers ") and isinstance(v, str) and v
-                ]
-                speaker_items.sort(key=lambda kv: " from video-" not in kv[0])
-                speakers_for_scc = speaker_items[0][1] if speaker_items else ""
-                # On-screen names, speaking times and terms from --from-video
-                video_context_for_scc = next(
-                    (
-                        v
-                        for k, v in row.items()
-                        if k.startswith("Video Context ")
-                        and not k.startswith("Video Context File ")
-                        and isinstance(v, str)
-                        and v
-                    ),
-                    "",
-                )
-                context_note = (
-                    ", with on-screen context from the video"
-                    if video_context_for_scc
-                    else ""
-                )
-                rprint(
-                    f"Suggesting corrected captions using {suggest_captions_model} "
-                    f"(source: {source_srt_description}{context_note})..."
-                )
-                corrected_srt, scc_input, scc_output = suggest_corrected_captions(
-                    suggest_captions_model,
-                    source_srt_content,
-                    speakers_text=speakers_for_scc,
-                    video_context=video_context_for_scc,
-                )
-
-                if corrected_srt and corrected_srt.strip() != "NO_CHANGES":
-                    scc_label = suggest_captions_model + (
-                        " with video context" if video_context_for_scc else ""
-                    )
-                    scc_filename = (
-                        f"{scc_label} suggested corrections - "
-                        f"{video_id} - {safe_title}.srt"
-                    )
-                    scc_target = os.path.join(suggested_captions_dir, scc_filename)
-                    try:
-                        saved_scc_path = storage.write_text(scc_target, corrected_srt)
-                        rprint(
-                            "Saved suggested caption corrections: "
-                            f"{format_clickable_path(saved_scc_path)}"
-                        )
-                        row[f"Suggested Corrected Captions File ({scc_label})"] = (
-                            saved_scc_path
-                        )
-                    except Exception as e:
-                        print(f"Error writing suggested corrections: {e}")
-                else:
-                    rprint("No caption corrections suggested.")
-            else:
-                print(
-                    f"Warning: No source SRT found for {video_id}. "
-                    "Skipping caption correction."
+        # --- Corrected Captions ---
+        if corrected_captions_model:
+            corrected = process_corrected_captions(
+                row=row,
+                storage=storage,
+                model_name=corrected_captions_model,
+                source=corrected_captions_source,
+                transcript_arg=transcript_arg,
+                video_id=video_id,
+                video_title=video_title,
+                safe_title=safe_title,
+                url=url,
+                dirs={
+                    "srt": srt_dir,
+                    "corrected_captions": corrected_captions_dir,
+                    "video_context": video_context_dir,
+                },
+                verbose=verbose,
+                vprint=vprint,
+            )
+            if corrected and args.corrected_captions_video:
+                captions_path, captions_source = corrected
+                process_captioned_video(
+                    row=row,
+                    storage=storage,
+                    captions_path=captions_path,
+                    model_name=corrected_captions_model,
+                    source=captions_source,
+                    video_id=video_id,
+                    safe_title=safe_title,
+                    video_dir=video_dir,
+                    duration_seconds=video_duration_seconds,
+                    vprint=vprint,
                 )
 
         if not verbose:
@@ -2546,11 +2478,11 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     else:
         vprint("No new data to gather or all videos already processed.")
 
-    # Cleanup local temp dir
-    if os.path.exists(local_temp_dir):
-        import shutil
+    # Cleanup local temp dir. Another run in the same directory may remove it
+    # first, so a missing directory isn't an error.
+    import shutil
 
-        shutil.rmtree(local_temp_dir)
+    shutil.rmtree(local_temp_dir, ignore_errors=True)
 
     if isinstance(storage, MemoryStorage):
         return storage

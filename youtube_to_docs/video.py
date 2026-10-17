@@ -1,14 +1,37 @@
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 from collections import defaultdict
+from typing import Any, Callable, Dict, Optional
 
 import polars as pl
 from rich import print as rprint
 
 from youtube_to_docs.storage import Storage
+from youtube_to_docs.transcript import download_video
 from youtube_to_docs.utils import format_clickable_path
+
+# Open captions: white sans-serif text on an 80% opaque black box, which keeps
+# well above the WCAG 4.5:1 contrast minimum over any picture, at the bottom
+# centre. Sizes are on libass's 288-line canvas, so FontSize 18 is about 1/16
+# of the frame height whatever the resolution.
+OPEN_CAPTION_STYLE = ",".join(
+    [
+        "FontName=Arial",
+        "FontSize=18",
+        "PrimaryColour=&H00FFFFFF",
+        "OutlineColour=&H33000000",
+        "BackColour=&H33000000",
+        "BorderStyle=3",
+        "Outline=2",
+        "Shadow=0",
+        "MarginV=18",
+        "MarginL=30",
+        "MarginR=30",
+    ]
+)
 
 
 def create_video(image_path: str, audio_path: str, output_path: str) -> bool:
@@ -223,3 +246,143 @@ def process_videos(
             df = df.with_columns(pl.Series(name=col_name, values=video_results[lang]))
 
     return df
+
+
+def burn_captions(
+    video_path: str,
+    srt_path: str,
+    output_path: str,
+    duration_seconds: Optional[float] = None,
+) -> bool:
+    """
+    Re-encodes a video with the captions in `srt_path` drawn onto the picture
+    (open captions), keeping the original audio. Prints progress when the
+    duration is known. Returns True on success.
+    """
+    try:
+        from static_ffmpeg import run
+    except ImportError as e:
+        raise ImportError(
+            "Missing dependencies for audio/video processing. "
+            'Please run with: uvx "youtube-to-docs[all]"'
+        ) from e
+
+    try:
+        ffmpeg_path, _ = run.get_or_fetch_platform_executables_else_raise()
+    except Exception as e:
+        print(f"Error fetching ffmpeg: {e}")
+        return False
+
+    with tempfile.TemporaryDirectory() as work:
+        # The subtitles filter parses its argument as filter syntax, so the SRT
+        # gets a plain relative name in ffmpeg's working directory.
+        shutil.copyfile(srt_path, os.path.join(work, "captions.srt"))
+        command = [
+            ffmpeg_path,
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-nostats",
+            "-progress",
+            "pipe:1",
+            "-y",
+            "-i",
+            os.path.abspath(video_path),
+            "-vf",
+            f"subtitles=captions.srt:force_style='{OPEN_CAPTION_STYLE}'",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "22",
+            "-c:a",
+            "copy",
+            "-movflags",
+            "+faststart",
+            os.path.abspath(output_path),
+        ]
+        log_path = os.path.join(work, "ffmpeg.log")
+        try:
+            with open(log_path, "w") as log:
+                process = subprocess.Popen(
+                    command, cwd=work, stdout=subprocess.PIPE, stderr=log, text=True
+                )
+                reported = 0
+                for line in process.stdout or []:
+                    key, _, value = line.strip().partition("=")
+                    if not duration_seconds or key not in (
+                        "out_time_us",
+                        "out_time_ms",
+                    ):
+                        continue
+                    try:
+                        done = int(value) / 1_000_000 / duration_seconds
+                    except ValueError:
+                        continue
+                    if done >= (reported + 1) / 10 and reported < 9:
+                        reported = min(int(done * 10), 9)
+                        rprint(f"  Burning captions: {reported * 10}%")
+                process.wait()
+            if process.returncode != 0:
+                with open(log_path) as log:
+                    print(f"Error burning captions: {log.read().strip()[-500:]}")
+                return False
+            return True
+        except OSError as e:
+            print(f"Error burning captions: {e}")
+            return False
+
+
+def process_captioned_video(
+    *,
+    row: Dict[str, Any],
+    storage: Storage,
+    captions_path: str,
+    model_name: str,
+    source: str,
+    video_id: str,
+    safe_title: str,
+    video_dir: str,
+    duration_seconds: Optional[float],
+    vprint: Callable[..., None] = print,
+) -> None:
+    """
+    Saves a copy of the video with the corrected captions burned in (`-ccv`)
+    to `video_dir`. Skips if it already exists.
+    """
+    col = f"Captioned Video File {model_name} from {source}"
+    target = os.path.join(
+        video_dir,
+        f"{model_name} - {video_id} - {safe_title} - captioned video "
+        f"(from {source}).mp4",
+    )
+    existing = row.get(col)
+    if isinstance(existing, str) and existing and storage.exists(existing):
+        vprint(f"Captioned video already exists: {existing}")
+        return
+    if storage.exists(target):
+        row[col] = storage.get_full_path(target)
+        vprint(f"Captioned video already exists: {target}")
+        return
+
+    with tempfile.TemporaryDirectory() as work:
+        srt = storage.get_local_file(captions_path, download_dir=work)
+        if not srt:
+            print(f"Error: corrected captions not found at {captions_path}")
+            return
+        rprint(f"Downloading video {video_id} for open captions...")
+        video = download_video(video_id, os.path.join(work, "download"))
+        if not video:
+            return
+        rprint("Burning corrected captions into the video (re-encoding)...")
+        output = os.path.join(work, "captioned.mp4")
+        if not burn_captions(video, srt, output, duration_seconds):
+            return
+        try:
+            saved = storage.upload_file(output, target, content_type="video/mp4")
+        except Exception as e:
+            print(f"Error saving captioned video: {e}")
+            return
+    row[col] = saved
+    rprint(f"Saved captioned video: {format_clickable_path(saved)}")

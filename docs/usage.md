@@ -142,7 +142,7 @@ youtube-to-docs
 | :------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------- | :------------------------------------------------------------------------------ |
 | `video_id`                             | The YouTube content to process. Can be a **YouTube URL**, **Video ID**, **Playlist ID** (starts with `PL`), **Channel Handle** (starts with `@`), or a **comma-separated list** of Video IDs.                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `atmGAHYpf_c`                                | `youtube-to-docs @mychannel`                                                    |
 | `-o`, `--outfile`                      | Path to save the output CSV file. <br> - Local path: `my-data.csv` <br> - Google Workspace: `workspace` or `w` (saves to Drive folder `youtube-to-docs-artifacts`) or a specific Folder ID. <br> - SharePoint/OneDrive: `sharepoint` or `s` (saves to `youtube-to-docs-artifacts`). <br> - Memory: `memory` or `m` (keeps artifacts in memory, no files on disk). <br> - No-op: `none` or `n` (skips saving to a file, results are printed to the console).                                                                                                                                                                                                                                                                               | `youtube-to-docs-artifacts/youtube-docs.csv` | `-o n`                                                                          |
-| `-t`, `--transcript`                   | The transcript source to use. Can be `'youtube'` (default) to fetch existing YouTube transcripts, or an AI model name to perform STT on extracted audio (e.g. `gemini-3.5-transcribe` for Google's dedicated STT model, `gemini...` for the Gemini API, `gcp-chirp3` for GCP Speech-to-Text V2, `aws-transcribe` for AWS Transcribe). `gemini-3.5-transcribe` returns word-level timestamps and speaker diarization, so its SRT has real offsets and `[Speaker N]` labels on speaker changes.                                                                                                                                                                                                                                                                                                                                                                                                                          | `youtube`                                    | `-t gemini-3.5-transcribe`                                                       |
+| `-t`, `--transcript`                   | The transcript source to use. Can be `'youtube'` (default) to fetch existing YouTube transcripts, or an AI model name to perform STT on extracted audio (e.g. `gemini-3.5-transcribe` for Google's dedicated STT model, `gemini...` for the Gemini API, `gcp-chirp3` for GCP Speech-to-Text V2, `aws-transcribe` for AWS Transcribe). `gemini-3.5-transcribe` returns word-level timestamps and speaker diarization, so its SRT has real offsets and `[Speaker N]` labels on speaker changes. When `-cc` corrects an STT transcript, that model becomes the default so it is transcribed in the same run.                                                                                                                                                                                                                                                                                                                                                                                                                          | `youtube`                                    | `-t gemini-3.5-transcribe`                                                       |
 | `-m`, `--model`                        | The LLM(s) to use for speaker extraction, Q&A generation, tag generation, and summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. **Can be a comma-separated list.**                                                                                                                                                                                                                                                                                                                                                                                                                                            | `None` (Transcript only)                     | `-m gemini-3.5-flash-lite,vertex-claude-haiku-5-5`                    |
 | `--tts`                                | The TTS model and voice to use for generating audio summaries. Format: `{model}-{voice}`. Supports Gemini models (e.g., `gemini-3.8-flash-lite-tts-Kore`, `gemini-3.8-flash-lite-tts-Kore`) and GCP Cloud TTS (e.g., `gcp-chirp3-Kore`).                                                                                                                                                                                                                                                         | `None`                                       | `--tts gemini-3.8-flash-lite-tts-Kore`                                      |
 | `-i`, `--infographic`                  | The image model to use for generating a visual summary. Supports models from Google (Gemini), AWS Bedrock (Titan, Nova Canvas), and Azure Foundry. **Can be a comma-separated list** (one infographic per model).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `None`                                       | `--infographic gemini-nano-banana-2.1,gemini-3-pro-image`              |
@@ -152,7 +152,8 @@ youtube-to-docs
 | `-tr`, `--translate`                   | Translate all outputs to a target language after generating in English. Format: `{model}-{language}` e.g. `gemini-3.5-flash-lite-es`, or `aws-translate-{language}` / `gcp-translate-{language}` to use AWS Translate or Google Cloud Translation directly (e.g. `aws-translate-es`, `gcp-translate-es`). The tool first tries to fetch a native YouTube transcript in the target language; if unavailable, it translates the English transcript. Summaries, Q&A, tags, one-sentence summaries, transcripts, and SRT files are all translated. When combined with `--tts` or `--infographic`, assets are produced in both English and the target language. | `None`                                       | `-tr gemini-3.5-flash-lite-es`, `-tr aws-translate-es`, `-tr gcp-translate-es` |
 | `-cia`, `--combine-infographic-audio`  | Combine the infographic and audio summary into a video file (MP4). Requires both `--tts` and `--infographic` to be effective. When used with `--translate`, one video is created per language.                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `False`                                      | `--combine-infographic-audio`                                                   |
 | `--all`                                | Shortcut to use a specific model suite for everything. Supported: `'gemini-flash'`, `'gemini-pro'`, `'gemini-flash-pro-image'`, `'gcp-pro'`, `'anthropic-opus'`. Sets models for summary, TTS, and infographic, and enables `--no-youtube-summary`.                                                                                                                                                                                                                                                                                                                                                                                                                             | `None`                                       | `--all gemini-flash`                                                            |
-| `-scc`, `--suggest-corrected-captions` | Suggest WCAG 2.1 Level AA compliant caption corrections for an SRT file, per [Section 508 guidance](https://www.section508.gov/create/captions-transcripts/). Format: `{model}` or `{model}-{source}`. See [Suggested Corrected Captions](#suggested-corrected-captions) for full source rules.                                                                                                                                                                                                                                                                                                                                                             | `None`                                       | `-scc gemini-3.5-flash-lite-youtube`                                           |
+| `-cc`, `--corrected-captions`          | Write a complete, corrected SRT caption file that meets WCAG 2.1 Level AA and [Section 508](https://www.section508.gov/create/captions-transcripts/): real speaker names, corrected words and spellings, non-speech sounds, readable layout and repaired timing. Format: `{model}` or `{model}-{source}`; without a value uses `gemini-4-argon-gemini-3.5-transcribe`. See [Corrected Captions](#corrected-captions).                                                                                                                                                                                                                                       | `None`                                       | `-cc`                                                                           |
+| `-ccv`, `--corrected-captions-video`   | Also save a copy of the video with the corrected captions burned in (open captions: white text on an 80% opaque black box) to `video-files/`. Implies `-cc` with its default if `-cc` isn't set. Downloads the video (H.264, up to 1080p) and re-encodes it.                                                                                                                                                                                                                                                                                                                                                                                                | `False`                                      | `-ccv`                                                                          |
 | `-pp`, `--post-process`                | Post-process the transcript with JSON operations. Supported operations: `word count` (case-insensitive, whole-word). Values can be a single string or a list. Results are added as new columns in the output CSV (e.g. `Post-process: word count(apple)`).                                                                                                                                                                                                                                                                                                                                                                                                  | `None`                                       | `-pp '{"word count": ["apple", "banana"]}'`                                     |
 | `--verbose`                            | Enable verbose output.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `False`                                      | `--verbose`                                                                     |
 
@@ -212,31 +213,37 @@ youtube-to-docs atmGAHYpf_c -m gemini-3.5-flash-lite -tr gemini-3.5-flash-lite-e
 youtube-to-docs atmGAHYpf_c -m gemini-3.5-flash-lite -tr gemini-3.5-flash-lite-es --tts gemini-3.8-flash-lite-tts-Kore --infographic gemini-nano-banana-2.1 --combine-infographic-audio
 ```
 
-**10. Suggest corrected captions for YouTube SRT:**
+**10. Produce the best corrected captions (transcribes with `gemini-3.5-transcribe`, corrects with `gemini-4-argon`):**
 
 ```bash
-youtube-to-docs atmGAHYpf_c -scc gemini-3.5-flash-lite-youtube
+youtube-to-docs atmGAHYpf_c -cc
 ```
 
-**11. Run STT and correct the generated captions in one pass:**
+**11. Correct the YouTube captions instead (no transcription):**
 
 ```bash
-youtube-to-docs atmGAHYpf_c -t gcp-chirp3 -scc gemini-3.5-flash-lite
+youtube-to-docs atmGAHYpf_c -cc gemini-4-argon-youtube
 ```
 
-**12. Correct captions and add speaker labels in one pass:**
+**12. Corrected captions plus a copy of the video with them burned in:**
 
 ```bash
-youtube-to-docs atmGAHYpf_c -m gemini-3.5-flash-lite -scc gemini-3.5-flash-lite-youtube
+youtube-to-docs atmGAHYpf_c -ccv
 ```
 
-**13. Post-process a transcript to count word occurrences:**
+**13. Correct an existing GCP Chirp 3 transcript with a cheaper model:**
+
+```bash
+youtube-to-docs atmGAHYpf_c -t gcp-chirp3 -cc gemini-3.5-flash-lite-gcp-chirp3
+```
+
+**14. Post-process a transcript to count word occurrences:**
 
 ```bash
 youtube-to-docs atmGAHYpf_c -pp '{"word count": ["apple", "banana"]}'
 ```
 
-**14. Transcribe with Gemini 3.5 Transcribe (word timestamps + speaker diarization):**
+**15. Transcribe with Gemini 3.5 Transcribe (word timestamps + speaker diarization):**
 
 ```bash
 youtube-to-docs atmGAHYpf_c -t gemini-3.5-transcribe
@@ -245,49 +252,42 @@ youtube-to-docs atmGAHYpf_c -t gemini-3.5-transcribe
 The resulting SRT is built from the model's word-level offsets and carries a
 `[Speaker N]` label wherever the speaker changes. Requires `GEMINI_API_KEY`.
 
-## Suggested Corrected Captions
+## Corrected Captions
 
-The `-scc` / `--suggest-corrected-captions` flag uses an LLM to suggest WCAG 2.1 Level AA compliant corrections to an existing SRT file, following [Section 508 guidance](https://www.section508.gov/create/captions-transcripts/).
+The `-cc` / `--corrected-captions` flag writes a **complete, ready-to-use SRT file** that meets WCAG 2.1 Level AA (1.2.2 Captions) and [Section 508 guidance](https://www.section508.gov/create/captions-transcripts/), following the DCMP Captioning Key.
 
-### What it corrects
+```bash
+youtube-to-docs VIDEO_ID -cc
+```
 
-- **Punctuation** — adds or fixes commas, periods, question marks, em dashes, and ellipses.
-- **Capitalisation** — fixes sentence-initial capitals and proper nouns.
-- **Filler words** — retains filler words (e.g. "uh", "um") where they aid accessible meaning.
-- **Speaker labels** — when speaker extraction has been run (via `-m`), inserts `[Name]` at the start of each segment where the speaker changes.
-- **Segment merging** — if a grammatically complete sentence naturally spans two consecutive segments, those segments are merged into one, using the start time of the first and the end time of the last. No new segments are ever added.
+Without a value, `-cc` uses `gemini-4-argon-gemini-3.5-transcribe`: the audio is transcribed with `gemini-3.5-transcribe` (word timestamps and speaker diarization) unless `-t` is set, and the transcript is corrected with `gemini-4-argon`. With a Gemini model, `-cc` also makes one agentic video request for the on-screen context (names, titles, speaking times, spellings), unless `--from-video` already produced it.
 
-### Output
+### How it works
 
-Corrections are saved to `suggested-corrected-caption-files/` and contain **only the changed segments** — unchanged segments are omitted. If nothing needs fixing the file contains `NO_CHANGES`. The output path is recorded in the CSV under `Suggested Corrected Captions File ({model})`.
+1. **Timing.** The source SRT is aligned word by word with a second transcript of the same audio (the YouTube captions, or the STT transcript when correcting YouTube's). Cues with broken timestamps (for example, words returned minutes off) are re-timed from the second transcript.
+2. **Speakers.** The speaker of every cue is identified in ~20-minute windows from the diarization labels, the second transcript's speaker changes (`>>`), the times the video shows each person speaking, introductions, hand-offs and roles. Names come from on-screen name plates where available.
+3. **Text.** Sections of ~150 cues are corrected in parallel against the second transcript and the on-screen spellings: misheard words, names, organizations and acronyms, punctuation and capitalization, clean verbatim (fillers and stutters removed, false starts marked with em dashes), numbers, and non-speech sounds such as `[laughter]`. Speech missing from the source but present in the second transcript (often short replies) is restored. The model edits text by cue id and never writes timestamps, so long videos can't be truncated or drift out of sync.
+4. **Layout.** The corrected words are re-segmented into captions of at most two lines of 42 characters, 1–7 seconds long, broken at sentence and clause boundaries (not inside names or after articles). `[Name]` labels mark every change of speaker, crosstalk is placed at the nearest sentence break, quick exchanges share a two-line caption, and captions never overlap.
 
 ### Source argument rules
 
-The format is `-scc {model}` or `-scc {model}-{source}`.
+The format is `-cc {model}` or `-cc {model}-{source}`.
 
-| Source         | Behaviour                                                                                                                             | Example                                  |
-| :------------- | :------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------- |
-| Omitted        | Automatically uses the most recent non-YouTube AI SRT in the row. Useful when `-t {stt-model}` is set in the same run or a prior run. | `-scc gemini-3.5-flash-lite`            |
-| `youtube`      | Uses the YouTube-generated SRT explicitly.                                                                                            | `-scc gemini-3.5-flash-lite-youtube`    |
-| STT model name | Uses the SRT produced by that specific STT run.                                                                                       | `-scc gemini-3.5-flash-lite-gcp-chirp3` |
+| Source         | Behaviour                                                                                                                             | Example                                |
+| :------------- | :------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------- |
+| STT model name | Corrects the SRT from that STT run, transcribing it in the same run unless `-t` is set.                                                | `-cc gemini-4-argon-gemini-3.5-transcribe` |
+| `youtube`      | Corrects the YouTube SRT, using any STT SRT for the video as the second transcript.                                                   | `-cc gemini-4-argon-youtube`            |
+| Omitted        | Corrects the `-t` STT SRT, else the most recent AI SRT, else the YouTube SRT.                                                         | `-cc gemini-4-argon`                    |
 
-> **Tip:** If you have more than one AI SRT in the row (e.g. from both `gcp-chirp3` and `aws-transcribe`), the default picks the first one found. Use the explicit `{model}-{source}` form to target a specific SRT.
+If the requested source SRT doesn't exist (for example, `-t youtube -cc`), the available SRT is corrected instead, with a warning.
 
-### Common combinations
+### Output
 
-```bash
-# Correct YouTube captions only
-youtube-to-docs VIDEO_ID -scc gemini-3.5-flash-lite-youtube
+The SRT is saved to `corrected-caption-files/` as `{model} - {video id} - {title} - corrected captions (from {source}).srt` and recorded in the CSV under `Corrected Captions File {model} from {source}`. If that file already exists it isn't regenerated; delete it to run again. Parallel requests default to 6; set `YTD_CC_WORKERS` to lower this if you hit rate limits.
 
-# STT with GCP Chirp3, then correct the generated captions
-youtube-to-docs VIDEO_ID -t gcp-chirp3 -scc gemini-3.5-flash-lite
+### Captioned video (`-ccv`)
 
-# Explicitly target the gcp-chirp3 SRT from a previous run
-youtube-to-docs VIDEO_ID -scc gemini-3.5-flash-lite-gcp-chirp3
-
-# Speaker extraction + caption correction in one run
-youtube-to-docs VIDEO_ID -m gemini-3.5-flash-lite -scc gemini-3.5-flash-lite-youtube
-```
+`-ccv` / `--corrected-captions-video` also saves a copy of the video with the corrected captions burned in ("open captions", visible in any player) to `video-files/` as `{model} - {video id} - {title} - captioned video (from {source}).mp4`, recorded under `Captioned Video File {model} from {source}`. Captions are white Arial on an 80% opaque black box at the bottom centre (well above the WCAG 4.5:1 contrast minimum over any picture), sized to about 1/16 of the frame height. The video is downloaded with yt-dlp (H.264, up to 1080p) and re-encoded with ffmpeg; the audio is copied unchanged. Re-encoding a 3-hour 720p video takes about 8–10 minutes. `-ccv` implies `-cc` if it isn't set, and an existing captioned video isn't regenerated.
 
 ## CSV Column Reference
 
@@ -321,7 +321,8 @@ The output CSV file contains a variety of columns depending on the arguments pro
 - **Summary Audio File {model} {tts_model} File**: Path to the generated TTS audio file. Suffix `(lang)` added for non-English.
 - **Video File**: Path to the generated MP4 video combining the English infographic and audio.
 - **Video File (lang)**: Path to the translated language video (e.g., `Video File (es)`). Only present when `--translate` and `--combine-infographic-audio` are both used.
-- **Suggested Corrected Captions File ({model})**: Path to the suggested-corrections SRT file produced by `-scc`. Contains only the changed segments, or `NO_CHANGES` if no corrections were needed.
+- **Corrected Captions File {model} from {source}**: Path to the complete corrected SRT file produced by `-cc`.
+- **Captioned Video File {model} from {source}**: Path to the copy of the video with the corrected captions burned in, produced by `-ccv`.
 - **Post-process: word count({word})**: Count of occurrences of `{word}` in the transcript (case-insensitive, whole-word match). One column per word when using `-pp`.
 
 ### AI Outputs & Costs
@@ -338,6 +339,7 @@ The output CSV file contains a variety of columns depending on the arguments pro
 - **Summary Infographic Alt Text Cost {model} {infographic_model} ($)**: The estimated API cost for alt text generation.
 - **{normalized_model} tags cost from {transcript} ($)**: The estimated API cost for AI tag generation.
 - **{normalized_model} STT cost ($)**: The estimated API cost for Speech-to-Text generation. For `gemini-3.5-transcribe` the API reports audio input tokens but not transcript output tokens, so this figure covers the input side only and understates the true cost.
+- **{normalized_model} corrected captions cost from {source} ($)**: The estimated API cost of `-cc` (speaker identification and text correction, including thinking tokens). The on-screen context request is recorded separately as `{normalized_model} video context cost from video-agentic ($)`.
 
 > **Note**: `{normalized_model}` refers to the model name with prefixes (like `vertex-`) and date suffixes removed for cleaner column headers.
 

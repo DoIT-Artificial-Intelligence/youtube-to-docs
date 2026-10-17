@@ -70,19 +70,19 @@ Use this when the user asks for "everything", a "kitchen sink" run, or a "video 
   - "french" or "fr" -> `translate='gemini-3.5-flash-lite-fr'`
   - Default -> omit `translate` (English only)
 
-### 4. Suggested Corrected Captions (WCAG / Section 508)
+### 4. Corrected Captions (WCAG / Section 508)
 
-Use this when the user wants to improve caption quality for accessibility compliance.
+Use this when the user wants accurate, accessible captions (an SRT file), e.g. "fix the captions", "make the captions compliant" or "the best captions".
 
-- **Goal**: Generate a corrected SRT file following WCAG 2.1 Level AA and Section 508 guidelines.
+- **Goal**: A complete corrected SRT file that meets WCAG 2.1 Level AA and Section 508: real speaker names on every change, corrected words and spellings, non-speech sounds, repaired timing and a readable two-line layout.
 - **Tool**: `youtube-to-docs:process_video`
-- **Required Argument**: `url` + `suggest_corrected_captions`
-- **Format**: `{model}` or `{model}-{source}`
-  - `suggest_corrected_captions='gemini-3.5-flash-lite'` — auto-detects most recent AI SRT
-  - `suggest_corrected_captions='gemini-3.5-flash-lite-youtube'` — corrects the YouTube-generated SRT
-  - `suggest_corrected_captions='gemini-3.5-flash-lite-gcp-chirp3'` — corrects an STT SRT from gcp-chirp3
-- **Output**: Diff-style SRT (changed segments only, or `NO_CHANGES`). Saved to `suggested-corrected-caption-files/`. Column: `Suggested Corrected Captions File ({model})`.
-- **Speaker Labels**: If speaker extraction was run (`model` set), the corrected captions will include `[Name]` labels at each speaker change.
+- **Required Argument**: `url` + `corrected_captions`
+- **Values**:
+  - `corrected_captions='default'` — the best captions (recommended): `gemini-4-argon` corrects a `gemini-3.5-transcribe` transcript (transcribed in the same run), using names and speaking times read from the video.
+  - `corrected_captions='gemini-4-argon-youtube'` — corrects the YouTube captions instead (no transcription).
+  - `corrected_captions='gemini-4-argon-gcp-chirp3'` — corrects a transcript from another STT model.
+- **Captioned video**: add `corrected_captions_video=True` to also save the video with the captions burned in (open captions) to `video-files/`. It downloads and re-encodes the video, so it takes a while (Requires `audio` and `video` extras).
+- **Output**: Saved to `corrected-caption-files/`. Column: `Corrected Captions File {model} from {source}`.
 
 ### 5. Custom / Advanced Usage
 
@@ -110,11 +110,12 @@ Use this when the user specifies particular models or output locations.
 | `all_suite`                  | Shortcut to apply a suite of models.                                                                                                 | `gcp`, `audio`, `video`    | `gemini-pro`, `gemini-flash`                                                                    |
 | `combine_infographic_audio`  | Boolean. If True, creates an MP4 video.                                                                                              | `video`                    | `True`                                                                                          |
 | `translate`                  | Translate all outputs to a target language. Format: `{model}-{language}`, `aws-translate-{language}`, or `gcp-translate-{language}`. | -                          | `gemini-3.5-flash-lite-es`, `aws-translate-es`, `gcp-translate-es`                             |
-| `suggest_corrected_captions` | Suggest WCAG 2.1 / Section 508 corrected captions. Format: `{model}` or `{model}-{source}`.                                          | -                          | `gemini-3.5-flash-lite`, `gemini-3.5-flash-lite-youtube`, `gemini-3.5-flash-lite-gcp-chirp3` |
+| `corrected_captions`         | Complete WCAG 2.1 / Section 508 corrected SRT. `'default'` for the best captions, or `{model}` / `{model}-{source}`. | - | `default`, `gemini-4-argon-youtube`, `gemini-3.5-flash-lite-gcp-chirp3` |
+| `corrected_captions_video`   | Boolean. Also save the video with the corrected captions burned in (open captions). | `audio`, `video` | `True` |
 | `post_process`               | Post-process the transcript with JSON operations. Results added as CSV columns.                                                      | -                          | `'{"word count": "apple"}'`, `'{"word count": ["apple", "banana"]}'`                            |
 | `output_file`                | Destination for the CSV report.                                                                                                      | `workspace` / `m365`       | `workspace`, `sharepoint`, `memory`                                                             |
-| `transcript_source`          | Source for transcript (default: 'youtube').                                                                                          | `audio`, `gcp` (for Chirp) | `gemini-3.5-transcribe`, `gemini-3.5-flash-lite`, `gcp-chirp3`                                                          |
-| `from_video`                 | Also generate summary, speakers, Q&A and on-screen context directly from the video (Gemini video understanding, no download). `agentic` navigates the video; `static` samples frames at 1 FPS. On-screen names and terms are also used by `suggest_corrected_captions`. Gemini models only. | - | `agentic`, `static`, `agentic,static` |
+| `transcript_source`          | Source for transcript (default: 'youtube', or the `corrected_captions` STT source).                                                   | `audio`, `gcp` (for Chirp) | `gemini-3.5-transcribe`, `gemini-3.5-flash-lite`, `gcp-chirp3`                                                          |
+| `from_video`                 | Also generate summary, speakers, Q&A and on-screen context directly from the video (Gemini video understanding, no download). `agentic` navigates the video; `static` samples frames at 1 FPS. On-screen names and terms are also used by `corrected_captions` (which extracts them itself when needed). Gemini models only. | - | `agentic`, `static`, `agentic,static` |
 
 ## Examples
 
@@ -130,11 +131,14 @@ Use this when the user specifies particular models or output locations.
 **User**: "Summarize this playlist and save it to Drive."
 **Action**: Call `youtube-to-docs:process_video(url='PL...', model='gemini-3.5-flash-lite', output_file='workspace')`
 
-**User**: "Correct the YouTube captions for this video for accessibility."
-**Action**: Call `youtube-to-docs:process_video(url='...', suggest_corrected_captions='gemini-3.5-flash-lite-youtube')`
+**User**: "Make the best accessible captions for this video."
+**Action**: Call `youtube-to-docs:process_video(url='...', corrected_captions='default')`
 
-**User**: "Generate corrected captions from the STT transcript."
-**Action**: Call `youtube-to-docs:process_video(url='...', transcript_source='gcp-chirp3', suggest_corrected_captions='gemini-3.5-flash-lite-gcp-chirp3')`
+**User**: "Correct the YouTube captions for this video for accessibility."
+**Action**: Call `youtube-to-docs:process_video(url='...', corrected_captions='gemini-4-argon-youtube')`
+
+**User**: "Burn corrected captions into the video."
+**Action**: Call `youtube-to-docs:process_video(url='...', corrected_captions='default', corrected_captions_video=True)`
 
 **User**: "Count how many times 'apple' appears in this video's transcript."
 **Action**: Call `youtube-to-docs:process_video(url='...', post_process='{"word count": "apple"}')`
@@ -163,11 +167,11 @@ uv run youtube-to-docs B0x2I_doX9o --all gemini-pro --verbose
 # Example: Translate to Spanish
 uv run youtube-to-docs B0x2I_doX9o -m gemini-3.5-flash-lite -tr gemini-3.5-flash-lite-es
 
-# Example: Suggest corrected captions from YouTube SRT
-uv run youtube-to-docs B0x2I_doX9o -scc gemini-3.5-flash-lite-youtube
+# Example: Best corrected captions (gemini-3.5-transcribe + gemini-4-argon)
+uv run youtube-to-docs B0x2I_doX9o -cc
 
-# Example: STT transcription + corrected captions in one run
-uv run youtube-to-docs B0x2I_doX9o -t gcp-chirp3 -scc gemini-3.5-flash-lite-gcp-chirp3
+# Example: Corrected captions plus a copy of the video with them burned in
+uv run youtube-to-docs B0x2I_doX9o -ccv
 
 # Example: Post-process transcript to count word occurrences
 uv run youtube-to-docs B0x2I_doX9o -pp '{"word count": ["apple", "banana"]}'

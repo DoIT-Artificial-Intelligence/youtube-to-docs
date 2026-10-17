@@ -4,7 +4,11 @@ import io
 from mcp.server.mcpserver import MCPServer
 
 from youtube_to_docs.main import main as app_main
-from youtube_to_docs.utils import get_version, validate_output_file
+from youtube_to_docs.utils import (
+    corrected_captions_args,
+    get_version,
+    validate_output_file,
+)
 
 mcp = MCPServer("youtube-to-docs", version=get_version())
 
@@ -14,7 +18,7 @@ def process_video(
     url: str,
     output_file: str = "youtube-to-docs-artifacts/youtube-docs.csv",
     hugging_face_dataset: str | None = None,
-    transcript_source: str = "youtube",
+    transcript_source: str | None = None,
     model: str | None = None,
     tts_model: str | None = None,
     infographic_model: str | None = None,
@@ -24,7 +28,8 @@ def process_video(
     translate: str | None = None,
     combine_infographic_audio: bool = False,
     all_suite: str | None = None,
-    suggest_corrected_captions: str | None = None,
+    corrected_captions: str | None = None,
+    corrected_captions_video: bool = False,
     post_process: str | None = None,
     verbose: bool = False,
 ) -> str:
@@ -59,6 +64,8 @@ def process_video(
             to perform STT on extracted audio. 'gemini-3.5-transcribe' is Google's
             dedicated STT model and returns word-level timestamps plus speaker
             diarization, so its SRT has real offsets and '[Speaker N]' labels.
+            When corrected_captions corrects an STT transcript, that model is the
+            default instead.
         model: The LLM model to use for speaker extraction, Q&A, and summarization
             (e.g., 'gemini-3.5-flash-lite'). Can be a comma-separated list.
             Defaults to None (Transcript only).
@@ -90,13 +97,20 @@ def process_video(
         all_suite: Shortcut to use a specific model suite for everything.
             e.g., 'gemini-flash', 'gemini-pro', 'gemini-flash-pro-image', 'gcp-pro',
             or 'anthropic-opus'.
-        suggest_corrected_captions: Suggest WCAG 2.1 Level AA compliant caption
-            corrections for an SRT file, per Section 508 guidance. Format:
-            `{model}` or `{model}-{source}`. Source can be 'youtube' or a transcript
-            model name (e.g., 'gcp-chirp3', 'gemini-3.5-transcribe'). If source is
-            omitted, the most recent AI-generated SRT is used. Output is saved to
-            'suggested-corrected-caption-files/'. If speaker extraction has been run,
-            speaker labels are added on speaker changes.
+        corrected_captions: Write a complete, corrected SRT caption file that
+            meets WCAG 2.1 Level AA and Section 508: real speaker names on every
+            change, corrected words and spellings, non-speech sounds, repaired
+            timing and readable two-line layout. Use 'default' for the best
+            captions (gemini-4-argon correcting a gemini-3.5-transcribe
+            transcript, transcribed in the same run). Or `{model}` /
+            `{model}-{source}`, where source is 'youtube' or a transcript model
+            name (e.g. 'gemini-4-argon-youtube'). With a Gemini model, on-screen
+            context (names, speaking times) is read from the video. Output is
+            saved to 'corrected-caption-files/'.
+        corrected_captions_video: If True, also saves a copy of the video with
+            the corrected captions burned in (open captions) to 'video-files/'.
+            Implies corrected_captions='default' if corrected_captions isn't set.
+            Downloads and re-encodes the video, so it takes a while.
         post_process: Post-process the transcript with JSON operations.
             Example: '{"word count": "apple"}' counts occurrences of 'apple'.
             Values can be a list for multiple words.
@@ -107,13 +121,10 @@ def process_video(
     except ValueError as e:
         return f"Error processing {url}: {e}"
 
-    args = [
-        url,
-        "--outfile",
-        output_file,
-        "--transcript",
-        transcript_source,
-    ]
+    args = [url, "--outfile", output_file]
+
+    if transcript_source:
+        args.extend(["--transcript", transcript_source])
 
     if hugging_face_dataset:
         args.extend(["--hugging-face-dataset", hugging_face_dataset])
@@ -145,8 +156,11 @@ def process_video(
     if all_suite:
         args.extend(["--all", all_suite])
 
-    if suggest_corrected_captions:
-        args.extend(["--suggest-corrected-captions", suggest_corrected_captions])
+    if corrected_captions:
+        args.extend(corrected_captions_args(corrected_captions))
+
+    if corrected_captions_video:
+        args.append("--corrected-captions-video")
 
     if post_process:
         args.extend(["--post-process", post_process])

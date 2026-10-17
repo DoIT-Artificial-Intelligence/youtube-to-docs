@@ -11,13 +11,8 @@ def test_process_video_defaults():
         url = "https://www.youtube.com/watch?v=123"
         result = process_video(url=url)
 
-        expected_args = [
-            url,
-            "--outfile",
-            "youtube-to-docs-artifacts/youtube-docs.csv",
-            "--transcript",
-            "youtube",
-        ]
+        # The CLI picks the transcript source (youtube, or -cc's STT source).
+        expected_args = [url, "--outfile", "youtube-to-docs-artifacts/youtube-docs.csv"]
 
         mock_main.assert_called_once_with(expected_args)
         assert f"Successfully processed {url}" in result
@@ -97,8 +92,6 @@ def test_process_video_all_suite():
             url,
             "--outfile",
             "youtube-to-docs-artifacts/youtube-docs.csv",
-            "--transcript",
-            "youtube",
             "--all",
             "gemini-flash",
         ]
@@ -118,50 +111,48 @@ def test_process_video_error():
         assert f"Error processing {url}: Processing failed" in result
 
 
-def test_process_video_suggest_corrected_captions():
-    """Test that suggest_corrected_captions is passed as a CLI arg."""
+def test_process_video_corrected_captions_default():
+    """'default' passes a bare flag so the CLI's default model and source apply."""
     with patch("youtube_to_docs.mcp_server.app_main") as mock_main:
         url = "https://www.youtube.com/watch?v=123"
-        result = process_video(
-            url=url,
-            suggest_corrected_captions="gemini-3.5-flash-lite-gcp-chirp3",
-        )
+        result = process_video(url=url, corrected_captions="default")
 
         expected_args = [
             url,
             "--outfile",
             "youtube-to-docs-artifacts/youtube-docs.csv",
-            "--transcript",
-            "youtube",
-            "--suggest-corrected-captions",
-            "gemini-3.5-flash-lite-gcp-chirp3",
+            "--corrected-captions",
         ]
 
         mock_main.assert_called_once_with(expected_args)
         assert f"Successfully processed {url}" in result
 
 
-def test_process_video_suggest_corrected_captions_youtube_source():
-    """Test suggest_corrected_captions with explicit youtube source."""
+def test_process_video_corrected_captions_with_source():
     with patch("youtube_to_docs.mcp_server.app_main") as mock_main:
-        url = "https://www.youtube.com/watch?v=123"
         process_video(
-            url=url,
-            suggest_corrected_captions="gemini-3.5-flash-lite-youtube",
+            url="https://www.youtube.com/watch?v=123",
+            corrected_captions="gemini-4-argon-youtube",
         )
 
         call_args = mock_main.call_args[0][0]
-        idx = call_args.index("--suggest-corrected-captions")
-        assert call_args[idx + 1] == "gemini-3.5-flash-lite-youtube"
+        idx = call_args.index("--corrected-captions")
+        assert call_args[idx + 1] == "gemini-4-argon-youtube"
 
 
-def test_process_video_suggest_corrected_captions_not_passed_when_none():
-    """Test that --suggest-corrected-captions is absent when not set."""
+def test_process_video_corrected_captions_video():
+    with patch("youtube_to_docs.mcp_server.app_main") as mock_main:
+        process_video(url="abc12345678", corrected_captions_video=True)
+        assert mock_main.call_args[0][0][-1] == "--corrected-captions-video"
+
+
+def test_process_video_corrected_captions_not_passed_when_none():
     with patch("youtube_to_docs.mcp_server.app_main") as mock_main:
         process_video(url="https://www.youtube.com/watch?v=123")
 
         call_args = mock_main.call_args[0][0]
-        assert "--suggest-corrected-captions" not in call_args
+        assert "--corrected-captions" not in call_args
+        assert "--transcript" not in call_args
 
 
 def test_tool_registration():

@@ -1200,5 +1200,82 @@ class TestMain(unittest.TestCase):
         self.assertTrue(any_results_header)
 
 
+@patch("youtube_to_docs.main.process_corrected_captions")
+@patch("youtube_to_docs.main.get_provider")
+@patch("youtube_to_docs.main.extract_audio")
+@patch("youtube_to_docs.main.get_youtube_service")
+@patch("youtube_to_docs.main.resolve_video_ids", return_value=["vid1"])
+@patch("youtube_to_docs.main.get_video_details")
+@patch("youtube_to_docs.main.fetch_transcript", return_value=("Hi.", True, []))
+@patch("youtube_to_docs.main.generate_summary", return_value=("Summary", 1, 1))
+@patch("youtube_to_docs.main.extract_speakers", return_value=("Jane Doe", 1, 1))
+@patch("youtube_to_docs.main.generate_qa", return_value=("nan", 1, 1))
+@patch("youtube_to_docs.main.generate_one_sentence_summary", return_value=("S", 1, 1))
+@patch("youtube_to_docs.main.generate_tags", return_value=("tag", 1, 1))
+class TestCorrectedCaptionsDefaults(unittest.TestCase):
+    """`-cc` without a value transcribes with gemini-3.5-transcribe and corrects
+    that SRT with gemini-4-argon, unless -t says otherwise."""
+
+    def _run(self, mocks, *args):
+        (*_, mock_details, _resolve, _svc, mock_extract, mock_provider, mock_cc) = mocks
+        mock_details.return_value = (
+            "Title",
+            "Desc",
+            "2026-10-15",
+            "Chan",
+            "",
+            "0:01:00",
+            "url",
+            60.0,
+        )
+        from youtube_to_docs.providers import BaseProvider, STTProvider
+
+        class FakeSTT(BaseProvider, STTProvider):
+            def transcribe(self, *a, **k):
+                return (
+                    "Hi.",
+                    "1\n00:00:00,000 --> 00:00:01,000\n[Speaker 1] Hi.\n",
+                    1,
+                    1,
+                )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            audio = os.path.join(tmp, "a.m4a")
+            with open(audio, "wb") as f:
+                f.write(b"audio")
+            mock_extract.return_value = audio
+            mock_provider.side_effect = lambda name: FakeSTT(name)
+            main.main(["vid1", "-o", os.path.join(tmp, "out.csv"), *args])
+        return mock_provider, mock_cc
+
+    def test_bare_flag_uses_best_defaults(self, *mocks):
+        mock_provider, mock_cc = self._run(mocks, "-cc")
+        mock_provider.assert_called_with("gemini-3.5-transcribe")
+        kwargs = mock_cc.call_args.kwargs
+        self.assertEqual(kwargs["model_name"], "gemini-4-argon")
+        self.assertEqual(kwargs["source"], "gemini-3.5-transcribe")
+        self.assertEqual(kwargs["transcript_arg"], "gemini-3.5-transcribe")
+
+    def test_explicit_transcript_source_is_kept(self, *mocks):
+        mock_provider, mock_cc = self._run(mocks, "-t", "youtube", "-cc")
+        mock_provider.assert_not_called()
+        self.assertEqual(mock_cc.call_args.kwargs["transcript_arg"], "youtube")
+
+    @patch("youtube_to_docs.main.process_captioned_video")
+    def test_captioned_video_flag_implies_corrected_captions(self, mock_video, *mocks):
+        mocks[-1].return_value = ("cc/out.srt", "gemini-3.5-transcribe")
+        _, mock_cc = self._run(mocks, "-ccv")
+        self.assertEqual(mock_cc.call_args.kwargs["model_name"], "gemini-4-argon")
+        kwargs = mock_video.call_args.kwargs
+        self.assertEqual(kwargs["captions_path"], "cc/out.srt")
+        self.assertEqual(kwargs["source"], "gemini-3.5-transcribe")
+        self.assertEqual(kwargs["duration_seconds"], 60.0)
+
+    def test_youtube_source_needs_no_transcription(self, *mocks):
+        mock_provider, mock_cc = self._run(mocks, "-cc", "gemini-4-argon-youtube")
+        mock_provider.assert_not_called()
+        self.assertEqual(mock_cc.call_args.kwargs["source"], "youtube")
+
+
 if __name__ == "__main__":
     unittest.main()
