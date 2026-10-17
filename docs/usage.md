@@ -298,14 +298,14 @@ If the requested source SRT doesn't exist (for example, `-t youtube -cc`), the a
 ### Checking the WebVTT files
 
 1. **Validate them.** Paste a `.vtt` file into the [W3C WebVTT validator](https://w3c.github.io/webvtt.js/parser.html); it should report no errors.
-2. **Play them.** Browsers won't load tracks from `file://` pages, so serve the artifacts folder and open the player page:
+2. **Play them.** Browsers won't load tracks from `file://` pages, so serve the artifacts folder and open the player page. Use a server that supports range requests, or the browser can't seek in a long video (Python's built-in `http.server` doesn't):
 
    ```bash
    cd youtube-to-docs-artifacts
-   uv run --no-project python -m http.server 8000
+   uv run --no-project --with rangehttpserver python -m RangeHTTPServer 8080 --bind 127.0.0.1
    ```
 
-   Then open `http://localhost:8000/vtt-files/` and select the `… player.html` file. Captions are on; select the Description button to hear the descriptions read aloud (the video pauses while each is read). To hear them through a screen reader instead, add `data-desc-reader="screenreader"` to the `<video>` element and turn on NVDA, JAWS or VoiceOver.
+   Then open `http://127.0.0.1:8080/vtt-files/` and select the `… player.html` file. Captions are on; select the Description button to hear the descriptions read aloud (the video pauses while each is read). To hear them through a screen reader instead, add `data-desc-reader="screenreader"` to the `<video>` element and turn on NVDA, JAWS or VoiceOver.
 3. **Spot-check timing.** In VLC, open the original video and add the captions `.vtt` (Subtitle > Add Subtitle File...) to check that captions line up with the speech.
 
 ## CSV Column Reference
