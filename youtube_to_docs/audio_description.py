@@ -208,6 +208,10 @@ def extract_frames(
                 path,
             ],
             check=False,
+            # Seeking into some H.264 streams makes the decoder log harmless
+            # errors (e.g. "mmco: unref short failure"); a missing frame is
+            # handled below.
+            capture_output=True,
         )
         paths.append(path if os.path.exists(path) else "")
     return paths
