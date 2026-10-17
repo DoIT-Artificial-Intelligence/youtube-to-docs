@@ -1303,6 +1303,25 @@ class TestCorrectedCaptionsDefaults(unittest.TestCase):
         self.assertEqual(video["source"], "gemini-3.5-transcribe")
         self.assertTrue(mock_page.call_args.kwargs["path"].endswith(" - player.html"))
 
+    @patch("youtube_to_docs.main.write_player_page")
+    @patch("youtube_to_docs.main.process_accessible_video")
+    @patch("youtube_to_docs.main.process_audio_description")
+    @patch("youtube_to_docs.main.download_video", return_value=None)
+    def test_failed_video_download_skips_the_video_steps(
+        self, mock_download, mock_ad, mock_video, mock_page, *mocks
+    ):
+        mocks[-1].return_value = CaptionFiles(
+            "cc/out.srt", "gemini-3.5-transcribe", "stt.srt", None
+        )
+        with patch("youtube_to_docs.main.rprint") as mock_print:
+            self._run(mocks, "-cc")
+        mock_download.assert_called_once()
+        mock_ad.assert_not_called()
+        mock_video.assert_not_called()
+        mock_page.assert_not_called()  # a page with no video to play
+        printed = " ".join(str(c.args[0]) for c in mock_print.call_args_list if c.args)
+        self.assertIn("Couldn't download the video", printed)
+
     def test_youtube_source_needs_no_transcription(self, *mocks):
         mock_provider, mock_cc = self._run(mocks, "-cc", "gemini-4-argon-youtube")
         mock_provider.assert_not_called()

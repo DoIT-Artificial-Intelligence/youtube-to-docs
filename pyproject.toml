@@ -17,7 +17,7 @@ test = [
 
 [project]
 name = "youtube-to-docs"
-version = "0.0.122"
+version = "0.0.123"
 description = "Convert YouTube videos into structured docs, summaries, audio, and visual assets for easier discovery"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -66,7 +66,11 @@ huggingface = [
     "huggingface_hub>=1.21.0",
 ]
 audio = [
-    "yt-dlp>=2026.7.4",
+    # YouTube downloads need yt-dlp's challenge solver (yt-dlp-ejs, in its
+    # default extra) and a JavaScript runtime to run it, or YouTube cuts them
+    # off (HTTP 403). Deno publishes wheels for these platforms only.
+    "yt-dlp[default]>=2026.8.19",
+    "deno>=2.9; sys_platform == 'darwin' or (sys_platform == 'win32' and platform_machine == 'AMD64') or (sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64'))",
 ]
 video = [
     "static-ffmpeg>=2.13",

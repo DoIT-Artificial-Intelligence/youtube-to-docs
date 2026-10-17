@@ -20,7 +20,7 @@ To keep the installation footprint small, many features are optional. You can en
 
 | Extra       | Description                                                              | Dependencies                                                                               |
 | :---------- | :----------------------------------------------------------------------- | :----------------------------------------------------------------------------------------- |
-| `audio`     | **Recommended.** Required for downloading audio (for TTS/transcription). | `yt-dlp`                                                                                   |
+| `audio`     | **Recommended.** Required for downloading audio and video from YouTube (for transcription and `-cc`). | `yt-dlp[default]` (includes `yt-dlp-ejs`), `deno` (the JavaScript runtime yt-dlp needs for YouTube) |
 | `video`     | Required for generating video files (combining audio & infographic).     | `static-ffmpeg`                                                                            |
 | `workspace` | Required for saving to Google Drive.                                     | `google-auth-oauthlib`, `pypandoc`, `pypandoc_binary`                                      |
 | `m365`      | Required for saving to SharePoint/OneDrive.                              | `msal`, `fastexcel`, `xlsxwriter`, `pypandoc`, `pypandoc_binary`                           |

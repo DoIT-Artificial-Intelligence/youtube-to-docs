@@ -25,7 +25,7 @@ uvx youtube-to-docs --help
 
 To keep the installation light, some features are optional. You can enable them by specifying "extras":
 
-- `audio`: Required for TTS and audio processing (uses `yt-dlp`).
+- `audio`: Required for downloading audio and video from YouTube (uses `yt-dlp`, with `yt-dlp-ejs` and Deno to solve YouTube's challenges).
 - `video`: Required for video generation (uses `static-ffmpeg`).
 - `workspace`: Required for Google Drive integration.
 - `m365`: Required for Microsoft SharePoint/OneDrive integration.

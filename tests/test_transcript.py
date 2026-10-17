@@ -32,8 +32,20 @@ class TestTranscript(unittest.TestCase):
             options = mock_ydl_cls.call_args.args[0]
             self.assertEqual(options["merge_output_format"], "mp4")
             self.assertIn("vcodec^=avc1][height<=1080]", options["format"])
+            self.assertEqual(options["js_runtimes"], transcript._js_runtimes())
             ydl.extract_info.side_effect = Exception("blocked")
             self.assertIsNone(transcript.download_video("vid", tmp))
+
+    def test_js_runtimes_use_the_bundled_deno(self):
+        deno = MagicMock()
+        deno.find_deno_bin.return_value = "/env/bin/deno"
+        with patch.dict("sys.modules", {"deno": deno}):
+            self.assertEqual(
+                transcript._js_runtimes(), {"deno": {"path": "/env/bin/deno"}}
+            )
+        deno.find_deno_bin.side_effect = FileNotFoundError
+        with patch.dict("sys.modules", {"deno": deno}):
+            self.assertEqual(transcript._js_runtimes(), {"deno": {}})
 
     def setUp(self):
         # Mock environment variables

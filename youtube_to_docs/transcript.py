@@ -17,6 +17,18 @@ from youtube_transcript_api import (
 )
 
 
+def _js_runtimes() -> Dict[str, Dict[str, str]]:
+    """yt-dlp needs a JavaScript runtime to solve YouTube's challenges, or
+    YouTube cuts downloads off (HTTP 403). Uses the Deno installed with the
+    audio extra, else deno on PATH."""
+    try:
+        import deno
+
+        return {"deno": {"path": deno.find_deno_bin()}}
+    except Exception:
+        return {"deno": {}}
+
+
 def extract_audio(
     video_id: str,
     output_dir: str,
@@ -43,6 +55,7 @@ def extract_audio(
         "outtmpl": os.path.join(output_dir, "%(id)s.%(ext)s"),
         "quiet": True,
         "no_warnings": True,
+        "js_runtimes": _js_runtimes(),
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
@@ -100,6 +113,7 @@ def download_video(
         "quiet": True,
         "no_warnings": True,
         "noprogress": True,
+        "js_runtimes": _js_runtimes(),
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
