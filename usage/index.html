@@ -616,33 +616,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#suggested-corrected-captions" class="md-nav__link">
+  <a href="#corrected-captions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Suggested Corrected Captions
+        Corrected Captions
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Suggested Corrected Captions">
+    <nav class="md-nav" aria-label="Corrected Captions">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#what-it-corrects" class="md-nav__link">
+  <a href="#how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What it corrects
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Output
+        How it works
       
     </span>
   </a>
@@ -661,10 +650,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#common-combinations" class="md-nav__link">
+  <a href="#output" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Common combinations
+        Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#captioned-video-ccv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Captioned video (-ccv)
       
     </span>
   </a>
@@ -789,7 +789,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
+  <a href="#how-it-works_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         How It Works
@@ -1170,33 +1170,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#suggested-corrected-captions" class="md-nav__link">
+  <a href="#corrected-captions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Suggested Corrected Captions
+        Corrected Captions
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Suggested Corrected Captions">
+    <nav class="md-nav" aria-label="Corrected Captions">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#what-it-corrects" class="md-nav__link">
+  <a href="#how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What it corrects
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Output
+        How it works
       
     </span>
   </a>
@@ -1215,10 +1204,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#common-combinations" class="md-nav__link">
+  <a href="#output" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Common combinations
+        Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#captioned-video-ccv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Captioned video (-ccv)
       
     </span>
   </a>
@@ -1343,7 +1343,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
+  <a href="#how-it-works_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         How It Works
@@ -1657,7 +1657,7 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>-t</code>, <code>--transcript</code></td>
-<td style="text-align: left;">The transcript source to use. Can be <code>'youtube'</code> (default) to fetch existing YouTube transcripts, or an AI model name to perform STT on extracted audio (e.g. <code>gemini-3.5-transcribe</code> for Google's dedicated STT model, <code>gemini...</code> for the Gemini API, <code>gcp-chirp3</code> for GCP Speech-to-Text V2, <code>aws-transcribe</code> for AWS Transcribe). <code>gemini-3.5-transcribe</code> returns word-level timestamps and speaker diarization, so its SRT has real offsets and <code>[Speaker N]</code> labels on speaker changes.</td>
+<td style="text-align: left;">The transcript source to use. Can be <code>'youtube'</code> (default) to fetch existing YouTube transcripts, or an AI model name to perform STT on extracted audio (e.g. <code>gemini-3.5-transcribe</code> for Google's dedicated STT model, <code>gemini...</code> for the Gemini API, <code>gcp-chirp3</code> for GCP Speech-to-Text V2, <code>aws-transcribe</code> for AWS Transcribe). <code>gemini-3.5-transcribe</code> returns word-level timestamps and speaker diarization, so its SRT has real offsets and <code>[Speaker N]</code> labels on speaker changes. When <code>-cc</code> corrects an STT transcript, that model becomes the default so it is transcribed in the same run.</td>
 <td style="text-align: left;"><code>youtube</code></td>
 <td style="text-align: left;"><code>-t gemini-3.5-transcribe</code></td>
 </tr>
@@ -1716,10 +1716,16 @@
 <td style="text-align: left;"><code>--all gemini-flash</code></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>-scc</code>, <code>--suggest-corrected-captions</code></td>
-<td style="text-align: left;">Suggest WCAG 2.1 Level AA compliant caption corrections for an SRT file, per <a href="https://www.section508.gov/create/captions-transcripts/">Section 508 guidance</a>. Format: <code>{model}</code> or <code>{model}-{source}</code>. See <a href="#suggested-corrected-captions">Suggested Corrected Captions</a> for full source rules.</td>
+<td style="text-align: left;"><code>-cc</code>, <code>--corrected-captions</code></td>
+<td style="text-align: left;">Write a complete, corrected SRT caption file that meets WCAG 2.1 Level AA and <a href="https://www.section508.gov/create/captions-transcripts/">Section 508</a>: real speaker names, corrected words and spellings, non-speech sounds, readable layout and repaired timing. Format: <code>{model}</code> or <code>{model}-{source}</code>; without a value uses <code>gemini-4-argon-gemini-3.5-transcribe</code>. See <a href="#corrected-captions">Corrected Captions</a>.</td>
 <td style="text-align: left;"><code>None</code></td>
-<td style="text-align: left;"><code>-scc gemini-3.5-flash-lite-youtube</code></td>
+<td style="text-align: left;"><code>-cc</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>-ccv</code>, <code>--corrected-captions-video</code></td>
+<td style="text-align: left;">Also save a copy of the video with the corrected captions burned in (open captions: white text on an 80% opaque black box) to <code>video-files/</code>. Implies <code>-cc</code> with its default if <code>-cc</code> isn't set. Downloads the video (H.264, up to 1080p) and re-encodes it.</td>
+<td style="text-align: left;"><code>False</code></td>
+<td style="text-align: left;"><code>-ccv</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>-pp</code>, <code>--post-process</code></td>
@@ -1763,37 +1769,40 @@
 <p><strong>9. Full multilingual pipeline — English + Spanish summaries, audio, infographics, and videos:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3.5-flash-lite<span class="w"> </span>-tr<span class="w"> </span>gemini-3.5-flash-lite-es<span class="w"> </span>--tts<span class="w"> </span>gemini-3.8-flash-lite-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-nano-banana-2.1<span class="w"> </span>--combine-infographic-audio
 </code></pre></div>
-<p><strong>10. Suggest corrected captions for YouTube SRT:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-scc<span class="w"> </span>gemini-3.5-flash-lite-youtube
+<p><strong>10. Produce the best corrected captions (transcribes with <code>gemini-3.5-transcribe</code>, corrects with <code>gemini-4-argon</code>):</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-cc
 </code></pre></div>
-<p><strong>11. Run STT and correct the generated captions in one pass:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-t<span class="w"> </span>gcp-chirp3<span class="w"> </span>-scc<span class="w"> </span>gemini-3.5-flash-lite
+<p><strong>11. Correct the YouTube captions instead (no transcription):</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-cc<span class="w"> </span>gemini-4-argon-youtube
 </code></pre></div>
-<p><strong>12. Correct captions and add speaker labels in one pass:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3.5-flash-lite<span class="w"> </span>-scc<span class="w"> </span>gemini-3.5-flash-lite-youtube
+<p><strong>12. Corrected captions plus a copy of the video with them burned in:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-ccv
 </code></pre></div>
-<p><strong>13. Post-process a transcript to count word occurrences:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-pp<span class="w"> </span><span class="s1">'{"word count": ["apple", "banana"]}'</span>
+<p><strong>13. Correct an existing GCP Chirp 3 transcript with a cheaper model:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-t<span class="w"> </span>gcp-chirp3<span class="w"> </span>-cc<span class="w"> </span>gemini-3.5-flash-lite-gcp-chirp3
 </code></pre></div>
-<p><strong>14. Transcribe with Gemini 3.5 Transcribe (word timestamps + speaker diarization):</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-t<span class="w"> </span>gemini-3.5-transcribe
+<p><strong>14. Post-process a transcript to count word occurrences:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-pp<span class="w"> </span><span class="s1">'{"word count": ["apple", "banana"]}'</span>
+</code></pre></div>
+<p><strong>15. Transcribe with Gemini 3.5 Transcribe (word timestamps + speaker diarization):</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-t<span class="w"> </span>gemini-3.5-transcribe
 </code></pre></div>
 <p>The resulting SRT is built from the model's word-level offsets and carries a
 <code>[Speaker N]</code> label wherever the speaker changes. Requires <code>GEMINI_API_KEY</code>.</p>
-<h2 id="suggested-corrected-captions">Suggested Corrected Captions</h2>
-<p>The <code>-scc</code> / <code>--suggest-corrected-captions</code> flag uses an LLM to suggest WCAG 2.1 Level AA compliant corrections to an existing SRT file, following <a href="https://www.section508.gov/create/captions-transcripts/">Section 508 guidance</a>.</p>
-<h3 id="what-it-corrects">What it corrects</h3>
-<ul>
-<li><strong>Punctuation</strong> — adds or fixes commas, periods, question marks, em dashes, and ellipses.</li>
-<li><strong>Capitalisation</strong> — fixes sentence-initial capitals and proper nouns.</li>
-<li><strong>Filler words</strong> — retains filler words (e.g. "uh", "um") where they aid accessible meaning.</li>
-<li><strong>Speaker labels</strong> — when speaker extraction has been run (via <code>-m</code>), inserts <code>[Name]</code> at the start of each segment where the speaker changes.</li>
-<li><strong>Segment merging</strong> — if a grammatically complete sentence naturally spans two consecutive segments, those segments are merged into one, using the start time of the first and the end time of the last. No new segments are ever added.</li>
-</ul>
-<h3 id="output">Output</h3>
-<p>Corrections are saved to <code>suggested-corrected-caption-files/</code> and contain <strong>only the changed segments</strong> — unchanged segments are omitted. If nothing needs fixing the file contains <code>NO_CHANGES</code>. The output path is recorded in the CSV under <code>Suggested Corrected Captions File ({model})</code>.</p>
+<h2 id="corrected-captions">Corrected Captions</h2>
+<p>The <code>-cc</code> / <code>--corrected-captions</code> flag writes a <strong>complete, ready-to-use SRT file</strong> that meets WCAG 2.1 Level AA (1.2.2 Captions) and <a href="https://www.section508.gov/create/captions-transcripts/">Section 508 guidance</a>, following the DCMP Captioning Key.</p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>youtube-to-docs<span class="w"> </span>VIDEO_ID<span class="w"> </span>-cc
+</code></pre></div>
+<p>Without a value, <code>-cc</code> uses <code>gemini-4-argon-gemini-3.5-transcribe</code>: the audio is transcribed with <code>gemini-3.5-transcribe</code> (word timestamps and speaker diarization) unless <code>-t</code> is set, and the transcript is corrected with <code>gemini-4-argon</code>. With a Gemini model, <code>-cc</code> also makes one agentic video request for the on-screen context (names, titles, speaking times, spellings), unless <code>--from-video</code> already produced it.</p>
+<h3 id="how-it-works">How it works</h3>
+<ol>
+<li><strong>Timing.</strong> The source SRT is aligned word by word with a second transcript of the same audio (the YouTube captions, or the STT transcript when correcting YouTube's). Cues with broken timestamps (for example, words returned minutes off) are re-timed from the second transcript.</li>
+<li><strong>Speakers.</strong> The speaker of every cue is identified in ~20-minute windows from the diarization labels, the second transcript's speaker changes (<code>&gt;&gt;</code>), the times the video shows each person speaking, introductions, hand-offs and roles. Names come from on-screen name plates where available.</li>
+<li><strong>Text.</strong> Sections of ~150 cues are corrected in parallel against the second transcript and the on-screen spellings: misheard words, names, organizations and acronyms, punctuation and capitalization, clean verbatim (fillers and stutters removed, false starts marked with em dashes), numbers, and non-speech sounds such as <code>[laughter]</code>. Speech missing from the source but present in the second transcript (often short replies) is restored. The model edits text by cue id and never writes timestamps, so long videos can't be truncated or drift out of sync.</li>
+<li><strong>Layout.</strong> The corrected words are re-segmented into captions of at most two lines of 42 characters, 1–7 seconds long, broken at sentence and clause boundaries (not inside names or after articles). <code>[Name]</code> labels mark every change of speaker, crosstalk is placed at the nearest sentence break, quick exchanges share a two-line caption, and captions never overlap.</li>
+</ol>
 <h3 id="source-argument-rules">Source argument rules</h3>
-<p>The format is <code>-scc {model}</code> or <code>-scc {model}-{source}</code>.</p>
+<p>The format is <code>-cc {model}</code> or <code>-cc {model}-{source}</code>.</p>
 <table>
 <thead>
 <tr>
@@ -1804,38 +1813,27 @@
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;">Omitted</td>
-<td style="text-align: left;">Automatically uses the most recent non-YouTube AI SRT in the row. Useful when <code>-t {stt-model}</code> is set in the same run or a prior run.</td>
-<td style="text-align: left;"><code>-scc gemini-3.5-flash-lite</code></td>
+<td style="text-align: left;">STT model name</td>
+<td style="text-align: left;">Corrects the SRT from that STT run, transcribing it in the same run unless <code>-t</code> is set.</td>
+<td style="text-align: left;"><code>-cc gemini-4-argon-gemini-3.5-transcribe</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>youtube</code></td>
-<td style="text-align: left;">Uses the YouTube-generated SRT explicitly.</td>
-<td style="text-align: left;"><code>-scc gemini-3.5-flash-lite-youtube</code></td>
+<td style="text-align: left;">Corrects the YouTube SRT, using any STT SRT for the video as the second transcript.</td>
+<td style="text-align: left;"><code>-cc gemini-4-argon-youtube</code></td>
 </tr>
 <tr>
-<td style="text-align: left;">STT model name</td>
-<td style="text-align: left;">Uses the SRT produced by that specific STT run.</td>
-<td style="text-align: left;"><code>-scc gemini-3.5-flash-lite-gcp-chirp3</code></td>
+<td style="text-align: left;">Omitted</td>
+<td style="text-align: left;">Corrects the <code>-t</code> STT SRT, else the most recent AI SRT, else the YouTube SRT.</td>
+<td style="text-align: left;"><code>-cc gemini-4-argon</code></td>
 </tr>
 </tbody>
 </table>
-<blockquote>
-<p><strong>Tip:</strong> If you have more than one AI SRT in the row (e.g. from both <code>gcp-chirp3</code> and <code>aws-transcribe</code>), the default picks the first one found. Use the explicit <code>{model}-{source}</code> form to target a specific SRT.</p>
-</blockquote>
-<h3 id="common-combinations">Common combinations</h3>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1"># Correct YouTube captions only</span>
-<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>youtube-to-docs<span class="w"> </span>VIDEO_ID<span class="w"> </span>-scc<span class="w"> </span>gemini-3.5-flash-lite-youtube
-<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>
-<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="c1"># STT with GCP Chirp3, then correct the generated captions</span>
-<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>youtube-to-docs<span class="w"> </span>VIDEO_ID<span class="w"> </span>-t<span class="w"> </span>gcp-chirp3<span class="w"> </span>-scc<span class="w"> </span>gemini-3.5-flash-lite
-<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>
-<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="c1"># Explicitly target the gcp-chirp3 SRT from a previous run</span>
-<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>youtube-to-docs<span class="w"> </span>VIDEO_ID<span class="w"> </span>-scc<span class="w"> </span>gemini-3.5-flash-lite-gcp-chirp3
-<a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>
-<a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a><span class="c1"># Speaker extraction + caption correction in one run</span>
-<a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a>youtube-to-docs<span class="w"> </span>VIDEO_ID<span class="w"> </span>-m<span class="w"> </span>gemini-3.5-flash-lite<span class="w"> </span>-scc<span class="w"> </span>gemini-3.5-flash-lite-youtube
-</code></pre></div>
+<p>If the requested source SRT doesn't exist (for example, <code>-t youtube -cc</code>), the available SRT is corrected instead, with a warning.</p>
+<h3 id="output">Output</h3>
+<p>The SRT is saved to <code>corrected-caption-files/</code> as <code>{model} - {video id} - {title} - corrected captions (from {source}).srt</code> and recorded in the CSV under <code>Corrected Captions File {model} from {source}</code>. If that file already exists it isn't regenerated; delete it to run again. Parallel requests default to 6; set <code>YTD_CC_WORKERS</code> to lower this if you hit rate limits.</p>
+<h3 id="captioned-video-ccv">Captioned video (<code>-ccv</code>)</h3>
+<p><code>-ccv</code> / <code>--corrected-captions-video</code> also saves a copy of the video with the corrected captions burned in ("open captions", visible in any player) to <code>video-files/</code> as <code>{model} - {video id} - {title} - captioned video (from {source}).mp4</code>, recorded under <code>Captioned Video File {model} from {source}</code>. Captions are white Arial on an 80% opaque black box at the bottom centre (well above the WCAG 4.5:1 contrast minimum over any picture), sized to about 1/16 of the frame height. The video is downloaded with yt-dlp (H.264, up to 1080p) and re-encoded with ffmpeg; the audio is copied unchanged. Re-encoding a 3-hour 720p video takes about 8–10 minutes. <code>-ccv</code> implies <code>-cc</code> if it isn't set, and an existing captioned video isn't regenerated.</p>
 <h2 id="csv-column-reference">CSV Column Reference</h2>
 <p>The output CSV file contains a variety of columns depending on the arguments provided. Below is a reference of the possible columns:</p>
 <h3 id="base-metadata">Base Metadata</h3>
@@ -1866,7 +1864,8 @@
 <li><strong>Summary Audio File {model} {tts_model} File</strong>: Path to the generated TTS audio file. Suffix <code>(lang)</code> added for non-English.</li>
 <li><strong>Video File</strong>: Path to the generated MP4 video combining the English infographic and audio.</li>
 <li><strong>Video File (lang)</strong>: Path to the translated language video (e.g., <code>Video File (es)</code>). Only present when <code>--translate</code> and <code>--combine-infographic-audio</code> are both used.</li>
-<li><strong>Suggested Corrected Captions File ({model})</strong>: Path to the suggested-corrections SRT file produced by <code>-scc</code>. Contains only the changed segments, or <code>NO_CHANGES</code> if no corrections were needed.</li>
+<li><strong>Corrected Captions File {model} from {source}</strong>: Path to the complete corrected SRT file produced by <code>-cc</code>.</li>
+<li><strong>Captioned Video File {model} from {source}</strong>: Path to the copy of the video with the corrected captions burned in, produced by <code>-ccv</code>.</li>
 <li><strong>Post-process: word count({word})</strong>: Count of occurrences of <code>{word}</code> in the transcript (case-insensitive, whole-word match). One column per word when using <code>-pp</code>.</li>
 </ul>
 <h3 id="ai-outputs-costs">AI Outputs &amp; Costs</h3>
@@ -1883,6 +1882,7 @@
 <li><strong>Summary Infographic Alt Text Cost {model} {infographic_model} ($)</strong>: The estimated API cost for alt text generation.</li>
 <li><strong>{normalized_model} tags cost from {transcript} ($)</strong>: The estimated API cost for AI tag generation.</li>
 <li><strong>{normalized_model} STT cost ($)</strong>: The estimated API cost for Speech-to-Text generation. For <code>gemini-3.5-transcribe</code> the API reports audio input tokens but not transcript output tokens, so this figure covers the input side only and understates the true cost.</li>
+<li><strong>{normalized_model} corrected captions cost from {source} ($)</strong>: The estimated API cost of <code>-cc</code> (speaker identification and text correction, including thinking tokens). The on-screen context request is recorded separately as <code>{normalized_model} video context cost from video-agentic ($)</code>.</li>
 </ul>
 <blockquote>
 <p><strong>Note</strong>: <code>{normalized_model}</code> refers to the model name with prefixes (like <code>vertex-</code>) and date suffixes removed for cleaner column headers.</p>
@@ -1898,7 +1898,7 @@
 <h2 id="web-app">Web App</h2>
 <p><code>youtube-to-docs</code> includes a browser-based web interface powered by FastAPI. It provides the same functionality as the CLI in an interactive UI with real-time log streaming.</p>
 <h3 id="running-the-web-app">Running the Web App</h3>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>uvx<span class="w"> </span>--with<span class="w"> </span><span class="s2">"youtube-to-docs[app]"</span><span class="w"> </span>youtube-to-docs-app
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>uvx<span class="w"> </span>--with<span class="w"> </span><span class="s2">"youtube-to-docs[app]"</span><span class="w"> </span>youtube-to-docs-app
 </code></pre></div>
 <p>This starts a local server at <a href="http://localhost:8000">http://localhost:8000</a>.</p>
 <h4 id="options">Options</h4>
@@ -1929,7 +1929,7 @@
 </tbody>
 </table>
 <p><strong>Example: Run on a custom port with auto-reload</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>uvx<span class="w"> </span>--with<span class="w"> </span><span class="s2">"youtube-to-docs[app]"</span><span class="w"> </span>youtube-to-docs-app<span class="w"> </span>--port<span class="w"> </span><span class="m">3000</span><span class="w"> </span>--reload
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>uvx<span class="w"> </span>--with<span class="w"> </span><span class="s2">"youtube-to-docs[app]"</span><span class="w"> </span>youtube-to-docs-app<span class="w"> </span>--port<span class="w"> </span><span class="m">3000</span><span class="w"> </span>--reload
 </code></pre></div>
 <h3 id="features">Features</h3>
 <ul>
@@ -1938,7 +1938,7 @@
 <li><strong>Real-time log streaming</strong> — Processing output streams to the browser via Server-Sent Events (SSE) as the job runs.</li>
 <li><strong>Artifact browser</strong> — After processing completes, generated files (summaries, Q&amp;A, SRT files, infographics, audio, video) are listed with download links.</li>
 </ul>
-<h3 id="how-it-works">How It Works</h3>
+<h3 id="how-it-works_1">How It Works</h3>
 <ol>
 <li>Enter a YouTube URL or Video ID and select your options.</li>
 <li>Click <strong>Process Video</strong> — this starts a background job on the server.</li>
@@ -2001,14 +2001,14 @@
 </blockquote>
 <p>The agent will prompt you for any necessary details (like the model to use) and then execute the tool.</p>
 <h3 id="install-as-a-gemini-cli-extension">Install as a Gemini CLI extension</h3>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>gemini<span class="w"> </span>extensions<span class="w"> </span>install<span class="w"> </span>https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs.git
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>gemini<span class="w"> </span>extensions<span class="w"> </span>install<span class="w"> </span>https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs.git
 </code></pre></div>
 <h2 id="library-usage">Library Usage</h2>
 <p>While primarily a CLI, you can import core functions for custom workflows.</p>
-<div class="language-python highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">youtube_to_docs.transcript</span><span class="w"> </span><span class="kn">import</span> <span class="n">fetch_transcript</span>
-<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>
-<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="n">video_id</span> <span class="o">=</span> <span class="s2">"atmGAHYpf_c"</span>
-<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="n">transcript</span><span class="p">,</span> <span class="n">is_generated</span> <span class="o">=</span> <span class="n">fetch_transcript</span><span class="p">(</span><span class="n">video_id</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">youtube_to_docs.transcript</span><span class="w"> </span><span class="kn">import</span> <span class="n">fetch_transcript</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="n">video_id</span> <span class="o">=</span> <span class="s2">"atmGAHYpf_c"</span>
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="n">transcript</span><span class="p">,</span> <span class="n">is_generated</span> <span class="o">=</span> <span class="n">fetch_transcript</span><span class="p">(</span><span class="n">video_id</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="why-use-youtube-to-docs">Why use <code>youtube-to-docs</code>?</h2>
 <p>You might find other tools that download YouTube transcripts, but <code>youtube-to-docs</code> distinguishes itself in several ways:</p>
