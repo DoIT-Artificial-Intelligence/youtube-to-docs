@@ -1855,7 +1855,7 @@
 <tr>
 <td style="text-align: left;"><code>… player.html</code></td>
 <td style="text-align: left;"><code>vtt-files/</code></td>
-<td style="text-align: left;">An Able Player page with the original video and the WebVTT tracks, for checking them and as a template for a website</td>
+<td style="text-align: left;">An Able Player page with the original video, the WebVTT tracks and an interactive transcript, for checking them (it opens straight from disk) and as a template for a website</td>
 </tr>
 </tbody>
 </table>
@@ -1905,12 +1905,13 @@
 <h3 id="checking-the-webvtt-files">Checking the WebVTT files</h3>
 <ol>
 <li><strong>Validate them.</strong> Paste a <code>.vtt</code> file into the <a href="https://w3c.github.io/webvtt.js/parser.html">W3C WebVTT validator</a>; it should report no errors.</li>
-<li><strong>Play them.</strong> Browsers won't load tracks from <code>file://</code> pages, so serve the artifacts folder and open the player page. Use a server that supports range requests, or the browser can't seek in a long video (Python's built-in <code>http.server</code> doesn't):</li>
+<li><strong>Play them.</strong> Open the <code>… player.html</code> file in a browser. Captions are on; select the Description button to hear the descriptions read aloud (the video pauses while each is read), and the Transcript button for an interactive transcript of the dialogue and descriptions. To hear the descriptions through a screen reader instead, add <code>data-desc-reader="screenreader"</code> to the <code>&lt;video&gt;</code> element and turn on NVDA, JAWS or VoiceOver.</li>
 </ol>
+<p>The page works straight from disk: browsers won't load <code>.vtt</code> files into a page opened that way, so it carries copies of the tracks and uses those. To load the <code>.vtt</code> files themselves, as a website would, serve the artifacts folder with a server that supports range requests (Python's built-in <code>http.server</code> doesn't, so the browser can't seek in a long video):</p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nb">cd</span><span class="w"> </span>youtube-to-docs-artifacts
 <a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>uv<span class="w"> </span>run<span class="w"> </span>--no-project<span class="w"> </span>--with<span class="w"> </span>rangehttpserver<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>RangeHTTPServer<span class="w"> </span><span class="m">8080</span><span class="w"> </span>--bind<span class="w"> </span><span class="m">127</span>.0.0.1
 </code></pre></div>
-<p>Then open <code>http://127.0.0.1:8080/vtt-files/</code> and select the <code>… player.html</code> file. Captions are on; select the Description button to hear the descriptions read aloud (the video pauses while each is read). To hear them through a screen reader instead, add <code>data-desc-reader="screenreader"</code> to the <code>&lt;video&gt;</code> element and turn on NVDA, JAWS or VoiceOver.
+<p>Then open <code>http://127.0.0.1:8080/vtt-files/</code> and select the <code>… player.html</code> file.
 3. <strong>Spot-check timing.</strong> In VLC, open the original video and add the captions <code>.vtt</code> (Subtitle &gt; Add Subtitle File...) to check that captions line up with the speech.</p>
 <h2 id="csv-column-reference">CSV Column Reference</h2>
 <p>The output CSV file contains a variety of columns depending on the arguments provided. Below is a reference of the possible columns:</p>
