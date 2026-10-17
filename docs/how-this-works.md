@@ -107,12 +107,17 @@ Currently supported operations:
     *   `'{"word count": "apple"}'` → adds a `Post-process: word count(apple)` column.
     *   `'{"word count": ["apple", "banana"]}'` → adds one column per word.
 
-### 7. Suggested Corrected Captions
-The `--suggest-corrected-captions` argument uses an LLM to review an SRT file and suggest WCAG 2.1 Level AA / Section 508 compliant corrections. Output is saved to `suggested-corrected-caption-files/` as a diff-style file (changed segments only).
+### 7. Corrected Captions
+The `--corrected-captions` (`-cc`) argument writes a complete SRT caption file that meets WCAG 2.1 Level AA and Section 508 guidance, saved to `corrected-caption-files/`. Without a value it uses `gemini-4-argon-gemini-3.5-transcribe`: the audio is transcribed with `gemini-3.5-transcribe` (unless `-t` is set) and corrected with `gemini-4-argon`.
 
-Format: `{model}` or `{model}-{source}` (e.g., `gemini-3.5-flash-lite`, `gemini-3.5-flash-lite-youtube`, `gemini-3.5-flash-lite-gcp-chirp3`). If source is omitted, the most recent AI-generated SRT is used automatically. If speaker extraction has been run, speaker labels are included on speaker changes.
+Format: `{model}` or `{model}-{source}` (e.g. `gemini-4-argon-youtube`, `gemini-3.5-flash-lite-gcp-chirp3`). The pipeline:
 
-When `--from-video` is also set, the corrections use the video's **on-screen context**: names and titles read from name plates and captions with the times each person speaks, exact spellings of bill numbers and other terms, and visible-only events. This lets the model correct misheard names, replace automatic `[Speaker N]` labels with real names by timestamp, and avoid inventing details. These corrections are saved separately as `{model} with video context suggested corrections - ...srt`.
+1. Aligns the source SRT word by word with a second transcript of the same audio (YouTube's captions, or the STT transcript when correcting YouTube's) and re-times cues whose timestamps are broken.
+2. Names the speaker of every cue, in ~20-minute windows, from diarization labels, the second transcript's speaker changes, and the **on-screen context**: names and titles read from name plates with the times each person is seen speaking. With a Gemini model this context is extracted from the video with one agentic request when `--from-video` hasn't already produced it.
+3. Corrects the text in parallel sections against the second transcript and the on-screen spellings (misheard words and names, punctuation, fillers, non-speech sounds, missed speech). The model edits text by cue id and never writes timestamps.
+4. Lays the words out as captions of at most two 42-character lines over 1–7 seconds, broken at sentence and clause boundaries, with `[Name]` on each change of speaker and no overlapping cues.
+
+With `--corrected-captions-video` (`-ccv`), the video is also downloaded and re-encoded with the corrected captions burned in (white text on a dark box), saved to `video-files/`.
 
 ### 7a. Video Understanding (`--from-video`)
 `--from-video agentic|static` (or `agentic,static`) sends the YouTube URL to a Gemini model through the Interactions API, without downloading the video, and generates a summary, one sentence summary, speakers, Q&A and on-screen context (`video-context-files/`) from the video itself. These are stored next to the transcript-based outputs under the source `video-agentic` / `video-static`, so infographics and audio are generated for them too.
@@ -188,7 +193,7 @@ youtube-to-docs-artifacts/
 ├── tag-files/                    # AI-generated tags files
 ├── infographic-files/            # Generated infographic images
 ├── infographic-alt-text/         # Multimodal alt text for infographics
-├── suggested-corrected-caption-files/  # LLM-suggested WCAG 2.1 corrected SRT files
+├── corrected-caption-files/      # Corrected WCAG 2.1 / Section 508 SRT files (-cc)
 └── video-files/                  # Combined infographic + audio videos
 ```
 

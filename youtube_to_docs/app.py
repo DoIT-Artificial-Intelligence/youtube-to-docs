@@ -28,6 +28,7 @@ from youtube_to_docs.models import MODEL_SUITES
 from youtube_to_docs.storage import MemoryStorage
 from youtube_to_docs.utils import (
     OUTPUT_ROOT,
+    corrected_captions_args,
     is_remote_output,
     resolve_within,
     validate_output_file,
@@ -80,7 +81,7 @@ jobs: dict[str, Job] = {}
 class ProcessRequest(BaseModel):
     url: str
     output_file: str = "youtube-to-docs-artifacts/youtube-docs.csv"
-    transcript_source: str = "youtube"
+    transcript_source: str | None = None
     model: str | None = None
     tts_model: str | None = None
     infographic_model: str | None = None
@@ -89,7 +90,8 @@ class ProcessRequest(BaseModel):
     translate: str | None = None
     combine_infographic_audio: bool = False
     all_suite: str | None = None
-    suggest_corrected_captions: str | None = None
+    corrected_captions: str | None = None
+    corrected_captions_video: bool = False
     post_process: str | None = None
     verbose: bool = False
 
@@ -152,14 +154,10 @@ async def process(req: ProcessRequest):
         jobs[job_id] = job
 
         # Build args exactly like mcp_server.py
-        args = [
-            req.url,
-            "--outfile",
-            validated_output,
-            "--transcript",
-            req.transcript_source,
-        ]
+        args = [req.url, "--outfile", validated_output]
 
+        if req.transcript_source:
+            args.extend(["--transcript", req.transcript_source])
         if req.translate:
             args.extend(["--translate", req.translate])
         if req.model:
@@ -176,10 +174,10 @@ async def process(req: ProcessRequest):
             args.append("--combine-infographic-audio")
         if req.all_suite:
             args.extend(["--all", req.all_suite])
-        if req.suggest_corrected_captions:
-            args.extend(
-                ["--suggest-corrected-captions", req.suggest_corrected_captions]
-            )
+        if req.corrected_captions:
+            args.extend(corrected_captions_args(req.corrected_captions))
+        if req.corrected_captions_video:
+            args.append("--corrected-captions-video")
         if req.post_process:
             args.extend(["--post-process", req.post_process])
         if req.verbose:

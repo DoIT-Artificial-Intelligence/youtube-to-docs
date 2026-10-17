@@ -189,5 +189,72 @@ class TestProcessFromVideo(unittest.TestCase):
         self.assertEqual(mock_session_cls.return_value.ask.call_count, 1)
 
 
+class TestEnsureVideoContext(unittest.TestCase):
+    def _run(self, row, model_name="gemini-4-argon", files=None):
+        files = files or {}
+        storage = MagicMock()
+        storage.exists.side_effect = lambda path: path in files
+        storage.read_text.side_effect = lambda path: files[path]
+        storage.write_text.side_effect = lambda path, text: path
+        text = vu.ensure_video_context(
+            row=row,
+            storage=storage,
+            model_name=model_name,
+            video_id="vid1",
+            safe_title="Title",
+            url="https://www.youtube.com/watch?v=vid1",
+            video_context_dir="ctx",
+            verbose=False,
+            vprint=lambda *a, **k: None,
+        )
+        return text, storage
+
+    @patch("youtube_to_docs.video_understanding.VideoSession")
+    def test_uses_context_already_in_row(self, mock_session_cls):
+        row = {
+            "Video Context File gemini-3.5-flash-lite from video-static": "f.md",
+            "Video Context gemini-3.5-flash-lite from video-static": "## People\n- A",
+        }
+        text, _ = self._run(row)
+        self.assertEqual(text, "## People\n- A")
+        mock_session_cls.assert_not_called()
+
+    @patch("youtube_to_docs.video_understanding.VideoSession")
+    def test_reads_previously_saved_file(self, mock_session_cls):
+        path = (
+            "ctx/gemini-4-argon - vid1 - Title - video-context (from video-agentic).md"
+        )
+        row = {}
+        text, _ = self._run(row, files={path: "saved"})
+        self.assertEqual(text, "saved")
+        self.assertEqual(
+            row["Video Context File gemini-4-argon from video-agentic"], path
+        )
+        mock_session_cls.assert_not_called()
+
+    @patch("youtube_to_docs.video_understanding.VideoSession")
+    def test_extracts_with_one_agentic_request(self, mock_session_cls):
+        mock_session_cls.return_value.ask.return_value = ("## People\n- B", 5, 7)
+        row = {}
+        text, storage = self._run(row)
+        self.assertEqual(text, "## People\n- B")
+        mock_session_cls.assert_called_once_with(
+            "gemini-4-argon", "https://www.youtube.com/watch?v=vid1", "agentic"
+        )
+        self.assertEqual(mock_session_cls.return_value.ask.call_count, 1)
+        self.assertIn("## People", mock_session_cls.return_value.ask.call_args.args[0])
+        self.assertEqual(row["Video Context gemini-4-argon from video-agentic"], text)
+        storage.write_text.assert_called_once()
+
+    @patch("youtube_to_docs.video_understanding.VideoSession")
+    def test_non_gemini_and_failures_return_empty(self, mock_session_cls):
+        self.assertEqual(self._run({}, model_name="bedrock-claude-opus-5-5")[0], "")
+        mock_session_cls.assert_not_called()
+        mock_session_cls.return_value.ask.return_value = ("Error: private video", 0, 0)
+        row = {}
+        self.assertEqual(self._run(row)[0], "")
+        self.assertEqual(row, {})
+
+
 if __name__ == "__main__":
     unittest.main()

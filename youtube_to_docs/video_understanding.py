@@ -179,6 +179,98 @@ def build_video_context_prompt() -> str:
     )
 
 
+def ensure_video_context(
+    *,
+    row: Dict[str, Any],
+    storage: Any,
+    model_name: str,
+    video_id: str,
+    safe_title: str,
+    url: str,
+    video_context_dir: str,
+    verbose: bool,
+    vprint: Callable[..., None] = print,
+) -> str:
+    """
+    On-screen context (names, titles, speaking times, terms) for corrected
+    captions: any already in the row or saved earlier, otherwise extracted with
+    one agentic video request using `model_name`, saved like `--from-video`'s.
+    Returns "" if the model can't process video or the request fails.
+    """
+    found = [
+        (key, value)
+        for key, value in row.items()
+        if key.startswith("Video Context ")
+        and not key.startswith("Video Context File ")
+        and isinstance(value, str)
+        and value.strip()
+    ]
+    preferred = f"Video Context {model_name} from video-agentic"
+    for key, value in found:
+        if key == preferred:
+            return value
+    if found:
+        return found[0][1]
+
+    source = "video-agentic"
+    ctx_col = f"Video Context {model_name} from {source}"
+    file_col = f"Video Context File {model_name} from {source}"
+    path = os.path.join(
+        video_context_dir,
+        f"{model_name} - {video_id} - {safe_title} - video-context (from {source}).md",
+    )
+    try:
+        if storage.exists(path):
+            text = storage.read_text(path)
+            row[ctx_col], row[file_col] = text, path
+            return text
+    except Exception as e:
+        vprint(f"Warning: Failed to read {path}: {e}")
+
+    error = video_mode_error(model_name)
+    if error:
+        vprint(f"No on-screen context for corrected captions: {error}")
+        return ""
+    rprint(
+        f"Extracting on-screen context using model: {model_name} "
+        "(agentic video, for corrected captions)"
+    )
+    start = time.time()
+    try:
+        text, input_tokens, output_tokens = VideoSession(
+            model_name, url, "agentic"
+        ).ask(build_video_context_prompt())
+    except Exception as e:
+        text, input_tokens, output_tokens = f"Error: {e}", 0, 0
+    vprint(f"Video context took {time.time() - start:.0f}s")
+    if text.startswith("Error") or not text.strip():
+        print(
+            f"Video context extraction failed ({text or 'empty response'}); "
+            "correcting captions without it."
+        )
+        return ""
+
+    row[ctx_col] = text
+    try:
+        saved = storage.write_text(path, text)
+        rprint(f"Saved video-context ({source}): {format_clickable_path(saved)}")
+        row[file_col] = saved
+    except Exception as e:
+        print(f"Error writing video-context ({source}): {e}")
+    if verbose:
+        input_price, output_price = get_model_pricing(model_name)
+        if input_price is not None and output_price is not None:
+            cost = (input_tokens / 1_000_000) * input_price + (
+                output_tokens / 1_000_000
+            ) * output_price
+            row[
+                f"{normalize_model_name(model_name)} video context cost from "
+                f"{source} ($)"
+            ] = round(cost, 4)
+            vprint(f"Video context cost ({source}): ${cost:.4f}")
+    return text
+
+
 def build_video_qa_prompt(url: str, language: str) -> str:
     return (
         f"Can you please extract the questions and answers from this video in "
@@ -228,7 +320,7 @@ def process_from_video(
     vprint: Callable[..., None] = print,
 ) -> None:
     """Fills `row` with video-sourced summary, one-sentence summary, speakers,
-    on-screen context (used by -scc) and Q&A for each requested mode, skipping
+    on-screen context (used by -cc) and Q&A for each requested mode, skipping
     outputs that already exist."""
     for mode in modes:
         error = video_mode_error(model_name)
@@ -340,7 +432,7 @@ def process_from_video(
             else:
                 print(f"Video speaker extraction failed ({source}): {text}")
 
-        # --- On-screen context for caption correction (-scc) ---
+        # --- On-screen context for corrected captions (-cc) ---
         # Language independent, like speakers.
         ctx_col = f"Video Context {model_name} from {source}"
         if language == "en" and not row.get(ctx_col):

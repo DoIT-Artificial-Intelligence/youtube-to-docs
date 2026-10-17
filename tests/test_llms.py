@@ -68,6 +68,11 @@ class TestLLMs(unittest.TestCase):
         self.assertEqual(in_tokens, 100)
         self.assertEqual(out_tokens, 50)
 
+        # Thinking tokens are billed as output, so they count towards it.
+        mock_resp.usage_metadata.thoughts_token_count = 30
+        _, _, out_tokens = llms.generate_summary("gemini-pro", "t", "Title", "url")
+        self.assertEqual(out_tokens, 80)
+
     @patch("anthropic.AnthropicVertex")
     @patch("google.auth.default")
     def test_generate_summary_vertex(self, mock_auth, mock_anthropic_vertex):
@@ -177,21 +182,6 @@ class TestLLMs(unittest.TestCase):
                     mock_post.call_args.kwargs["timeout"],
                     llms.BEDROCK_TIMEOUT_SECONDS,
                 )
-
-    @patch("youtube_to_docs.llms._query_llm")
-    def test_suggest_corrected_captions_with_video_context(self, mock_query):
-        """On-screen context adds spelling and [Speaker N] replacement rules."""
-        mock_query.return_value = ("NO_CHANGES", 1, 1)
-        context = "## People\n- Sen. Cheryl C. Kagan — speaking at 07:37"
-
-        llms.suggest_corrected_captions("model", "1\n00:00:01,000 --> ...", "", context)
-        prompt = mock_query.call_args.args[1]
-        self.assertIn("Sen. Cheryl C. Kagan", prompt)
-        self.assertIn("[Speaker 3]", prompt)
-        self.assertIn("do not add on-screen text", prompt)
-
-        llms.suggest_corrected_captions("model", "1\n00:00:01,000 --> ...")
-        self.assertNotIn("On-screen context", mock_query.call_args.args[1])
 
     def test_is_bedrock_openai_model(self):
         self.assertTrue(llms._is_bedrock_openai_model("gpt-6-luna"))
@@ -497,132 +487,6 @@ class TestPricing(unittest.TestCase):
                 inp_alias, outp_alias = llms.get_model_pricing(alias)
                 self.assertEqual(inp_alias, 10.0)
                 self.assertEqual(outp_alias, 50.0)
-
-    # --- suggest_corrected_captions ---
-
-    @patch("google.genai.Client")
-    def test_suggest_corrected_captions(self, mock_client_cls):
-        mock_client = mock_client_cls.return_value
-        mock_resp = MagicMock()
-        mock_resp.text = (
-            "1\n00:00:02,639 --> 00:00:09,040\n"
-            "Good morning. Thank you. It is\n\n"
-            "2\n00:00:09,040 --> 00:00:14,000\n"
-            "Monday April 7th happy sine die this\n"
-        )
-        mock_resp.usage_metadata.prompt_token_count = 200
-        mock_resp.usage_metadata.candidates_token_count = 40
-        mock_client.models.generate_content.return_value = mock_resp
-
-        srt = (
-            "1\n00:00:02,639 --> 00:00:09,040\n"
-            "Good morning. Uh thank you. It is uh\n\n"
-            "2\n00:00:09,040 --> 00:00:14,000\n"
-            "monday april 7th happy siny die this\n"
-        )
-        result, in_tok, out_tok = llms.suggest_corrected_captions(
-            "gemini-3.5-flash-lite", srt
-        )
-
-        self.assertIn("Good morning. Thank you.", result)
-        self.assertEqual(in_tok, 200)
-        self.assertEqual(out_tok, 40)
-
-    @patch("google.genai.Client")
-    def test_suggest_corrected_captions_no_changes(self, mock_client_cls):
-        mock_client = mock_client_cls.return_value
-        mock_resp = MagicMock()
-        mock_resp.text = "NO_CHANGES"
-        mock_resp.usage_metadata.prompt_token_count = 150
-        mock_resp.usage_metadata.candidates_token_count = 5
-        mock_client.models.generate_content.return_value = mock_resp
-
-        srt = "1\n00:00:00,000 --> 00:00:02,000\nHello, world.\n"
-        result, in_tok, out_tok = llms.suggest_corrected_captions(
-            "gemini-3.5-flash-lite", srt
-        )
-
-        self.assertEqual(result.strip(), "NO_CHANGES")
-
-    @patch("google.genai.Client")
-    def test_suggest_corrected_captions_with_speakers(self, mock_client_cls):
-        """Prompt should include speaker context when speakers_text is provided."""
-        mock_client = mock_client_cls.return_value
-        mock_resp = MagicMock()
-        mock_resp.text = "1\n00:00:02,639 --> 00:00:09,040\n[Jane Smith] Good morning."
-        mock_resp.usage_metadata.prompt_token_count = 300
-        mock_resp.usage_metadata.candidates_token_count = 20
-        mock_client.models.generate_content.return_value = mock_resp
-
-        srt = "1\n00:00:02,639 --> 00:00:09,040\ngood morning\n"
-        speakers = "Jane Smith (Chair)\nJohn Doe (Member)"
-        result, in_tok, out_tok = llms.suggest_corrected_captions(
-            "gemini-3.5-flash-lite", srt, speakers_text=speakers
-        )
-
-        # Verify the speaker label was included in the corrected output
-        self.assertIn("[Jane Smith]", result)
-
-        # Verify speakers were passed to the LLM in the prompt
-        call_args = mock_client.models.generate_content.call_args
-        prompt_sent = call_args[1]["contents"][0].parts[0].text
-        self.assertIn("Jane Smith", prompt_sent)
-        self.assertIn("WCAG 2.1", prompt_sent)
-        self.assertIn("Section 508", prompt_sent)
-
-    @patch("youtube_to_docs.llms.requests.post")
-    def test_suggest_corrected_captions_bedrock(self, mock_post):
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {
-            "output": {
-                "message": {
-                    "content": [
-                        {
-                            "text": (
-                                "1\n00:00:02,639 --> 00:00:09,040\n"
-                                "Good morning. Thank you."
-                            )
-                        }
-                    ]
-                }
-            },
-            "usage": {"inputTokens": 180, "outputTokens": 30},
-        }
-        mock_post.return_value = mock_resp
-
-        srt = "1\n00:00:02,639 --> 00:00:09,040\ngood morning thank you\n"
-        result, in_tok, out_tok = llms.suggest_corrected_captions(
-            "bedrock-nova-2-lite-v1", srt
-        )
-
-        self.assertIn("Good morning. Thank you.", result)
-        self.assertEqual(in_tok, 180)
-        self.assertEqual(out_tok, 30)
-
-    @patch("google.genai.Client")
-    def test_suggest_corrected_captions_prompt_contains_wcag_guidance(
-        self, mock_client_cls
-    ):
-        """Verify the prompt includes WCAG 2.1 / Section 508 references."""
-        mock_client = mock_client_cls.return_value
-        mock_resp = MagicMock()
-        mock_resp.text = "NO_CHANGES"
-        mock_resp.usage_metadata.prompt_token_count = 100
-        mock_resp.usage_metadata.candidates_token_count = 5
-        mock_client.models.generate_content.return_value = mock_resp
-
-        llms.suggest_corrected_captions(
-            "gemini-3.5-flash-lite", "1\n00:00:00,000 --> 00:00:01,000\nHi.\n"
-        )
-
-        call_args = mock_client.models.generate_content.call_args
-        prompt_sent = call_args[1]["contents"][0].parts[0].text
-        self.assertIn("WCAG 2.1", prompt_sent)
-        self.assertIn("Section 508", prompt_sent)
-        self.assertIn("NO_CHANGES", prompt_sent)
-        self.assertIn("punctuation", prompt_sent.lower())
-        self.assertIn("capitalization", prompt_sent.lower())
 
 
 if __name__ == "__main__":

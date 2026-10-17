@@ -80,6 +80,15 @@ def validate_output_file(output_file: str) -> str:
     return os.path.join(OUTPUT_ROOT, os.path.relpath(resolved, real_root))
 
 
+def corrected_captions_args(value: str) -> list[str]:
+    """CLI args for a corrected-captions request from the MCP server or web
+    app. 'default' passes a bare `--corrected-captions`, so the CLI's default
+    model and source apply."""
+    if value.strip().lower() in ("default", "true", "yes"):
+        return ["--corrected-captions"]
+    return ["--corrected-captions", value.strip()]
+
+
 def get_version() -> str:
     """Return the installed package version, or "unknown" if not installed."""
     try:

@@ -88,18 +88,20 @@ def parse_translate_arg(translate_arg: str) -> Tuple[str, str]:
     return model, lang
 
 
-def parse_suggest_captions_arg(arg: str) -> Tuple[str, Optional[str]]:
-    """Parse a --suggest-corrected-captions argument in the format
+def parse_corrected_captions_arg(arg: str) -> Tuple[str, Optional[str]]:
+    """Parse a --corrected-captions argument in the format
     `{model}` or `{model}-{source}`.
 
     The source is either 'youtube' or a transcript model name
-    (e.g. 'gcp-chirp3', 'gemini-3.5-flash-lite'). Parsing scans
+    (e.g. 'gcp-chirp3', 'gemini-3.5-transcribe'). Parsing scans
     left-to-right for the first dash-boundary where the remaining suffix
     is 'youtube' or begins with a known source prefix.
 
     Examples:
-      "gemini-3.5-flash-lite"               -> ("gemini-3.5-flash-lite", None)
-      "gemini-3.5-flash-lite-youtube"       -> ("gemini-3.5-flash-lite", "youtube")
+      "gemini-4-argon"                      -> ("gemini-4-argon", None)
+      "gemini-4-argon-youtube"              -> ("gemini-4-argon", "youtube")
+      "gemini-4-argon-gemini-3.5-transcribe"
+          -> ("gemini-4-argon", "gemini-3.5-transcribe")
       "gemini-3.5-flash-lite-gcp-chirp3"    -> ("gemini-3.5-flash-lite", "gcp-chirp3")
       "bedrock-nova-2-lite-v1-youtube"       -> ("bedrock-nova-2-lite-v1", "youtube")
 

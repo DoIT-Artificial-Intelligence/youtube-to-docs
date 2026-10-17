@@ -71,6 +71,51 @@ def extract_audio(
     return None
 
 
+def download_video(
+    video_id: str, output_dir: str, max_height: int = 1080
+) -> Optional[str]:
+    """Downloads a YouTube video (H.264 MP4 up to `max_height`, with its audio)
+    using yt-dlp. Returns the local path, or None on failure."""
+    try:
+        import static_ffmpeg
+        import yt_dlp
+
+        # yt-dlp merges the video and audio streams with ffmpeg.
+        static_ffmpeg.add_paths()
+    except ImportError as e:
+        raise ImportError(
+            "Missing dependencies for audio/video processing. "
+            'Please run with: uvx "youtube-to-docs[all]"'
+        ) from e
+
+    url = f"https://www.youtube.com/watch?v={video_id}"
+    os.makedirs(output_dir, exist_ok=True)
+    ydl_opts: Dict[str, Any] = {
+        "format": (
+            f"bv*[ext=mp4][vcodec^=avc1][height<={max_height}]+ba[ext=m4a]/"
+            f"b[ext=mp4][height<={max_height}]/bv*[height<={max_height}]+ba/b"
+        ),
+        "merge_output_format": "mp4",
+        "outtmpl": os.path.join(output_dir, "%(id)s.%(ext)s"),
+        "quiet": True,
+        "no_warnings": True,
+        "noprogress": True,
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            if info:
+                for path in (
+                    os.path.join(output_dir, f"{info.get('id', video_id)}.mp4"),
+                    ydl.prepare_filename(info),
+                ):
+                    if os.path.exists(path):
+                        return os.path.abspath(path)
+    except Exception as e:
+        print(f"Error downloading video for {video_id}: {e}")
+    return None
+
+
 def get_youtube_service() -> Optional[Any]:
     """Builds and returns the YouTube Data API service."""
     try:

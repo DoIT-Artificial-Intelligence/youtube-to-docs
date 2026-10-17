@@ -1,4 +1,5 @@
 import os
+import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -6,6 +7,22 @@ from youtube_to_docs import transcript
 
 
 class TestTranscript(unittest.TestCase):
+    @patch("yt_dlp.YoutubeDL")
+    @patch("static_ffmpeg.add_paths")
+    def test_download_video(self, mock_add_paths, mock_ydl_cls):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "vid.mp4")
+            with open(path, "wb") as f:
+                f.write(b"video")
+            ydl = mock_ydl_cls.return_value.__enter__.return_value
+            ydl.extract_info.return_value = {"id": "vid"}
+            self.assertEqual(transcript.download_video("vid", tmp), path)
+            options = mock_ydl_cls.call_args.args[0]
+            self.assertEqual(options["merge_output_format"], "mp4")
+            self.assertIn("vcodec^=avc1][height<=1080]", options["format"])
+            ydl.extract_info.side_effect = Exception("blocked")
+            self.assertIsNone(transcript.download_video("vid", tmp))
+
     def setUp(self):
         # Mock environment variables
         self.env_patcher = patch.dict(

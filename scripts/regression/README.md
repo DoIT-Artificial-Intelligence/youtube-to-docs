@@ -45,27 +45,26 @@ This directory contains regression tests for the `youtube-to-docs` tool.
 - **[regression_aws_translate.py](regression_aws_translate.py)**: Tests AWS Translate integration.
 - **[regression_gcp_translate.py](regression_gcp_translate.py)**: Tests Google Cloud Translation API integration.
 
-### Suggested Corrected Captions (`-scc`)
+### Corrected Captions (`-cc`)
 
-These scripts test WCAG 2.1 Level AA caption correction per Section 508 guidance.
-All three accept a `SCC_MODEL` env var to override the correction model (default: best available from `check_cloud_stack`).
+These scripts test the complete WCAG 2.1 Level AA / Section 508 corrected SRT. Each checks the output has named speakers, no `[Speaker N]` labels, lines of at most 42 characters and no overlapping cues. The YouTube and Chirp 3 scripts accept a `CC_MODEL` env var to override the correction model (default: best available from `check_cloud_stack`).
 
-- **[regression_scc_youtube.py](regression_scc_youtube.py)**: Fetches the YouTube SRT and corrects it with an LLM. No speaker extraction — no `[Name]` labels expected. Requires `GEMINI_API_KEY` (or another supported model's credentials).
+- **[regression_cc_default.py](regression_cc_default.py)**: Bare `-cc`: transcribes with `gemini-3.5-transcribe`, reads on-screen context from the video and corrects with `gemini-4-argon`. Requires `GEMINI_API_KEY`.
 
   ```bash
-  uv run --extra gcp python scripts/regression/regression_scc_youtube.py
+  uv run --extra all python scripts/regression/regression_cc_default.py
   ```
 
-- **[regression_scc_youtube_speakers.py](regression_scc_youtube_speakers.py)**: Fetches the YouTube SRT, runs speaker extraction, then corrects the SRT. The LLM has speaker names available and should insert `[Name]` labels on speaker changes.
+- **[regression_cc_youtube.py](regression_cc_youtube.py)**: Corrects the YouTube SRT (`-cc {model}-youtube`, no transcription).
 
   ```bash
-  uv run --extra gcp python scripts/regression/regression_scc_youtube_speakers.py
+  uv run --extra all python scripts/regression/regression_cc_youtube.py
   ```
 
-- **[regression_scc_stt.py](regression_scc_stt.py)**: Downloads audio, transcribes with GCP Chirp3 (`-t gcp-chirp3`), then corrects the resulting STT SRT in the same run. The correction step uses the default (no source suffix) to automatically pick up the `gcp-chirp3` SRT. Requires `GOOGLE_CLOUD_PROJECT` and `GEMINI_API_KEY`.
+- **[regression_cc_stt.py](regression_cc_stt.py)**: Transcribes with GCP Chirp 3 (`-t gcp-chirp3`) and corrects that SRT in the same run. Requires `GOOGLE_CLOUD_PROJECT` and `GEMINI_API_KEY`.
 
   ```bash
-  uv run --extra all python scripts/regression/regression_scc_stt.py
+  uv run --extra all python scripts/regression/regression_cc_stt.py
   ```
 
 ## Usage
@@ -106,12 +105,12 @@ uv run --extra gcp --extra aws python scripts/regression/regression_gcp_tts.py
 # AWS Polly TTS
 uv run --extra aws python scripts/regression/regression_aws_polly.py
 
-# Caption correction — YouTube SRT
-uv run --extra gcp python scripts/regression/regression_scc_youtube.py
+# Corrected captions — default (gemini-3.5-transcribe + gemini-4-argon)
+uv run --extra all python scripts/regression/regression_cc_default.py
 
-# Caption correction — YouTube SRT + speaker extraction
-uv run --extra gcp python scripts/regression/regression_scc_youtube_speakers.py
+# Corrected captions — YouTube SRT
+uv run --extra all python scripts/regression/regression_cc_youtube.py
 
-# Caption correction — GCP Chirp3 STT SRT
-uv run --extra all python scripts/regression/regression_scc_stt.py
+# Corrected captions — GCP Chirp 3 STT SRT
+uv run --extra all python scripts/regression/regression_cc_stt.py
 ```

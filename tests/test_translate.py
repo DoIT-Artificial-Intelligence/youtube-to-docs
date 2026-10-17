@@ -5,7 +5,7 @@ from youtube_to_docs.providers import BaseProvider, LLMProvider, TranslationProv
 from youtube_to_docs.translate import (
     _translate_aws,
     _translate_gcp,
-    parse_suggest_captions_arg,
+    parse_corrected_captions_arg,
     parse_translate_arg,
     process_translate,
     translate_text,
@@ -512,48 +512,56 @@ class TestProcessTranslate(unittest.TestCase):
         self.assertIn(f"Tags File {transcript_arg} {model} model (es)", result)
 
 
-class TestParseSuggestCaptionsArg(unittest.TestCase):
+class TestParseCorrectedCaptionsArg(unittest.TestCase):
     def test_model_only_no_source(self):
-        model, source = parse_suggest_captions_arg("gemini-3.5-flash-lite")
+        model, source = parse_corrected_captions_arg("gemini-3.5-flash-lite")
         self.assertEqual(model, "gemini-3.5-flash-lite")
         self.assertIsNone(source)
 
     def test_model_with_youtube_source(self):
-        model, source = parse_suggest_captions_arg("gemini-3.5-flash-lite-youtube")
+        model, source = parse_corrected_captions_arg("gemini-3.5-flash-lite-youtube")
         self.assertEqual(model, "gemini-3.5-flash-lite")
         self.assertEqual(source, "youtube")
 
+    def test_default_value(self):
+        """The bare -cc default corrects the dedicated Gemini STT transcript."""
+        model, source = parse_corrected_captions_arg(
+            "gemini-4-argon-gemini-3.5-transcribe"
+        )
+        self.assertEqual(model, "gemini-4-argon")
+        self.assertEqual(source, "gemini-3.5-transcribe")
+
     def test_model_with_gcp_source(self):
-        model, source = parse_suggest_captions_arg("gemini-3.5-flash-lite-gcp-chirp3")
+        model, source = parse_corrected_captions_arg("gemini-3.5-flash-lite-gcp-chirp3")
         self.assertEqual(model, "gemini-3.5-flash-lite")
         self.assertEqual(source, "gcp-chirp3")
 
     def test_model_with_aws_source(self):
-        model, source = parse_suggest_captions_arg(
+        model, source = parse_corrected_captions_arg(
             "gemini-3.5-flash-lite-aws-transcribe"
         )
         self.assertEqual(model, "gemini-3.5-flash-lite")
         self.assertEqual(source, "aws-transcribe")
 
     def test_bedrock_model_with_youtube_source(self):
-        model, source = parse_suggest_captions_arg("bedrock-nova-2-lite-v1-youtube")
+        model, source = parse_corrected_captions_arg("bedrock-nova-2-lite-v1-youtube")
         self.assertEqual(model, "bedrock-nova-2-lite-v1")
         self.assertEqual(source, "youtube")
 
     def test_bedrock_model_with_gemini_source(self):
-        model, source = parse_suggest_captions_arg(
+        model, source = parse_corrected_captions_arg(
             "bedrock-nova-2-lite-v1-gemini-3.5-flash-lite"
         )
         self.assertEqual(model, "bedrock-nova-2-lite-v1")
         self.assertEqual(source, "gemini-3.5-flash-lite")
 
     def test_bedrock_model_only(self):
-        model, source = parse_suggest_captions_arg("bedrock-nova-2-lite-v1")
+        model, source = parse_corrected_captions_arg("bedrock-nova-2-lite-v1")
         self.assertEqual(model, "bedrock-nova-2-lite-v1")
         self.assertIsNone(source)
 
     def test_vertex_source(self):
-        model, source = parse_suggest_captions_arg(
+        model, source = parse_corrected_captions_arg(
             "gemini-3.5-flash-lite-vertex-gemini-pro"
         )
         self.assertEqual(model, "gemini-3.5-flash-lite")
@@ -566,7 +574,7 @@ class TestParseSuggestCaptionsArg(unittest.TestCase):
         ]
         for arg in cases:
             with self.subTest(arg=arg):
-                model, source = parse_suggest_captions_arg(arg)
+                model, source = parse_corrected_captions_arg(arg)
                 self.assertEqual(model, arg)
                 self.assertIsNone(source)
 

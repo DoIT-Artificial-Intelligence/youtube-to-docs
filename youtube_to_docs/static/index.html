@@ -374,7 +374,7 @@
               </div>
               <div class="grid-col-12 tablet:grid-col-6">
                 <label class="usa-label" for="transcript_source">Transcript Source</label>
-                <input class="usa-input" id="transcript_source" name="transcript_source" type="text" value="youtube" placeholder="youtube or AI model name">
+                <input class="usa-input" id="transcript_source" name="transcript_source" type="text" placeholder="youtube (default) or AI model name">
               </div>
             </div>
 
@@ -405,8 +405,13 @@
 
             <div class="grid-row grid-gap margin-top-2">
               <div class="grid-col-12 tablet:grid-col-6">
-                <label class="usa-label" for="suggest_corrected_captions">Suggest Corrected Captions</label>
-                <input class="usa-input" id="suggest_corrected_captions" name="suggest_corrected_captions" type="text" list="model-options" placeholder="e.g. gemini-3-flash-preview">
+                <label class="usa-label" for="corrected_captions">Corrected Captions</label>
+                <input class="usa-input" id="corrected_captions" name="corrected_captions" type="text" list="corrected-captions-options" placeholder="default, or e.g. gemini-4-argon-youtube">
+                <datalist id="corrected-captions-options">
+                  <option value="default"></option>
+                  <option value="gemini-4-argon-youtube"></option>
+                  <option value="gemini-3.5-flash-lite-gemini-3.5-transcribe"></option>
+                </datalist>
               </div>
               <div class="grid-col-12 tablet:grid-col-6">
                 <label class="usa-label" for="post_process">Post Process (JSON)</label>
@@ -420,6 +425,10 @@
               <div class="usa-checkbox">
                 <input class="usa-checkbox__input" id="combine_infographic_audio" type="checkbox" name="combine_infographic_audio">
                 <label class="usa-checkbox__label" for="combine_infographic_audio">Combine infographic + audio</label>
+              </div>
+              <div class="usa-checkbox">
+                <input class="usa-checkbox__input" id="corrected_captions_video" type="checkbox" name="corrected_captions_video">
+                <label class="usa-checkbox__label" for="corrected_captions_video">Captioned video (burn in corrected captions)</label>
               </div>
               <div class="usa-checkbox">
                 <input class="usa-checkbox__input" id="no_youtube_summary" type="checkbox" name="no_youtube_summary">
@@ -573,7 +582,7 @@
     const fields = [
       'output_file', 'transcript_source', 'model', 'tts_model',
       'infographic_model', 'alt_text_model', 'translate',
-      'suggest_corrected_captions', 'post_process', 'all_suite'
+      'corrected_captions', 'post_process', 'all_suite'
     ];
 
     for (const f of fields) {
@@ -582,6 +591,7 @@
     }
 
     body.combine_infographic_audio = $('combine_infographic_audio').checked;
+    body.corrected_captions_video = $('corrected_captions_video').checked;
     body.no_youtube_summary = $('no_youtube_summary').checked;
     body.verbose = $('verbose').checked;
 
