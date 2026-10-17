@@ -266,7 +266,7 @@ Without a value it uses `gemini-4-argon-gemini-3.5-transcribe`: the audio is tra
 | `… descriptive transcript.md` | `descriptive-transcript-files/` | The dialogue by speaker with every description; publish next to the video (WCAG 1.2.3 and 1.2.8) |
 | `{id} - {title} - original video.mp4` | `video-files/` | The source video for a website player |
 | `… captioned and described video (from {source}).mp4` | `video-files/` | A standalone accessible copy: captions burned in (white on an 80% opaque box) and the descriptions narrated in the pauses |
-| `… player.html` | `vtt-files/` | An Able Player page with the original video and the WebVTT tracks, for checking them and as a template for a website |
+| `… player.html` | `vtt-files/` | An Able Player page with the original video, the WebVTT tracks and an interactive transcript, for checking them (it opens straight from disk) and as a template for a website |
 
 ### How it works
 
@@ -298,14 +298,16 @@ If the requested source SRT doesn't exist (for example, `-t youtube -cc`), the a
 ### Checking the WebVTT files
 
 1. **Validate them.** Paste a `.vtt` file into the [W3C WebVTT validator](https://w3c.github.io/webvtt.js/parser.html); it should report no errors.
-2. **Play them.** Browsers won't load tracks from `file://` pages, so serve the artifacts folder and open the player page. Use a server that supports range requests, or the browser can't seek in a long video (Python's built-in `http.server` doesn't):
+2. **Play them.** Open the `… player.html` file in a browser. Captions are on; select the Description button to hear the descriptions read aloud (the video pauses while each is read), and the Transcript button for an interactive transcript of the dialogue and descriptions. To hear the descriptions through a screen reader instead, add `data-desc-reader="screenreader"` to the `<video>` element and turn on NVDA, JAWS or VoiceOver.
+
+   The page works straight from disk: browsers won't load `.vtt` files into a page opened that way, so it carries copies of the tracks and uses those. To load the `.vtt` files themselves, as a website would, serve the artifacts folder with a server that supports range requests (Python's built-in `http.server` doesn't, so the browser can't seek in a long video):
 
    ```bash
    cd youtube-to-docs-artifacts
    uv run --no-project --with rangehttpserver python -m RangeHTTPServer 8080 --bind 127.0.0.1
    ```
 
-   Then open `http://127.0.0.1:8080/vtt-files/` and select the `… player.html` file. Captions are on; select the Description button to hear the descriptions read aloud (the video pauses while each is read). To hear them through a screen reader instead, add `data-desc-reader="screenreader"` to the `<video>` element and turn on NVDA, JAWS or VoiceOver.
+   Then open `http://127.0.0.1:8080/vtt-files/` and select the `… player.html` file.
 3. **Spot-check timing.** In VLC, open the original video and add the captions `.vtt` (Subtitle > Add Subtitle File...) to check that captions line up with the speech.
 
 ## CSV Column Reference

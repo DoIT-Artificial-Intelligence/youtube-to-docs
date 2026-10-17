@@ -85,7 +85,7 @@ Use this when the user wants accessible captions or an accessible video: "fix th
   - `corrected-caption-files/` SRT and `vtt-files/` WebVTT captions, with `[Name]` on every speaker change.
   - `vtt-files/` WebVTT descriptions tracks (standard, fitted into pauses, and extended) and `descriptive-transcript-files/` descriptive transcript.
   - `video-files/` original video, plus a copy with the captions burned in and the descriptions narrated (narration uses `tts_model`, default `gemini-3.8-flash-tts-Kore`).
-  - `vtt-files/… player.html` Able Player page for checking the WebVTT files (serve the artifacts folder with `uv run --no-project --with rangehttpserver python -m RangeHTTPServer 8080 --bind 127.0.0.1`, which lets the browser seek; Python's `http.server` doesn't).
+  - `vtt-files/… player.html` Able Player page for checking the WebVTT files (open it in a browser; it works straight from disk).
 - **Time and cost**: about 20 minutes and $3 for a 3-hour meeting (Requires `audio` and `video` extras).
 
 ### 5. Custom / Advanced Usage

@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 import unittest
@@ -283,6 +284,12 @@ class TestAccessibleVideo(unittest.TestCase):
         row = {}
         storage = MagicMock()
         storage.write_text.side_effect = lambda path, text: path
+        tracks = {
+            os.path.join("out", "vtt-files", "captions.vtt"): "WEBVTT\n\nA </script>",
+            os.path.join("out", "vtt-files", "extended.vtt"): "WEBVTT\n\nSlide.",
+        }
+        storage.exists.side_effect = lambda path: path in tracks
+        storage.read_text.side_effect = tracks.__getitem__
         write_player_page(
             row=row,
             storage=storage,
@@ -304,6 +311,33 @@ class TestAccessibleVideo(unittest.TestCase):
         self.assertEqual(
             row["Player Page"], os.path.join("out", "vtt-files", "page.html")
         )
+        # Copies of the tracks for pages opened from disk (file://), with "<"
+        # escaped so a track can't close the script element.
+        copies = page.split('id="track-copies">')[1].split("</script>")[0]
+        self.assertEqual(
+            json.loads(copies),
+            {"captions": "WEBVTT\n\nA </script>", "descriptions": "WEBVTT\n\nSlide."},
+        )
+        self.assertIn("\\u003c/script>", copies)
+        self.assertIn('if (location.protocol === "file:")', page)
+
+    def test_player_page_without_track_copies(self):
+        storage = MagicMock()
+        storage.exists.return_value = False
+        write_player_page(
+            row={},
+            storage=storage,
+            path="page.html",
+            title="Title",
+            video_path="video.mp4",
+            captions_path="captions.vtt",
+            descriptions_path=None,
+            transcript_path=None,
+        )
+        page = storage.write_text.call_args.args[1]
+        self.assertIn('<track kind="captions" src="captions.vtt"', page)
+        self.assertNotIn("track-copies", page)
+        self.assertNotIn('kind="descriptions"', page)
 
 
 if __name__ == "__main__":

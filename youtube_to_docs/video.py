@@ -1,4 +1,5 @@
 import html
+import json
 import os
 import re
 import shutil
@@ -478,22 +479,46 @@ def player_page_html(
     captions_src: str,
     descriptions_src: Optional[str],
     transcript_href: Optional[str],
+    track_texts: Optional[Dict[str, str]] = None,
 ) -> str:
     """
     A web page that plays the video in Able Player with the WebVTT captions
     and descriptions tracks, for checking them in a browser and as a template
     for a website. Able Player reads the descriptions aloud and, by default,
     pauses the video while each one is read (extended description).
+
+    `track_texts` (WebVTT text by track kind) are embedded so the page also
+    works when opened straight from disk: browsers won't load .vtt files into
+    a file:// page, so there the tracks use the embedded copies.
     """
     name = html.escape(title or "Video")
+    copies = ""
+    if track_texts:
+        # "<" is escaped so the text can't end the script element early.
+        data = json.dumps(track_texts).replace("<", "\\u003c")
+        copies = f"""
+      <script type="application/json" id="track-copies">{data}</script>
+      <script>
+        // Browsers won't load .vtt files into a page opened from disk.
+        if (location.protocol === "file:") {{
+          const copies = JSON.parse(
+            document.getElementById("track-copies").textContent);
+          for (const track of document.querySelectorAll("#video1 track")) {{
+            if (copies[track.kind]) {{
+              track.src = URL.createObjectURL(
+                new Blob([copies[track.kind]], {{type: "text/vtt"}}));
+            }}
+          }}
+        }}
+      </script>"""
     descriptions = (
-        f'\n      <track kind="descriptions" src="{html.escape(descriptions_src)}" '
+        f'\n        <track kind="descriptions" src="{html.escape(descriptions_src)}" '
         'srclang="en" label="English">'
         if descriptions_src
         else ""
     )
     transcript = (
-        f'\n    <p><a href="{html.escape(transcript_href)}">Descriptive transcript'
+        f'\n      <p><a href="{html.escape(transcript_href)}">Descriptive transcript'
         "</a> (the dialogue with descriptions of the visual information)</p>"
         if transcript_href
         else ""
@@ -505,19 +530,23 @@ def player_page_html(
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{name}: accessible player</title>
     <link rel="stylesheet" href="{ABLE_PLAYER_URL}/ableplayer.min.css">
+    <style>
+      /* Keep the player and its controls on screen (16:9 video). */
+      main {{ max-width: min(60rem, (100vh - 20rem) * 16 / 9); margin: 0 auto; }}
+    </style>
   </head>
   <body>
     <main>
       <h1>{name}</h1>
       <p>Captions are on. Select the Description button to hear descriptions of
-      the slides and other visual information; the video pauses while each one
-      is read.</p>
+      the slides and other visual information (the video pauses while each one
+      is read), and the Transcript button to read along.</p>
       <video id="video1" data-able-player preload="metadata" playsinline
         data-desc-pause-default="on" data-state-captions="on">
         <source type="video/mp4" src="{html.escape(video_src)}">
         <track kind="captions" src="{html.escape(captions_src)}" srclang="en"
           label="English" default>{descriptions}
-      </video>{transcript}
+      </video>{copies}{transcript}
     </main>
     <script src="{JQUERY_URL}"></script>
     <script src="{ABLE_PLAYER_URL}/ableplayer.min.js"></script>
@@ -538,7 +567,8 @@ def write_player_page(
     transcript_path: Optional[str],
 ) -> None:
     """Writes the Able Player page (see player_page_html) with links relative
-    to the page, so the folder can be served or published as it is."""
+    to the page, so the folder can be served or published as it is, and
+    copies of the tracks for opening it straight from disk."""
     folder = os.path.dirname(path)
 
     def link(target: Optional[str]) -> Optional[str]:
@@ -547,12 +577,23 @@ def write_player_page(
         relative = os.path.relpath(target, folder).replace(os.sep, "/")
         return urllib.parse.quote(relative)
 
+    track_texts = {}
+    for kind, track in (
+        ("captions", captions_path),
+        ("descriptions", descriptions_path),
+    ):
+        try:
+            if track and storage.exists(track):
+                track_texts[kind] = storage.read_text(track)
+        except Exception as e:
+            print(f"Warning: could not embed the {kind} track in the player: {e}")
     page = player_page_html(
         title,
         link(video_path) or "",
         link(captions_path) or "",
         link(descriptions_path),
         link(transcript_path),
+        track_texts,
     )
     try:
         saved = storage.write_text(path, page)
