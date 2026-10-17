@@ -48,6 +48,16 @@ class TestMoments(unittest.TestCase):
         ]
         self.assertIn("select='gt(scene,0.3)'", video_filter)
 
+    @patch("youtube_to_docs.audio_description._ffmpeg", return_value="ffmpeg")
+    @patch("youtube_to_docs.audio_description.subprocess.run")
+    def test_extract_frames_keeps_ffmpeg_quiet(self, mock_run, mock_ffmpeg):
+        with tempfile.TemporaryDirectory() as tmp:
+            frames = ad.extract_frames("v.mp4", [ad.Moment(10.0, 30.0)], tmp)
+        self.assertEqual(frames, [""])  # no frame written, so none returned
+        command = mock_run.call_args.args[0]
+        self.assertEqual(command[command.index("-ss") + 1], "11.000")
+        self.assertTrue(mock_run.call_args.kwargs["capture_output"])
+
 
 class TestPlacement(unittest.TestCase):
     def test_speech_pauses(self):
