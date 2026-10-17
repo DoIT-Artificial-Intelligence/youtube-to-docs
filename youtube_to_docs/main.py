@@ -2376,62 +2376,71 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                 save_original_video(
                     row=row, storage=storage, get_video=get_video, path=original_path
                 )
-                descriptions = process_audio_description(
-                    row=row,
-                    storage=storage,
-                    model_name=corrected_captions_model,
-                    captions=corrected,
-                    get_video=get_video,
-                    tts_arg=tts_arg,
-                    video_id=video_id,
-                    video_title=video_title,
-                    safe_title=safe_title,
-                    dirs={
-                        "vtt": vtt_dir,
-                        "descriptive_transcripts": descriptive_transcripts_dir,
-                    },
-                    duration_seconds=video_duration_seconds,
-                    verbose=verbose,
-                    vprint=vprint,
-                )
-                ad_model = corrected_captions_model
-                descriptions_vtt = row.get(f"Descriptions VTT File {ad_model}")
-                process_accessible_video(
-                    row=row,
-                    storage=storage,
-                    captions_path=corrected.path,
-                    model_name=corrected_captions_model,
-                    source=corrected.source,
-                    descriptions=descriptions,
-                    descriptions_vtt=descriptions_vtt,
-                    tts_arg=tts_arg,
-                    get_video=get_video,
-                    video_id=video_id,
-                    safe_title=safe_title,
-                    video_dir=video_dir,
-                    duration_seconds=video_duration_seconds,
-                    vprint=vprint,
-                )
-                write_player_page(
-                    row=row,
-                    storage=storage,
-                    path=os.path.join(
-                        vtt_dir,
-                        f"{corrected_captions_model} - {video_id} - {safe_title}"
-                        " - player.html",
-                    ),
-                    title=video_title,
-                    video_path=original_path,
-                    captions_path=row.get(
-                        f"Captions VTT File {corrected_captions_model} from "
-                        f"{corrected.source}",
-                        "",
-                    ),
-                    descriptions_path=row.get(
-                        f"Extended Descriptions VTT File {ad_model}"
-                    ),
-                    transcript_path=row.get(f"Descriptive Transcript File {ad_model}"),
-                )
+                if downloaded and not downloaded[0]:
+                    rprint(
+                        "[yellow]Couldn't download the video, so skipped the audio "
+                        "description, the captioned and described video and the "
+                        "player page.[/yellow]"
+                    )
+                else:
+                    descriptions = process_audio_description(
+                        row=row,
+                        storage=storage,
+                        model_name=corrected_captions_model,
+                        captions=corrected,
+                        get_video=get_video,
+                        tts_arg=tts_arg,
+                        video_id=video_id,
+                        video_title=video_title,
+                        safe_title=safe_title,
+                        dirs={
+                            "vtt": vtt_dir,
+                            "descriptive_transcripts": descriptive_transcripts_dir,
+                        },
+                        duration_seconds=video_duration_seconds,
+                        verbose=verbose,
+                        vprint=vprint,
+                    )
+                    ad_model = corrected_captions_model
+                    descriptions_vtt = row.get(f"Descriptions VTT File {ad_model}")
+                    process_accessible_video(
+                        row=row,
+                        storage=storage,
+                        captions_path=corrected.path,
+                        model_name=corrected_captions_model,
+                        source=corrected.source,
+                        descriptions=descriptions,
+                        descriptions_vtt=descriptions_vtt,
+                        tts_arg=tts_arg,
+                        get_video=get_video,
+                        video_id=video_id,
+                        safe_title=safe_title,
+                        video_dir=video_dir,
+                        duration_seconds=video_duration_seconds,
+                        vprint=vprint,
+                    )
+                    write_player_page(
+                        row=row,
+                        storage=storage,
+                        path=os.path.join(
+                            vtt_dir,
+                            f"{corrected_captions_model} - {video_id} - {safe_title}"
+                            " - player.html",
+                        ),
+                        title=video_title,
+                        video_path=original_path,
+                        captions_path=row.get(
+                            f"Captions VTT File {corrected_captions_model} from "
+                            f"{corrected.source}",
+                            "",
+                        ),
+                        descriptions_path=row.get(
+                            f"Extended Descriptions VTT File {ad_model}"
+                        ),
+                        transcript_path=row.get(
+                            f"Descriptive Transcript File {ad_model}"
+                        ),
+                    )
                 # Downloads are large; don't keep them across a playlist (the
                 # saved original stays in video-files/).
                 for path in downloaded:
