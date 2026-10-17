@@ -616,16 +616,27 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#corrected-captions" class="md-nav__link">
+  <a href="#corrected-captions-and-audio-description" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Corrected Captions
+        Corrected Captions and Audio Description
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Corrected Captions">
+    <nav class="md-nav" aria-label="Corrected Captions and Audio Description">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outputs
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#how-it-works" class="md-nav__link">
@@ -650,10 +661,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#output" class="md-nav__link">
+  <a href="#publishing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Output
+        Publishing
       
     </span>
   </a>
@@ -661,10 +672,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#captioned-video-ccv" class="md-nav__link">
+  <a href="#checking-the-webvtt-files" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Captioned video (-ccv)
+        Checking the WebVTT files
       
     </span>
   </a>
@@ -1170,16 +1181,27 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#corrected-captions" class="md-nav__link">
+  <a href="#corrected-captions-and-audio-description" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Corrected Captions
+        Corrected Captions and Audio Description
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Corrected Captions">
+    <nav class="md-nav" aria-label="Corrected Captions and Audio Description">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outputs
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#how-it-works" class="md-nav__link">
@@ -1204,10 +1226,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#output" class="md-nav__link">
+  <a href="#publishing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Output
+        Publishing
       
     </span>
   </a>
@@ -1215,10 +1237,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#captioned-video-ccv" class="md-nav__link">
+  <a href="#checking-the-webvtt-files" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Captioned video (-ccv)
+        Checking the WebVTT files
       
     </span>
   </a>
@@ -1717,15 +1739,9 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>-cc</code>, <code>--corrected-captions</code></td>
-<td style="text-align: left;">Write a complete, corrected SRT caption file that meets WCAG 2.1 Level AA and <a href="https://www.section508.gov/create/captions-transcripts/">Section 508</a>: real speaker names, corrected words and spellings, non-speech sounds, readable layout and repaired timing. Format: <code>{model}</code> or <code>{model}-{source}</code>; without a value uses <code>gemini-4-argon-gemini-3.5-transcribe</code>. See <a href="#corrected-captions">Corrected Captions</a>.</td>
+<td style="text-align: left;">Make the video accessible (WCAG 2.1 AA / <a href="https://www.section508.gov/create/captions-transcripts/">Section 508</a>): corrected captions (SRT + WebVTT) with speakers named, audio description (WebVTT tracks + descriptive transcript), the original video, a copy with captions burned in and descriptions narrated, and an Able Player test page. Format: <code>{model}</code> or <code>{model}-{source}</code>; without a value uses <code>gemini-4-argon-gemini-3.5-transcribe</code>. See <a href="#corrected-captions-and-audio-description">Corrected Captions and Audio Description</a>.</td>
 <td style="text-align: left;"><code>None</code></td>
 <td style="text-align: left;"><code>-cc</code></td>
-</tr>
-<tr>
-<td style="text-align: left;"><code>-ccv</code>, <code>--corrected-captions-video</code></td>
-<td style="text-align: left;">Also save a copy of the video with the corrected captions burned in (open captions: white text on an 80% opaque black box) to <code>video-files/</code>. Implies <code>-cc</code> with its default if <code>-cc</code> isn't set. Downloads the video (H.264, up to 1080p) and re-encodes it.</td>
-<td style="text-align: left;"><code>False</code></td>
-<td style="text-align: left;"><code>-ccv</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>-pp</code>, <code>--post-process</code></td>
@@ -1769,38 +1785,89 @@
 <p><strong>9. Full multilingual pipeline — English + Spanish summaries, audio, infographics, and videos:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3.5-flash-lite<span class="w"> </span>-tr<span class="w"> </span>gemini-3.5-flash-lite-es<span class="w"> </span>--tts<span class="w"> </span>gemini-3.8-flash-lite-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-nano-banana-2.1<span class="w"> </span>--combine-infographic-audio
 </code></pre></div>
-<p><strong>10. Produce the best corrected captions (transcribes with <code>gemini-3.5-transcribe</code>, corrects with <code>gemini-4-argon</code>):</strong></p>
+<p><strong>10. Make the video accessible: corrected captions, audio description and accessible videos (transcribes with <code>gemini-3.5-transcribe</code>, corrects and describes with <code>gemini-4-argon</code>):</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-cc
 </code></pre></div>
 <p><strong>11. Correct the YouTube captions instead (no transcription):</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-cc<span class="w"> </span>gemini-4-argon-youtube
 </code></pre></div>
-<p><strong>12. Corrected captions plus a copy of the video with them burned in:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-ccv
+<p><strong>12. Correct an existing GCP Chirp 3 transcript with a cheaper model:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-t<span class="w"> </span>gcp-chirp3<span class="w"> </span>-cc<span class="w"> </span>gemini-3.5-flash-lite-gcp-chirp3
 </code></pre></div>
-<p><strong>13. Correct an existing GCP Chirp 3 transcript with a cheaper model:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-t<span class="w"> </span>gcp-chirp3<span class="w"> </span>-cc<span class="w"> </span>gemini-3.5-flash-lite-gcp-chirp3
+<p><strong>13. Post-process a transcript to count word occurrences:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-pp<span class="w"> </span><span class="s1">'{"word count": ["apple", "banana"]}'</span>
 </code></pre></div>
-<p><strong>14. Post-process a transcript to count word occurrences:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-pp<span class="w"> </span><span class="s1">'{"word count": ["apple", "banana"]}'</span>
-</code></pre></div>
-<p><strong>15. Transcribe with Gemini 3.5 Transcribe (word timestamps + speaker diarization):</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-t<span class="w"> </span>gemini-3.5-transcribe
+<p><strong>14. Transcribe with Gemini 3.5 Transcribe (word timestamps + speaker diarization):</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-t<span class="w"> </span>gemini-3.5-transcribe
 </code></pre></div>
 <p>The resulting SRT is built from the model's word-level offsets and carries a
 <code>[Speaker N]</code> label wherever the speaker changes. Requires <code>GEMINI_API_KEY</code>.</p>
-<h2 id="corrected-captions">Corrected Captions</h2>
-<p>The <code>-cc</code> / <code>--corrected-captions</code> flag writes a <strong>complete, ready-to-use SRT file</strong> that meets WCAG 2.1 Level AA (1.2.2 Captions) and <a href="https://www.section508.gov/create/captions-transcripts/">Section 508 guidance</a>, following the DCMP Captioning Key.</p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>youtube-to-docs<span class="w"> </span>VIDEO_ID<span class="w"> </span>-cc
+<h2 id="corrected-captions-and-audio-description">Corrected Captions and Audio Description</h2>
+<p><code>-cc</code> / <code>--corrected-captions</code> makes a video accessible under WCAG 2.1 Level AA (1.2.2 Captions, 1.2.5 Audio Description) and <a href="https://www.section508.gov/create/captions-transcripts/">Section 508</a>, following the DCMP Captioning and Description Keys.</p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>youtube-to-docs<span class="w"> </span>VIDEO_ID<span class="w"> </span>-cc
 </code></pre></div>
-<p>Without a value, <code>-cc</code> uses <code>gemini-4-argon-gemini-3.5-transcribe</code>: the audio is transcribed with <code>gemini-3.5-transcribe</code> (word timestamps and speaker diarization) unless <code>-t</code> is set, and the transcript is corrected with <code>gemini-4-argon</code>. With a Gemini model, <code>-cc</code> also makes one agentic video request for the on-screen context (names, titles, speaking times, spellings), unless <code>--from-video</code> already produced it.</p>
+<p>Without a value it uses <code>gemini-4-argon-gemini-3.5-transcribe</code>: the audio is transcribed with <code>gemini-3.5-transcribe</code> (word timestamps and speaker diarization) unless <code>-t</code> is set, and <code>gemini-4-argon</code> reads on-screen context from the video, corrects the captions and describes the visual information. A 3-hour meeting takes about 20 minutes and roughly $3 in API calls.</p>
+<h3 id="outputs">Outputs</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Output</th>
+<th style="text-align: left;">Folder</th>
+<th style="text-align: left;">Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>… corrected captions (from {source}).srt</code></td>
+<td style="text-align: left;"><code>corrected-caption-files/</code></td>
+<td style="text-align: left;">Captions for YouTube or any player</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>… captions (from {source}).vtt</code></td>
+<td style="text-align: left;"><code>vtt-files/</code></td>
+<td style="text-align: left;">Website: <code>&lt;track kind="captions"&gt;</code> (browsers don't read SRT)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>… descriptions.vtt</code></td>
+<td style="text-align: left;"><code>vtt-files/</code></td>
+<td style="text-align: left;">Website: <code>&lt;track kind="descriptions"&gt;</code>, descriptions fitted into pauses (standard audio description, AA)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>… extended descriptions.vtt</code></td>
+<td style="text-align: left;"><code>vtt-files/</code></td>
+<td style="text-align: left;">Website: every description where its visual appears, for players that pause the video while reading (Able Player does by default; extended audio description, WCAG 1.2.7)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>… descriptive transcript.md</code></td>
+<td style="text-align: left;"><code>descriptive-transcript-files/</code></td>
+<td style="text-align: left;">The dialogue by speaker with every description; publish next to the video (WCAG 1.2.3 and 1.2.8)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>{id} - {title} - original video.mp4</code></td>
+<td style="text-align: left;"><code>video-files/</code></td>
+<td style="text-align: left;">The source video for a website player</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>… captioned and described video (from {source}).mp4</code></td>
+<td style="text-align: left;"><code>video-files/</code></td>
+<td style="text-align: left;">A standalone accessible copy: captions burned in (white on an 80% opaque box) and the descriptions narrated in the pauses</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>… player.html</code></td>
+<td style="text-align: left;"><code>vtt-files/</code></td>
+<td style="text-align: left;">An Able Player page with the original video and the WebVTT tracks, for checking them and as a template for a website</td>
+</tr>
+</tbody>
+</table>
 <h3 id="how-it-works">How it works</h3>
 <ol>
 <li><strong>Timing.</strong> The source SRT is aligned word by word with a second transcript of the same audio (the YouTube captions, or the STT transcript when correcting YouTube's). Cues with broken timestamps (for example, words returned minutes off) are re-timed from the second transcript.</li>
 <li><strong>Speakers.</strong> The speaker of every cue is identified in ~20-minute windows from the diarization labels, the second transcript's speaker changes (<code>&gt;&gt;</code>), the times the video shows each person speaking, introductions, hand-offs and roles. Names come from on-screen name plates where available.</li>
 <li><strong>Text.</strong> Sections of ~150 cues are corrected in parallel against the second transcript and the on-screen spellings: misheard words, names, organizations and acronyms, punctuation and capitalization, clean verbatim (fillers and stutters removed, false starts marked with em dashes), numbers, and non-speech sounds such as <code>[laughter]</code>. Speech missing from the source but present in the second transcript (often short replies) is restored. The model edits text by cue id and never writes timestamps, so long videos can't be truncated or drift out of sync.</li>
 <li><strong>Layout.</strong> The corrected words are re-segmented into captions of at most two lines of 42 characters, 1–7 seconds long, broken at sentence and clause boundaries (not inside names or after articles). <code>[Name]</code> labels mark every change of speaker, crosstalk is placed at the nearest sentence break, quick exchanges share a two-line caption, and captions never overlap.</li>
+<li><strong>Audio description.</strong> The video is downloaded and scanned for scene changes (new slides, changes of shot); the model looks at the frame at each change with the dialogue around it and writes a short spoken version and a full description of what isn't said aloud: slide titles, key on-screen text, the main figures in charts and tables, votes and video clips. Standard audio description is spoken only in pauses, so the short versions are fitted into pauses while their visual is on screen (most important first, shortened if needed), narrated with <code>--tts</code> (default <code>gemini-3.8-flash-tts-Kore</code>) and mixed in with the programme audio lowered. Nothing is narrated over speech; the extended track and the descriptive transcript carry every description.</li>
 </ol>
+<p>Audio description needs a Gemini model; with other models <code>-cc</code> produces the captions only.</p>
 <h3 id="source-argument-rules">Source argument rules</h3>
 <p>The format is <code>-cc {model}</code> or <code>-cc {model}-{source}</code>.</p>
 <table>
@@ -1829,11 +1896,22 @@
 </tr>
 </tbody>
 </table>
-<p>If the requested source SRT doesn't exist (for example, <code>-t youtube -cc</code>), the available SRT is corrected instead, with a warning.</p>
-<h3 id="output">Output</h3>
-<p>The SRT is saved to <code>corrected-caption-files/</code> as <code>{model} - {video id} - {title} - corrected captions (from {source}).srt</code> and recorded in the CSV under <code>Corrected Captions File {model} from {source}</code>. If that file already exists it isn't regenerated; delete it to run again. Parallel requests default to 6; set <code>YTD_CC_WORKERS</code> to lower this if you hit rate limits.</p>
-<h3 id="captioned-video-ccv">Captioned video (<code>-ccv</code>)</h3>
-<p><code>-ccv</code> / <code>--corrected-captions-video</code> also saves a copy of the video with the corrected captions burned in ("open captions", visible in any player) to <code>video-files/</code> as <code>{model} - {video id} - {title} - captioned video (from {source}).mp4</code>, recorded under <code>Captioned Video File {model} from {source}</code>. Captions are white Arial on an 80% opaque black box at the bottom centre (well above the WCAG 4.5:1 contrast minimum over any picture), sized to about 1/16 of the frame height. The video is downloaded with yt-dlp (H.264, up to 1080p) and re-encoded with ffmpeg; the audio is copied unchanged. Re-encoding a 3-hour 720p video takes about 8–10 minutes. <code>-ccv</code> implies <code>-cc</code> if it isn't set, and an existing captioned video isn't regenerated.</p>
+<p>If the requested source SRT doesn't exist (for example, <code>-t youtube -cc</code>), the available SRT is corrected instead, with a warning. Outputs that already exist aren't regenerated; delete them to run again. Parallel requests default to 6; set <code>YTD_CC_WORKERS</code> to lower this if you hit rate limits.</p>
+<h3 id="publishing">Publishing</h3>
+<ul>
+<li><strong>Website:</strong> host the original video with <code>captions.vtt</code> and a descriptions track in a player that speaks descriptions, such as <a href="https://ableplayer.github.io/ableplayer/">Able Player</a>; the generated <code>player.html</code> shows the markup. Link the descriptive transcript next to the video.</li>
+<li><strong>YouTube:</strong> upload the captioned and described video, or upload the original with the corrected SRT as its captions (YouTube has no description tracks, so audio description needs the described copy).</li>
+</ul>
+<h3 id="checking-the-webvtt-files">Checking the WebVTT files</h3>
+<ol>
+<li><strong>Validate them.</strong> Paste a <code>.vtt</code> file into the <a href="https://w3c.github.io/webvtt.js/parser.html">W3C WebVTT validator</a>; it should report no errors.</li>
+<li><strong>Play them.</strong> Browsers won't load tracks from <code>file://</code> pages, so serve the artifacts folder and open the player page:</li>
+</ol>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nb">cd</span><span class="w"> </span>youtube-to-docs-artifacts
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>uv<span class="w"> </span>run<span class="w"> </span>--no-project<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>http.server<span class="w"> </span><span class="m">8000</span>
+</code></pre></div>
+<p>Then open <code>http://localhost:8000/vtt-files/</code> and select the <code>… player.html</code> file. Captions are on; select the Description button to hear the descriptions read aloud (the video pauses while each is read). To hear them through a screen reader instead, add <code>data-desc-reader="screenreader"</code> to the <code>&lt;video&gt;</code> element and turn on NVDA, JAWS or VoiceOver.
+3. <strong>Spot-check timing.</strong> In VLC, open the original video and add the captions <code>.vtt</code> (Subtitle &gt; Add Subtitle File...) to check that captions line up with the speech.</p>
 <h2 id="csv-column-reference">CSV Column Reference</h2>
 <p>The output CSV file contains a variety of columns depending on the arguments provided. Below is a reference of the possible columns:</p>
 <h3 id="base-metadata">Base Metadata</h3>
@@ -1864,8 +1942,9 @@
 <li><strong>Summary Audio File {model} {tts_model} File</strong>: Path to the generated TTS audio file. Suffix <code>(lang)</code> added for non-English.</li>
 <li><strong>Video File</strong>: Path to the generated MP4 video combining the English infographic and audio.</li>
 <li><strong>Video File (lang)</strong>: Path to the translated language video (e.g., <code>Video File (es)</code>). Only present when <code>--translate</code> and <code>--combine-infographic-audio</code> are both used.</li>
-<li><strong>Corrected Captions File {model} from {source}</strong>: Path to the complete corrected SRT file produced by <code>-cc</code>.</li>
-<li><strong>Captioned Video File {model} from {source}</strong>: Path to the copy of the video with the corrected captions burned in, produced by <code>-ccv</code>.</li>
+<li><strong>Corrected Captions File {model} from {source}</strong>, <strong>Captions VTT File {model} from {source}</strong>: The corrected captions as SRT and WebVTT (<code>-cc</code>).</li>
+<li><strong>Descriptions VTT File {model}</strong>, <strong>Extended Descriptions VTT File {model}</strong>, <strong>Descriptive Transcript File {model}</strong>: The audio description (<code>-cc</code>).</li>
+<li><strong>Original Video File</strong>, <strong>Captioned And Described Video File {model} from {source}</strong>, <strong>Player Page</strong>: The original video, the copy with captions burned in and descriptions narrated, and the Able Player page (<code>-cc</code>).</li>
 <li><strong>Post-process: word count({word})</strong>: Count of occurrences of <code>{word}</code> in the transcript (case-insensitive, whole-word match). One column per word when using <code>-pp</code>.</li>
 </ul>
 <h3 id="ai-outputs-costs">AI Outputs &amp; Costs</h3>
@@ -1882,7 +1961,7 @@
 <li><strong>Summary Infographic Alt Text Cost {model} {infographic_model} ($)</strong>: The estimated API cost for alt text generation.</li>
 <li><strong>{normalized_model} tags cost from {transcript} ($)</strong>: The estimated API cost for AI tag generation.</li>
 <li><strong>{normalized_model} STT cost ($)</strong>: The estimated API cost for Speech-to-Text generation. For <code>gemini-3.5-transcribe</code> the API reports audio input tokens but not transcript output tokens, so this figure covers the input side only and understates the true cost.</li>
-<li><strong>{normalized_model} corrected captions cost from {source} ($)</strong>: The estimated API cost of <code>-cc</code> (speaker identification and text correction, including thinking tokens). The on-screen context request is recorded separately as <code>{normalized_model} video context cost from video-agentic ($)</code>.</li>
+<li><strong>{normalized_model} corrected captions cost from {source} ($)</strong>: The estimated API cost of correcting the captions with <code>-cc</code> (speaker identification and text correction, including thinking tokens). The on-screen context request and the audio description are recorded separately as <code>{normalized_model} video context cost from video-agentic ($)</code> and <code>{normalized_model} audio description cost ($)</code> (narration not included).</li>
 </ul>
 <blockquote>
 <p><strong>Note</strong>: <code>{normalized_model}</code> refers to the model name with prefixes (like <code>vertex-</code>) and date suffixes removed for cleaner column headers.</p>

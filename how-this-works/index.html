@@ -1096,7 +1096,7 @@
 <li>Corrects the text in parallel sections against the second transcript and the on-screen spellings (misheard words and names, punctuation, fillers, non-speech sounds, missed speech). The model edits text by cue id and never writes timestamps.</li>
 <li>Lays the words out as captions of at most two 42-character lines over 1–7 seconds, broken at sentence and clause boundaries, with <code>[Name]</code> on each change of speaker and no overlapping cues.</li>
 </ol>
-<p>With <code>--corrected-captions-video</code> (<code>-ccv</code>), the video is also downloaded and re-encoded with the corrected captions burned in (white text on a dark box), saved to <code>video-files/</code>.</p>
+<p>The same run also describes the visual information a blind viewer would miss (audio description): scene changes in the downloaded video are described by the model from the frames and nearby dialogue, fitted into pauses in the speech, and written as WebVTT descriptions tracks (<code>vtt-files/</code>, standard and extended) and a descriptive transcript (<code>descriptive-transcript-files/</code>). <code>video-files/</code> gets the original video and a copy with the captions burned in and the descriptions narrated, and <code>vtt-files/</code> gets an Able Player page for checking the WebVTT tracks in a browser.</p>
 <h3 id="7a-video-understanding-from-video">7a. Video Understanding (<code>--from-video</code>)</h3>
 <p><code>--from-video agentic|static</code> (or <code>agentic,static</code>) sends the YouTube URL to a Gemini model through the Interactions API, without downloading the video, and generates a summary, one sentence summary, speakers, Q&amp;A and on-screen context (<code>video-context-files/</code>) from the video itself. These are stored next to the transcript-based outputs under the source <code>video-agentic</code> / <code>video-static</code>, so infographics and audio are generated for them too.</p>
 <ul>
@@ -1155,7 +1155,9 @@ Run <code>youtube-to-docs --help</code> for a full list of options.</p>
 <a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>├── infographic-files/            # Generated infographic images
 <a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>├── infographic-alt-text/         # Multimodal alt text for infographics
 <a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>├── corrected-caption-files/      # Corrected WCAG 2.1 / Section 508 SRT files (-cc)
-<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>└── video-files/                  # Combined infographic + audio videos
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>├── vtt-files/                    # WebVTT captions and descriptions tracks for websites
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>├── descriptive-transcript-files/ # Dialogue plus visual descriptions (-cc)
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>└── video-files/                  # Combined infographic + audio videos
 </code></pre></div>
 <p>This structure ensures that while the CSV provides a high-level data view, the actual content is easily accessible as standalone files.</p>
 
