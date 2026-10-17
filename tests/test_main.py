@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, mock_open, patch
 import polars as pl
 
 from youtube_to_docs import main
+from youtube_to_docs.captions import CaptionFiles
 from youtube_to_docs.llms import build_summary_prompt
 
 
@@ -1261,15 +1262,46 @@ class TestCorrectedCaptionsDefaults(unittest.TestCase):
         mock_provider.assert_not_called()
         self.assertEqual(mock_cc.call_args.kwargs["transcript_arg"], "youtube")
 
-    @patch("youtube_to_docs.main.process_captioned_video")
-    def test_captioned_video_flag_implies_corrected_captions(self, mock_video, *mocks):
-        mocks[-1].return_value = ("cc/out.srt", "gemini-3.5-transcribe")
-        _, mock_cc = self._run(mocks, "-ccv")
+    @patch("youtube_to_docs.main.write_player_page")
+    @patch("youtube_to_docs.main.process_accessible_video")
+    @patch("youtube_to_docs.main.process_audio_description")
+    @patch("youtube_to_docs.main.save_original_video")
+    @patch("youtube_to_docs.main.download_video")
+    def test_corrected_captions_do_the_whole_pipeline(
+        self, mock_download, mock_original, mock_ad, mock_video, mock_page, *mocks
+    ):
+        files = CaptionFiles("cc/out.srt", "gemini-3.5-transcribe", "stt.srt", None)
+        mocks[-1].return_value = files
+        described = [object()]
+        seen: list = []
+        with tempfile.TemporaryDirectory():
+
+            def fake_download(video_id, directory):
+                os.makedirs(directory, exist_ok=True)
+                path = os.path.join(directory, f"{video_id}.mp4")
+                with open(path, "wb") as f:
+                    f.write(b"video")
+                seen.append(path)
+                return path
+
+            mock_download.side_effect = fake_download
+            mock_original.side_effect = lambda **kwargs: kwargs["get_video"]()
+            mock_ad.side_effect = lambda **kwargs: (kwargs["get_video"](), described)[1]
+            mock_video.side_effect = lambda **kwargs: kwargs["get_video"]()
+            _, mock_cc = self._run(mocks, "-cc")
+            self.assertFalse(os.path.exists(seen[0]))  # temporary copy removed
+        mock_download.assert_called_once()  # shared by every step
         self.assertEqual(mock_cc.call_args.kwargs["model_name"], "gemini-4-argon")
-        kwargs = mock_video.call_args.kwargs
-        self.assertEqual(kwargs["captions_path"], "cc/out.srt")
-        self.assertEqual(kwargs["source"], "gemini-3.5-transcribe")
-        self.assertEqual(kwargs["duration_seconds"], 60.0)
+        self.assertTrue(
+            mock_original.call_args.kwargs["path"].endswith(" - original video.mp4")
+        )
+        self.assertIs(mock_ad.call_args.kwargs["captions"], files)
+        self.assertEqual(mock_ad.call_args.kwargs["model_name"], "gemini-4-argon")
+        video = mock_video.call_args.kwargs
+        self.assertIs(video["descriptions"], described)
+        self.assertEqual(video["captions_path"], "cc/out.srt")
+        self.assertEqual(video["source"], "gemini-3.5-transcribe")
+        self.assertTrue(mock_page.call_args.kwargs["path"].endswith(" - player.html"))
 
     def test_youtube_source_needs_no_transcription(self, *mocks):
         mock_provider, mock_cc = self._run(mocks, "-cc", "gemini-4-argon-youtube")

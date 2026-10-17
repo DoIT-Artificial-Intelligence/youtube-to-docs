@@ -90,7 +90,6 @@ def run_regression(
     verbose: bool = False,
     combine_info_audio: bool = False,
     corrected_captions: Optional[str] = None,
-    corrected_captions_video: bool = False,
     post_process: Optional[str] = None,
     hugging_face_dataset: Optional[str] = None,
 ):
@@ -143,9 +142,6 @@ def run_regression(
         cmd.append("-cc")
     elif corrected_captions:
         cmd.extend(["-cc", corrected_captions])
-
-    if corrected_captions_video:
-        cmd.append("-ccv")
 
     if post_process:
         cmd.extend(["-pp", post_process])

@@ -80,13 +80,13 @@ def validate_output_file(output_file: str) -> str:
     return os.path.join(OUTPUT_ROOT, os.path.relpath(resolved, real_root))
 
 
-def corrected_captions_args(value: str) -> list[str]:
-    """CLI args for a corrected-captions request from the MCP server or web
-    app. 'default' passes a bare `--corrected-captions`, so the CLI's default
-    model and source apply."""
+def optional_value_args(flag: str, value: str) -> list[str]:
+    """CLI args for an option whose value is optional (e.g. `--corrected-captions`)
+    from the MCP server or web app. 'default' passes the bare flag, so the CLI's
+    default applies."""
     if value.strip().lower() in ("default", "true", "yes"):
-        return ["--corrected-captions"]
-    return ["--corrected-captions", value.strip()]
+        return [flag]
+    return [flag, value.strip()]
 
 
 def get_version() -> str:

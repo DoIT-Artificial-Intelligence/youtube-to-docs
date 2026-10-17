@@ -22,8 +22,7 @@ Here are the following args for the tool:
 - **from_video**: (Optional) Also generate the summary, one sentence summary, speakers and Q&A directly from the video using Gemini video understanding (no download needed). Value is the processing mode: `agentic` (the model navigates the video, loading only what it needs; Gemini 3.5 Flash-Lite and later, e.g. `gemini-3.8-flash`, `gemini-4-argon`), `static` (frames at 1 FPS; any Gemini model), or `agentic,static` to run both. Outputs are labelled `from video-agentic` / `from video-static`.
 - **translate**: (Optional) Translate all outputs to a target language. Format: `{model}-{language}` (e.g., 'gemini-3.5-flash-lite-es', 'bedrock-nova-2-lite-v1-fr', 'aws-translate-es', 'gcp-translate-es'). Use `aws-translate` to use the AWS Translate service directly, or `gcp-translate` to use Google Cloud Translation API directly. Defaults to English only.
 - **combine_infographic_audio**: (Optional) If `True`, combines the infographic and audio summary into a video file (MP4). Requires `tts_model` and `infographic_model`.
-- **corrected_captions**: (Optional) Write a complete WCAG 2.1 Level AA / Section 508 corrected SRT caption file: real speaker names on every change (from diarization and names/speaking times read from the video), corrected words and spellings, non-speech sounds, repaired timing and a readable two-line layout. Use `'default'` for the best captions (`gemini-4-argon` correcting a `gemini-3.5-transcribe` transcript, transcribed in the same run). Or `{model}` / `{model}-{source}`, e.g. `'gemini-4-argon-youtube'` to correct the YouTube captions. Output saved to `corrected-caption-files/`.
-- **corrected_captions_video**: (Optional) If `True`, also saves a copy of the video with the corrected captions burned in (open captions) to `video-files/`. Implies `corrected_captions='default'` if not set. Downloads and re-encodes the video, so it takes a while.
+- **corrected_captions**: (Optional) Make the video accessible under WCAG 2.1 Level AA / Section 508 in one run: corrected captions (SRT in `corrected-caption-files/`, WebVTT in `vtt-files/`) with real speaker names on every change and corrected words, sounds and timing; audio description of the slides and other visual information (WebVTT descriptions tracks in `vtt-files/` and a descriptive transcript in `descriptive-transcript-files/`); and in `video-files/` the original video plus a copy with the captions burned in and the descriptions narrated (`tts_model`, default `gemini-3.8-flash-tts-Kore`). Also writes an Able Player page in `vtt-files/` for checking the WebVTT files. Use `'default'` for the best results (`gemini-4-argon` on a `gemini-3.5-transcribe` transcript, transcribed in the same run), or `{model}` / `{model}-{source}`, e.g. `'gemini-4-argon-youtube'`. Takes about 20 minutes for a 3-hour video.
 - **post_process**: (Optional) Post-process the transcript with JSON operations. Example: `'{"word count": "apple"}'` counts occurrences of 'apple' in the transcript. Values can be a list for multiple words: `'{"word count": ["apple", "banana"]}'`. Results are added as columns in the output CSV.
 - **all_suite**: (Optional) Shortcut to use a specific model suite for everything (e.g. 'gemini-flash', 'gemini-pro', 'gemini-flash-pro-image', 'gcp-pro').
 - **verbose**: (Optional) If `True`, enables verbose output.
@@ -53,10 +52,9 @@ Here are the following args for the tool:
       - `<family>` can be "gemini flash" or "gemini pro". Defaults to "gemini pro".
       - `<language>` can be "spanish", "french", etc. Defaults to "en".
       - Equivalent to `youtube_to_docs --all gemini-pro --verbose --combine-infographic-audio`.
-    - `/youtube-to-docs:cc <url> [model] [source]`: Create WCAG 2.1 / Section 508 corrected captions (a complete SRT file).
-      - Defaults to `corrected_captions='default'` (`gemini-4-argon` correcting a `gemini-3.5-transcribe` transcript).
+    - `/youtube-to-docs:cc <url> [model] [source]`: Make the video accessible: WCAG 2.1 / Section 508 corrected captions, audio description and accessible videos.
+      - Defaults to `corrected_captions='default'` (`gemini-4-argon` on a `gemini-3.5-transcribe` transcript).
       - `[source]` can be "youtube" or an STT model name (e.g. "gcp-chirp3"); `[model]` e.g. `gemini-3.5-flash-lite` for a cheaper run.
-      - Add "video" or "burn in" to also save a captioned copy of the video (`corrected_captions_video=True`).
 3.  **Clarify Parameters**:
     - **Model**: If not specified, ask: "What model do you want to use for the summary?".
     - **Output Location**: If not specified, ask: "Where you want the output file saved? Is the default location (youtube-to-docs-artifacts/youtube-docs.csv) okay?"
@@ -67,7 +65,7 @@ Here are the following args for the tool:
       - Create a video summary (needs `combine_infographic_audio`, `tts_model`, and `infographic_model`).
       - Use a specific AI model for transcription (needs `transcript_source`).
       - Translate to other languages (needs `translate`, format: `{model}-{language}` e.g. `gemini-3.5-flash-lite-es`, `aws-translate-es`, or `gcp-translate-es`).
-      - Create corrected captions for WCAG 2.1 / Section 508 compliance (needs `corrected_captions`, `'default'` for the best, or `{model}-{source}` e.g. `gemini-4-argon-youtube`), and optionally a copy of the video with them burned in (`corrected_captions_video`).
+      - Make the video accessible for WCAG 2.1 / Section 508: corrected captions, audio description and accessible videos (needs `corrected_captions`, `'default'` for the best, or `{model}-{source}` e.g. `gemini-4-argon-youtube`).
       - Post-process the transcript with JSON operations (needs `post_process`, e.g. `'{"word count": "apple"}'`).
 4.  **Artifact Storage**: Note that granular textual artifacts are saved to:
     - `tag-files/`: AI-generated tags.
@@ -78,6 +76,9 @@ Here are the following args for the tool:
     - `srt-files/`: SRT transcript files (both YouTube and AI generated).
     - `qa-files/`: Q&A markdown files (now includes "Timestamp" and "Timestamp URL" as markdown hyperlinks).
     - `corrected-caption-files/`: Complete WCAG 2.1 / Section 508 corrected SRT files.
+    - `vtt-files/`: WebVTT captions and descriptions tracks for websites, and an Able Player page for checking them.
+    - `descriptive-transcript-files/`: The dialogue by speaker with descriptions of the visual information.
+    - `video-files/`: The original video and a copy with captions burned in and descriptions narrated.
     - `video-context-files/`: On-screen names, speaking times, terms and events read from the video (used for corrected captions).
     - These are linked as columns in the output CSV.
 5.  **Timestamp Accuracy**: The server automatically cross-references YouTube SRT timestamps when generating AI Q&A to ensure pinpoint accuracy for "Timestamp URL" links.

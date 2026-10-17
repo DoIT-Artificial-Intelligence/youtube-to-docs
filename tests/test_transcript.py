@@ -7,6 +7,18 @@ from youtube_to_docs import transcript
 
 
 class TestTranscript(unittest.TestCase):
+    def test_format_as_srt_ends_rolling_cues_at_the_next_start(self):
+        srt = transcript.format_as_srt(
+            [
+                {"start": 1.199, "duration": 4.639, "text": "Good afternoon and"},
+                {"start": 4.0, "duration": 4.32, "text": "welcome to the AIB"},
+                {"start": 10.0, "duration": 2.0, "text": "Later."},
+            ]
+        )
+        self.assertIn("00:00:01,199 --> 00:00:04,000\nGood afternoon and", srt)
+        self.assertIn("00:00:04,000 --> 00:00:08,320\nwelcome to the AIB", srt)
+        self.assertIn("00:00:10,000 --> 00:00:12,000\nLater.", srt)
+
     @patch("yt_dlp.YoutubeDL")
     @patch("static_ffmpeg.add_paths")
     def test_download_video(self, mock_add_paths, mock_ydl_cls):

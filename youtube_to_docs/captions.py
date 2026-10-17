@@ -28,7 +28,7 @@ import statistics
 import time
 from bisect import bisect_left, bisect_right
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, NamedTuple, Optional, Sequence, Tuple
 
 from rich import print as rprint
 
@@ -1506,6 +1506,30 @@ def _finalize_timing(captions: List[_Caption]) -> None:
         caption.end = max(end, caption.start + 0.25)
 
 
+def srt_to_webvtt(content: str) -> str:
+    """
+    WebVTT version of an SRT, for HTML5 `<track>` elements (browsers don't
+    read SRT). Keeps the line breaks and escapes `&` and `<`, which WebVTT
+    reserves.
+    """
+    blocks = []
+    text = content.replace("\r\n", "\n").replace("\r", "\n").strip()
+    for block in re.split(r"\n[ \t]*\n", text):
+        lines = block.split("\n")
+        for i, line in enumerate(lines):
+            if _TIMING_RE.search(line):
+                timing = re.sub(r"(\d),(\d)", r"\1.\2", line.strip())
+                body = [
+                    part.replace("&", "&amp;").replace("<", "&lt;")
+                    for part in lines[i + 1 :]
+                    if part.strip()
+                ]
+                if body:
+                    blocks.append("\n".join([timing, *body]))
+                break
+    return "WEBVTT\n\n" + "\n\n".join(blocks) + "\n"
+
+
 def format_captions(captions: List[_Caption]) -> str:
     blocks = [
         f"{number}\n{format_timestamp(caption.start)} --> "
@@ -1704,6 +1728,43 @@ def _describe(source: str) -> str:
     return "YouTube captions" if source == "youtube" else f"{source} speech-to-text"
 
 
+class CaptionFiles(NamedTuple):
+    """Where `-cc` read and wrote captions for a video."""
+
+    path: str
+    source: str
+    source_srt: str
+    reference_srt: Optional[str]
+
+
+def _save_webvtt(
+    row: Dict[str, Any],
+    storage: Any,
+    srt_path: str,
+    model_name: str,
+    source: str,
+    video_id: str,
+    safe_title: str,
+    vtt_dir: str,
+) -> None:
+    """Writes the WebVTT copy of the corrected captions, if it's missing."""
+    col = f"Captions VTT File {model_name} from {source}"
+    path = os.path.join(
+        vtt_dir,
+        f"{model_name} - {video_id} - {safe_title} - captions (from {source}).vtt",
+    )
+    if storage.exists(path):
+        row[col] = row.get(col) or path
+        return
+    try:
+        saved = storage.write_text(path, srt_to_webvtt(storage.read_text(srt_path)))
+    except Exception as e:
+        print(f"Error writing captions WebVTT: {e}")
+        return
+    row[col] = saved
+    rprint(f"Saved captions WebVTT: {format_clickable_path(saved)}")
+
+
 def process_corrected_captions(
     *,
     row: Dict[str, Any],
@@ -1718,12 +1779,13 @@ def process_corrected_captions(
     dirs: Dict[str, str],
     verbose: bool,
     vprint: Callable[..., None] = print,
-) -> Optional[Tuple[str, str]]:
+) -> Optional[CaptionFiles]:
     """
-    Writes a corrected SRT for the video (`-cc`). `source` is the SRT to
-    correct ("youtube", an STT model, or None for the most relevant AI SRT);
-    the other transcript is used as the reference. Skips if the output exists.
-    Returns (path, source used), or None if no captions were produced.
+    Writes a corrected SRT for the video (`-cc`), and a WebVTT copy for
+    websites. `source` is the SRT to correct ("youtube", an STT model, or None
+    for the most relevant AI SRT); the other transcript is used as the
+    reference. Skips if the output exists. Returns the files used, or None if
+    no captions were produced.
     """
     srts = _find_srts(
         row,
@@ -1761,14 +1823,23 @@ def process_corrected_captions(
         f"{model_name} - {video_id} - {safe_title} - "
         f"corrected captions (from {chosen}).srt",
     )
+
+    def done(saved: str) -> CaptionFiles:
+        _save_webvtt(
+            row, storage, saved, model_name, chosen, video_id, safe_title, dirs["vtt"]
+        )
+        return CaptionFiles(
+            saved, chosen, srts[chosen], srts[reference] if reference else None
+        )
+
     existing = row.get(col)
     if isinstance(existing, str) and existing and storage.exists(existing):
         vprint(f"Corrected captions already exist: {existing}")
-        return existing, chosen
+        return done(existing)
     if storage.exists(path):
         row[col] = path
         vprint(f"Corrected captions already exist: {path}")
-        return path, chosen
+        return done(path)
 
     context = ensure_video_context(
         row=row,
@@ -1838,4 +1909,4 @@ def process_corrected_captions(
                 f"from {chosen} ($)"
             ] = round(cost, 2)
             vprint(f"Corrected captions cost: ${cost:.2f}")
-    return saved, chosen
+    return done(saved)

@@ -1,16 +1,17 @@
+import html
 import os
 import re
 import shutil
 import subprocess
 import tempfile
+import urllib.parse
 from collections import defaultdict
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import polars as pl
 from rich import print as rprint
 
 from youtube_to_docs.storage import Storage
-from youtube_to_docs.transcript import download_video
 from youtube_to_docs.utils import format_clickable_path
 
 # Open captions: white sans-serif text on an 80% opaque black box, which keeps
@@ -248,15 +249,17 @@ def process_videos(
     return df
 
 
-def burn_captions(
+def render_accessible_video(
     video_path: str,
     srt_path: str,
     output_path: str,
     duration_seconds: Optional[float] = None,
+    narration_path: Optional[str] = None,
 ) -> bool:
     """
     Re-encodes a video with the captions in `srt_path` drawn onto the picture
-    (open captions), keeping the original audio. Prints progress when the
+    (open captions) and, if given, the audio-description narration mixed in,
+    lowering the programme audio while it plays. Prints progress when the
     duration is known. Returns True on success.
     """
     try:
@@ -273,6 +276,7 @@ def burn_captions(
         print(f"Error fetching ffmpeg: {e}")
         return False
 
+    subtitles = f"subtitles=captions.srt:force_style='{OPEN_CAPTION_STYLE}'"
     with tempfile.TemporaryDirectory() as work:
         # The subtitles filter parses its argument as filter syntax, so the SRT
         # gets a plain relative name in ffmpeg's working directory.
@@ -288,16 +292,37 @@ def burn_captions(
             "-y",
             "-i",
             os.path.abspath(video_path),
-            "-vf",
-            f"subtitles=captions.srt:force_style='{OPEN_CAPTION_STYLE}'",
+        ]
+        if narration_path:
+            command += [
+                "-i",
+                os.path.abspath(narration_path),
+                "-filter_complex",
+                f"[0:v]{subtitles}[video];"
+                "[1:a]aresample=48000,aformat=channel_layouts=stereo,"
+                "asplit=2[side][voice];"
+                "[0:a]aresample=48000,aformat=channel_layouts=stereo[programme];"
+                "[programme][side]sidechaincompress=threshold=0.02:ratio=8:"
+                "attack=20:release=400[ducked];"
+                "[ducked][voice]amix=inputs=2:duration=first:normalize=0[audio]",
+                "-map",
+                "[video]",
+                "-map",
+                "[audio]",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "160k",
+            ]
+        else:
+            command += ["-vf", subtitles, "-c:a", "copy"]
+        command += [
             "-c:v",
             "libx264",
             "-preset",
             "veryfast",
             "-crf",
             "22",
-            "-c:a",
-            "copy",
             "-movflags",
             "+faststart",
             os.path.abspath(output_path),
@@ -322,25 +347,54 @@ def burn_captions(
                         continue
                     if done >= (reported + 1) / 10 and reported < 9:
                         reported = min(int(done * 10), 9)
-                        rprint(f"  Burning captions: {reported * 10}%")
+                        rprint(f"  Rendering video: {reported * 10}%")
                 process.wait()
             if process.returncode != 0:
                 with open(log_path) as log:
-                    print(f"Error burning captions: {log.read().strip()[-500:]}")
+                    print(f"Error rendering video: {log.read().strip()[-500:]}")
                 return False
             return True
         except OSError as e:
-            print(f"Error burning captions: {e}")
+            print(f"Error rendering video: {e}")
             return False
 
 
-def process_captioned_video(
+def save_original_video(
+    *,
+    row: Dict[str, Any],
+    storage: Storage,
+    get_video: Callable[[], Optional[str]],
+    path: str,
+) -> None:
+    """Keeps the downloaded video in `video-files/` (the source for website
+    players). Skips if it's already there."""
+    col = "Original Video File"
+    if storage.exists(path):
+        row[col] = row.get(col) or storage.get_full_path(path)
+        return
+    video = get_video()
+    if not video:
+        return
+    try:
+        saved = storage.upload_file(video, path, content_type="video/mp4")
+    except Exception as e:
+        print(f"Error saving the original video: {e}")
+        return
+    row[col] = saved
+    rprint(f"Saved original video: {format_clickable_path(saved)}")
+
+
+def process_accessible_video(
     *,
     row: Dict[str, Any],
     storage: Storage,
     captions_path: str,
     model_name: str,
     source: str,
+    descriptions: Optional[List[Any]],
+    descriptions_vtt: Optional[str],
+    tts_arg: Optional[str],
+    get_video: Callable[[], Optional[str]],
     video_id: str,
     safe_title: str,
     video_dir: str,
@@ -348,22 +402,31 @@ def process_captioned_video(
     vprint: Callable[..., None] = print,
 ) -> None:
     """
-    Saves a copy of the video with the corrected captions burned in (`-ccv`)
-    to `video_dir`. Skips if it already exists.
+    Saves a copy of the video with the corrected captions burned in and the
+    audio description narrated in the pauses (part of `-cc`). `descriptions`
+    are the narrated standard descriptions from this run; otherwise they are
+    read back from `descriptions_vtt` and narrated again. Skips if it exists.
     """
-    col = f"Captioned Video File {model_name} from {source}"
+    from youtube_to_docs.audio_description import (
+        DEFAULT_NARRATION_TTS,
+        descriptions_from_webvtt,
+        synthesize,
+        write_narration_track,
+    )
+
+    col = f"Captioned And Described Video File {model_name} from {source}"
     target = os.path.join(
         video_dir,
-        f"{model_name} - {video_id} - {safe_title} - captioned video "
-        f"(from {source}).mp4",
+        f"{model_name} - {video_id} - {safe_title} - captioned and described "
+        f"video (from {source}).mp4",
     )
     existing = row.get(col)
     if isinstance(existing, str) and existing and storage.exists(existing):
-        vprint(f"Captioned video already exists: {existing}")
+        vprint(f"Captioned and described video already exists: {existing}")
         return
     if storage.exists(target):
         row[col] = storage.get_full_path(target)
-        vprint(f"Captioned video already exists: {target}")
+        vprint(f"Captioned and described video already exists: {target}")
         return
 
     with tempfile.TemporaryDirectory() as work:
@@ -371,18 +434,130 @@ def process_captioned_video(
         if not srt:
             print(f"Error: corrected captions not found at {captions_path}")
             return
-        rprint(f"Downloading video {video_id} for open captions...")
-        video = download_video(video_id, os.path.join(work, "download"))
+        video = get_video()
         if not video:
             return
-        rprint("Burning corrected captions into the video (re-encoding)...")
-        output = os.path.join(work, "captioned.mp4")
-        if not burn_captions(video, srt, output, duration_seconds):
+        if (
+            descriptions is None
+            and descriptions_vtt
+            and storage.exists(descriptions_vtt)
+        ):
+            descriptions = descriptions_from_webvtt(storage.read_text(descriptions_vtt))
+            synthesize(descriptions, tts_arg or DEFAULT_NARRATION_TTS)
+        narration = None
+        if descriptions:
+            narration = os.path.join(work, "narration.wav")
+            if not write_narration_track(
+                descriptions, duration_seconds or 0.0, narration
+            ):
+                narration = None
+        rprint(
+            "Rendering the video with captions"
+            + (" and audio description" if narration else "")
+            + " (re-encoding)..."
+        )
+        output = os.path.join(work, "accessible.mp4")
+        if not render_accessible_video(video, srt, output, duration_seconds, narration):
             return
         try:
             saved = storage.upload_file(output, target, content_type="video/mp4")
         except Exception as e:
-            print(f"Error saving captioned video: {e}")
+            print(f"Error saving the captioned and described video: {e}")
             return
     row[col] = saved
-    rprint(f"Saved captioned video: {format_clickable_path(saved)}")
+    rprint(f"Saved captioned and described video: {format_clickable_path(saved)}")
+
+
+ABLE_PLAYER_URL = "https://cdn.jsdelivr.net/npm/ableplayer@5.0.0/build"
+JQUERY_URL = "https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+
+
+def player_page_html(
+    title: str,
+    video_src: str,
+    captions_src: str,
+    descriptions_src: Optional[str],
+    transcript_href: Optional[str],
+) -> str:
+    """
+    A web page that plays the video in Able Player with the WebVTT captions
+    and descriptions tracks, for checking them in a browser and as a template
+    for a website. Able Player reads the descriptions aloud and, by default,
+    pauses the video while each one is read (extended description).
+    """
+    name = html.escape(title or "Video")
+    descriptions = (
+        f'\n      <track kind="descriptions" src="{html.escape(descriptions_src)}" '
+        'srclang="en" label="English">'
+        if descriptions_src
+        else ""
+    )
+    transcript = (
+        f'\n    <p><a href="{html.escape(transcript_href)}">Descriptive transcript'
+        "</a> (the dialogue with descriptions of the visual information)</p>"
+        if transcript_href
+        else ""
+    )
+    return f"""<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{name}: accessible player</title>
+    <link rel="stylesheet" href="{ABLE_PLAYER_URL}/ableplayer.min.css">
+  </head>
+  <body>
+    <main>
+      <h1>{name}</h1>
+      <p>Captions are on. Select the Description button to hear descriptions of
+      the slides and other visual information; the video pauses while each one
+      is read.</p>
+      <video id="video1" data-able-player preload="metadata" playsinline
+        data-desc-pause-default="on" data-state-captions="on">
+        <source type="video/mp4" src="{html.escape(video_src)}">
+        <track kind="captions" src="{html.escape(captions_src)}" srclang="en"
+          label="English" default>{descriptions}
+      </video>{transcript}
+    </main>
+    <script src="{JQUERY_URL}"></script>
+    <script src="{ABLE_PLAYER_URL}/ableplayer.min.js"></script>
+  </body>
+</html>
+"""
+
+
+def write_player_page(
+    *,
+    row: Dict[str, Any],
+    storage: Storage,
+    path: str,
+    title: str,
+    video_path: str,
+    captions_path: str,
+    descriptions_path: Optional[str],
+    transcript_path: Optional[str],
+) -> None:
+    """Writes the Able Player page (see player_page_html) with links relative
+    to the page, so the folder can be served or published as it is."""
+    folder = os.path.dirname(path)
+
+    def link(target: Optional[str]) -> Optional[str]:
+        if not target:
+            return None
+        relative = os.path.relpath(target, folder).replace(os.sep, "/")
+        return urllib.parse.quote(relative)
+
+    page = player_page_html(
+        title,
+        link(video_path) or "",
+        link(captions_path) or "",
+        link(descriptions_path),
+        link(transcript_path),
+    )
+    try:
+        saved = storage.write_text(path, page)
+    except Exception as e:
+        print(f"Error writing the player page: {e}")
+        return
+    row["Player Page"] = saved
+    rprint(f"Saved player page: {format_clickable_path(saved)}")

@@ -28,8 +28,8 @@ from youtube_to_docs.models import MODEL_SUITES
 from youtube_to_docs.storage import MemoryStorage
 from youtube_to_docs.utils import (
     OUTPUT_ROOT,
-    corrected_captions_args,
     is_remote_output,
+    optional_value_args,
     resolve_within,
     validate_output_file,
 )
@@ -91,7 +91,6 @@ class ProcessRequest(BaseModel):
     combine_infographic_audio: bool = False
     all_suite: str | None = None
     corrected_captions: str | None = None
-    corrected_captions_video: bool = False
     post_process: str | None = None
     verbose: bool = False
 
@@ -175,9 +174,10 @@ async def process(req: ProcessRequest):
         if req.all_suite:
             args.extend(["--all", req.all_suite])
         if req.corrected_captions:
-            args.extend(corrected_captions_args(req.corrected_captions))
-        if req.corrected_captions_video:
-            args.append("--corrected-captions-video")
+            args.extend(
+                optional_value_args("--corrected-captions", req.corrected_captions)
+            )
+
         if req.post_process:
             args.extend(["--post-process", req.post_process])
         if req.verbose:
