@@ -37,7 +37,7 @@ def process_video(
 
     Note: Advanced features (video generation, AI transcription, cloud storage)
     require optional dependencies to be available in the environment. The MCP server
-    is pre-configured to handle this via 'uv run --all-extras'.
+    is pre-configured to handle this via 'uv run --with youtube-to-docs[all]'.
 
     Args:
         url: The YouTube URL or video ID. Can also be a playlist ID

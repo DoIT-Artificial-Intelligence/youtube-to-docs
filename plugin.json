@@ -1,0 +1,5 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "youtube-to-docs",
+  "description": "Convert YouTube videos into structured docs, summaries, audio, and visual assets for easier discovery."
+}
