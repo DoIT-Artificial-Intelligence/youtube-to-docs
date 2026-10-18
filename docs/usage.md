@@ -431,26 +431,39 @@ The web app exposes a REST API that the frontend uses:
 
 ## MCP Server
 
-This tool also functions as a Model Context Protocol (MCP) server, allowing it to be used as a tool by AI agents (like the Gemini CLI).
+This tool also works as a Model Context Protocol (MCP) server, so AI agents can use it as a tool. The server exposes a `process_video` tool that mirrors the CLI.
 
-The server exposes a `process_video` tool that mirrors the CLI functionality.
+### Install as a plugin
 
-### Configuration
+The repository is a plugin for Claude Code and Antigravity. It adds the MCP server (defined in `mcp_config.json`) and one `youtube-to-docs` skill that tells the agent how to call it.
 
-The repository includes a `gemini-extension.json` file at the root, which configures the MCP server for use with the Gemini CLI.
+Claude Code:
+
+```bash
+claude plugin marketplace add DoIT-Artificial-Intelligence/youtube-to-docs
+claude plugin install youtube-to-docs@youtube-to-docs
+```
+
+Antigravity:
+
+```bash
+agy plugin install https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs
+```
 
 ### Usage
 
-Once the extension is registered with your agent, you can ask it to process videos using natural language:
+Ask for what you want in plain language:
 
 > "Save a summary of https://www.youtube.com/watch?v=KuPc06JgI_A"
 
-The agent will prompt you for any necessary details (like the model to use) and then execute the tool.
+The agent asks for any details it needs (like the model to use) and then calls the tool. You can also run the skill directly, e.g. `/youtube-to-docs <url> kitchen sink gemini pro spanish` or `/youtube-to-docs <url> captions`.
 
-### Install as a Gemini CLI extension
+### Other MCP clients
+
+Any MCP client can run the server with:
 
 ```bash
-gemini extensions install https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs.git
+uv run --no-project --with "youtube-to-docs[all]" python -m youtube_to_docs.mcp_server
 ```
 
 ## Library Usage

@@ -1,7 +1,6 @@
 {
   "name": "youtube-to-docs",
-  "version": "1.0.0",
-  "description": "Official YouTube to Docs plugins for Claude Code",
+  "description": "YouTube to Docs plugin for Claude Code",
   "owner": {
     "name": "DoIT Artificial Intelligence"
   },
@@ -9,35 +8,8 @@
     {
       "name": "youtube-to-docs",
       "description": "Convert YouTube videos into structured docs, summaries, audio, and visual assets for easier discovery.",
-      "source": "./claude-plugins/youtube-to-docs",
-      "category": "productivity",
-      "version": "1.0.0",
-      "author": {
-        "name": "DoIT Artificial Intelligence"
-      },
-      "homepage": "https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs",
-      "repository": "https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs",
-      "license": "MIT",
-      "keywords": [
-        "youtube",
-        "transcript",
-        "summary",
-        "infographic",
-        "audio",
-        "tts",
-        "video",
-        "ai",
-        "mcp"
-      ],
-      "tags": [
-        "productivity",
-        "youtube",
-        "ai",
-        "transcription",
-        "summarization",
-        "infographic",
-        "mcp"
-      ]
+      "source": "./",
+      "category": "productivity"
     }
   ]
 }

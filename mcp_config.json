@@ -4,6 +4,7 @@
       "command": "uv",
       "args": [
         "run",
+        "--no-project",
         "--with",
         "youtube-to-docs[all]",
         "python",
