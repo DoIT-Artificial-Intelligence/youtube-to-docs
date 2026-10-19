@@ -1703,7 +1703,7 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>-i</code>, <code>--infographic</code></td>
-<td style="text-align: left;">The image model to use for generating a visual summary. Supports models from Google (Gemini) and Azure Foundry (GPT Image). <strong>Can be a comma-separated list</strong> (one infographic per model).</td>
+<td style="text-align: left;">The image model to use for generating a visual summary. Supports Google Gemini image models (Nano Banana). <strong>Can be a comma-separated list</strong> (one infographic per model).</td>
 <td style="text-align: left;"><code>None</code></td>
 <td style="text-align: left;"><code>--infographic gemini-nano-banana-2.1,gemini-3-pro-image</code></td>
 </tr>
@@ -1779,8 +1779,8 @@
 <p><strong>5. Process a Channel with Summaries, TTS, and Infographics:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>youtube-to-docs<span class="w"> </span>@mga-othercommittees6625<span class="w"> </span>-m<span class="w"> </span>vertex-claude-haiku-5-5<span class="w"> </span>--tts<span class="w"> </span>gemini-3.8-flash-lite-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-nano-banana-2.1
 </code></pre></div>
-<p><strong>6. Generate an Infographic using Azure Foundry:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3.5-flash-lite<span class="w"> </span>--infographic<span class="w"> </span>foundry-gpt-image-1.5
+<p><strong>6. Compare infographics from two image models:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3.5-flash-lite<span class="w"> </span>--infographic<span class="w"> </span>gemini-nano-banana-2.1,gemini-3-pro-image
 </code></pre></div>
 <p><strong>7. Create a Video (Infographic + Audio Summary):</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-m<span class="w"> </span>gemini-3.5-flash-lite<span class="w"> </span>--tts<span class="w"> </span>gemini-3.8-flash-lite-tts-Kore<span class="w"> </span>--infographic<span class="w"> </span>gemini-nano-banana-2.1<span class="w"> </span>--combine-infographic-audio
