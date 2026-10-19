@@ -211,7 +211,9 @@ class TestErrorResponseAndCliBuilder(unittest.TestCase):
     def test_context_thread_pool_runs_tasks_in_submitter_context(self):
         import contextvars
 
-        var = contextvars.ContextVar("job", default=None)
+        var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+            "job", default=None
+        )
         var.set("job-a")
         with utils.ContextThreadPoolExecutor(max_workers=2) as pool:
             self.assertEqual(
