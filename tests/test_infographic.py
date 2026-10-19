@@ -125,79 +125,16 @@ class TestInfographic(TestCase):
         self.assertEqual(in_tok, 0)
         self.assertEqual(out_tok, 0)
 
-    @patch("youtube_to_docs.infographic.requests.post")
-    def test_generate_infographic_bedrock(self, mock_post):
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        # "fake_bytes" in base64 is "ZmFrZV9ieXRlcw=="
-        mock_resp.json.return_value = {"images": ["ZmFrZV9ieXRlcw=="]}
-        mock_post.return_value = mock_resp
-
-        image_bytes, in_tok, out_tok = infographic.generate_infographic(
-            "bedrock-titan-image-generator-v2", "Summary text", "Video Title"
-        )
-
-        self.assertEqual(image_bytes, b"fake_bytes")
-        self.assertEqual(in_tok, 0)
-        self.assertEqual(out_tok, 1000)
-        mock_post.assert_called_once()
-        # Check if actual_model_id was mapped correctly
-        args, kwargs = mock_post.call_args
-        self.assertIn("amazon.titan-image-generator-v2:0", args[0])
-
-    @patch("youtube_to_docs.infographic.requests.post")
-    def test_generate_infographic_bedrock_nova(self, mock_post):
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {"images": ["ZmFrZV9ieXRlcw=="]}
-        mock_post.return_value = mock_resp
-
-        image_bytes, in_tok, out_tok = infographic.generate_infographic(
-            "bedrock-nova-canvas-v1", "Summary text", "Video Title"
-        )
-
-        self.assertEqual(image_bytes, b"fake_bytes")
-        self.assertEqual(in_tok, 0)
-        self.assertEqual(out_tok, 4000)
-        mock_post.assert_called_once()
-        # Check if actual_model_id was mapped correctly
-        args, kwargs = mock_post.call_args
-        self.assertIn("amazon.nova-canvas-v1:0", args[0])
-
-    @patch("youtube_to_docs.infographic.requests.post")
-    def test_generate_infographic_bedrock_with_suffix(self, mock_post):
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {"images": ["ZmFrZV9ieXRlcw=="]}
-        mock_post.return_value = mock_resp
-
-        image_bytes, in_tok, out_tok = infographic.generate_infographic(
-            "bedrock-nova-canvas-v1:0", "Summary text", "Video Title"
-        )
-
-        self.assertEqual(image_bytes, b"fake_bytes")
-        mock_post.assert_called_once()
-        # Check that it didn't double the :0
-        args, kwargs = mock_post.call_args
-        self.assertIn("amazon.nova-canvas-v1:0", args[0])
-        self.assertNotIn("amazon.nova-canvas-v1:0:0", args[0])
-
-    @patch("youtube_to_docs.infographic.requests.post")
-    def test_generate_infographic_bedrock_skip_long_prompt(self, mock_post):
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {"images": ["ZmFrZV9ieXRlcw=="]}
-        mock_post.return_value = mock_resp
-
-        long_summary = "A" * 2000
-        image_bytes, in_tok, out_tok = infographic.generate_infographic(
-            "amazon.nova-canvas-v1:0", long_summary, "Video Title"
-        )
-
-        self.assertIsNone(image_bytes)
-        self.assertEqual(in_tok, 0)
-        self.assertEqual(out_tok, 0)
-        mock_post.assert_not_called()
+    def test_generate_infographic_retired_bedrock_models(self):
+        # Titan Image Generator and Nova Canvas reached end of life on Bedrock.
+        for model in ["bedrock-titan-image-generator-v2:0", "bedrock-nova-canvas-v1"]:
+            with self.subTest(model=model):
+                self.assertEqual(
+                    infographic.generate_infographic(
+                        model, "Summary text", "Video Title"
+                    ),
+                    (None, 0, 0),
+                )
 
     @patch("openai.OpenAI")
     def test_generate_infographic_foundry(self, mock_openai_cls):
