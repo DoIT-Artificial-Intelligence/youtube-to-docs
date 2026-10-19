@@ -7,6 +7,8 @@ on:
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
+      - 'scripts/docs/**'
+      - 'youtube_to_docs/prices.py'
       - '.github/workflows/deploy-docs.yml'
 
 jobs:

@@ -41,6 +41,12 @@ theme:
 extra_css:
   - stylesheets/extra.css
 
+extra_javascript:
+  - javascripts/pricing.js
+
+hooks:
+  - scripts/docs/pricing_hook.py
+
 extra:
   generator: false
   social:
