@@ -37,7 +37,7 @@ hide:
   <div class="ytd-stat"><b>1</b><span>command, from URL to a full document set</span></div>
   <div class="ytd-stat"><b>16</b><span>artifact types per video, indexed in one CSV</span></div>
   <div class="ytd-stat"><b>4</b><span>AI platforms: Gemini, Vertex AI, Bedrock, Foundry</span></div>
-  <div class="ytd-stat"><b>~1&cent;</b><span>and about 4 seconds to summarize a long meeting with Flash-Lite (<a href="performance/">benchmark</a>)</span></div>
+  <div class="ytd-stat"><b>~1&cent;</b><span>and about 6 seconds to summarize a long meeting with Flash-Lite (<a href="performance/">benchmark</a>)</span></div>
 </div>
 
 <div class="ytd-section" markdown>

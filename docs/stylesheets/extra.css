@@ -238,6 +238,12 @@
   border: 1px solid var(--ytd-border);
 }
 .md-typeset .ytd-showcase figcaption { font-size: 0.78rem; color: var(--ytd-muted); max-width: none; }
+
+/* Infographic gallery (Performance page) */
+.ytd-gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-top: 1.2rem; }
+.ytd-gallery figure { margin: 0; }
+.ytd-gallery img { width: 100%; border-radius: var(--ytd-radius); border: 1px solid var(--ytd-border); }
+.md-typeset .ytd-gallery figcaption { font-size: 0.78rem; color: var(--ytd-muted); max-width: none; }
 .md-typeset .ytd-checklist { list-style: none; margin-left: 0; padding: 0; }
 .md-typeset .ytd-checklist li { margin-left: 0; padding-left: 1.6rem; position: relative; }
 .md-typeset .ytd-checklist li::before {
@@ -292,7 +298,7 @@
 
 /* Responsive */
 @media screen and (max-width: 60em) {
-  .ytd-hero, .ytd-showcase { grid-template-columns: 1fr; }
+  .ytd-hero, .ytd-showcase, .ytd-gallery { grid-template-columns: 1fr; }
   .ytd-hero { padding-top: 1.5rem; }
   .ytd-hero h1 { font-size: 2.3rem; }
   .ytd-grid, .ytd-steps { grid-template-columns: repeat(2, 1fr); }
