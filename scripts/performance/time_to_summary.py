@@ -14,15 +14,15 @@ from youtube_to_docs.transcript import (
 VIDEO_ID = "atmGAHYpf_c"
 MODELS = [
     "bedrock-nova-2-lite-v1",
-    "bedrock-nova-pro-v1",
-    "bedrock-nova-premier-v1",
     "bedrock-claude-haiku-5-5",
     "bedrock-claude-sonnet-5-5",
     "bedrock-claude-opus-5-5",
     "gemini-3.5-flash-lite",
+    "gemini-3.8-flash",
     "gemini-4-argon",
-    "vertex-gemini-2.5-flash",
-    "vertex-gemini-2.5-pro",
+    "vertex-gemini-3.5-flash-lite",
+    "vertex-gemini-3.8-flash",
+    "vertex-gemini-4-argon",
     "vertex-claude-haiku-5-5",
     "vertex-claude-sonnet-5-5",
     "vertex-claude-opus-5-5",
@@ -77,8 +77,14 @@ def main():
                 model, transcript_text, video_title, url
             )
 
-            # Check if it actually returned a valid string and not an error message
-            if summary.startswith("Error:"):
+            # Providers return errors as text (e.g. "Bedrock API Error 404: ..."
+            # for a retired model) rather than raising, so also treat an empty
+            # response as a failure.
+            if (
+                summary.startswith("Error:")
+                or "API Error" in summary[:100]
+                or output_tokens == 0
+            ):
                 elapsed_time = 999.0
             else:
                 elapsed_time = round(time.time() - start_time, 2)

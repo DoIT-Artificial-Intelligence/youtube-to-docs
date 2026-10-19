@@ -20,7 +20,7 @@ uv run --extra all scripts/performance/time_to_summary.py
 1.  Fetches the transcript for a hardcoded video ID (`atmGAHYpf_c`).
 2.  Iterates through a predefined list of models (Bedrock, Gemini, Vertex, Foundry).
 3.  Measures the time taken by `generate_summary` for each model.
-4.  If a model fails or returns an error, the time is set to `999`.
+4.  If a model fails, returns an error message (e.g. a retired model) or returns no output tokens, the time is set to `999`.
 5.  Outputs the results to a CSV file named `time_to_summarize.csv`.
 
 #### Output
