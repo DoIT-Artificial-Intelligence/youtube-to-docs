@@ -183,6 +183,27 @@ class TestLLMs(unittest.TestCase):
                     llms.BEDROCK_TIMEOUT_SECONDS,
                 )
 
+    @patch("youtube_to_docs.llms.requests.post")
+    def test_bedrock_http_error_is_error_response(self, mock_post):
+        """A retired model's 404 is reported in the shared "Error:" format, so
+        main() doesn't save it as a summary or reuse it on the next run."""
+        from youtube_to_docs.utils import is_error_response
+
+        mock_resp = MagicMock()
+        mock_resp.status_code = 404
+        mock_resp.text = (
+            '{"message":"This model version has reached the end of its life."}'
+        )
+        mock_post.return_value = mock_resp
+        for model in ["bedrock-nova-premier-v1", "bedrock-gpt-6-luna"]:
+            with self.subTest(model=model):
+                summary, in_tokens, out_tokens = llms.generate_summary(
+                    model, "transcript", "Title", "url"
+                )
+                self.assertTrue(is_error_response(summary), summary)
+                self.assertIn("404", summary)
+                self.assertEqual((in_tokens, out_tokens), (0, 0))
+
     def test_is_bedrock_openai_model(self):
         self.assertTrue(llms._is_bedrock_openai_model("gpt-6-luna"))
         self.assertTrue(llms._is_bedrock_openai_model("openai.gpt-6.1-sol"))

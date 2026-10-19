@@ -74,7 +74,12 @@ def register_provider(name: str, provider_class: Any):
 
 def get_provider(model_name: str) -> BaseProvider:
     """Factory to get the appropriate provider instance for a model name."""
-    # This will be populated by concrete implementations
+    if model_name in _registry:
+        return _registry[model_name](model_name)
+    for prefix, provider_cls in _registry.items():
+        if model_name.startswith(prefix):
+            return provider_cls(model_name)
+
     if model_name.startswith("gemini") or model_name.startswith("gemma"):
         from youtube_to_docs.llms import GeminiProvider
 

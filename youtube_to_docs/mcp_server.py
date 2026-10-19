@@ -5,8 +5,8 @@ from mcp.server.mcpserver import MCPServer
 
 from youtube_to_docs.main import main as app_main
 from youtube_to_docs.utils import (
+    build_cli_args,
     get_version,
-    optional_value_args,
     validate_output_file,
 )
 
@@ -121,49 +121,24 @@ def process_video(
     except ValueError as e:
         return f"Error processing {url}: {e}"
 
-    args = [url, "--outfile", output_file]
-
-    if transcript_source:
-        args.extend(["--transcript", transcript_source])
-
-    if hugging_face_dataset:
-        args.extend(["--hugging-face-dataset", hugging_face_dataset])
-
-    if translate:
-        args.extend(["--translate", translate])
-
-    if model:
-        args.extend(["--model", model])
-
-    if tts_model:
-        args.extend(["--tts", tts_model])
-
-    if infographic_model:
-        args.extend(["--infographic", infographic_model])
-
-    if alt_text_model:
-        args.extend(["--alt-text-model", alt_text_model])
-
-    if no_youtube_summary:
-        args.append("--no-youtube-summary")
-
-    if from_video:
-        args.extend(["--from-video", from_video])
-
-    if combine_infographic_audio:
-        args.append("--combine-infographic-audio")
-
-    if all_suite:
-        args.extend(["--all", all_suite])
-
-    if corrected_captions:
-        args.extend(optional_value_args("--corrected-captions", corrected_captions))
-
-    if post_process:
-        args.extend(["--post-process", post_process])
-
-    if verbose:
-        args.append("--verbose")
+    args = build_cli_args(
+        url=url,
+        output_file=output_file,
+        hugging_face_dataset=hugging_face_dataset,
+        transcript_source=transcript_source,
+        model=model,
+        tts_model=tts_model,
+        infographic_model=infographic_model,
+        alt_text_model=alt_text_model,
+        no_youtube_summary=no_youtube_summary,
+        from_video=from_video,
+        translate=translate,
+        combine_infographic_audio=combine_infographic_audio,
+        all_suite=all_suite,
+        corrected_captions=corrected_captions,
+        post_process=post_process,
+        verbose=verbose,
+    )
 
     # Capture stdout/stderr to return as tool output
     f = io.StringIO()

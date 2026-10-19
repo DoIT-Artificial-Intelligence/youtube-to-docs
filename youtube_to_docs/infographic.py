@@ -48,17 +48,16 @@ def generate_infographic(
     prompt = build_infographic_prompt(summary_text, video_title, language)
 
     try:
-        from google import genai
-        from google.genai import types
-
-        GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-        if not GEMINI_API_KEY:
-            print("Error: GEMINI_API_KEY not found for infographic generation")
-            return None, 0, 0
-
-        client = genai.Client(api_key=GEMINI_API_KEY)
-
         if image_model.startswith("gemini"):
+            from google import genai
+            from google.genai import types
+
+            GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+            if not GEMINI_API_KEY:
+                print("Error: GEMINI_API_KEY not found for infographic generation")
+                return None, 0, 0
+
+            client = genai.Client(api_key=GEMINI_API_KEY)
             contents = [
                 types.Content(
                     role="user",

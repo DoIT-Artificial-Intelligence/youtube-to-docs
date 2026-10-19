@@ -33,14 +33,11 @@ def reauthenticate_google() -> bool:
         return False
 
     try:
-        # Lazy imports to avoid dependency issues for non-workspace users
-        from google_auth_oauthlib.flow import InstalledAppFlow
+        # Lazy import to avoid dependency issues for non-workspace users
+        from youtube_to_docs.storage import get_google_credentials
 
-        scopes = ["https://www.googleapis.com/auth/drive.file"]
-        flow = InstalledAppFlow.from_client_secrets_file(str(creds_file), scopes)
-        creds = flow.run_local_server(port=0)
-
-        token_file.write_text(creds.to_json())
+        # With the token gone, this opens a browser sign-in and saves a new one.
+        get_google_credentials()
         print(f"Successfully re-authenticated. Token saved to {token_file}")
         return True
     except ImportError:

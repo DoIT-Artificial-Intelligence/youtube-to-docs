@@ -307,10 +307,17 @@ def process_translate(
     Adds translated columns with suffix ` ({translate_lang})` and saves
     translated files alongside the originals.
     """
-    from youtube_to_docs.utils import format_clickable_path
+    from youtube_to_docs.llms import get_model_pricing
+    from youtube_to_docs.utils import (
+        format_clickable_path,
+        is_error_response,
+        normalize_model_name,
+    )
 
     lang_suffix = f" ({translate_lang})"
     lang_str = f" ({translate_lang})"
+    total_in_tok = 0
+    total_out_tok = 0
 
     def _translate_and_store(
         en_col: str,
@@ -319,16 +326,32 @@ def process_translate(
         filename: str,
         file_col: Optional[str] = None,
     ) -> None:
+        nonlocal total_in_tok, total_out_tok
         en_text = row.get(en_col)
-        if not en_text or not isinstance(en_text, str):
+        if not en_text or not isinstance(en_text, str) or is_error_response(en_text):
             return
-        if row.get(translated_col):
+        existing = row.get(translated_col)
+        if existing and not is_error_response(existing):
             return  # Already translated
 
         if verbose:
             print(f"Translating '{en_col}' to {translate_lang} using {translate_model}")
 
-        translated, _, _ = translate_text(translate_model, en_text, translate_lang)
+        translated, in_tok, out_tok = translate_text(
+            translate_model, en_text, translate_lang
+        )
+        total_in_tok += in_tok
+        total_out_tok += out_tok
+
+        if is_error_response(translated):
+            from rich import print as rprint
+
+            rprint(
+                f"[yellow]Warning: Translation failed for '{en_col}' "
+                f"({translated}); skipping file save.[/yellow]"
+            )
+            return
+
         row[translated_col] = translated
 
         if save_dir and translated and file_col:
@@ -337,6 +360,8 @@ def process_translate(
             target_path = os.path.join(save_dir, filename)
             try:
                 saved_path = storage.write_text(target_path, translated)
+                if isinstance(saved_path, str):
+                    saved_path = saved_path.replace("\\", "/")
                 from rich import print as rprint
 
                 rprint(
@@ -403,45 +428,73 @@ def process_translate(
             file_col=f"Tags File {transcript_arg} {model_name} model{lang_suffix}",
         )
 
-        # Secondary (from youtube) summaries
-        if f"Summary Text {model_name} from youtube" in row:
-            _translate_and_store(
-                en_col=f"Summary Text {model_name} from youtube",
-                translated_col=f"Summary Text {model_name} from youtube{lang_suffix}",
-                save_dir=summaries_dir,
-                filename=(
-                    f"{model_name} - {video_id} - {safe_title} - "
-                    f"summary (from youtube){lang_str}.md"
-                ),
-                file_col=f"Summary File {model_name} from youtube{lang_suffix}",
-            )
+        # Secondary (from youtube) summaries, Q&A, and tags
+        if transcript_arg != "youtube":
+            if f"Summary Text {model_name} from youtube" in row:
+                _translate_and_store(
+                    en_col=f"Summary Text {model_name} from youtube",
+                    translated_col=(
+                        f"Summary Text {model_name} from youtube{lang_suffix}"
+                    ),
+                    save_dir=summaries_dir,
+                    filename=(
+                        f"{model_name} - {video_id} - {safe_title} - "
+                        f"summary (from youtube){lang_str}.md"
+                    ),
+                    file_col=f"Summary File {model_name} from youtube{lang_suffix}",
+                )
 
-        if f"One Sentence Summary {model_name} from youtube" in row:
-            _translate_and_store(
-                en_col=f"One Sentence Summary {model_name} from youtube",
-                translated_col=(
-                    f"One Sentence Summary {model_name} from youtube{lang_suffix}"
-                ),
-                save_dir=one_sentence_summaries_dir,
-                filename=(
-                    f"{model_name} - {video_id} - {safe_title} - "
-                    f"one-sentence-summary (from youtube){lang_str}.md"
-                ),
-                file_col=(
-                    f"One Sentence Summary File {model_name} from youtube{lang_suffix}"
-                ),
-            )
+            if f"One Sentence Summary {model_name} from youtube" in row:
+                _translate_and_store(
+                    en_col=f"One Sentence Summary {model_name} from youtube",
+                    translated_col=(
+                        f"One Sentence Summary {model_name} from youtube{lang_suffix}"
+                    ),
+                    save_dir=one_sentence_summaries_dir,
+                    filename=(
+                        f"{model_name} - {video_id} - {safe_title} - "
+                        f"one-sentence-summary (from youtube){lang_str}.md"
+                    ),
+                    file_col=(
+                        f"One Sentence Summary File {model_name} from "
+                        f"youtube{lang_suffix}"
+                    ),
+                )
 
-        if f"QA Text {model_name} from youtube" in row:
-            _translate_and_store(
-                en_col=f"QA Text {model_name} from youtube",
-                translated_col=f"QA Text {model_name} from youtube{lang_suffix}",
-                save_dir=qa_dir,
-                filename=(
-                    f"{model_name} - {video_id} - {safe_title} - "
-                    f"qa (from youtube){lang_str}.md"
-                ),
-                file_col=f"QA File {model_name} from youtube{lang_suffix}",
+            if f"QA Text {model_name} from youtube" in row:
+                _translate_and_store(
+                    en_col=f"QA Text {model_name} from youtube",
+                    translated_col=f"QA Text {model_name} from youtube{lang_suffix}",
+                    save_dir=qa_dir,
+                    filename=(
+                        f"{model_name} - {video_id} - {safe_title} - "
+                        f"qa (from youtube){lang_str}.md"
+                    ),
+                    file_col=f"QA File {model_name} from youtube{lang_suffix}",
+                )
+
+            if f"Tags youtube {model_name} model" in row:
+                _translate_and_store(
+                    en_col=f"Tags youtube {model_name} model",
+                    translated_col=f"Tags youtube {model_name} model{lang_suffix}",
+                    save_dir=tags_dir,
+                    filename=(
+                        f"{model_name} - {video_id} - {safe_title} - "
+                        f"tags (from youtube){lang_str}.txt"
+                    ),
+                    file_col=f"Tags File youtube {model_name} model{lang_suffix}",
+                )
+
+    if verbose and (total_in_tok > 0 or total_out_tok > 0):
+        input_price, output_price = get_model_pricing(translate_model)
+        if input_price is not None and output_price is not None:
+            cost = round(
+                (total_in_tok / 1_000_000) * input_price
+                + (total_out_tok / 1_000_000) * output_price,
+                8,
             )
+            norm_model = normalize_model_name(translate_model)
+            cost_col = f"{norm_model} translation cost ({translate_lang}) ($)"
+            row[cost_col] = round(float(row.get(cost_col) or 0.0) + cost, 8)
 
     return row
