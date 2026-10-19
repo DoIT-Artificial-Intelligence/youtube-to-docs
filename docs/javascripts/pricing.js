@@ -141,7 +141,6 @@
         { ...tokIn, fmt: (p) => rate(p.input) + (p.converted ? "*" : "") },
         { ...tokOut, fmt: (p) => rate(p.output) + (p.converted ? "*" : "") },
         { key: "measured", label: "Measured per infographic", num: true, fmt: (p) => money(p.measured) }],
-      footnote: "* Per-image price converted to a token equivalent.",
     },
     stt: {
       label: "Speech-to-text",

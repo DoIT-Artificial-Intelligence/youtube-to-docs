@@ -85,7 +85,6 @@ Beyond text, the tool creates audio and visual assets:
     *   Uses image generation models to create a visual representation of the summary.
     *   **Supported Providers**:
         *   **Google**: Gemini (Nano Banana).
-        *   **AWS Bedrock**: Titan Image Generator, Nova Canvas (requires `AWS_BEARER_TOKEN_BEDROCK`).
         *   **Azure Foundry**: GPT Image models (requires `AZURE_FOUNDRY_ENDPOINT` and `AZURE_FOUNDRY_API_KEY`).
     *   The prompt includes the video title and the generated summary text to ensure relevance.
 
