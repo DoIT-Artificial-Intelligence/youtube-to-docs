@@ -65,17 +65,6 @@ class MultimodalProvider(ABC):
         pass
 
 
-class ImageProvider(ABC):
-    """Interface for Image / Infographic Generation services."""
-
-    @abstractmethod
-    def generate_infographic(
-        self, prompt: str, **kwargs
-    ) -> Tuple[Optional[bytes], int, int]:
-        """Returns (image_bytes, input_tokens, output_tokens)."""
-        pass
-
-
 _registry: Dict[str, Any] = {}
 
 

@@ -17,6 +17,8 @@ from youtube_to_docs.llms import generate_one_sentence_summary, get_model_pricin
 from youtube_to_docs.utils import (
     add_question_numbers,
     format_clickable_path,
+    is_error_response,
+    join_posix,
     normalize_model_name,
 )
 
@@ -215,10 +217,10 @@ def ensure_video_context(
     source = "video-agentic"
     ctx_col = f"Video Context {model_name} from {source}"
     file_col = f"Video Context File {model_name} from {source}"
-    path = os.path.join(
+    path = join_posix(
         video_context_dir,
         f"{model_name} - {video_id} - {safe_title} - video-context (from {source}).md",
-    ).replace("\\", "/")
+    )
     try:
         if storage.exists(path):
             text = storage.read_text(path)
@@ -243,7 +245,7 @@ def ensure_video_context(
     except Exception as e:
         text, input_tokens, output_tokens = f"Error: {e}", 0, 0
     vprint(f"Video context took {time.time() - start:.0f}s")
-    if text.startswith("Error") or not text.strip():
+    if is_error_response(text) or not text.strip():
         print(
             f"Video context extraction failed ({text or 'empty response'}); "
             "correcting captions without it."
@@ -368,9 +370,7 @@ def process_from_video(
                 + (".txt" if kind == "speakers" else ".md")
             )
             try:
-                saved = storage.write_text(
-                    os.path.join(directory, filename).replace("\\", "/"), text
-                )
+                saved = storage.write_text(join_posix(directory, filename), text)
                 rprint(f"Saved {kind} ({source}): {format_clickable_path(saved)}")
                 return saved
             except Exception as e:
@@ -399,7 +399,7 @@ def process_from_video(
             start = time.time()
             text, input_tokens, output_tokens = ask(prompt)
             vprint(f"Video summary took {time.time() - start:.0f}s")
-            if text.startswith("Error"):
+            if is_error_response(text):
                 print(f"Video summary failed ({source}): {text}")
                 continue
             row[sum_col] = text
@@ -413,7 +413,7 @@ def process_from_video(
                 model_name, row[sum_col], language=language
             )
             row[os_col] = text
-            if text and not text.startswith("Error"):
+            if text and not is_error_response(text):
                 row[
                     f"One Sentence Summary File {model_name} from {source}{col_suffix}"
                 ] = save(dirs["one_sentence"], "one-sentence-summary", text)
@@ -425,7 +425,7 @@ def process_from_video(
         if language == "en" and not row.get(spk_col):
             rprint(f"Extracting speakers using model: {model_name} (Source: video)")
             text, input_tokens, output_tokens = ask(build_video_speakers_prompt())
-            if not text.startswith("Error"):
+            if not is_error_response(text):
                 row[spk_col] = text
                 row[f"Speakers File {model_name} from {source}"] = save(
                     dirs["speakers"], "speakers", text
@@ -440,7 +440,7 @@ def process_from_video(
         if language == "en" and not row.get(ctx_col):
             rprint(f"Extracting on-screen context using model: {model_name}")
             text, input_tokens, output_tokens = ask(build_video_context_prompt())
-            if not text.startswith("Error"):
+            if not is_error_response(text):
                 row[ctx_col] = text
                 row[f"Video Context File {model_name} from {source}"] = save(
                     dirs["video_context"], "video-context", text
@@ -456,7 +456,7 @@ def process_from_video(
             text, input_tokens, output_tokens = ask(
                 build_video_qa_prompt(url, language)
             )
-            if not text.startswith("Error"):
+            if not is_error_response(text):
                 if "|" in text:
                     text = add_question_numbers(text)
                 row[qa_col] = text

@@ -1,3 +1,5 @@
+import concurrent.futures
+import contextvars
 import importlib.metadata
 import os
 import re
@@ -77,9 +79,7 @@ def validate_output_file(output_file: str) -> str:
         ) from None
     if resolved == real_root or not resolved.lower().endswith(".csv"):
         raise ValueError("Invalid output_file: must be a .csv file")
-    return os.path.join(OUTPUT_ROOT, os.path.relpath(resolved, real_root)).replace(
-        "\\", "/"
-    )
+    return join_posix(OUTPUT_ROOT, os.path.relpath(resolved, real_root))
 
 
 def optional_value_args(flag: str, value: str) -> list[str]:
@@ -92,14 +92,35 @@ def optional_value_args(flag: str, value: str) -> list[str]:
 
 
 def is_error_response(text: object) -> bool:
-    """Return True if an LLM/API output string represents an error message."""
+    """Return True if an LLM/API output string represents an error message.
+
+    Providers return failures as text starting with "Error:" (for example
+    "Error: Bedrock API Error 404: ...") instead of raising.
+    """
     return isinstance(text, str) and text.strip().startswith("Error:")
+
+
+def join_posix(*parts: str) -> str:
+    """os.path.join with forward slashes, so saved paths match on Windows."""
+    return os.path.join(*parts).replace("\\", "/")
+
+
+class ContextThreadPoolExecutor(concurrent.futures.ThreadPoolExecutor):
+    """ThreadPoolExecutor whose tasks run in a copy of the submitter's context.
+
+    The web app routes each job's output through a context variable, and plain
+    worker threads start with an empty context, so their prints would go to
+    the wrong job's log.
+    """
+
+    def submit(self, fn, /, *args, **kwargs):
+        return super().submit(contextvars.copy_context().run, fn, *args, **kwargs)
 
 
 def build_cli_args(
     url: str,
     output_file: str = f"{OUTPUT_ROOT}/youtube-docs.csv",
-    transcript_source: str | None = "youtube",
+    transcript_source: str | None = None,
     model: str | None = None,
     tts_model: str | None = None,
     infographic_model: str | None = None,

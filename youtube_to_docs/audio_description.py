@@ -17,7 +17,6 @@ Section 508, following the DCMP Description Key.
    descriptions for the captioned, audio-described video.
 """
 
-import concurrent.futures
 import html
 import math
 import os
@@ -43,7 +42,13 @@ from youtube_to_docs.captions import (
     prepare_cues,
 )
 from youtube_to_docs.llms import get_model_pricing
-from youtube_to_docs.utils import format_clickable_path, normalize_model_name
+from youtube_to_docs.utils import (
+    ContextThreadPoolExecutor,
+    format_clickable_path,
+    is_error_response,
+    join_posix,
+    normalize_model_name,
+)
 
 DEFAULT_DESCRIPTION_MODEL = "gemini-4-argon"
 DEFAULT_NARRATION_TTS = "gemini-3.8-flash-tts-Kore"
@@ -290,7 +295,7 @@ def _ask_with_images(
                     output_tokens += thoughts
         except Exception as e:
             text = f"Error: {e}"
-        if not text.startswith("Error") and valid(text):
+        if not is_error_response(text) and valid(text):
             break
         if attempt < LLM_ATTEMPTS - 1:
             time.sleep(RETRY_WAIT_SECONDS * (attempt + 1))
@@ -401,7 +406,7 @@ def describe_moments(
 
     descriptions: List[Description] = []
     input_tokens = output_tokens = 0
-    with concurrent.futures.ThreadPoolExecutor(max_workers=_workers()) as pool:
+    with ContextThreadPoolExecutor(max_workers=_workers()) as pool:
         for found, in_tok, out_tok in pool.map(run, batches):
             descriptions.extend(found)
             input_tokens += in_tok
@@ -579,7 +584,7 @@ def synthesize(descriptions: Sequence[Description], tts_arg: str) -> None:
             if attempt < LLM_ATTEMPTS - 1:
                 time.sleep(RETRY_WAIT_SECONDS * (attempt + 1))
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=_workers()) as pool:
+    with ContextThreadPoolExecutor(max_workers=_workers()) as pool:
         list(pool.map(run, descriptions))
 
 
@@ -765,19 +770,17 @@ def process_audio_description(
     outputs = {
         "vtt": (
             f"Descriptions VTT File {model_name}",
-            os.path.join(dirs["vtt"], f"{stem} - descriptions.vtt").replace("\\", "/"),
+            join_posix(dirs["vtt"], f"{stem} - descriptions.vtt"),
         ),
         "extended": (
             f"Extended Descriptions VTT File {model_name}",
-            os.path.join(dirs["vtt"], f"{stem} - extended descriptions.vtt").replace(
-                "\\", "/"
-            ),
+            join_posix(dirs["vtt"], f"{stem} - extended descriptions.vtt"),
         ),
         "transcript": (
             f"Descriptive Transcript File {model_name}",
-            os.path.join(
+            join_posix(
                 dirs["descriptive_transcripts"], f"{stem} - descriptive transcript.md"
-            ).replace("\\", "/"),
+            ),
         ),
     }
     missing = {}

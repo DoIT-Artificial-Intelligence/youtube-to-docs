@@ -747,3 +747,33 @@ def test_concurrent_job_stream_isolation():
     assert "from_worker_b" not in buf_a.getvalue()
     assert "from_worker_b" in buf_b.getvalue()
     assert "from_worker_a" not in buf_b.getvalue()
+
+
+def test_concurrent_job_streams_include_worker_pool_output():
+    """Prints from a job's worker threads (as in -cc) stay in that job's log."""
+    import io
+    import threading
+
+    from youtube_to_docs.app import _capture_job_streams
+    from youtube_to_docs.utils import ContextThreadPoolExecutor
+
+    bufs = {"a": io.StringIO(), "b": io.StringIO()}
+    barrier = threading.Barrier(2)
+
+    def job(name):
+        with _capture_job_streams(bufs[name]):
+            barrier.wait()  # both jobs capturing before any worker prints
+            with ContextThreadPoolExecutor(max_workers=2) as pool:
+                list(pool.map(lambda i: print(f"worker {name}{i}"), range(3)))
+            barrier.wait()
+
+    threads = [threading.Thread(target=job, args=(n,)) for n in bufs]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    for name, other in (("a", "b"), ("b", "a")):
+        out = bufs[name].getvalue()
+        assert all(f"worker {name}{i}" in out for i in range(3))
+        assert f"worker {other}" not in out

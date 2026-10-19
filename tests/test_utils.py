@@ -195,3 +195,26 @@ class TestErrorResponseAndCliBuilder(unittest.TestCase):
             _escape_drive_query_value("What's New in O'Reilly\\2026"),
             "What\\'s New in O\\'Reilly\\\\2026",
         )
+
+    def test_build_cli_args_minimal_adds_no_transcript_flag(self):
+        # Without -t, `-cc` transcribes with its own STT model, so the builder
+        # must not add `--transcript youtube` by default.
+        self.assertEqual(
+            utils.build_cli_args(url="abc12345678", output_file="out.csv"),
+            ["abc12345678", "--outfile", "out.csv"],
+        )
+
+    def test_join_posix(self):
+        self.assertEqual(utils.join_posix("a", "b", "c.md"), "a/b/c.md")
+        self.assertNotIn("\\", utils.join_posix("dir", "file.srt"))
+
+    def test_context_thread_pool_runs_tasks_in_submitter_context(self):
+        import contextvars
+
+        var = contextvars.ContextVar("job", default=None)
+        var.set("job-a")
+        with utils.ContextThreadPoolExecutor(max_workers=2) as pool:
+            self.assertEqual(
+                list(pool.map(lambda _: var.get(), range(3))), ["job-a"] * 3
+            )
+            self.assertEqual(pool.submit(var.get).result(), "job-a")

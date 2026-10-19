@@ -431,7 +431,7 @@ class VertexProvider(BaseProvider, LLMProvider, MultimodalProvider):
                         if getattr(block, "type", None) == "text"
                     )
                 else:
-                    response_text = f"Unexpected response format: {message}"
+                    response_text = f"Error: Unexpected response format: {message}"
 
                 if message.usage:
                     input_tokens = message.usage.input_tokens or 0
@@ -598,12 +598,16 @@ class BedrockProvider(BaseProvider, LLMProvider, MultimodalProvider):
             timeout=BEDROCK_TIMEOUT_SECONDS,
         )
         if response.status_code != 200:
-            return f"Bedrock API Error {response.status_code}: {response.text}", 0, 0
+            return (
+                f"Error: Bedrock API Error {response.status_code}: {response.text}",
+                0,
+                0,
+            )
         response_json = response.json()
         try:
             response_text = response_json["choices"][0]["message"]["content"] or ""
         except (KeyError, IndexError):
-            return f"Unexpected response structure: {response_json}", 0, 0
+            return f"Error: Unexpected response structure: {response_json}", 0, 0
         usage = response_json.get("usage") or {}
         return (
             response_text,
@@ -672,16 +676,20 @@ class BedrockProvider(BaseProvider, LLMProvider, MultimodalProvider):
                     ):
                         response_text = content_blocks[0]["text"]
                     else:
-                        response_text = f"Unexpected content format: {response_json}"
+                        response_text = (
+                            f"Error: Unexpected content format: {response_json}"
+                        )
 
                     usage = response_json.get("usage", {})
                     input_tokens = usage.get("inputTokens", 0)
                     output_tokens = usage.get("outputTokens", 0)
                 except KeyError:
-                    response_text = f"Unexpected response structure: {response_json}"
+                    response_text = (
+                        f"Error: Unexpected response structure: {response_json}"
+                    )
             else:
                 response_text = (
-                    f"Bedrock API Error {response.status_code}: {response.text}"
+                    f"Error: Bedrock API Error {response.status_code}: {response.text}"
                 )
         except KeyError:
             print(
@@ -805,12 +813,20 @@ class BedrockProvider(BaseProvider, LLMProvider, MultimodalProvider):
                             usage.get("outputTokens", 0),
                         )
                     else:
-                        return f"Unexpected content format: {response.text}", 0, 0
+                        return (
+                            f"Error: Unexpected content format: {response.text}",
+                            0,
+                            0,
+                        )
                 except KeyError:
-                    return f"Unexpected response structure: {response.text}", 0, 0
+                    return (
+                        f"Error: Unexpected response structure: {response.text}",
+                        0,
+                        0,
+                    )
             else:
                 return (
-                    f"Bedrock API Error {response.status_code}: {response.text}",
+                    f"Error: Bedrock API Error {response.status_code}: {response.text}",
                     0,
                     0,
                 )
@@ -1484,7 +1500,7 @@ def _transcribe_gemini(
                         check=True,
                     )
                 except (subprocess.CalledProcessError, FileNotFoundError) as e:
-                    return f"Error splitting audio with ffmpeg: {e}", "", 0, 0
+                    return f"Error: splitting audio with ffmpeg failed: {e}", "", 0, 0
 
                 rprint(f"  Transcribing chunk {i + 1}/{chunk_count}...")
                 response = _gemini_transcribe_file(
@@ -1853,7 +1869,7 @@ def _transcribe_gcp(
         try:
             blob.upload_from_filename(audio_path)
         except Exception as e:
-            return f"Error uploading to GCS: {e}", "", 0, 0
+            return f"Error: upload to GCS failed: {e}", "", 0, 0
 
         gcs_uri = f"gs://{bucket_name}/{blob_name}"
 
@@ -1945,7 +1961,7 @@ def _transcribe_aws(
     try:
         s3_client.upload_file(audio_path, bucket_name, s3_key)
     except ClientError as e:
-        return f"Error uploading to S3: {e}", "", 0, 0
+        return f"Error: upload to S3 failed: {e}", "", 0, 0
 
     s3_uri = f"s3://{bucket_name}/{s3_key}"
 
@@ -1972,7 +1988,7 @@ def _transcribe_aws(
             },
         )
     except ClientError as e:
-        return f"Error starting Transcribe job: {e}", "", 0, 0
+        return f"Error: starting the Transcribe job failed: {e}", "", 0, 0
 
     # Polling
     print("Waiting for AWS Transcribe job to complete...")
@@ -1990,7 +2006,7 @@ def _transcribe_aws(
 
     if status == "FAILED":
         reason = status_resp["TranscriptionJob"].get("FailureReason", "Unknown failure")
-        return f"AWS Transcribe job failed: {reason}", "", 0, 0
+        return f"Error: AWS Transcribe job failed: {reason}", "", 0, 0
 
     # Download result
     transcript_key = f"transcripts/{job_name}.json"
@@ -1999,7 +2015,7 @@ def _transcribe_aws(
         obj = s3_client.get_object(Bucket=bucket_name, Key=transcript_key)
         transcript_json = json.loads(obj["Body"].read().decode("utf-8"))
     except Exception as e:
-        return f"Error downloading transcript from S3: {e}", "", 0, 0
+        return f"Error: downloading the transcript from S3 failed: {e}", "", 0, 0
 
     # Cleanup
     try:

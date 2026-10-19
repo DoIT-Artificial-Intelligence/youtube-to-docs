@@ -33,7 +33,13 @@ from typing import Any, Callable, Dict, List, NamedTuple, Optional, Sequence, Tu
 from rich import print as rprint
 
 from youtube_to_docs.llms import _query_llm, get_model_pricing
-from youtube_to_docs.utils import format_clickable_path, normalize_model_name
+from youtube_to_docs.utils import (
+    ContextThreadPoolExecutor,
+    format_clickable_path,
+    is_error_response,
+    join_posix,
+    normalize_model_name,
+)
 from youtube_to_docs.video_understanding import ensure_video_context
 
 # --- Caption layout (DCMP Captioning Key and common web practice) ---
@@ -558,7 +564,7 @@ def _ask(
         response, in_tok, out_tok = _query_llm(model_name, prompt)
         input_tokens += in_tok
         output_tokens += out_tok
-        if not response.startswith("Error") and valid(response):
+        if not is_error_response(response) and valid(response):
             break
         if attempt < LLM_ATTEMPTS - 1:
             time.sleep(RETRY_WAIT_SECONDS * (attempt + 1))
@@ -770,7 +776,7 @@ def identify_speakers(
         return parse_speaker_lines(response, ids), in_tok, out_tok
 
     workers = max(1, int(os.environ.get("YTD_CC_WORKERS", DEFAULT_WORKERS)))
-    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+    with ContextThreadPoolExecutor(max_workers=workers) as pool:
         for names, in_tok, out_tok in pool.map(run, range(len(windows))):
             found.update(names)
             input_tokens += in_tok
@@ -1020,7 +1026,7 @@ def correct_sections(
         return found, added, in_tok, out_tok
 
     workers = max(1, int(os.environ.get("YTD_CC_WORKERS", DEFAULT_WORKERS)))
-    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+    with ContextThreadPoolExecutor(max_workers=workers) as pool:
         futures = [pool.submit(run, k) for k in range(len(ranges))]
         for done, future in enumerate(concurrent.futures.as_completed(futures), 1):
             found, added, in_tok, out_tok = future.result()
@@ -1717,9 +1723,7 @@ def _find_srts(
             else [f"{source} generated"]
         )
         for prefix in prefixes:
-            path = os.path.join(
-                srt_dir, f"{prefix} - {video_id} - {safe_title}.srt"
-            ).replace("\\", "/")
+            path = join_posix(srt_dir, f"{prefix} - {video_id} - {safe_title}.srt")
             if storage.exists(path):
                 found[source] = path
                 break
@@ -1751,10 +1755,10 @@ def _save_webvtt(
 ) -> None:
     """Writes the WebVTT copy of the corrected captions, if it's missing."""
     col = f"Captions VTT File {model_name} from {source}"
-    path = os.path.join(
+    path = join_posix(
         vtt_dir,
         f"{model_name} - {video_id} - {safe_title} - captions (from {source}).vtt",
-    ).replace("\\", "/")
+    )
     if storage.exists(path):
         row[col] = row.get(col) or path
         return
@@ -1820,11 +1824,11 @@ def process_corrected_captions(
         reference = "youtube" if "youtube" in srts else None
 
     col = f"Corrected Captions File {model_name} from {chosen}"
-    path = os.path.join(
+    path = join_posix(
         dirs["corrected_captions"],
         f"{model_name} - {video_id} - {safe_title} - "
         f"corrected captions (from {chosen}).srt",
-    ).replace("\\", "/")
+    )
 
     def done(saved: str) -> CaptionFiles:
         _save_webvtt(

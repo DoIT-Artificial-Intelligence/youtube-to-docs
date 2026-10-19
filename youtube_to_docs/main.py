@@ -2419,7 +2419,7 @@ def _main_impl(
                         row[alt_text_col] = alt_text
 
                         # Save Alt Text File
-                        if alt_text and not alt_text.startswith("Error"):
+                        if alt_text and not is_error_response(alt_text):
                             alt_text_filename = (
                                 f"{m_name} - {infographic_model} - {video_id} - "
                                 f"{safe_title} - alt-text.md"
