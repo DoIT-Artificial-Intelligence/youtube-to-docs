@@ -150,6 +150,10 @@ To build the static site (output will be in the `site/` directory):
 uv run mkdocs build
 ```
 
+### Pricing page
+
+The tables and chart on the Pricing page are built from `youtube_to_docs/prices.py` by the MkDocs hook `scripts/docs/pricing_hook.py`, so update prices there, not in `docs/pricing.md`. The page script is `docs/javascripts/pricing.js`. `mkdocs serve` doesn't reload hook code, so restart it after editing the hook.
+
 ### Deployment
 
 The documentation is automatically built and deployed to GitHub Pages on every push to the `main` branch via GitHub Actions.

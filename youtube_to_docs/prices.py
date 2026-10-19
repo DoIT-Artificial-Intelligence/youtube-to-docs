@@ -12,14 +12,6 @@ PRICES = {
             "input_cached": None,
         },
         {
-            "id": "amazon-nova-premier",
-            "vendor": "amazon",
-            "name": "Amazon Nova Premier",
-            "input": 2.5,
-            "output": 12.5,
-            "input_cached": None,
-        },
-        {
             "id": "amazon-nova-2-omni-preview",
             "vendor": "amazon",
             "name": "Amazon Nova 2 Omni (Preview)",
@@ -44,26 +36,11 @@ PRICES = {
             "input_cached": None,
         },
         {
-            "id": "amazon.titan-image-generator-v2:0",
-            "vendor": "amazon",
-            "name": "Titan Image Generator v2*",
-            "input": 5.0,
-            "output": 5.0,
-            "input_cached": None,
-        },
-        {
-            "id": "amazon.nova-canvas-v1:0",
-            "vendor": "amazon",
-            "name": "Amazon Nova Canvas v1*",
-            "input": 20.0,
-            "output": 20.0,
-            "input_cached": None,
-        },
-        {
             "id": "claude-haiku-5.5",
             "vendor": "anthropic",
             "name": "Claude Haiku 5.5",
             # Prompts <=100k tokens. Prompts >100k are billed at 0.5 / 2.5.
+            "note": "Prompts over 100k tokens are billed at $0.50 / $2.50.",
             "input": 0.1,
             "output": 0.5,
             "input_cached": 0.01,
@@ -129,6 +106,7 @@ PRICES = {
             "vendor": "google",
             "name": "Gemini 3.8 Flash TTS",
             # Standard price from 2027-01-01 (0.5 / 9 until 2026-12-31).
+            "note": "Standard price from 2027-01-01 ($0.50 / $9 until 2026-12-31).",
             "input": 1.0,
             "output": 18.0,
             "input_cached": None,
@@ -138,6 +116,7 @@ PRICES = {
             "vendor": "google",
             "name": "Gemini 3.8 Flash-Lite TTS",
             # Standard price from 2027-01-01 (0.5 / 6 until 2026-12-31).
+            "note": "Standard price from 2027-01-01 ($0.50 / $6 until 2026-12-31).",
             "input": 1.0,
             "output": 12.0,
             "input_cached": None,
@@ -147,6 +126,7 @@ PRICES = {
             "vendor": "openai",
             "name": "GPT-6 Astra",
             # Prompts <=272k tokens. Prompts >272k are billed at 20 / 75.
+            "note": "Prompts over 272k tokens are billed at $20 / $75.",
             "input": 10.0,
             "output": 50.0,
             "input_cached": 1.0,
@@ -156,6 +136,7 @@ PRICES = {
             "vendor": "openai",
             "name": "GPT-6.1 Sol",
             # Prompts <=272k tokens. Prompts >272k are billed at 4 / 15.
+            "note": "Prompts over 272k tokens are billed at $4 / $15.",
             "input": 2.0,
             "output": 10.0,
             "input_cached": 0.1,
@@ -165,33 +146,10 @@ PRICES = {
             "vendor": "openai",
             "name": "GPT-6 Luna",
             # Prompts <=272k tokens. Prompts >272k are billed at 0.2 / 0.75.
+            "note": "Prompts over 272k tokens are billed at $0.20 / $0.75.",
             "input": 0.1,
             "output": 0.5,
             "input_cached": 0.01,
-        },
-        {
-            "id": "gpt-image-1",
-            "vendor": "openai",
-            "name": "gpt-image-1 (image gen)",
-            "input": 10,
-            "output": 40,
-            "input_cached": 1.25,
-        },
-        {
-            "id": "gpt-image-1-mini",
-            "vendor": "openai",
-            "name": "gpt-image-1-mini (image gen)",
-            "input": 2,
-            "output": 8,
-            "input_cached": 0.2,
-        },
-        {
-            "id": "gpt-image-1.5",
-            "vendor": "openai",
-            "name": "gpt-image-1.5 (image gen)",
-            "input": 5,
-            "output": 34,
-            "input_cached": None,
         },
         {
             "id": "gemini-3-pro-image",
@@ -312,7 +270,6 @@ PRICES = {
         "claude-haiku-4-5": "claude-haiku-5.5",
         "nova-2-lite": "amazon-nova-2-lite",
         "nova-micro": "amazon-nova-micro",
-        "nova-premier": "amazon-nova-premier",
         "gcp-chirp3": "chirp_3",
         "aws-translate": "aws-translate",
         "gcp-translate": "gcp-translate",
