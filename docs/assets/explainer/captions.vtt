@@ -1,0 +1,115 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:05.256
+youtube-to-docs turns videos into
+documents to search, share and hear.
+
+00:00:05.606 --> 00:00:08.405
+Here's how it works, in six steps.
+
+00:00:09.305 --> 00:00:14.224
+Start with a video link, a video
+ID, a playlist or a whole channel.
+
+00:00:14.574 --> 00:00:19.029
+Playlists and channels are expanded,
+and each video runs in turn.
+
+00:00:19.929 --> 00:00:22.143
+Next, it gets the words.
+
+00:00:22.493 --> 00:00:25.933
+By default, it uses
+YouTube's own captions.
+
+00:00:26.283 --> 00:00:31.858
+Or it transcribes the audio again
+with Gemini, Google Cloud or AWS.
+
+00:00:32.208 --> 00:00:35.683
+That gives real word
+timings and speaker labels.
+
+00:00:36.033 --> 00:00:39.846
+Either way, you get a
+transcript and a timed SRT file.
+
+00:00:40.746 --> 00:00:44.269
+Then a language model of your
+choice reads the transcript.
+
+00:00:44.619 --> 00:00:50.256
+It can run on Gemini, Vertex AI,
+AWS Bedrock or Azure Foundry.
+
+00:00:50.606 --> 00:00:53.181
+It names the speakers and their titles.
+
+00:00:53.531 --> 00:00:57.727
+It pairs each question with its
+answer and a timestamp link.
+
+00:00:58.077 --> 00:01:01.318
+It writes a summary, a one-sentence
+summary and topic tags.
+
+00:01:01.668 --> 00:01:06.411
+Gemini can also watch the video,
+to read slides and name plates.
+
+00:01:07.311 --> 00:01:09.969
+From the summary, it
+can draw an infographic.
+
+00:01:10.319 --> 00:01:14.137
+Another model looks at the
+image and writes its alt text.
+
+00:01:14.487 --> 00:01:18.460
+It can read the summary aloud,
+and combine both into a video.
+
+00:01:18.810 --> 00:01:21.923
+And it can make everything
+again in a second language.
+
+00:01:22.823 --> 00:01:26.583
+Add the -cc flag to make the
+original video accessible.
+
+00:01:26.933 --> 00:01:30.088
+Captions are corrected,
+and each speaker is named.
+
+00:01:30.438 --> 00:01:35.665
+They meet WCAG 2.1 Level
+AA and Section 508.
+
+00:01:36.015 --> 00:01:39.814
+Slides and on-screen text are
+described for blind viewers.
+
+00:01:40.714 --> 00:01:43.895
+Every output is a file that
+you can review and edit.
+
+00:01:44.245 --> 00:01:47.313
+Run it again, and the
+later steps use your edits.
+
+00:01:47.663 --> 00:01:51.564
+A CSV lists every file
+and what each step cost.
+
+00:01:51.914 --> 00:01:56.646
+Save it all to your computer, Google
+Drive, SharePoint or Hugging Face.
+
+00:01:57.546 --> 00:02:02.672
+Run it from the command line, the web
+app, or as a plugin for your AI assistant.
+
+00:02:03.022 --> 00:02:07.284
+One command takes you from a
+link to a full set of documents.
+
