@@ -132,6 +132,8 @@ The `--outfile` argument controls where the output CSV is saved:
 - **`memory` / `m`**: Keeps artifacts in memory (no files on disk). Useful for the web app where users want results returned directly without local file side-effects.
 - **`none` / `n`**: Skips saving to a file; results are available in the log output only.
 
+Each step checks for its output before running. Existing files, including ones a person has edited, are read back and used by later steps instead of being regenerated. This keeps people in control of the final documents (see [Review and edit the outputs](usage.md#review-and-edit-the-outputs)).
+
 Storage is abstracted via `youtube_to_docs/storage.py` (`LocalStorage`, `GoogleDriveStorage`, `M365Storage`, `MemoryStorage`, `NullStorage`), so the rest of the pipeline is storage-agnostic.
 
 ### 9. Cost Tracking

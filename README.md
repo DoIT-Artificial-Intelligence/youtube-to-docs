@@ -11,6 +11,8 @@ Click on the image below to see a demo of YouTube to docs:
 
 Convert YouTube videos into structured docs, summaries, audio, and visual assets for easier discovery.
 
+It's built for people to stay in charge. Every output is a plain file (or a Google Doc or Word file on Drive or SharePoint) that you can review and edit. The next run reads your edited files instead of regenerating them, so a corrected transcript carries through to the summary, Q&A, infographic, audio and captions you make from it. See [Review and edit the outputs](https://DoIT-Artificial-Intelligence.github.io/youtube-to-docs/usage/#review-and-edit-the-outputs).
+
 View all available CLI options:
 
 ```bash
