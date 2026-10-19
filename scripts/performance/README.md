@@ -35,3 +35,22 @@ The output CSV `time_to_summarize.csv` contains the following columns:
 - `date (today)`: The date the benchmark was run.
 
 The results are sorted by `time (seconds)` in ascending order.
+
+### `time_to_infographic.py`
+
+This script benchmarks the time it takes for each image model to generate an infographic from the same summary.
+
+#### Usage
+
+```bash
+uv run --extra all --with pillow scripts/performance/time_to_infographic.py
+```
+
+#### What it does:
+1.  Fetches the transcript for the same video ID (`atmGAHYpf_c`) and summarizes it with `gemini-3.5-flash-lite`.
+2.  Generates one infographic per image model (Gemini and Azure Foundry) at the default settings.
+3.  Measures the time taken by `generate_infographic` for each model. If a model fails or returns no image, the time is set to `999`.
+4.  Writes `docs/assets/time_to_infographic.csv` and `.md`, and a 1600-pixel-wide WebP preview of each image to `docs/assets/infographics/`.
+
+#### Output
+The output CSV has the columns `model`, `time (seconds)`, `total_cost`, `size` (width x height in pixels), `input_tokens`, `output_tokens` and `date (today)`, sorted by `time (seconds)`.
