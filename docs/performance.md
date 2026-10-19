@@ -4,22 +4,30 @@
 
 How long each model takes to summarize the same transcript, and what it costs. The test uses the YouTube transcript of [atmGAHYpf_c](https://www.youtube.com/watch?v=atmGAHYpf_c), about 38,000 input tokens. Claude models count tokens differently, so they report more input tokens for the same text.
 
-- **time (seconds)** is the wall-clock time for one `generate_summary` call. `999` means the call failed or the provider wasn't configured.
-- **total_cost** is in USD, from the token counts and the prices on the [Pricing](pricing.md) page.
+- **Time** is the wall-clock time for one `generate_summary` call. *failed* means the call failed or the provider wasn't configured.
+- **Cost** is in USD, from the token counts and the prices on the [Pricing](pricing.md) page.
 
 To re-run it, see [`scripts/performance`](https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs/tree/main/scripts/performance).
 
+<div class="ytd-perf" markdown>
+
 --8<-- "docs/assets/time_to_summarize.md"
+
+</div>
 
 ## Infographics
 
 How long each image model takes to draw an infographic from the same summary, and what it costs. The summary is of the same video, written by `gemini-3.5-flash-lite` (the default `-m` model). Each model runs at its default: 16:9 landscape at the highest resolution it supports, with high thinking for Gemini.
 
-- **time (seconds)** is the wall-clock time for one `generate_infographic` call. `999` means the call failed or the provider wasn't configured.
-- **total_cost** is in USD, from the token counts and the prices on the [Pricing](pricing.md) page.
-- **size** is the width and height of the image in pixels. `gemini-3.1-flash-lite-image` only supports 1K.
+- **Time** is the wall-clock time for one `generate_infographic` call. *failed* means the call failed or the provider wasn't configured.
+- **Cost** is in USD, from the token counts and the prices on the [Pricing](pricing.md) page.
+- **Size** is the width and height of the image in pixels. `gemini-3.1-flash-lite-image` only supports 1K.
+
+<div class="ytd-perf" markdown>
 
 --8<-- "docs/assets/time_to_infographic.md"
+
+</div>
 
 `gemini-3-pro-image`, the default for `-i`, was the only model with no text errors on both videos we compared (this one and a 3h49m hearing). Image models can still misspell words, so check the text before you publish an infographic. Select an image to open the preview at full width.
 

@@ -54,3 +54,11 @@ uv run --extra all --with pillow scripts/performance/time_to_infographic.py
 
 #### Output
 The output CSV has the columns `model`, `time (seconds)`, `total_cost`, `size` (width x height in pixels), `input_tokens`, `output_tokens` and `date (today)`, sorted by `time (seconds)`.
+
+### `tables.py`
+
+Both scripts use `tables.py` to write the CSV results as the readable Markdown tables shown on the Performance page (formatted times, costs, token counts and image sizes). To rebuild the tables from the CSVs without re-running the benchmarks:
+
+```bash
+uv run scripts/performance/tables.py
+```
