@@ -694,6 +694,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#review-and-edit-the-outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Review and edit the outputs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#csv-column-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1255,6 +1266,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#review-and-edit-the-outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Review and edit the outputs
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1919,6 +1941,16 @@
 </code></pre></div>
 <p>Then open <code>http://127.0.0.1:8080/vtt-files/</code> and select the <code>… player.html</code> file.
 3. <strong>Spot-check timing.</strong> In VLC, open the original video and add the captions <code>.vtt</code> (Subtitle &gt; Add Subtitle File...) to check that captions line up with the speech.</p>
+<h2 id="review-and-edit-the-outputs">Review and edit the outputs</h2>
+<p>youtube-to-docs is human-centered: the models write a first draft, and people review it and have the final say. Every output is a file you can edit (a Google Doc or Word file when saving to Google Drive or SharePoint), and the CSV lists where each one is saved.</p>
+<p>Outputs that already exist aren't regenerated. When you run the same video again, the tool reads your edited files and uses them for any step that hasn't run yet. For example:</p>
+<ol>
+<li>Get the transcript only (the default): <code>youtube-to-docs &lt;url&gt;</code>.</li>
+<li>Fix the transcript in <code>transcript-files/</code> (and the matching <code>.srt</code> in <code>srt-files/</code> if you plan to make captions).</li>
+<li>Run again with the outputs you want, such as <code>-m -i --tts gemini-3.8-flash-lite-tts-Kore</code> or <code>-cc</code>. The summary, Q&amp;A, infographic, audio and captions are built from your corrected transcript.</li>
+</ol>
+<p>You can also edit a summary, Q&amp;A, speakers or alt text file directly. On the next run, the edited text is loaded back into the CSV, and outputs made later, such as the infographic and audio, use it.</p>
+<p>To make an output again, delete its file and remove the video's row from the CSV (or clear that output's columns), then run again. The tool finds your other files, including the edited transcript, by their file names.</p>
 <h2 id="csv-column-reference">CSV Column Reference</h2>
 <p>The output CSV file contains a variety of columns depending on the arguments provided. Below is a reference of the possible columns:</p>
 <h3 id="base-metadata">Base Metadata</h3>
