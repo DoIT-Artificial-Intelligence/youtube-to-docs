@@ -1717,7 +1717,9 @@ def _find_srts(
             else [f"{source} generated"]
         )
         for prefix in prefixes:
-            path = os.path.join(srt_dir, f"{prefix} - {video_id} - {safe_title}.srt")
+            path = os.path.join(
+                srt_dir, f"{prefix} - {video_id} - {safe_title}.srt"
+            ).replace("\\", "/")
             if storage.exists(path):
                 found[source] = path
                 break
@@ -1752,7 +1754,7 @@ def _save_webvtt(
     path = os.path.join(
         vtt_dir,
         f"{model_name} - {video_id} - {safe_title} - captions (from {source}).vtt",
-    )
+    ).replace("\\", "/")
     if storage.exists(path):
         row[col] = row.get(col) or path
         return
@@ -1822,7 +1824,7 @@ def process_corrected_captions(
         dirs["corrected_captions"],
         f"{model_name} - {video_id} - {safe_title} - "
         f"corrected captions (from {chosen}).srt",
-    )
+    ).replace("\\", "/")
 
     def done(saved: str) -> CaptionFiles:
         _save_webvtt(

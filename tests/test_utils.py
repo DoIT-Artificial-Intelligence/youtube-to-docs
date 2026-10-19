@@ -151,3 +151,47 @@ class TestQAProcessing(unittest.TestCase):
         # Nan strings should be handled before calling this, but if passed:
         # It won't have 2 lines, so returns as is.
         self.assertEqual(utils.add_question_numbers("nan"), "nan")
+
+
+class TestErrorResponseAndCliBuilder(unittest.TestCase):
+    def test_is_error_response(self):
+        self.assertTrue(utils.is_error_response("Error: GEMINI_API_KEY not found."))
+        self.assertTrue(utils.is_error_response("  Error: rate limit exceeded"))
+        self.assertFalse(utils.is_error_response("Valid summary text"))
+        self.assertFalse(utils.is_error_response(""))
+        self.assertFalse(utils.is_error_response(None))
+        self.assertFalse(utils.is_error_response(float("nan")))
+
+    def test_build_cli_args_full_parity(self):
+        args = utils.build_cli_args(
+            url="https://youtu.be/abc12345678",
+            output_file="hf",
+            hugging_face_dataset="org/dataset",
+            transcript_source="gemini-3.5-transcribe",
+            model="gemini-3.5-flash-lite",
+            tts_model="gemini-3.8-flash-lite-tts-Kore",
+            infographic_model="gemini-nano-banana-2.1",
+            alt_text_model="gemini-3.5-flash-lite",
+            no_youtube_summary=True,
+            from_video="agentic",
+            translate="gemini-3.5-flash-lite-es",
+            combine_infographic_audio=True,
+            all_suite="gemini-flash",
+            corrected_captions="default",
+            post_process='{"word count": "ai"}',
+            verbose=True,
+        )
+        self.assertIn("--hugging-face-dataset", args)
+        self.assertIn("org/dataset", args)
+        self.assertIn("--from-video", args)
+        self.assertIn("agentic", args)
+        self.assertIn("--corrected-captions", args)
+        self.assertIn("--verbose", args)
+
+    def test_escape_drive_query_value(self):
+        from youtube_to_docs.storage import _escape_drive_query_value
+
+        self.assertEqual(
+            _escape_drive_query_value("What's New in O'Reilly\\2026"),
+            "What\\'s New in O\\'Reilly\\\\2026",
+        )

@@ -218,7 +218,7 @@ def ensure_video_context(
     path = os.path.join(
         video_context_dir,
         f"{model_name} - {video_id} - {safe_title} - video-context (from {source}).md",
-    )
+    ).replace("\\", "/")
     try:
         if storage.exists(path):
             text = storage.read_text(path)
@@ -368,7 +368,9 @@ def process_from_video(
                 + (".txt" if kind == "speakers" else ".md")
             )
             try:
-                saved = storage.write_text(os.path.join(directory, filename), text)
+                saved = storage.write_text(
+                    os.path.join(directory, filename).replace("\\", "/"), text
+                )
                 rprint(f"Saved {kind} ({source}): {format_clickable_path(saved)}")
                 return saved
             except Exception as e:

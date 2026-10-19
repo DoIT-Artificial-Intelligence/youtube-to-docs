@@ -344,8 +344,13 @@
                 <option value="youtube-to-docs-artifacts/youtube-docs.csv">Local CSV</option>
                 <option value="workspace">Google Drive (Workspace)</option>
                 <option value="sharepoint">Microsoft SharePoint</option>
+                <option value="hf">Hugging Face Dataset</option>
                 <option value="none">None (log only)</option>
               </select>
+            </div>
+            <div class="grid-col-12 tablet:grid-col-6">
+              <label class="usa-label" for="hugging_face_dataset">Hugging Face Dataset (when Output is HF)</label>
+              <input class="usa-input" id="hugging_face_dataset" name="hugging_face_dataset" type="text" placeholder="e.g. username/my-dataset">
             </div>
           </div>
 
@@ -364,6 +369,15 @@
                 <select class="usa-select" id="all_suite" name="all_suite">
                   <option value="">None (transcript only)</option>
                 </select>
+              </div>
+              <div class="grid-col-12 tablet:grid-col-6">
+                <label class="usa-label" for="from_video">From Video Mode</label>
+                <input class="usa-input" id="from_video" name="from_video" type="text" list="from-video-options" placeholder="e.g. agentic, static, or agentic,static">
+                <datalist id="from-video-options">
+                  <option value="agentic"></option>
+                  <option value="static"></option>
+                  <option value="agentic,static"></option>
+                </datalist>
               </div>
             </div>
             <div class="grid-row grid-gap margin-top-2">
@@ -576,9 +590,9 @@
     const body = { url };
 
     const fields = [
-      'output_file', 'transcript_source', 'model', 'tts_model',
-      'infographic_model', 'alt_text_model', 'translate',
-      'corrected_captions', 'post_process', 'all_suite'
+      'output_file', 'hugging_face_dataset', 'transcript_source', 'model',
+      'tts_model', 'infographic_model', 'alt_text_model', 'from_video',
+      'translate', 'corrected_captions', 'post_process', 'all_suite'
     ];
 
     for (const f of fields) {

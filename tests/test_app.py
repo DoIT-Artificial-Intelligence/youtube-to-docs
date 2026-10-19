@@ -270,7 +270,10 @@ def test_artifact_symlink_escape_denied(client, tmp_path, monkeypatch):
     server_root = tmp_path / "server"
     root = server_root / "youtube-to-docs-artifacts"
     root.mkdir(parents=True)
-    (root / "escape").symlink_to(outside)
+    try:
+        (root / "escape").symlink_to(outside)
+    except OSError as e:
+        pytest.skip(f"Symlinks not supported in this environment: {e}")
     monkeypatch.chdir(server_root)
     resp = client.get("/api/artifacts/youtube-to-docs-artifacts/escape/secret.txt")
     assert resp.status_code == 400
@@ -645,3 +648,102 @@ def test_no_model_transcript_only_job_completes(
             _run_job_sync(job, args)
 
     assert job.status == "completed"
+
+
+@patch("youtube_to_docs.app._run_job")
+def test_process_with_from_video_and_hf_dataset(mock_run, client):
+    resp = client.post(
+        "/api/process",
+        json={
+            "url": "abc12345678",
+            "output_file": "hf",
+            "hugging_face_dataset": "user/my-dataset",
+            "from_video": "agentic",
+        },
+    )
+    assert resp.status_code == 200
+    call_args = mock_run.call_args[0][1]
+    assert "--hugging-face-dataset" in call_args
+    assert "user/my-dataset" in call_args
+    assert "--from-video" in call_args
+    assert "agentic" in call_args
+
+
+def test_evict_old_jobs():
+    import time
+
+    from youtube_to_docs.app import _evict_old_jobs
+    from youtube_to_docs.storage import MemoryStorage
+
+    jobs.clear()
+    now = time.time()
+    j1 = Job(
+        id="old1",
+        status="completed",
+        started_at=now - 7200,
+        finished_at=now - 7000,
+        storage=MemoryStorage(),
+    )
+    j2 = Job(
+        id="recent1",
+        status="completed",
+        started_at=now - 20,
+        finished_at=now - 10,
+        storage=MemoryStorage(),
+    )
+    j3 = Job(
+        id="running1",
+        status="running",
+        started_at=now - 5,
+    )
+    jobs["old1"] = j1
+    jobs["recent1"] = j2
+    jobs["running1"] = j3
+
+    # TTL eviction removes old1
+    _evict_old_jobs(max_jobs=10, ttl_seconds=3600)
+    assert "old1" not in jobs
+    assert j1.storage is None
+    assert "recent1" in jobs
+    assert "running1" in jobs
+
+    # Max jobs eviction removes oldest completed job (recent1) while keeping running1
+    _evict_old_jobs(max_jobs=1, ttl_seconds=3600)
+    assert "recent1" not in jobs
+    assert j2.storage is None
+    assert "running1" in jobs
+
+
+def test_concurrent_job_stream_isolation():
+    import io
+    import threading
+
+    from youtube_to_docs.app import _capture_job_streams
+
+    buf_a = io.StringIO()
+    buf_b = io.StringIO()
+    barrier = threading.Barrier(2)
+
+    def worker_a():
+        with _capture_job_streams(buf_a):
+            barrier.wait()
+            print("from_worker_a")
+            barrier.wait()
+
+    def worker_b():
+        with _capture_job_streams(buf_b):
+            barrier.wait()
+            print("from_worker_b")
+            barrier.wait()
+
+    t1 = threading.Thread(target=worker_a)
+    t2 = threading.Thread(target=worker_b)
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
+
+    assert "from_worker_a" in buf_a.getvalue()
+    assert "from_worker_b" not in buf_a.getvalue()
+    assert "from_worker_b" in buf_b.getvalue()
+    assert "from_worker_a" not in buf_b.getvalue()

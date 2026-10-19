@@ -511,6 +511,90 @@ class TestProcessTranslate(unittest.TestCase):
         self.assertIn(f"QA File {model} from {transcript_arg} (es)", result)
         self.assertIn(f"Tags File {transcript_arg} {model} model (es)", result)
 
+    @patch("youtube_to_docs.translate.translate_text")
+    def test_translation_cost_tracked_when_verbose(self, mock_translate):
+        mock_translate.return_value = ("traducido", 100_000, 50_000)
+        model = "gemini-3.5-flash-lite"
+        transcript_arg = "youtube"
+        row = self._base_row(model, transcript_arg)
+        storage = self._make_storage()
+
+        result = process_translate(
+            row=row,
+            translate_model=model,
+            translate_lang="es",
+            transcript_arg=transcript_arg,
+            model_names=[model],
+            summaries_dir="summary-files",
+            one_sentence_summaries_dir="one-sentence-summary-files",
+            qa_dir="qa-files",
+            tags_dir="tag-files",
+            video_id="abc123",
+            safe_title="My Video",
+            storage=storage,
+            verbose=True,
+        )
+
+        cost_col = f"{model} translation cost (es) ($)"
+        self.assertIn(cost_col, result)
+        self.assertIsInstance(result[cost_col], float)
+        self.assertGreater(result[cost_col], 0.0)
+
+    @patch("youtube_to_docs.translate.translate_text")
+    def test_secondary_youtube_tags_translated(self, mock_translate):
+        mock_translate.return_value = ("etiqueta1, etiqueta2", 10, 5)
+        model = "gemini-3.5-flash-lite"
+        transcript_arg = "gcp-chirp3"
+        row = self._base_row(model, transcript_arg)
+        row[f"Tags youtube {model} model"] = "tag1, tag2"
+        storage = self._make_storage()
+
+        result = process_translate(
+            row=row,
+            translate_model=model,
+            translate_lang="es",
+            transcript_arg=transcript_arg,
+            model_names=[model],
+            summaries_dir="summary-files",
+            one_sentence_summaries_dir="one-sentence-summary-files",
+            qa_dir="qa-files",
+            tags_dir="tag-files",
+            video_id="abc123",
+            safe_title="My Video",
+            storage=storage,
+        )
+
+        self.assertEqual(
+            result.get(f"Tags youtube {model} model (es)"), "etiqueta1, etiqueta2"
+        )
+        self.assertIn(f"Tags File youtube {model} model (es)", result)
+
+    @patch("youtube_to_docs.translate.translate_text")
+    def test_skips_error_responses_in_translation(self, mock_translate):
+        mock_translate.return_value = ("Error: translation quota exceeded", 0, 0)
+        model = "gemini-3.5-flash-lite"
+        transcript_arg = "youtube"
+        row = self._base_row(model, transcript_arg)
+        storage = self._make_storage()
+
+        result = process_translate(
+            row=row,
+            translate_model=model,
+            translate_lang="es",
+            transcript_arg=transcript_arg,
+            model_names=[model],
+            summaries_dir="summary-files",
+            one_sentence_summaries_dir="one-sentence-summary-files",
+            qa_dir="qa-files",
+            tags_dir="tag-files",
+            video_id="abc123",
+            safe_title="My Video",
+            storage=storage,
+        )
+
+        self.assertNotIn(f"Summary File {model} from {transcript_arg} (es)", result)
+        storage.write_text.assert_not_called()
+
 
 class TestParseCorrectedCaptionsArg(unittest.TestCase):
     def test_model_only_no_source(self):

@@ -2,6 +2,8 @@ import argparse
 import logging
 import os
 import re
+import shutil
+import tempfile
 import time
 from itertools import product
 from pathlib import Path
@@ -62,6 +64,7 @@ from youtube_to_docs.tts import process_tts
 from youtube_to_docs.utils import (
     format_clickable_path,
     get_version,
+    is_error_response,
     normalize_model_name,
     reorder_columns,
 )
@@ -94,6 +97,17 @@ class VerboseRow(dict):
 
 
 def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
+    local_temp_dir = tempfile.mkdtemp(prefix="ytd_temp_")
+    try:
+        return _main_impl(args_list, local_temp_dir=local_temp_dir)
+    finally:
+        shutil.rmtree(local_temp_dir, ignore_errors=True)
+
+
+def _main_impl(
+    args_list: list[str] | None = None,
+    local_temp_dir: str | None = None,
+) -> "MemoryStorage | None":
     # Define styles for the help output
     RichHelpFormatter.styles["argparse.args"] = "cyan italic"
     RichHelpFormatter.styles["argparse.groups"] = "bold yellow"
@@ -530,7 +544,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     video_context_dir = os.path.join(base_dir, "video-context-files")
 
     # Local temp dir for processing (Audio/TTS require local files)
-    local_temp_dir = "temp_processing_artifacts"
+    local_temp_dir = local_temp_dir or tempfile.mkdtemp(prefix="ytd_temp_")
     local_audio_dir = os.path.join(local_temp_dir, "audio-files")
     os.makedirs(local_audio_dir, exist_ok=True)
 
@@ -1341,10 +1355,12 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                     if path and storage.exists(str(path)):
                         speakers_text = storage.read_text(str(path))
                         row[speakers_col_name] = speakers_text
-                elif row.get(speakers_col_name):
+                elif row.get(speakers_col_name) and not is_error_response(
+                    row.get(speakers_col_name)
+                ):
                     speakers_text = row[speakers_col_name]
 
-                if not speakers_text:
+                if not speakers_text or is_error_response(speakers_text):
                     # For speaker extraction, try to use English transcript if available
                     speaker_source_transcript = transcript
                     if language != "en":
@@ -1370,7 +1386,15 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                         row[speakers_col_name] = float("nan")
 
                     # Save Speakers File
-                    if speakers_text and not isinstance(row[speakers_col_name], float):
+                    if is_error_response(speakers_text):
+                        rprint(
+                            f"[yellow]Warning: Speaker extraction failed "
+                            f"({speakers_text}); skipping file save.[/yellow]"
+                        )
+                        row[speakers_file_col_name] = ""
+                    elif speakers_text and not isinstance(
+                        row[speakers_col_name], float
+                    ):
                         speakers_filename = (
                             f"{model_name} - {video_id} - {safe_title} - "
                             f"speakers (from {transcript_arg}).txt"
@@ -1426,7 +1450,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                     if path and storage.exists(str(path)):
                         row[qa_col_name] = storage.read_text(str(path))
 
-                if not row.get(qa_col_name):
+                if not row.get(qa_col_name) or is_error_response(row.get(qa_col_name)):
                     rprint(f"Generating Q&A using model: {model_name} ({language})")
 
                     qa_text, qa_input, qa_output = generate_qa(
@@ -1445,7 +1469,13 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                         row[qa_col_name] = float("nan")
 
                     # Save QA File
-                    if qa_text and not isinstance(row[qa_col_name], float):
+                    if is_error_response(qa_text):
+                        rprint(
+                            f"[yellow]Warning: Q&A generation failed "
+                            f"({qa_text}); skipping file save.[/yellow]"
+                        )
+                        row[qa_file_col_name] = ""
+                    elif qa_text and not isinstance(row[qa_col_name], float):
                         qa_filename = (
                             f"{model_name} - {video_id} - {safe_title} - "
                             f"qa (from {transcript_arg}){lang_str}.md"
@@ -1473,7 +1503,11 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
 
                 # Check if we already have it in the row (from existing_row
                 # or just loaded)
-                if summary_col_name in row and row[summary_col_name]:
+                if (
+                    summary_col_name in row
+                    and row[summary_col_name]
+                    and not is_error_response(row[summary_col_name])
+                ):
                     # Check if cost is missing and backfill if possible
                     if (
                         summary_cost_col_name not in row
@@ -1553,7 +1587,9 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                         except Exception as e:
                             print(f"Warning: Failed to read summary file {path}: {e}")
 
-                if not row.get(summary_col_name):
+                if not row.get(summary_col_name) or is_error_response(
+                    row.get(summary_col_name)
+                ):
                     rprint(f"Summarizing using model: {model_name} ({language})")
 
                     summary_text, input_tokens, output_tokens = generate_summary(
@@ -1575,7 +1611,12 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                             row[summary_cost_col_name] = summary_cost
 
                     summary_full_path = ""
-                    if summaries_dir and summary_text:
+                    if is_error_response(summary_text):
+                        rprint(
+                            f"[yellow]Warning: Summary generation failed "
+                            f"({summary_text}); skipping file save.[/yellow]"
+                        )
+                    elif summaries_dir and summary_text:
                         summary_filename = (
                             f"{model_name} - {video_id} - {safe_title} - "
                             f"summary (from {transcript_arg}){lang_str}.md"
@@ -1605,7 +1646,14 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                     f"from {transcript_arg}{col_suffix} ($)"
                 )
 
-                if row.get(summary_col_name) and not row.get(one_sentence_col_name):
+                if (
+                    row.get(summary_col_name)
+                    and not is_error_response(row.get(summary_col_name))
+                    and (
+                        not row.get(one_sentence_col_name)
+                        or is_error_response(row.get(one_sentence_col_name))
+                    )
+                ):
                     vprint(
                         f"Generating one sentence summary using model: {model_name} "
                         f"({language})"
@@ -1620,7 +1668,12 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                     row[one_sentence_col_name] = one_sentence_text
 
                     # Save One Sentence Summary File
-                    if one_sentence_text and one_sentence_summaries_dir:
+                    if is_error_response(one_sentence_text):
+                        rprint(
+                            f"[yellow]Warning: One sentence summary failed "
+                            f"({one_sentence_text}); skipping file save.[/yellow]"
+                        )
+                    elif one_sentence_text and one_sentence_summaries_dir:
                         os_filename = (
                             f"{model_name} - {video_id} - {safe_title} - "
                             f"one-sentence-summary (from {transcript_arg}){lang_str}.md"
@@ -1662,7 +1715,14 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                     f"tags cost from {transcript_arg}{col_suffix} ($)"
                 )
 
-                if not row.get(tags_col_name) and row.get(summary_col_name):
+                if (
+                    (
+                        not row.get(tags_col_name)
+                        or is_error_response(row.get(tags_col_name))
+                    )
+                    and row.get(summary_col_name)
+                    and not is_error_response(row.get(summary_col_name))
+                ):
                     summary_for_tags = row[summary_col_name]
                     rprint(f"Generating tags using model: {model_name} ({language})")
 
@@ -1670,17 +1730,26 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                         model_name, summary_for_tags, language=language
                     )
 
-                    # Ensure no more than 5 tags
-                    tag_list = [t.strip() for t in tags_text.split(",") if t.strip()]
-                    if len(tag_list) > 5:
-                        tag_list = tag_list[:5]
-                    row[tags_col_name] = ", ".join(tag_list)
+                    if is_error_response(tags_text):
+                        row[tags_col_name] = tags_text
+                        rprint(
+                            f"[yellow]Warning: Tag generation failed "
+                            f"({tags_text}); skipping file save.[/yellow]"
+                        )
+                    else:
+                        # Ensure no more than 5 tags
+                        tag_list = [
+                            t.strip() for t in tags_text.split(",") if t.strip()
+                        ]
+                        if len(tag_list) > 5:
+                            tag_list = tag_list[:5]
+                        row[tags_col_name] = ", ".join(tag_list)
 
-                    if (
-                        tags_text.strip() == "nan"
-                        or tags_text.strip() == 'float("nan")'
-                    ):
-                        row[tags_col_name] = float("nan")
+                        if (
+                            tags_text.strip() == "nan"
+                            or tags_text.strip() == 'float("nan")'
+                        ):
+                            row[tags_col_name] = float("nan")
 
                     # Calculate Tags Cost
                     if verbose:
@@ -1693,7 +1762,11 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                             vprint(f"Tags cost: ${tags_cost:.2f}")
 
                     # Save Tags File
-                    if row.get(tags_col_name) and tags_dir:
+                    if (
+                        row.get(tags_col_name)
+                        and not is_error_response(row.get(tags_col_name))
+                        and tags_dir
+                    ):
                         tags_val = row[tags_col_name]
                         if isinstance(tags_val, str) and tags_val != 'float("nan")':
                             tags_filename = (
@@ -1759,13 +1832,19 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                                     f"{path}: {e}"
                                 )
 
-                    elif row.get(yt_speakers_col_name):
+                    elif row.get(yt_speakers_col_name) and not is_error_response(
+                        row.get(yt_speakers_col_name)
+                    ):
                         yt_speakers_text = row[yt_speakers_col_name]
 
                     # Generate if missing (checking specifically if it is 'float("nan")'
                     # default or actual text)
-                    if yt_speakers_text == 'float("nan")' and (
+                    if (
+                        yt_speakers_text == 'float("nan")'
+                        or is_error_response(yt_speakers_text)
+                    ) and (
                         not row.get(yt_speakers_col_name)
+                        or is_error_response(row.get(yt_speakers_col_name))
                     ):
                         # Try to use English transcript for YT speaker extraction
                         # if available
@@ -1774,13 +1853,22 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                             en_path = row.get(
                                 "Transcript File human generated"
                             ) or row.get("Transcript File youtube generated")
-                            if en_path and os.path.exists(str(en_path)):
-                                with open(str(en_path), "r", encoding="utf-8") as f:
-                                    yt_speaker_source_transcript = f.read()
-                                    vprint(
-                                        "Using English transcript for YouTube speaker "
-                                        f"extraction ({model_name})."
+                            if en_path:
+                                if storage.exists(str(en_path)):
+                                    yt_speaker_source_transcript = storage.read_text(
+                                        str(en_path)
                                     )
+                                    vprint(
+                                        "Using English transcript for YouTube "
+                                        f"speaker extraction ({model_name})."
+                                    )
+                                elif os.path.exists(str(en_path)):
+                                    with open(str(en_path), "r", encoding="utf-8") as f:
+                                        yt_speaker_source_transcript = f.read()
+                                        vprint(
+                                            "Using English transcript for YouTube "
+                                            f"speaker extraction ({model_name})."
+                                        )
                         rprint(
                             f"Extracting speakers using model: {model_name} "
                             "(Source: YouTube Transcript)"
@@ -1799,7 +1887,13 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                             row[yt_speakers_col_name] = float("nan")
 
                         # Save YouTube Speakers File
-                        if yt_speakers_text and not isinstance(
+                        if is_error_response(yt_speakers_text):
+                            rprint(
+                                f"[yellow]Warning: YouTube speaker extraction failed "
+                                f"({yt_speakers_text}); skipping file save.[/yellow]"
+                            )
+                            row[yt_speakers_file_col_name] = ""
+                        elif yt_speakers_text and not isinstance(
                             row[yt_speakers_col_name], float
                         ):
                             yt_speakers_filename = (
@@ -1873,7 +1967,9 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                                     "Warning: Failed to read YouTube Q&A file "
                                     f"{path}: {e}"
                                 )
-                    if not row.get(yt_qa_col_name):
+                    if not row.get(yt_qa_col_name) or is_error_response(
+                        row.get(yt_qa_col_name)
+                    ):
                         rprint(
                             f"Generating Q&A using model: {model_name} "
                             "(Source: YouTube Transcript)"
@@ -1905,7 +2001,12 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                                 row[yt_qa_cost_col_name] = yt_qa_cost
 
                         yt_qa_full_path = ""
-                        if row[yt_qa_col_name] and not isinstance(
+                        if is_error_response(yt_qa_text):
+                            rprint(
+                                f"[yellow]Warning: YouTube Q&A generation failed "
+                                f"({yt_qa_text}); skipping file save.[/yellow]"
+                            )
+                        elif row[yt_qa_col_name] and not isinstance(
                             row[yt_qa_col_name], float
                         ):
                             qa_filename = (
@@ -1993,7 +2094,9 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                                     f"{path}: {e}"
                                 )
 
-                    if not row.get(yt_sum_col_name):
+                    if not row.get(yt_sum_col_name) or is_error_response(
+                        row.get(yt_sum_col_name)
+                    ):
                         rprint(
                             f"Generating summary using model: {model_name} "
                             "(Source: YouTube Transcript)"
@@ -2030,7 +2133,12 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                                 row[yt_sum_cost_col_name] = yt_summary_cost
 
                         yt_summary_full_path = ""
-                        if summaries_dir and yt_summary_text:
+                        if is_error_response(yt_summary_text):
+                            rprint(
+                                f"[yellow]Warning: YouTube summary generation failed "
+                                f"({yt_summary_text}); skipping file save.[/yellow]"
+                            )
+                        elif summaries_dir and yt_summary_text:
                             summary_filename = (
                                 f"{model_name} - {video_id} - {safe_title} - "
                                 f"summary (from youtube){lang_str}.md"
@@ -2060,8 +2168,13 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                         f"cost from youtube{col_suffix} ($)"
                     )
 
-                    if row.get(yt_sum_col_name) and not row.get(
-                        yt_one_sentence_col_name
+                    if (
+                        row.get(yt_sum_col_name)
+                        and not is_error_response(row.get(yt_sum_col_name))
+                        and (
+                            not row.get(yt_one_sentence_col_name)
+                            or is_error_response(row.get(yt_one_sentence_col_name))
+                        )
                     ):
                         rprint(
                             "Generating one sentence summary using model: "
@@ -2090,7 +2203,13 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                                 )
 
                         # Save YT One Sentence Summary File
-                        if yt_one_sentence_text and one_sentence_summaries_dir:
+                        if is_error_response(yt_one_sentence_text):
+                            rprint(
+                                "[yellow]Warning: YouTube one sentence summary failed "
+                                f"({yt_one_sentence_text}); "
+                                "skipping file save.[/yellow]"
+                            )
+                        elif yt_one_sentence_text and one_sentence_summaries_dir:
                             os_filename = (
                                 f"{model_name} - {video_id} - {safe_title} - "
                                 f"one-sentence-summary (from youtube){lang_str}.md"
@@ -2123,7 +2242,11 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                 # Target ALL summaries in the row (both existing and newly created)
                 # This includes normal summaries and "from youtube" summaries
                 for k in list(row.keys()):
-                    if k.startswith("Summary Text ") and row[k]:
+                    if (
+                        k.startswith("Summary Text ")
+                        and row[k]
+                        and not is_error_response(row[k])
+                    ):
                         # Check language
                         if language != "en" and not k.endswith(f" ({language})"):
                             continue
@@ -2142,7 +2265,7 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
                 for (sum_col, m_name, s_text), infographic_model in product(
                     summary_targets, infographic_models
                 ):
-                    if not s_text:
+                    if not s_text or is_error_response(s_text):
                         continue
 
                     info_col = f"Summary Infographic File {m_name} {infographic_model}"

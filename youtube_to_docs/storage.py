@@ -156,6 +156,11 @@ class LocalStorage(Storage):
         return None
 
 
+def _escape_drive_query_value(value: str) -> str:
+    """Escape backslashes and single quotes for Google Drive API q strings."""
+    return value.replace("\\", "\\\\").replace("'", "\\'")
+
+
 class GoogleDriveStorage(Storage):
     """Implementation of Storage for Google Drive."""
 
@@ -231,10 +236,11 @@ class GoogleDriveStorage(Storage):
     def _resolve_root_folder_id(self, output_arg: str) -> str:
         if output_arg in ("workspace", "w"):
             folder_name = "youtube-to-docs-artifacts"
+            escaped_folder_name = _escape_drive_query_value(folder_name)
             # specific logic to find or create "youtube-to-docs-artifacts" in root
             query = (
                 "mimeType='application/vnd.google-apps.folder' and "
-                f"name='{folder_name}' and trashed=false"
+                f"name='{escaped_folder_name}' and trashed=false"
             )
             results = (
                 self.service.files().list(q=query, fields="files(id, name)").execute()
@@ -287,10 +293,13 @@ class GoogleDriveStorage(Storage):
                 parent_id = self.folder_cache[cache_key]
                 continue
 
+            escaped_part = _escape_drive_query_value(part)
+            escaped_parent_id = _escape_drive_query_value(parent_id)
             # Search for folder in parent_id
             query = (
                 "mimeType='application/vnd.google-apps.folder' and "
-                f"name='{part}' and '{parent_id}' in parents and trashed=false"
+                f"name='{escaped_part}' and '{escaped_parent_id}' in parents "
+                "and trashed=false"
             )
             results = self.service.files().list(q=query, fields="files(id)").execute()
             files = results.get("files", [])
@@ -330,7 +339,12 @@ class GoogleDriveStorage(Storage):
         if filename == "youtube-docs.csv":
             filename = "youtube-docs"  # We store it as a Sheet
 
-        query = f"name='{filename}' and '{parent_id}' in parents and trashed=false"
+        escaped_filename = _escape_drive_query_value(filename)
+        escaped_parent_id = _escape_drive_query_value(parent_id)
+        query = (
+            f"name='{escaped_filename}' and '{escaped_parent_id}' in parents "
+            "and trashed=false"
+        )
         results = (
             self.service.files()
             .list(q=query, fields="files(id, webViewLink, mimeType)")

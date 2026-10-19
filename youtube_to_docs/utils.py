@@ -77,7 +77,9 @@ def validate_output_file(output_file: str) -> str:
         ) from None
     if resolved == real_root or not resolved.lower().endswith(".csv"):
         raise ValueError("Invalid output_file: must be a .csv file")
-    return os.path.join(OUTPUT_ROOT, os.path.relpath(resolved, real_root))
+    return os.path.join(OUTPUT_ROOT, os.path.relpath(resolved, real_root)).replace(
+        "\\", "/"
+    )
 
 
 def optional_value_args(flag: str, value: str) -> list[str]:
@@ -87,6 +89,64 @@ def optional_value_args(flag: str, value: str) -> list[str]:
     if value.strip().lower() in ("default", "true", "yes"):
         return [flag]
     return [flag, value.strip()]
+
+
+def is_error_response(text: object) -> bool:
+    """Return True if an LLM/API output string represents an error message."""
+    return isinstance(text, str) and text.strip().startswith("Error:")
+
+
+def build_cli_args(
+    url: str,
+    output_file: str = f"{OUTPUT_ROOT}/youtube-docs.csv",
+    transcript_source: str | None = "youtube",
+    model: str | None = None,
+    tts_model: str | None = None,
+    infographic_model: str | None = None,
+    alt_text_model: str | None = None,
+    no_youtube_summary: bool = False,
+    from_video: str | None = None,
+    combine_infographic_audio: bool = False,
+    all_suite: str | None = None,
+    translate: str | None = None,
+    corrected_captions: str | None = None,
+    post_process: str | None = None,
+    hugging_face_dataset: str | None = None,
+    verbose: bool = False,
+) -> list[str]:
+    """Build the CLI argument list passed to ``youtube_to_docs.main.main``."""
+    args = [url, "--outfile", output_file]
+
+    if transcript_source:
+        args.extend(["--transcript", transcript_source])
+    if hugging_face_dataset:
+        args.extend(["--hugging-face-dataset", hugging_face_dataset])
+    if translate:
+        args.extend(["--translate", translate])
+    if model:
+        args.extend(["--model", model])
+    if tts_model:
+        args.extend(["--tts", tts_model])
+    if infographic_model:
+        args.extend(["--infographic", infographic_model])
+    if alt_text_model:
+        args.extend(["--alt-text-model", alt_text_model])
+    if no_youtube_summary:
+        args.append("--no-youtube-summary")
+    if from_video:
+        args.extend(["--from-video", from_video])
+    if combine_infographic_audio:
+        args.append("--combine-infographic-audio")
+    if all_suite:
+        args.extend(["--all", all_suite])
+    if corrected_captions:
+        args.extend(optional_value_args("--corrected-captions", corrected_captions))
+    if post_process:
+        args.extend(["--post-process", post_process])
+    if verbose:
+        args.append("--verbose")
+
+    return args
 
 
 def get_version() -> str:

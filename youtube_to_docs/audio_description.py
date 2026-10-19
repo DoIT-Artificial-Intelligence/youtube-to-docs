@@ -765,17 +765,19 @@ def process_audio_description(
     outputs = {
         "vtt": (
             f"Descriptions VTT File {model_name}",
-            os.path.join(dirs["vtt"], f"{stem} - descriptions.vtt"),
+            os.path.join(dirs["vtt"], f"{stem} - descriptions.vtt").replace("\\", "/"),
         ),
         "extended": (
             f"Extended Descriptions VTT File {model_name}",
-            os.path.join(dirs["vtt"], f"{stem} - extended descriptions.vtt"),
+            os.path.join(dirs["vtt"], f"{stem} - extended descriptions.vtt").replace(
+                "\\", "/"
+            ),
         ),
         "transcript": (
             f"Descriptive Transcript File {model_name}",
             os.path.join(
                 dirs["descriptive_transcripts"], f"{stem} - descriptive transcript.md"
-            ),
+            ).replace("\\", "/"),
         ),
     }
     missing = {}

@@ -14,9 +14,12 @@ Usage::
 
 import asyncio
 import contextlib
+import contextvars
 import io
 import logging
 import os
+import sys
+import threading
 import time
 import traceback
 import uuid
@@ -28,8 +31,8 @@ from youtube_to_docs.models import MODEL_SUITES
 from youtube_to_docs.storage import MemoryStorage
 from youtube_to_docs.utils import (
     OUTPUT_ROOT,
+    build_cli_args,
     is_remote_output,
-    optional_value_args,
     resolve_within,
     validate_output_file,
 )
@@ -57,6 +60,9 @@ except ImportError as e:
 # Job tracking
 # ---------------------------------------------------------------------------
 
+_MAX_JOBS = 200
+_JOB_TTL_SECONDS = 3600
+
 
 @dataclass
 class Job:
@@ -73,6 +79,100 @@ class Job:
 
 jobs: dict[str, Job] = {}
 
+
+def _evict_old_jobs(
+    max_jobs: int = _MAX_JOBS, ttl_seconds: float = _JOB_TTL_SECONDS
+) -> None:
+    """Evict expired or excess completed/errored jobs and release MemoryStorage."""
+    now = time.time()
+    finished = [
+        (jid, j)
+        for jid, j in list(jobs.items())
+        if j.status in ("completed", "error") and j.finished_at is not None
+    ]
+    # Remove any finished jobs older than ttl_seconds
+    for jid, j in finished:
+        if j.finished_at is not None and (now - j.finished_at) > ttl_seconds:
+            j.storage = None
+            jobs.pop(jid, None)
+
+    # If still over max_jobs, evict oldest finished jobs first
+    if len(jobs) >= max_jobs:
+        remaining_finished = sorted(
+            ((jid, j) for jid, j in jobs.items() if j.status in ("completed", "error")),
+            key=lambda item: item[1].finished_at or item[1].started_at,
+        )
+        while len(jobs) >= max_jobs and remaining_finished:
+            jid, j = remaining_finished.pop(0)
+            j.storage = None
+            jobs.pop(jid, None)
+
+
+# Context-isolated stdout/stderr routing for concurrent background jobs
+_active_capture_var: contextvars.ContextVar[io.TextIOBase | None] = (
+    contextvars.ContextVar("_active_capture_var", default=None)
+)
+_stream_lock = threading.Lock()
+_active_captures: list[io.TextIOBase] = []
+_orig_stdout: object = None
+_orig_stderr: object = None
+
+
+class _ContextStreamRouter(io.TextIOBase):
+    """Routes writes to the active job's StreamCapture in the current context."""
+
+    def __init__(self, fallback_getter):
+        self._fallback_getter = fallback_getter
+
+    def _target(self):
+        target = _active_capture_var.get()
+        if target is not None:
+            return target
+        with _stream_lock:
+            if _active_captures:
+                return _active_captures[-1]
+        return self._fallback_getter()
+
+    def write(self, s: str) -> int:
+        target = self._target()
+        if target is not None:
+            return target.write(s)
+        return len(s)
+
+    def flush(self) -> None:
+        target = self._target()
+        if target is not None:
+            target.flush()
+
+
+@contextlib.contextmanager
+def _capture_job_streams(capture: io.TextIOBase):
+    """Redirect stdout/stderr for current context without clobbering jobs."""
+    global _orig_stdout, _orig_stderr
+    token = _active_capture_var.set(capture)
+    with _stream_lock:
+        if not _active_captures:
+            _orig_stdout = sys.stdout
+            _orig_stderr = sys.stderr
+            sys.stdout = _ContextStreamRouter(lambda: _orig_stdout)  # type: ignore[assignment]
+            sys.stderr = _ContextStreamRouter(lambda: _orig_stderr)  # type: ignore[assignment]
+        _active_captures.append(capture)
+    try:
+        yield
+    finally:
+        with _stream_lock:
+            if capture in _active_captures:
+                _active_captures.remove(capture)
+            if not _active_captures:
+                if _orig_stdout is not None:
+                    sys.stdout = _orig_stdout  # type: ignore[assignment]
+                if _orig_stderr is not None:
+                    sys.stderr = _orig_stderr  # type: ignore[assignment]
+                _orig_stdout = None
+                _orig_stderr = None
+        _active_capture_var.reset(token)
+
+
 # ---------------------------------------------------------------------------
 # Pydantic request model
 # ---------------------------------------------------------------------------
@@ -81,12 +181,14 @@ jobs: dict[str, Job] = {}
 class ProcessRequest(BaseModel):
     url: str
     output_file: str = "youtube-to-docs-artifacts/youtube-docs.csv"
+    hugging_face_dataset: str | None = None
     transcript_source: str | None = None
     model: str | None = None
     tts_model: str | None = None
     infographic_model: str | None = None
     alt_text_model: str | None = None
     no_youtube_summary: bool = False
+    from_video: str | None = None
     translate: str | None = None
     combine_infographic_audio: bool = False
     all_suite: str | None = None
@@ -147,41 +249,30 @@ def _validate_output_file(output_file: str) -> str:
 @app.post("/api/process")
 async def process(req: ProcessRequest):
     try:
+        _evict_old_jobs()
         job_id = uuid.uuid4().hex[:12]
         validated_output = _validate_output_file(req.output_file)
         job = Job(id=job_id, video_id=req.url, output_file=validated_output)
         jobs[job_id] = job
 
-        # Build args exactly like mcp_server.py
-        args = [req.url, "--outfile", validated_output]
-
-        if req.transcript_source:
-            args.extend(["--transcript", req.transcript_source])
-        if req.translate:
-            args.extend(["--translate", req.translate])
-        if req.model:
-            args.extend(["--model", req.model])
-        if req.tts_model:
-            args.extend(["--tts", req.tts_model])
-        if req.infographic_model:
-            args.extend(["--infographic", req.infographic_model])
-        if req.alt_text_model:
-            args.extend(["--alt-text-model", req.alt_text_model])
-        if req.no_youtube_summary:
-            args.append("--no-youtube-summary")
-        if req.combine_infographic_audio:
-            args.append("--combine-infographic-audio")
-        if req.all_suite:
-            args.extend(["--all", req.all_suite])
-        if req.corrected_captions:
-            args.extend(
-                optional_value_args("--corrected-captions", req.corrected_captions)
-            )
-
-        if req.post_process:
-            args.extend(["--post-process", req.post_process])
-        if req.verbose:
-            args.append("--verbose")
+        args = build_cli_args(
+            url=req.url,
+            output_file=validated_output,
+            hugging_face_dataset=req.hugging_face_dataset,
+            transcript_source=req.transcript_source,
+            model=req.model,
+            tts_model=req.tts_model,
+            infographic_model=req.infographic_model,
+            alt_text_model=req.alt_text_model,
+            no_youtube_summary=req.no_youtube_summary,
+            from_video=req.from_video,
+            translate=req.translate,
+            combine_infographic_audio=req.combine_infographic_audio,
+            all_suite=req.all_suite,
+            corrected_captions=req.corrected_captions,
+            post_process=req.post_process,
+            verbose=req.verbose,
+        )
 
         asyncio.create_task(_run_job(job, args))
         return {"job_id": job_id}
@@ -217,7 +308,7 @@ async def _run_job(job: Job, args: list[str]):
     capture = StreamCapture(job)
 
     def _run():
-        with contextlib.redirect_stdout(capture), contextlib.redirect_stderr(capture):
+        with _capture_job_streams(capture):
             return app_main(args)
 
     try:
