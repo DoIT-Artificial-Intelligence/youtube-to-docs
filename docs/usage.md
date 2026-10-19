@@ -310,6 +310,20 @@ If the requested source SRT doesn't exist (for example, `-t youtube -cc`), the a
    Then open `http://127.0.0.1:8080/vtt-files/` and select the `… player.html` file.
 3. **Spot-check timing.** In VLC, open the original video and add the captions `.vtt` (Subtitle > Add Subtitle File...) to check that captions line up with the speech.
 
+## Review and edit the outputs
+
+youtube-to-docs is human-centered: the models write a first draft, and people review it and have the final say. Every output is a file you can edit (a Google Doc or Word file when saving to Google Drive or SharePoint), and the CSV lists where each one is saved.
+
+Outputs that already exist aren't regenerated. When you run the same video again, the tool reads your edited files and uses them for any step that hasn't run yet. For example:
+
+1. Get the transcript only (the default): `youtube-to-docs <url>`.
+2. Fix the transcript in `transcript-files/` (and the matching `.srt` in `srt-files/` if you plan to make captions).
+3. Run again with the outputs you want, such as `-m -i --tts gemini-3.8-flash-lite-tts-Kore` or `-cc`. The summary, Q&A, infographic, audio and captions are built from your corrected transcript.
+
+You can also edit a summary, Q&A, speakers or alt text file directly. On the next run, the edited text is loaded back into the CSV, and outputs made later, such as the infographic and audio, use it.
+
+To make an output again, delete its file and remove the video's row from the CSV (or clear that output's columns), then run again. The tool finds your other files, including the edited transcript, by their file names.
+
 ## CSV Column Reference
 
 The output CSV file contains a variety of columns depending on the arguments provided. Below is a reference of the possible columns:
