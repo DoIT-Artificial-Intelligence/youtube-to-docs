@@ -17,6 +17,9 @@ MODELS = [
     "bedrock-claude-haiku-5-5",
     "bedrock-claude-sonnet-5-5",
     "bedrock-claude-opus-5-5",
+    "bedrock-gpt-6-luna",
+    "bedrock-gpt-6.1-sol",
+    "bedrock-gpt-6-astra",
     "gemini-3.5-flash-lite",
     "gemini-3.8-flash",
     "gemini-4-argon",
@@ -93,7 +96,7 @@ def main():
                     cost = round(
                         (input_tokens * input_price + output_tokens * output_price)
                         / 1_000_000,
-                        2,
+                        4,
                     )
 
         except Exception as e:

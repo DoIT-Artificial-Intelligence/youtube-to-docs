@@ -307,3 +307,137 @@
   .ytd-card { transition: none; }
   .ytd-card:hover { transform: none; }
 }
+
+/* ---------- Pricing page ---------- */
+
+.pricing-sr {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+.ytd-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--ytd-border);
+  border-radius: var(--ytd-radius);
+  background: var(--ytd-surface);
+  margin: 1.5rem 0 1rem;
+  overflow: hidden;
+}
+.ytd-kpi { padding: 1.1rem 1.3rem; border-left: 1px solid var(--ytd-border); display: flex; flex-direction: column; gap: 0.15rem; }
+.ytd-kpi:first-child { border-left: 0; }
+.ytd-kpi span { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ytd-muted); }
+.ytd-kpi b { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; color: var(--md-default-fg-color); }
+.ytd-kpi small { font-size: 0.78rem; color: var(--ytd-muted); }
+
+.pricing-controls {
+  display: flex; flex-wrap: wrap; gap: 0.8rem 1.5rem;
+  align-items: center; justify-content: space-between;
+  margin: 1rem 0;
+}
+.pricing-length { display: flex; align-items: center; gap: 0.75rem; font-size: 0.8rem; color: var(--ytd-muted); }
+.pricing-length output { font-weight: 700; color: var(--md-default-fg-color); min-width: 5.5rem; }
+.pricing-length input { width: 14rem; accent-color: var(--ytd-indigo); }
+
+.pricing-chips, .pricing-tabs { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.pricing-chip, .pricing-tab {
+  font: inherit; font-size: 0.72rem; font-weight: 600;
+  padding: 0.3rem 0.8rem; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--ytd-border);
+  background: var(--md-default-bg-color);
+  color: var(--ytd-muted);
+}
+.pricing-chip:hover, .pricing-tab:hover { border-color: var(--md-accent-fg-color); color: var(--md-default-fg-color); }
+.pricing-chip[aria-pressed="true"], .pricing-tab[aria-selected="true"] {
+  background: var(--md-default-fg-color); border-color: var(--md-default-fg-color);
+  color: var(--md-default-bg-color);
+}
+.pricing-tab span { opacity: 0.65; font-weight: 500; margin-left: 0.15rem; }
+.pricing-chip:focus-visible, .pricing-tab:focus-visible, .pricing-bar:focus-visible, .pricing-table th button:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color); outline-offset: 2px;
+}
+
+#pricing-search {
+  font: inherit; font-size: 0.8rem; flex: 1 1 16rem; max-width: 22rem;
+  padding: 0.45rem 0.8rem; border-radius: 10px;
+  border: 1px solid var(--ytd-border);
+  background: var(--md-default-bg-color); color: var(--md-default-fg-color);
+}
+#pricing-search:focus { outline: none; border-color: var(--md-accent-fg-color); }
+
+/* Bars: one hue (magnitude), value labelled at the end, recessive track. */
+.pricing-bars {
+  --bar: #4f46e5;
+  display: grid; gap: 0.2rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--ytd-border);
+  border-radius: var(--ytd-radius);
+}
+[data-md-color-scheme="slate"] .pricing-bars { --bar: #7c83f2; }
+.pricing-bar {
+  display: grid; grid-template-columns: 13rem 1fr 4.5rem;
+  align-items: center; gap: 0.8rem;
+  padding: 0.3rem 0.4rem; border-radius: 6px;
+  font-size: 0.78rem;
+}
+.pricing-bar:hover { background: var(--ytd-surface); }
+.pricing-bar__label { color: var(--md-default-fg-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pricing-bar__label small { color: var(--ytd-muted); margin-left: 0.4rem; font-size: 0.7rem; }
+.pricing-bar__track { height: 0.85rem; display: block; }
+.pricing-bar__fill { display: block; height: 100%; background: var(--bar); border-radius: 0 4px 4px 0; transition: width 0.2s; }
+.pricing-bar__value { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: var(--md-default-fg-color); }
+
+.pricing-tooltip {
+  position: fixed; z-index: 10; pointer-events: none;
+  display: flex; flex-direction: column; gap: 0.1rem;
+  max-width: 18rem; padding: 0.55rem 0.75rem; border-radius: 8px;
+  font-size: 0.72rem; line-height: 1.4;
+  background: var(--md-default-bg-color); color: var(--ytd-muted);
+  border: 1px solid var(--ytd-border);
+  box-shadow: 0 10px 30px -12px rgba(15, 23, 42, 0.35);
+}
+.pricing-tooltip strong { color: var(--md-default-fg-color); }
+.pricing-tooltip[hidden] { display: none; }
+
+/* Price table */
+.pricing-table-wrap { overflow-x: auto; border: 1px solid var(--ytd-border); border-radius: var(--ytd-radius); }
+.md-typeset table.pricing-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin: 0; }
+.md-typeset .pricing-table th { background: var(--ytd-surface); padding: 0; text-align: left; border-bottom: 1px solid var(--ytd-border); }
+.md-typeset .pricing-table th button {
+  font: inherit; font-weight: 700; color: var(--md-default-fg-color);
+  background: none; border: 0; cursor: pointer; width: 100%;
+  text-align: inherit; padding: 0.65rem 0.9rem; white-space: nowrap;
+}
+.md-typeset .pricing-table td { padding: 0.55rem 0.9rem; border-top: 1px solid var(--ytd-border); vertical-align: middle; }
+.md-typeset .pricing-table tbody tr:first-child td { border-top: 0; }
+.md-typeset .pricing-table tbody tr:hover td { background: var(--ytd-surface); }
+.md-typeset .pricing-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.md-typeset .pricing-table td small { color: var(--ytd-muted); }
+.md-typeset .pricing-table td:first-child { white-space: nowrap; font-weight: 600; }
+.pricing-note {
+  font-size: 0.65rem; font-weight: 600; padding: 0.05rem 0.4rem; margin-left: 0.3rem;
+  border-radius: 999px; border: 1px solid var(--ytd-border); color: var(--ytd-muted); cursor: help;
+}
+.pricing-empty { text-align: center; color: var(--ytd-muted); padding: 2rem !important; }
+.pricing-count { font-size: 0.72rem; color: var(--ytd-muted); margin-top: 0.5rem; }
+
+@media screen and (max-width: 60em) {
+  .ytd-kpis { grid-template-columns: 1fr; }
+  .ytd-kpi { border-left: 0; border-top: 1px solid var(--ytd-border); }
+  .ytd-kpi:first-child { border-top: 0; }
+  .pricing-bar {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "label value" "track track";
+    gap: 0.2rem 0.5rem;
+  }
+  .pricing-bar__label { grid-area: label; }
+  .pricing-bar__value { grid-area: value; }
+  .pricing-bar__track { grid-area: track; height: 0.6rem; }
+  .pricing-bar__label small { display: none; }
+  .pricing-length { flex-wrap: wrap; width: 100%; }
+  .pricing-length input { width: 100%; }
+  #pricing-search { max-width: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pricing-bar__fill { transition: none; }
+}
