@@ -3,6 +3,7 @@ import time
 from datetime import date
 
 import polars as pl
+from tables import write_summary_table
 
 from youtube_to_docs.llms import generate_summary, get_model_pricing
 from youtube_to_docs.transcript import (
@@ -134,15 +135,7 @@ def main():
         df = df.sort("time (seconds)")
         df.write_csv(output_path)
 
-        # Write markdown table
-        with open(md_output_path, "w") as f:
-            # Header
-            cols = df.columns
-            f.write("| " + " | ".join(cols) + " |\n")
-            f.write("| " + " | ".join(["---"] * len(cols)) + " |\n")
-            # Rows
-            for row in df.iter_rows():
-                f.write("| " + " | ".join(str(x) for x in row) + " |\n")
+        write_summary_table(df, md_output_path)
 
         print(f"Results updated in {output_path} and {md_output_path}")
 

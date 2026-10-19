@@ -1,7 +1,9 @@
-| model | time (seconds) | total_cost | size | input_tokens | output_tokens | date (today) |
-| --- | --- | --- | --- | --- | --- | --- |
-| gemini-3.1-flash-lite-image | 8.51 | 0.1177 | 1376x768 | 971 | 3915 | 2026-10-19 |
-| gemini-3-pro-image | 40.16 | 0.498 | 5504x3072 | 971 | 4134 | 2026-10-19 |
-| gemini-nano-banana-2.1 | 49.1 | 0.2214 | 5504x3072 | 971 | 7331 | 2026-10-19 |
-| foundry-gpt-image-2.5-flare | 65.82 | 0.4049 | 3840x2160 | 925 | 13342 | 2026-10-19 |
-| foundry-gpt-image-2.5-sunburst | 88.12 | 0.4049 | 3840x2160 | 925 | 13342 | 2026-10-19 |
+Measured on 2026-10-19.
+
+| Model | Time | Cost | Size (pixels) |
+| :--- | ---: | ---: | ---: |
+| `gemini-3.1-flash-lite-image` | 8.5 s | $0.12 | 1376 × 768 |
+| `gemini-3-pro-image` | 40.2 s | $0.50 | 5504 × 3072 |
+| `gemini-nano-banana-2.1` | 49.1 s | $0.22 | 5504 × 3072 |
+| `foundry-gpt-image-2.5-flare` | 65.8 s | $0.40 | 3840 × 2160 |
+| `foundry-gpt-image-2.5-sunburst` | 88.1 s | $0.40 | 3840 × 2160 |
