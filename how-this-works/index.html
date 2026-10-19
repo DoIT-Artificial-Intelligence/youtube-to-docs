@@ -1061,7 +1061,12 @@
 <p><strong>Infographics</strong>:</p>
 <ul>
 <li>Uses image generation models to create a visual representation of the summary.</li>
-<li><strong>Supported Provider</strong>: Google Gemini (Nano Banana).</li>
+<li><strong>Supported Providers</strong>:<ul>
+<li><strong>Google</strong>: Gemini (Nano Banana), at 4K with high thinking (<code>gemini-3.1-flash-lite-image</code> only supports 1K).</li>
+<li><strong>Azure Foundry</strong>: GPT Image 2.5 (<code>foundry-gpt-image-2.5-sunburst</code>, <code>foundry-gpt-image-2.5-flare</code>) at 3840×2160 and <code>max</code> quality (requires <code>AZURE_FOUNDRY_ENDPOINT</code> and <code>AZURE_FOUNDRY_API_KEY</code>).</li>
+</ul>
+</li>
+<li>Images are landscape (16:9), so they can be used as a video thumbnail and in the MP4. The MP4 is scaled to fit 3840×2160.</li>
 <li>The prompt includes the video title and the generated summary text to ensure relevance.</li>
 </ul>
 </li>
