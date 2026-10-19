@@ -1,4 +1,3 @@
-import base64
 import os
 from typing import Optional, Tuple
 
@@ -114,46 +113,15 @@ def generate_infographic(
         elif "titan-image-generator" in image_model or "nova-canvas" in image_model:
             print(
                 f"{image_model} has reached end of life on Amazon Bedrock. "
-                "Use a Gemini or Azure Foundry image model instead."
+                "Use a Gemini image model instead."
             )
             return None, 0, 0
 
         elif image_model.startswith("foundry"):
-            try:
-                from openai import OpenAI
-
-                AZURE_FOUNDRY_ENDPOINT = os.environ["AZURE_FOUNDRY_ENDPOINT"]
-                AZURE_FOUNDRY_API_KEY = os.environ["AZURE_FOUNDRY_API_KEY"]
-                actual_model_name = image_model.replace("foundry-", "")
-
-                openai_client = OpenAI(
-                    base_url=AZURE_FOUNDRY_ENDPOINT, api_key=AZURE_FOUNDRY_API_KEY
-                )
-
-                response = openai_client.images.generate(
-                    model=actual_model_name,
-                    prompt=prompt,
-                    n=1,
-                    size="1536x1024" if "gpt-image-1.5" in image_model else "1024x1024",
-                    response_format="b64_json",
-                )
-
-                if not response.data or not response.data[0].b64_json:
-                    print(f"No image data found in response from {image_model}")
-                    return None, 0, 0
-
-                image_data = base64.b64decode(response.data[0].b64_json)
-                # Pricing for gpt-image-1.5 is $0.034/image -> 3400 units
-                output_tokens = 3400 if "gpt-image-1.5" in image_model else 1000
-
-                return image_data, 0, output_tokens
-            except KeyError:
-                print(
-                    "Error: AZURE_FOUNDRY_ENDPOINT and AZURE_FOUNDRY_API_KEY "
-                    "required for Foundry models."
-                )
-            except Exception as e:
-                print(f"Foundry Infographic Error: {e}")
+            print(
+                f"{image_model}: Azure Foundry image models are no longer "
+                "supported. Use a Gemini image model instead."
+            )
             return None, 0, 0
 
         else:

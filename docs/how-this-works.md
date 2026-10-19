@@ -83,9 +83,7 @@ Beyond text, the tool creates audio and visual assets:
 
 - **Infographics**:
     *   Uses image generation models to create a visual representation of the summary.
-    *   **Supported Providers**:
-        *   **Google**: Gemini (Nano Banana).
-        *   **Azure Foundry**: GPT Image models (requires `AZURE_FOUNDRY_ENDPOINT` and `AZURE_FOUNDRY_API_KEY`).
+    *   **Supported Provider**: Google Gemini (Nano Banana).
     *   The prompt includes the video title and the generated summary text to ensure relevance.
 
 - **Multimodal Alt Text**:
