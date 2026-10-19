@@ -3,12 +3,12 @@ import re
 import shutil
 import subprocess
 import sys
-from pathlib import Path
 from typing import List, Optional
 
 import polars as pl
-from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+
+from youtube_to_docs.storage import get_google_credentials
 
 # Configuration
 VIDEO_ID = "B0x2I_doX9o"
@@ -444,18 +444,9 @@ def get_default_model(available_models: List[str]) -> str:
 
 def resolve_drive_folder(folder_name: str, delete_if_exists: bool = False) -> str:
     """Finds or creates a folder in Google Drive and returns its ID."""
-    token_file = Path.home() / ".google_client_token.json"
-    if not token_file.exists():
-        print(
-            "Error: .google_client_token.json not found. "
-            "Run a local workspace command first."
-        )
-        sys.exit(1)
-
-    creds = Credentials.from_authorized_user_file(
-        str(token_file), ["https://www.googleapis.com/auth/drive.file"]
-    )
-    service = build("drive", "v3", credentials=creds)
+    # Same sign-in as the app: reuse the saved token, refresh it, or open a
+    # browser to sign in again.
+    service = build("drive", "v3", credentials=get_google_credentials())
 
     query = (
         "mimeType='application/vnd.google-apps.folder' and "

@@ -161,10 +161,71 @@ def _escape_drive_query_value(value: str) -> str:
     return value.replace("\\", "\\\\").replace("'", "\\'")
 
 
+GOOGLE_DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.file"]
+
+
+def get_google_credentials(scopes: list[str] | None = None):
+    """Load the saved Google OAuth token, refreshing it or signing in again.
+
+    Uses ~/.google_client_token.json, and ~/.google_client_secret.json to open
+    a browser sign-in when the token is missing, invalid or can't be refreshed.
+    """
+    scopes = scopes or GOOGLE_DRIVE_SCOPES
+    from google.auth.exceptions import RefreshError
+    from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
+    from google_auth_oauthlib.flow import InstalledAppFlow
+
+    creds = None
+    creds_file = Path.home() / ".google_client_secret.json"
+    token_file = Path.home() / ".google_client_token.json"
+
+    if token_file.exists():
+        try:
+            creds = Credentials.from_authorized_user_file(token_file, scopes)
+        except Exception as e:
+            rprint(
+                f"[yellow]Warning: Could not load existing Google token: {e}[/yellow]"
+            )
+            rprint("[cyan]Deleting corrupted token and starting fresh...[/cyan]")
+            try:
+                token_file.unlink()
+            except Exception:
+                pass  # Best-effort removal of corrupted token file
+            creds = None
+
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            try:
+                creds.refresh(Request())
+            except RefreshError as e:
+                rprint(f"[yellow]Warning: Could not refresh Google token: {e}[/yellow]")
+                rprint("[cyan]Triggering new authentication flow...[/cyan]")
+                creds = None
+
+        if not creds or not creds.valid:
+            if not creds_file.exists():
+                rprint(
+                    f"[bold red]Error: Google Client secrets not found at "
+                    f"{creds_file.absolute()}[/bold red]"
+                )
+                rprint(
+                    "Please get your client secret JSON from Google Cloud Console "
+                    "and save it to that location."
+                )
+                raise FileNotFoundError(
+                    f"Client secrets not found at {creds_file.absolute()}"
+                )
+            flow = InstalledAppFlow.from_client_secrets_file(str(creds_file), scopes)
+            creds = flow.run_local_server(port=0)
+        token_file.write_text(creds.to_json())
+    return creds
+
+
 class GoogleDriveStorage(Storage):
     """Implementation of Storage for Google Drive."""
 
-    SCOPES = ["https://www.googleapis.com/auth/drive.file"]
+    SCOPES = GOOGLE_DRIVE_SCOPES
 
     def __init__(self, output_arg: str):
         self.creds = self._get_creds()
@@ -178,60 +239,7 @@ class GoogleDriveStorage(Storage):
         self.file_cache: dict[str, dict] = {}
 
     def _get_creds(self):
-        from google.auth.exceptions import RefreshError
-        from google.auth.transport.requests import Request
-        from google.oauth2.credentials import Credentials
-        from google_auth_oauthlib.flow import InstalledAppFlow
-
-        creds = None
-        creds_file = Path.home() / ".google_client_secret.json"
-        token_file = Path.home() / ".google_client_token.json"
-
-        if token_file.exists():
-            try:
-                creds = Credentials.from_authorized_user_file(token_file, self.SCOPES)
-            except Exception as e:
-                rprint(
-                    f"[yellow]Warning: Could not load existing Google token: "
-                    f"{e}[/yellow]"
-                )
-                rprint("[cyan]Deleting corrupted token and starting fresh...[/cyan]")
-                try:
-                    token_file.unlink()
-                except Exception:
-                    pass  # Best-effort removal of corrupted token file
-                creds = None
-
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                try:
-                    creds.refresh(Request())
-                except RefreshError as e:
-                    rprint(
-                        f"[yellow]Warning: Could not refresh Google token: {e}[/yellow]"
-                    )
-                    rprint("[cyan]Triggering new authentication flow...[/cyan]")
-                    creds = None
-
-            if not creds or not creds.valid:
-                if not creds_file.exists():
-                    rprint(
-                        f"[bold red]Error: Google Client secrets not found at "
-                        f"{creds_file.absolute()}[/bold red]"
-                    )
-                    rprint(
-                        "Please get your client secret JSON from Google Cloud Console "
-                        "and save it to that location."
-                    )
-                    raise FileNotFoundError(
-                        f"Client secrets not found at {creds_file.absolute()}"
-                    )
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    str(creds_file), self.SCOPES
-                )
-                creds = flow.run_local_server(port=0)
-            token_file.write_text(creds.to_json())
-        return creds
+        return get_google_credentials(self.SCOPES)
 
     def _resolve_root_folder_id(self, output_arg: str) -> str:
         if output_arg in ("workspace", "w"):
