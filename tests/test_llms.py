@@ -115,6 +115,32 @@ class TestLLMs(unittest.TestCase):
         self.assertEqual(summary, "Bedrock Summary")
         self.assertEqual(in_tokens, 100)
         self.assertEqual(out_tokens, 50)
+        # Converse only honours the output limit inside inferenceConfig.
+        payload = mock_post.call_args.kwargs["json"]
+        self.assertEqual(payload["inferenceConfig"], {"maxTokens": 64_000})
+        self.assertNotIn("max_tokens", payload)
+
+    @patch("youtube_to_docs.llms.requests.post")
+    def test_generate_summary_bedrock_skips_reasoning_block(self, mock_post):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "output": {
+                "message": {
+                    "content": [
+                        {"reasoningContent": {"reasoningText": {"text": "hmm"}}},
+                        {"text": "Bedrock Summary"},
+                    ]
+                }
+            },
+            "usage": {"inputTokens": 100, "outputTokens": 50},
+        }
+        mock_post.return_value = mock_resp
+
+        summary, _, _ = llms.generate_summary(
+            "bedrock-claude-opus-5-5", "transcript", "Title", "url"
+        )
+        self.assertEqual(summary, "Bedrock Summary")
 
     @patch("youtube_to_docs.llms.requests.post")
     def test_bedrock_claude_model_ids(self, mock_post):

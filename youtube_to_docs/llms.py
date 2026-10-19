@@ -661,7 +661,9 @@ class BedrockProvider(BaseProvider, LLMProvider, MultimodalProvider):
                             "content": [{"text": prompt}],
                         }
                     ],
-                    "max_tokens": 64_000,
+                    # Converse ignores a top-level max_tokens and caps output
+                    # at 4,096 tokens.
+                    "inferenceConfig": {"maxTokens": 64_000},
                 },
                 timeout=BEDROCK_TIMEOUT_SECONDS,
             )
@@ -669,12 +671,14 @@ class BedrockProvider(BaseProvider, LLMProvider, MultimodalProvider):
                 response_json = response.json()
                 try:
                     content_blocks = response_json["output"]["message"]["content"]
-                    if (
-                        content_blocks
-                        and isinstance(content_blocks, list)
-                        and "text" in content_blocks[0]
-                    ):
-                        response_text = content_blocks[0]["text"]
+                    # Reasoning models put a reasoningContent block first.
+                    text_blocks = [
+                        block["text"]
+                        for block in content_blocks or []
+                        if isinstance(block, dict) and "text" in block
+                    ]
+                    if text_blocks:
+                        response_text = "".join(text_blocks)
                     else:
                         response_text = (
                             f"Error: Unexpected content format: {response_json}"
@@ -776,7 +780,7 @@ class BedrockProvider(BaseProvider, LLMProvider, MultimodalProvider):
                         ],
                     }
                 ],
-                "max_tokens": 2048,
+                "inferenceConfig": {"maxTokens": 2048},
             }
 
             response = requests.post(
@@ -793,12 +797,14 @@ class BedrockProvider(BaseProvider, LLMProvider, MultimodalProvider):
                 response_json = response.json()
                 try:
                     content_blocks = response_json["output"]["message"]["content"]
-                    if (
-                        content_blocks
-                        and isinstance(content_blocks, list)
-                        and "text" in content_blocks[0]
-                    ):
-                        response_text = content_blocks[0]["text"]
+                    # Reasoning models put a reasoningContent block first.
+                    text_blocks = [
+                        block["text"]
+                        for block in content_blocks or []
+                        if isinstance(block, dict) and "text" in block
+                    ]
+                    if text_blocks:
+                        response_text = "".join(text_blocks)
                         response_text = re.sub(
                             r"^(Alt text[:\-\s]+)",
                             "",
