@@ -1,5 +1,5 @@
 import os
-from unittest import TestCase, mock
+from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 from youtube_to_docs import infographic
@@ -136,28 +136,12 @@ class TestInfographic(TestCase):
                     (None, 0, 0),
                 )
 
-    @patch("openai.OpenAI")
-    def test_generate_infographic_foundry(self, mock_openai_cls):
-        mock_client = mock_openai_cls.return_value
-        mock_resp = MagicMock()
-        mock_image = MagicMock()
-        mock_image.b64_json = "ZmFrZV9ieXRlcw=="
-        mock_resp.data = [mock_image]
-        mock_client.images.generate.return_value = mock_resp
-
-        image_bytes, in_tok, out_tok = infographic.generate_infographic(
-            "foundry-gpt-image-1.5", "Summary text", "Video Title"
-        )
-
-        self.assertEqual(image_bytes, b"fake_bytes")
-        self.assertEqual(in_tok, 0)
-        self.assertEqual(out_tok, 3400)
-        mock_client.images.generate.assert_called_once_with(
-            model="gpt-image-1.5",
-            prompt=mock.ANY,
-            n=1,
-            size="1536x1024",
-            response_format="b64_json",
+    def test_generate_infographic_foundry_not_supported(self):
+        self.assertEqual(
+            infographic.generate_infographic(
+                "foundry-gpt-image-1.5", "Summary text", "Video Title"
+            ),
+            (None, 0, 0),
         )
 
 
