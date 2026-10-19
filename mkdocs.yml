@@ -1,31 +1,55 @@
-site_name: YouTube to Docs
+site_name: youtube-to-docs
+site_description: Turn any YouTube video, playlist or channel into transcripts, summaries, Q&A, infographics, audio and WCAG 2.1 AA captions with one command.
 site_url: https://DoIT-Artificial-Intelligence.github.io/youtube-to-docs/
 repo_url: https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs
 repo_name: youtube-to-docs
+copyright: MIT licensed &middot; Built by DoIT Artificial Intelligence
 
 theme:
   name: material
-  logo: assets/logo.png
+  icon:
+    logo: material/text-box-multiple
+    repo: fontawesome/brands/github
+  favicon: assets/logo.png
+  font:
+    text: Inter
+    code: JetBrains Mono
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: indigo
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
   features:
     - content.code.copy
+    - content.tabs.link
     - navigation.tabs
     - navigation.sections
     - navigation.top
+    - navigation.footer
+    - search.highlight
+
+extra_css:
+  - stylesheets/extra.css
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs
+      name: GitHub
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/youtube-to-docs/
+      name: PyPI
 
 nav:
   - Home: index.md
@@ -39,11 +63,17 @@ exclude_docs: |
 
 markdown_extensions:
   - admonition
+  - pymdownx.details
   - pymdownx.highlight:
       anchor_linenums: true
       pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - attr_list
   - md_in_html
