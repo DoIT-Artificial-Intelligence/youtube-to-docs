@@ -73,7 +73,8 @@ def process_video(
             (e.g., 'gemini-3.8-flash-lite-tts-Kore', 'gcp-chirp3-Kore',
             'aws-polly-Ruth').
         infographic_model: The image model to use for generating an infographic
-            (e.g., 'gemini-nano-banana-2.1' or 'gemini-3-pro-image'). Can be a
+            (e.g., 'gemini-nano-banana-2.1', 'gemini-3-pro-image' or
+            'foundry-gpt-image-2.5-sunburst'). Can be a
             comma-separated list to generate one infographic per model.
         alt_text_model: The LLM model to use for generating alt text for the
             infographic. Defaults to the summary model.

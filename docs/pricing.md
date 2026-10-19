@@ -12,7 +12,7 @@ description: What it costs to turn a YouTube video into documents with each AI m
 
 <div class="ytd-kpis">
   <div class="ytd-kpi"><span>Summarize a 1-hour video</span><b id="kpi-cheapest">&nbsp;</b><small id="kpi-cheapest-model">&nbsp;</small></div>
-  <div class="ytd-kpi"><span>Real run: a 3h49m hearing</span><b>$0.85</b><small>Gemini 4 Argon: speakers, Q&amp;A, summary, tags and an infographic</small></div>
+  <div class="ytd-kpi"><span>Real run: a 3h49m hearing</span><b>$1.01</b><small>Gemini 4 Argon: speakers, Q&amp;A, summary, tags and an infographic</small></div>
   <div class="ytd-kpi"><span>Transcribe an hour of audio</span><b id="kpi-stt">&nbsp;</b><small id="kpi-stt-model">&nbsp;</small></div>
 </div>
 
@@ -49,7 +49,7 @@ description: What it costs to turn a YouTube video into documents with each AI m
     - Token prices are USD per 1 million tokens. **Cached input** applies when the same prompt prefix is reused.
     - Speech-to-text, text-to-speech and translation services are shown in the vendor's own unit (per minute or per 1M characters). The CLI converts them to token equivalents (about 4 characters or 0.2 seconds of audio per token) to estimate costs.
     - The *per hour* estimates assume 150 spoken words (about 900 characters) a minute, and that Gemini audio uses 32 tokens per second.
-    - Infographic costs were measured on a real run and include the image prompt.
+    - Infographic costs were measured on a real run at the default settings (the highest resolution each model supports, and high thinking for Gemini) and include the image prompt.
     - Prices come from the vendors' pricing pages and [llm-prices.com](https://www.llm-prices.com/), and they live in [`youtube_to_docs/prices.py`](https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs/blob/main/youtube_to_docs/prices.py), which is the same file the CLI uses. Spot a stale price? [Open an issue](https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs/issues).
 
 <!-- PRICING_DATA -->

@@ -62,6 +62,10 @@ def create_video(image_path: str, audio_path: str, output_path: str) -> bool:
         image_path,
         "-i",
         audio_path,
+        # Fit 4K UHD so large infographics stay playable, keeping even sides.
+        "-vf",
+        "scale=w='min(3840,iw)':h='min(2160,ih)':force_original_aspect_ratio="
+        "decrease:force_divisible_by=2",
         "-c:v",
         "libx264",
         "-tune",

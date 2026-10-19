@@ -1,5 +1,5 @@
 import os
-from unittest import TestCase
+from unittest import TestCase, mock
 from unittest.mock import MagicMock, patch
 
 from youtube_to_docs import infographic
@@ -33,6 +33,7 @@ class TestInfographic(TestCase):
         mock_chunk.candidates = [MagicMock(content=MagicMock(parts=[mock_part]))]
         mock_chunk.usage_metadata.prompt_token_count = 10
         mock_chunk.usage_metadata.candidates_token_count = 20
+        mock_chunk.usage_metadata.thoughts_token_count = 5
 
         mock_client.models.generate_content_stream.return_value = [mock_chunk]
 
@@ -42,10 +43,24 @@ class TestInfographic(TestCase):
 
         self.assertEqual(image_bytes, b"fake_gemini_bytes")
         self.assertEqual(in_tok, 10)
-        self.assertEqual(out_tok, 20)
+        self.assertEqual(out_tok, 25)  # Candidates plus thinking tokens.
         mock_client.models.generate_content_stream.assert_called_once()
         config = mock_client.models.generate_content_stream.call_args.kwargs["config"]
         self.assertEqual(config.image_config.aspect_ratio, "16:9")
+        self.assertEqual(config.image_config.image_size, "4K")
+        self.assertEqual(config.thinking_config.thinking_level, "HIGH")
+
+    @patch("google.genai.Client")
+    def test_generate_infographic_gemini_1k_only_model(self, mock_client_cls):
+        mock_client = mock_client_cls.return_value
+        mock_client.models.generate_content_stream.return_value = []
+
+        infographic.generate_infographic(
+            "gemini-3.1-flash-lite-image", "Summary text", "Video Title"
+        )
+
+        config = mock_client.models.generate_content_stream.call_args.kwargs["config"]
+        self.assertEqual(config.image_config.image_size, "1K")
 
     def test_image_file_extension(self):
         self.assertEqual(infographic.image_file_extension(b"\xff\xd8\xff\xe0"), ".jpg")
@@ -78,6 +93,7 @@ class TestInfographic(TestCase):
         mock_chunk.candidates = [MagicMock(content=MagicMock(parts=[mock_part]))]
         mock_chunk.usage_metadata.prompt_token_count = 10
         mock_chunk.usage_metadata.candidates_token_count = 20
+        mock_chunk.usage_metadata.thoughts_token_count = 5
         mock_client.models.generate_content_stream.return_value = [mock_chunk]
 
         infographic.generate_infographic(
@@ -136,10 +152,42 @@ class TestInfographic(TestCase):
                     (None, 0, 0),
                 )
 
-    def test_generate_infographic_foundry_not_supported(self):
+    @patch.dict(
+        os.environ,
+        {
+            "AZURE_FOUNDRY_ENDPOINT": "https://x/openai/v1/",
+            "AZURE_FOUNDRY_API_KEY": "k",
+        },
+    )
+    @patch("openai.OpenAI")
+    def test_generate_infographic_foundry(self, mock_openai_cls):
+        mock_client = mock_openai_cls.return_value
+        mock_resp = MagicMock()
+        mock_resp.data = [MagicMock(b64_json="ZmFrZV9ieXRlcw==")]
+        mock_resp.usage = MagicMock(input_tokens=11, output_tokens=158)
+        mock_client.images.generate.return_value = mock_resp
+
+        for model in ["gpt-image-2.5-sunburst", "gpt-image-2.5-flare"]:
+            with self.subTest(model=model):
+                self.assertEqual(
+                    infographic.generate_infographic(
+                        f"foundry-{model}", "Summary text", "Video Title"
+                    ),
+                    (b"fake_bytes", 11, 158),
+                )
+                mock_client.images.generate.assert_called_with(
+                    model=model,
+                    prompt=mock.ANY,
+                    n=1,
+                    size="3840x2160",
+                    extra_body={"quality": "max"},
+                )
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_generate_infographic_foundry_missing_env(self):
         self.assertEqual(
             infographic.generate_infographic(
-                "foundry-gpt-image-1.5", "Summary text", "Video Title"
+                "foundry-gpt-image-2.5-flare", "Summary text", "Video Title"
             ),
             (None, 0, 0),
         )
