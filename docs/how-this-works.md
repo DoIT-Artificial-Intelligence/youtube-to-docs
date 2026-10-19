@@ -83,7 +83,10 @@ Beyond text, the tool creates audio and visual assets:
 
 - **Infographics**:
     *   Uses image generation models to create a visual representation of the summary.
-    *   **Supported Provider**: Google Gemini (Nano Banana).
+    *   **Supported Providers**:
+        *   **Google**: Gemini (Nano Banana), at 4K with high thinking (`gemini-3.1-flash-lite-image` only supports 1K).
+        *   **Azure Foundry**: GPT Image 2.5 (`foundry-gpt-image-2.5-sunburst`, `foundry-gpt-image-2.5-flare`) at 3840×2160 and `max` quality (requires `AZURE_FOUNDRY_ENDPOINT` and `AZURE_FOUNDRY_API_KEY`).
+    *   Images are landscape (16:9), so they can be used as a video thumbnail and in the MP4. The MP4 is scaled to fit 3840×2160.
     *   The prompt includes the video title and the generated summary text to ensure relevance.
 
 - **Multimodal Alt Text**:

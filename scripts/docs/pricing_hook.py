@@ -21,11 +21,15 @@ TOKENS_PER_CHAR = 0.25  # Starred character prices: 1M tokens ~ 4M characters.
 TOKENS_PER_MINUTE_STARRED = 200  # Starred per-minute prices: 1M tokens ~ 5,000 min.
 
 # Real cost of one infographic from a gemini-4-argon summary of a 3h49m hearing
-# (bnjjmvy1RlU), read from the cost columns of youtube-docs.csv.
+# (bnjjmvy1RlU), read from the cost columns of youtube-docs.csv. Measured at the
+# defaults: 4K with high thinking for Gemini (Flash-Lite Image is 1K only) and
+# 3840x2160 at max quality for GPT Image.
 MEASURED_INFOGRAPHIC_COST = {
-    "gemini-3-pro-image": 0.26,
-    "gemini-nano-banana-2.1": 0.09,
-    "gemini-3.1-flash-lite-image": 0.07,
+    "gemini-3-pro-image": 0.47,
+    "gemini-nano-banana-2.1": 0.25,
+    "gemini-3.1-flash-lite-image": 0.14,
+    "gpt-image-2.5-sunburst": 0.41,
+    "gpt-image-2.5-flare": 0.41,
 }
 
 

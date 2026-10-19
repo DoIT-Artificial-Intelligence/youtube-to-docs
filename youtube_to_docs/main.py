@@ -232,7 +232,8 @@ def _main_impl(
             "The image model to use for generating an infographic. "
             "If set as a flag without a value, defaults to "
             "`gemini-3-pro-image`. "
-            "e.g. `gemini-nano-banana-2.1` or `gemini-3-pro-image`. "
+            "e.g. `gemini-nano-banana-2.1`, `gemini-3-pro-image` or "
+            "`foundry-gpt-image-2.5-sunburst`. "
             "Can be a comma-separated list to generate one infographic per model "
             "(e.g. `gemini-nano-banana-2.1,gemini-3-pro-image`)."
         ),

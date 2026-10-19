@@ -1,5 +1,9 @@
+import base64
 import os
 from typing import Optional, Tuple
+
+# Gemini image models that only render at 1K; the rest render at 4K.
+GEMINI_1K_ONLY_MODELS = ("gemini-3.1-flash-lite-image",)
 
 
 def image_file_extension(image_bytes: bytes) -> str:
@@ -71,8 +75,15 @@ def generate_infographic(
                     "IMAGE",
                     "TEXT",
                 ],
-                # Landscape to match the MP4 video and keep models consistent.
-                image_config=types.ImageConfig(aspect_ratio="16:9"),
+                # Landscape so it works as a video thumbnail and in the MP4,
+                # at the highest resolution the model supports.
+                image_config=types.ImageConfig(
+                    aspect_ratio="16:9",
+                    image_size="1K" if image_model in GEMINI_1K_ONLY_MODELS else "4K",
+                ),
+                thinking_config=types.ThinkingConfig(
+                    thinking_level=types.ThinkingLevel.HIGH
+                ),
             )
 
             image_data = None
@@ -86,7 +97,10 @@ def generate_infographic(
             ):
                 if chunk.usage_metadata:
                     input_tokens = chunk.usage_metadata.prompt_token_count or 0
-                    output_tokens = chunk.usage_metadata.candidates_token_count or 0
+                    # Thinking tokens are billed as output.
+                    output_tokens = (
+                        chunk.usage_metadata.candidates_token_count or 0
+                    ) + (chunk.usage_metadata.thoughts_token_count or 0)
 
                 if (
                     chunk.candidates is None
@@ -112,16 +126,51 @@ def generate_infographic(
         elif "titan-image-generator" in image_model or "nova-canvas" in image_model:
             print(
                 f"{image_model} has reached end of life on Amazon Bedrock. "
-                "Use a Gemini image model instead."
+                "Use a Gemini or Azure Foundry image model instead."
             )
             return None, 0, 0
 
         elif image_model.startswith("foundry"):
-            print(
-                f"{image_model}: Azure Foundry image models are no longer "
-                "supported. Use a Gemini image model instead."
+            from openai import OpenAI
+
+            try:
+                AZURE_FOUNDRY_ENDPOINT = os.environ["AZURE_FOUNDRY_ENDPOINT"]
+                AZURE_FOUNDRY_API_KEY = os.environ["AZURE_FOUNDRY_API_KEY"]
+            except KeyError:
+                print(
+                    "Error: AZURE_FOUNDRY_ENDPOINT and AZURE_FOUNDRY_API_KEY "
+                    "required for Foundry models."
+                )
+                return None, 0, 0
+
+            client = OpenAI(
+                base_url=AZURE_FOUNDRY_ENDPOINT, api_key=AZURE_FOUNDRY_API_KEY
             )
-            return None, 0, 0
+            response = client.images.generate(
+                model=image_model.replace("foundry-", "", 1),
+                prompt=prompt,
+                n=1,
+                # 16:9 to match the Gemini infographics, at the largest size
+                # (longest edge 3840) and the highest quality.
+                size="3840x2160",
+                # "max" isn't in the SDK's quality type yet.
+                extra_body={"quality": "max"},
+            )
+
+            if not response.data or not response.data[0].b64_json:
+                print(f"No image data found in response from {image_model}")
+                return None, 0, 0
+
+            input_tokens = 0
+            output_tokens = 0
+            if response.usage:
+                input_tokens = response.usage.input_tokens or 0
+                output_tokens = response.usage.output_tokens or 0
+            return (
+                base64.b64decode(response.data[0].b64_json),
+                input_tokens,
+                output_tokens,
+            )
 
         else:
             print(f"Image model {image_model} not supported yet.")

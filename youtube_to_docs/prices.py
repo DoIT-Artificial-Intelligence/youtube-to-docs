@@ -1,7 +1,7 @@
 # Taken from https://www.llm-prices.com/
 # Moving to here until PRs are review e.g. https://github.com/simonw/llm-prices/pull/48
 PRICES = {
-    "updated_at": "2026-07-21",
+    "updated_at": "2026-10-19",
     "prices": [
         {
             "id": "amazon-nova-micro",
@@ -150,6 +150,24 @@ PRICES = {
             "input": 0.1,
             "output": 0.5,
             "input_cached": 0.01,
+        },
+        {
+            "id": "gpt-image-2.5-sunburst",
+            "vendor": "openai",
+            "name": "GPT Image 2.5 Sunburst (image gen)",
+            # Azure Foundry Global prices: text input and image output.
+            "input": 5.0,
+            "output": 30.0,
+            "input_cached": 1.25,
+        },
+        {
+            "id": "gpt-image-2.5-flare",
+            "vendor": "openai",
+            "name": "GPT Image 2.5 Flare (image gen)",
+            # Azure Foundry Global prices: text input and image output.
+            "input": 5.0,
+            "output": 30.0,
+            "input_cached": 1.25,
         },
         {
             "id": "gemini-3-pro-image",
