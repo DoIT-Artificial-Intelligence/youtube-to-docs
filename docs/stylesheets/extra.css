@@ -477,3 +477,11 @@
 @media (prefers-reduced-motion: reduce) {
   .pricing-bar__fill { transition: none; }
 }
+
+/* Audio description examples (homepage) */
+.ytd-ad img {
+  width: 100%;
+  border-radius: var(--ytd-radius);
+  border: 1px solid var(--ytd-border);
+}
+.md-typeset .ytd-ad p { font-size: 0.86rem; }
