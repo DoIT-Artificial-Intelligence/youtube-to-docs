@@ -41,7 +41,7 @@ description: What it costs to turn a YouTube video into documents with each AI m
   <div class="pricing-tabs" id="pricing-tabs" role="tablist" aria-label="Model type"></div>
 </div>
 
-<div class="pricing-table-wrap"><table class="pricing-table" id="pricing-table"></table></div>
+<div class="pricing-table-wrap" id="pricing-panel" role="tabpanel"><table class="pricing-table" id="pricing-table"></table></div>
 <p class="pricing-count" id="pricing-count" aria-live="polite"></p>
 
 ??? note "Units, conversions and sources"

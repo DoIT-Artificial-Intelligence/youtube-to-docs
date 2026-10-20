@@ -259,16 +259,16 @@ Install it as a Claude Code or Antigravity plugin, call it over MCP, run the web
 
 ## A transcript is raw material. This is the finished document.
 
-| | Transcript downloaders | youtube-to-docs |
+| <span class="ytd-sr">Feature</span> | Transcript downloaders | youtube-to-docs |
 | --- | :---: | :---: |
-| Transcript and SRT | :material-check: | :material-check: |
-| Q&A with speakers and timestamp links | :material-close: | :material-check: |
-| Summaries, tags, infographics, audio | :material-close: | :material-check: |
-| WCAG 2.1 AA captions and audio description | :material-close: | :material-check: |
-| Whole playlists and channels | Sometimes | :material-check: |
-| Choice of AI provider | :material-close: | Gemini, Vertex AI, Bedrock, Foundry |
-| Cost per video recorded | :material-close: | :material-check: |
-| Output to Sheets, Excel, Drive, SharePoint | :material-close: | :material-check: |
+| Transcript and SRT | :material-check:<span class="ytd-sr">Yes</span> | :material-check:<span class="ytd-sr">Yes</span> |
+| Q&A with speakers and timestamp links | :material-close:<span class="ytd-sr">No</span> | :material-check:<span class="ytd-sr">Yes</span> |
+| Summaries, tags, infographics, audio | :material-close:<span class="ytd-sr">No</span> | :material-check:<span class="ytd-sr">Yes</span> |
+| WCAG 2.1 AA captions and audio description | :material-close:<span class="ytd-sr">No</span> | :material-check:<span class="ytd-sr">Yes</span> |
+| Whole playlists and channels | Sometimes | :material-check:<span class="ytd-sr">Yes</span> |
+| Choice of AI provider | :material-close:<span class="ytd-sr">No</span> | Gemini, Vertex AI, Bedrock, Foundry |
+| Cost per video recorded | :material-close:<span class="ytd-sr">No</span> | :material-check:<span class="ytd-sr">Yes</span> |
+| Output to Sheets, Excel, Drive, SharePoint | :material-close:<span class="ytd-sr">No</span> | :material-check:<span class="ytd-sr">Yes</span> |
 
 </div>
 
