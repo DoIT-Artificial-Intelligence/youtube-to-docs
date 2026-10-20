@@ -92,6 +92,34 @@ Transcripts, captions, summaries, Q&A, audio and video in a second language, tra
 
 <div class="ytd-section" markdown>
 
+<span class="ytd-eyebrow">Human-centered</span>
+
+## AI drafts it. People decide what's published.
+
+<p class="ytd-lede">Every output is a file you can open, check and change: transcripts, captions, speakers, Q&amp;A and summaries. Edit them in a text editor, Google Docs or Word. The next run uses your edits instead of overwriting them.</p>
+
+<div class="ytd-grid ytd-grid--2" markdown>
+
+<div class="ytd-card" markdown>
+<span class="ytd-icon">:material-file-document-edit:</span>
+### Fix the transcript once
+Correct a misheard name or a missing sentence in the transcript. Summaries, Q&A, infographics and audio you make afterwards are built from your corrected text.
+</div>
+
+<div class="ytd-card" markdown>
+<span class="ytd-icon">:material-account-check:</span>
+### Review before you publish
+Nothing is published for you. Read the captions, summary and alt text, edit anything that's wrong, and delete any output you want made again.
+</div>
+
+</div>
+
+[How to edit outputs :material-arrow-right:](usage.md#review-and-edit-the-outputs)
+
+</div>
+
+<div class="ytd-section" markdown>
+
 <span class="ytd-eyebrow">Accessibility, built in</span>
 
 ## Auto-captions aren't compliant. These are.
@@ -154,34 +182,6 @@ The same run found the moments where something important is shown but not said, 
 </div>
 
 [More on captions and audio description :material-arrow-right:](usage.md#corrected-captions-and-audio-description)
-
-</div>
-
-<div class="ytd-section" markdown>
-
-<span class="ytd-eyebrow">Human-centered</span>
-
-## AI drafts it. People decide what's published.
-
-<p class="ytd-lede">Every output is a file you can open, check and change: transcripts, captions, speakers, Q&amp;A and summaries. Edit them in a text editor, Google Docs or Word. The next run uses your edits instead of overwriting them.</p>
-
-<div class="ytd-grid ytd-grid--2" markdown>
-
-<div class="ytd-card" markdown>
-<span class="ytd-icon">:material-file-document-edit:</span>
-### Fix the transcript once
-Correct a misheard name or a missing sentence in the transcript. Summaries, Q&A, infographics and audio you make afterwards are built from your corrected text.
-</div>
-
-<div class="ytd-card" markdown>
-<span class="ytd-icon">:material-account-check:</span>
-### Review before you publish
-Nothing is published for you. Read the captions, summary and alt text, edit anything that's wrong, and delete any output you want made again.
-</div>
-
-</div>
-
-[How to edit outputs :material-arrow-right:](usage.md#review-and-edit-the-outputs)
 
 </div>
 
