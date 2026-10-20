@@ -162,17 +162,31 @@
       .map(([k, t]) => {
         // Counts follow the search and vendor filter, so matches in other tabs are visible.
         const n = prices.filter((p) => p.type === k && matches(p)).length;
-        return `<button type="button" role="tab" class="pricing-tab" data-type="${k}" aria-selected="${state.type === k}">${t.label} <span>${n}</span></button>`;
+        const selected = state.type === k;
+        // Only the selected tab is in the tab order; arrow keys move between tabs.
+        return `<button type="button" role="tab" id="pricing-tab-${k}" class="pricing-tab" data-type="${k}" aria-selected="${selected}" aria-controls="pricing-panel" tabindex="${selected ? 0 : -1}">${t.label}<span class="pricing-sr">,</span> <span>${n}<span class="pricing-sr"> models</span></span></button>`;
       })
       .join("");
+    document.getElementById("pricing-panel").setAttribute("aria-labelledby", `pricing-tab-${state.type}`);
   }
-  document.getElementById("pricing-tabs").addEventListener("click", (e) => {
-    const btn = e.target.closest("button");
-    if (!btn) return;
-    state.type = btn.dataset.type;
+  function selectTab(type, focus) {
+    state.type = type;
     state.sort = null;
     renderTabs();
     renderTable();
+    if (focus) document.getElementById(`pricing-tab-${type}`).focus();
+  }
+  document.getElementById("pricing-tabs").addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (btn) selectTab(btn.dataset.type, false);
+  });
+  document.getElementById("pricing-tabs").addEventListener("keydown", (e) => {
+    const keys = Object.keys(TABS);
+    const i = keys.indexOf(state.type);
+    const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: keys.length - 1 }[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    selectTab(keys[(next + keys.length) % keys.length], true);
   });
 
   const matches = (p) => {

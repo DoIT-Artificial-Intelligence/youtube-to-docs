@@ -18,6 +18,8 @@
   --ytd-surface: #f8fafc;
   --ytd-border: #e2e8f0;
   --ytd-muted: #475569;
+  /* Code comments at 4.5:1 or more on the code background. */
+  --md-code-hl-comment-color: rgba(0, 0, 0, 0.62);
 }
 
 [data-md-color-scheme="slate"] {
@@ -31,6 +33,10 @@
   --ytd-surface: #161d33;
   --ytd-border: #273049;
   --ytd-muted: #a8b3cf;
+  /* Text on accent backgrounds (button hover) and code colors at 4.5:1 or more. */
+  --md-accent-bg-color: var(--ytd-ink);
+  --md-code-hl-number-color: #f0918a;
+  --md-code-hl-constant-color: #ab9ff0;
 }
 
 /* A thin spectrum line under the header, like light leaving the prism. */
@@ -51,6 +57,21 @@
   font-weight: 700;
 }
 .md-typeset h1 { color: var(--md-default-fg-color); }
+
+/* Underline links in running text so they don't rely on color alone (WCAG 1.4.1). */
+.md-typeset :is(p, li, td, dd, figcaption) a:not(.md-button):not(.headerlink) {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+/* Visually hidden text for screen readers. */
+.ytd-sr, .pricing-sr {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* Material dims <small> with opacity, which drops muted text below 4.5:1. */
+.md-typeset small { opacity: 1; }
 
 /* ---------- Landing page ---------- */
 
@@ -100,6 +121,10 @@
   background-clip: text;
   color: transparent;
 }
+/* Darker stops in light mode so the large text keeps 3:1 against white. */
+[data-md-color-scheme="default"] .ytd-gradient-text {
+  background-image: linear-gradient(90deg, #dc2626 0%, #b45309 25%, #047857 50%, #0369a1 75%, #7c3aed 100%);
+}
 .ytd-hero p.ytd-sub {
   font-size: 1.12rem;
   line-height: 1.6;
@@ -119,6 +144,10 @@
   background-color: var(--ytd-indigo);
   border-color: var(--ytd-indigo);
   color: #fff;
+}
+/* Material colors outline buttons with the primary (ink) color, which vanishes in dark mode. */
+[data-md-color-scheme="slate"] .md-typeset .md-button:not(.md-button--primary) {
+  color: var(--md-typeset-a-color);
 }
 .md-typeset .md-button--primary:hover,
 .md-typeset .md-button--primary:focus {
@@ -257,7 +286,7 @@
   position: absolute;
   left: 0;
   font-weight: 800;
-  color: #10b981;
+  color: #059669;
 }
 
 /* Comparison table */
@@ -322,11 +351,6 @@
 
 /* ---------- Pricing page ---------- */
 
-.pricing-sr {
-  position: absolute; width: 1px; height: 1px; overflow: hidden;
-  clip: rect(0 0 0 0); white-space: nowrap;
-}
-
 .ytd-kpis {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -364,7 +388,7 @@
   background: var(--md-default-fg-color); border-color: var(--md-default-fg-color);
   color: var(--md-default-bg-color);
 }
-.pricing-tab span { opacity: 0.65; font-weight: 500; margin-left: 0.15rem; }
+.pricing-tab span { opacity: 0.85; font-weight: 500; margin-left: 0.15rem; }
 .pricing-chip:focus-visible, .pricing-tab:focus-visible, .pricing-bar:focus-visible, .pricing-table th button:focus-visible {
   outline: 2px solid var(--md-accent-fg-color); outline-offset: 2px;
 }
