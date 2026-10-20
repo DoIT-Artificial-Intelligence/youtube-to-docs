@@ -114,6 +114,21 @@ Slides, chart figures, on-screen text and votes are described for blind viewers 
 
 </div>
 
+```bash
+# Best quality: transcribe again, correct the captions and describe the visuals
+uvx --with "youtube-to-docs[all]" youtube-to-docs https://www.youtube.com/watch?v=B0x2I_doX9o -cc
+
+# Correct the YouTube captions instead of transcribing again
+uvx --with "youtube-to-docs[all]" youtube-to-docs B0x2I_doX9o -cc gemini-4-argon-youtube
+
+# A cheaper run: a Google Cloud Chirp 3 transcript corrected by Flash-Lite
+uvx --with "youtube-to-docs[all]" youtube-to-docs B0x2I_doX9o -t gcp-chirp3 -cc gemini-3.5-flash-lite-gcp-chirp3
+```
+
+A 3-hour meeting takes about 20 minutes and roughly $3 with the default models. You also get an Able Player page that opens straight from disk, so you can check the captions and descriptions before you publish.
+
+[More on captions and audio description :material-arrow-right:](usage.md#corrected-captions-and-audio-description)
+
 </div>
 
 <div class="ytd-section" markdown>
