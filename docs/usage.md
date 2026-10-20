@@ -1,98 +1,85 @@
 # Usage Guide
 
-`youtube-to-docs` is a versatile tool designed to convert YouTube content into structured documentation, including transcripts, summaries, audio, and infographics. It is primarily designed as a Command Line Interface (CLI) tool but can also be used as a Python library.
+`youtube-to-docs` turns a YouTube video, playlist or channel into documents: a transcript, speakers, Q&A, summaries, tags, an infographic, an audio summary and, with `-cc`, accessible captions and audio description. It's a command-line tool, and it also runs as a web app, an MCP server and a Python library.
+
+## Quick start
+
+1. Install [`uv`](https://docs.astral.sh/uv/):
+
+    === "macOS/Linux"
+
+        ```bash
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        ```
+
+    === "Windows"
+
+        ```powershell
+        powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+        ```
+
+2. Set `YOUTUBE_DATA_API_KEY` and `GEMINI_API_KEY` (see [Environment variables](#environment-variables)).
+3. Run it on a video:
+
+    ```bash
+    uvx --with "youtube-to-docs[all]" youtube-to-docs https://www.youtube.com/watch?v=atmGAHYpf_c -m
+    ```
+
+This saves the transcript, speakers, Q&A, tags and summaries to `youtube-to-docs-artifacts/`, and lists them in `youtube-to-docs-artifacts/youtube-docs.csv`.
 
 ## Installation
 
-The recommended way to run `youtube-to-docs` is using `uvx`.
-
-### Basic Usage
-
-For basic usage (YouTube data fetching, local CSV output, standard Gemini models):
+Run the tool with `uvx`, so there's nothing to install apart from `uv`:
 
 ```bash
 uvx youtube-to-docs --help
 ```
 
-### Optional Features (Extras)
-
-To keep the installation footprint small, many features are optional. You can enable them by installing specific "extras":
-
-| Extra       | Description                                                              | Dependencies                                                                               |
-| :---------- | :----------------------------------------------------------------------- | :----------------------------------------------------------------------------------------- |
-| `audio`     | **Recommended.** Required for downloading audio and video from YouTube (for transcription and `-cc`). | `yt-dlp[default]` (includes `yt-dlp-ejs`), `deno` (the JavaScript runtime yt-dlp needs for YouTube) |
-| `video`     | Required for generating video files (combining audio & infographic).     | `static-ffmpeg`                                                                            |
-| `workspace` | Required for saving to Google Drive.                                     | `google-auth-oauthlib`, `pypandoc`, `pypandoc_binary`                                      |
-| `m365`      | Required for saving to SharePoint/OneDrive.                              | `msal`, `fastexcel`, `xlsxwriter`, `pypandoc`, `pypandoc_binary`                           |
-| `aws`       | AWS Bedrock support.                                                     | `boto3`, `botocore[crt]`                                                                   |
-| `azure`     | Required if using Azure OpenAI models.                                   | `openai`                                                                                   |
-| `gcp`       | Required if using Google Gemini, Gemma, or Vertex AI models.             | `google-genai`, `google-cloud-speech`, `google-cloud-storage`, `google-cloud-texttospeech`, `google-cloud-translate` |
-| `app`       | Web app with browser-based UI.                                           | `fastapi`, `uvicorn`                                                                       |
-| `all`       | Installs all of the above.                                               | All optional dependencies.                                                                 |
-
-**How to use extras with `uvx`:**
-
-Use the `--with` flag followed by the package name and extras in brackets.
-
-**Example 1: Audio and Video support (Common)**
+The base package fetches YouTube transcripts and metadata and saves to local files. Other features are optional extras. Add them with `--with`:
 
 ```bash
 uvx --with "youtube-to-docs[audio,video]" youtube-to-docs ...
-```
-
-**Example 2: Google Drive + Audio support**
-
-```bash
-uvx --with "youtube-to-docs[workspace,audio]" youtube-to-docs ...
-```
-
-**Example 3: Everything (Full feature set)**
-
-```bash
 uvx --with "youtube-to-docs[all]" youtube-to-docs ...
 ```
 
-### Installing `uv`
-
-If you don't have `uv` installed, you can install it using the following commands:
-
-**macOS/Linux:**
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-**Windows:**
-
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
+| Extra | Needed for | Installs |
+| :--- | :--- | :--- |
+| `audio` | **Recommended.** Downloading audio and video from YouTube (AI transcription, `-cc`) | `yt-dlp[default]`, `deno` |
+| `video` | Making video files (`-cia`, `-cc`) | `static-ffmpeg` |
+| `gcp` | Gemini, Gemma and Vertex AI models, and Google Cloud speech, TTS and translation | `google-genai`, `google-cloud-speech`, `google-cloud-storage`, `google-cloud-texttospeech`, `google-cloud-translate` |
+| `aws` | AWS Bedrock, Transcribe, Polly and Translate | `boto3`, `botocore[crt]` |
+| `azure` | Azure Foundry models | `openai` |
+| `workspace` | Saving to Google Drive | `google-auth-oauthlib`, `pypandoc`, `pypandoc_binary` |
+| `m365` | Saving to SharePoint or OneDrive | `msal`, `fastexcel`, `xlsxwriter`, `pypandoc`, `pypandoc_binary` |
+| `huggingface` | Saving to a Hugging Face dataset | `huggingface_hub` |
+| `app` | The [web app](#web-app) | `fastapi`, `uvicorn` |
+| `all` | All of the above | |
 
 ## Setup
 
-Before running the tool, ensure your environment is correctly configured with the necessary API keys and authentication files.
+### Environment variables
 
-### 1. Environment Variables
+Set the variables for the providers you use.
 
-Set the following environment variables based on the AI providers you intend to use.
+| Variable | Needed for |
+| :--- | :--- |
+| `YOUTUBE_DATA_API_KEY` | Video metadata, playlists and channels (YouTube Data API v3) |
+| `GEMINI_API_KEY` | Gemini and Gemma models (`gemini-…`, `gemma-…`), including `gemini-3.5-transcribe` and Gemini TTS |
+| `PROJECT_ID` | Vertex AI models (`vertex-…`). `VERTEX_LOCATION` sets the region (default `global` for newer Claude models, otherwise `us-east5`). |
+| `GOOGLE_CLOUD_PROJECT` | GCP Speech-to-Text (`-t gcp-chirp3`). `YTD_GCS_BUCKET_NAME` sets the bucket for temporary audio (default `youtube-to-docs`). |
+| `AWS_BEARER_TOKEN_BEDROCK` | AWS Bedrock models (`bedrock-…`) |
+| `YTD_S3_BUCKET_NAME` | AWS Transcribe (`-t aws-transcribe`), for temporary audio |
+| `AZURE_FOUNDRY_ENDPOINT`, `AZURE_FOUNDRY_API_KEY` | Azure Foundry models (`foundry-…`) |
+| `HF_TOKEN` | Saving to Hugging Face (`-o hf`) |
+| `YTD_CC_WORKERS` | Optional. Parallel `-cc` requests (default 6). Lower it if you hit rate limits. |
 
-| Variable                   | Description                                      | Required For                                                                            |
-| :------------------------- | :----------------------------------------------- | :-------------------------------------------------------------------------------------- |
-| `YOUTUBE_DATA_API_KEY`     | API key for the YouTube Data API v3.             | Fetching video metadata.                                                                |
-| `GEMINI_API_KEY`           | API key for Google Gemini/Gemma models.          | Gemini/Gemma models (`-m gemini...`, `-m gemma...`).                                    |
-| `PROJECT_ID`               | Google Cloud Project ID.                         | GCP Vertex models (`-m vertex...`), GCP STT (`-t gcp...`) and GCP TTS (`--tts gcp...`). |
-| `YTD_GCS_BUCKET_NAME`      | Google Cloud Storage bucket name (write access). | GCP STT models (`-t gcp...`) for temp audio storage.                                    |
-| `AWS_BEARER_TOKEN_BEDROCK` | AWS Bearer Token.                                | AWS Bedrock models (`-m bedrock...`).                                                   |
-| `AZURE_FOUNDRY_ENDPOINT`   | Azure Foundry Endpoint URL.                      | Azure Foundry models (`-m foundry...`).                                                 |
-| `AZURE_FOUNDRY_API_KEY`    | Azure Foundry API Key.                           | Azure Foundry models (`-m foundry...`).                                                 |
+Google Cloud services (Speech-to-Text, Cloud TTS, Translation) use [Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials), and AWS services other than Bedrock use your usual AWS credentials.
 
-### 2. Storage Authentication (Optional)
+### Google Drive and SharePoint sign-in
 
-If you plan to save outputs to Google Drive (`workspace`) or Microsoft SharePoint/OneDrive (`sharepoint`), you need to configure authentication files in your home directory.
+You only need this to save outputs to Google Drive (`-o workspace`) or SharePoint/OneDrive (`-o sharepoint`).
 
-#### Google Drive (Workspace)
-
-Create a file at `~/.google_client_secret.json` with your Google Cloud OAuth 2.0 Client Secret JSON.
+**Google Drive.** Save your Google Cloud OAuth 2.0 client secret as `~/.google_client_secret.json`:
 
 ```json
 {
@@ -108,11 +95,9 @@ Create a file at `~/.google_client_secret.json` with your Google Cloud OAuth 2.0
 }
 ```
 
-- **First Run**: The tool will open a browser window to authenticate and generate a `~/.google_client_token.json` file for future non-interactive use.
+The first run opens a browser to sign in and saves `~/.google_client_token.json` for later runs.
 
-#### Microsoft 365 (SharePoint/OneDrive)
-
-Create a file at `~/.azure_client.json` with your Azure App Registration details.
+**SharePoint/OneDrive.** Save your Azure app registration as `~/.azure_client.json`:
 
 ```json
 {
@@ -121,131 +106,110 @@ Create a file at `~/.azure_client.json` with your Azure App Registration details
 }
 ```
 
-- **Authority**: Use `.../consumers` for personal accounts or `.../YOUR_TENANT_ID` for organizational accounts.
-- **First Run**: The tool will attempt to authenticate (silently or interactively) and cache the token in `~/.msal_token_cache.json`.
+Use `.../consumers` for personal accounts or `.../YOUR_TENANT_ID` for an organization. The first run signs you in and caches the token in `~/.msal_token_cache.json`.
 
-## Command Line Interface (CLI)
-
-The main command is `youtube-to-docs`.
-
-### Basic Usage
-
-Running the command without arguments processes a default video:
+## Command line
 
 ```bash
-youtube-to-docs
+youtube-to-docs [VIDEO] [OPTIONS]
 ```
 
-### Arguments
+`VIDEO` is a YouTube URL, a video ID, a playlist ID (starts with `PL`), a channel handle (starts with `@`) or a comma-separated list of video IDs. Without it, the tool processes the sample video `atmGAHYpf_c`.
 
-| Argument                               | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Default                                      | Example                                                                         |
-| :------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------- | :------------------------------------------------------------------------------ |
-| `video_id`                             | The YouTube content to process. Can be a **YouTube URL**, **Video ID**, **Playlist ID** (starts with `PL`), **Channel Handle** (starts with `@`), or a **comma-separated list** of Video IDs.                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `atmGAHYpf_c`                                | `youtube-to-docs @mychannel`                                                    |
-| `-o`, `--outfile`                      | Path to save the output CSV file. <br> - Local path: `my-data.csv` <br> - Google Workspace: `workspace` or `w` (saves to Drive folder `youtube-to-docs-artifacts`) or a specific Folder ID. <br> - SharePoint/OneDrive: `sharepoint` or `s` (saves to `youtube-to-docs-artifacts`). <br> - Memory: `memory` or `m` (keeps artifacts in memory, no files on disk). <br> - No-op: `none` or `n` (skips saving to a file, results are printed to the console).                                                                                                                                                                                                                                                                               | `youtube-to-docs-artifacts/youtube-docs.csv` | `-o n`                                                                          |
-| `-t`, `--transcript`                   | The transcript source to use. Can be `'youtube'` (default) to fetch existing YouTube transcripts, or an AI model name to perform STT on extracted audio (e.g. `gemini-3.5-transcribe` for Google's dedicated STT model, `gemini...` for the Gemini API, `gcp-chirp3` for GCP Speech-to-Text V2, `aws-transcribe` for AWS Transcribe). `gemini-3.5-transcribe` returns word-level timestamps and speaker diarization, so its SRT has real offsets and `[Speaker N]` labels on speaker changes. When `-cc` corrects an STT transcript, that model becomes the default so it is transcribed in the same run.                                                                                                                                                                                                                                                                                                                                                                                                                          | `youtube`                                    | `-t gemini-3.5-transcribe`                                                       |
-| `-m`, `--model`                        | The LLM(s) to use for speaker extraction, Q&A generation, tag generation, and summarization. Supports models from Google (Gemini), Vertex AI, AWS Bedrock, and Azure Foundry. **Can be a comma-separated list.**                                                                                                                                                                                                                                                                                                                                                                                                                                            | `None` (Transcript only)                     | `-m gemini-3.5-flash-lite,vertex-claude-haiku-5-5`                    |
-| `--tts`                                | The TTS model and voice to use for generating audio summaries. Format: `{model}-{voice}`. Supports Gemini models (e.g., `gemini-3.8-flash-lite-tts-Kore`, `gemini-3.8-flash-lite-tts-Kore`) and GCP Cloud TTS (e.g., `gcp-chirp3-Kore`).                                                                                                                                                                                                                                                         | `None`                                       | `--tts gemini-3.8-flash-lite-tts-Kore`                                      |
-| `-i`, `--infographic`                  | The image model to use for generating a visual summary. Supports Google Gemini image models (Nano Banana) and Azure Foundry GPT Image 2.5 (`foundry-gpt-image-2.5-sunburst`, `foundry-gpt-image-2.5-flare`). Images are 16:9 landscape at the model's highest resolution (4K for Gemini, 3840×2160 for GPT Image), so they work as thumbnails. **Can be a comma-separated list** (one infographic per model).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `None`                                       | `--infographic gemini-nano-banana-2.1,gemini-3-pro-image`              |
-| `--alt-text-model`                     | The LLM model to use for generating multimodal alt text for the infographic. Defaults to the summary model.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `None`                                       | `--alt-text-model gemini-3.5-flash-lite`                                       |
-| `-nys`, `--no-youtube-summary`         | If set, skips generating a secondary summary from the YouTube transcript when using an AI model for the primary transcript.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `False`                                      | `--no-youtube-summary`                                                          |
-| `-fv`, `--from-video`                  | Also generate the summary, one sentence summary, speakers and Q&A directly from the video with Gemini video understanding (no download needed). Value is the processing mode: `agentic` (the model navigates the video, loading only what it needs; Gemini 3.5 Flash-Lite and later, e.g. `gemini-3.8-flash`, `gemini-4-argon`) or `static` (frames at 1 FPS; any Gemini model). Use `agentic,static` to compare. Outputs are labelled `from video-agentic` / `from video-static`.                                                                                                                                                                                     | `None`                                       | `-fv agentic`                                                                   |
-| `-tr`, `--translate`                   | Translate all outputs to a target language after generating in English. Format: `{model}-{language}` e.g. `gemini-3.5-flash-lite-es`, or `aws-translate-{language}` / `gcp-translate-{language}` to use AWS Translate or Google Cloud Translation directly (e.g. `aws-translate-es`, `gcp-translate-es`). The tool first tries to fetch a native YouTube transcript in the target language; if unavailable, it translates the English transcript. Summaries, Q&A, tags, one-sentence summaries, transcripts, and SRT files are all translated. When combined with `--tts` or `--infographic`, assets are produced in both English and the target language. | `None`                                       | `-tr gemini-3.5-flash-lite-es`, `-tr aws-translate-es`, `-tr gcp-translate-es` |
-| `-cia`, `--combine-infographic-audio`  | Combine the infographic and audio summary into a video file (MP4). Requires both `--tts` and `--infographic` to be effective. When used with `--translate`, one video is created per language.                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `False`                                      | `--combine-infographic-audio`                                                   |
-| `--all`                                | Shortcut to use a specific model suite for everything. Supported: `'gemini-flash'`, `'gemini-pro'`, `'gemini-flash-pro-image'`, `'gcp-pro'`, `'anthropic-opus'`. Sets models for summary, TTS, and infographic, and enables `--no-youtube-summary`.                                                                                                                                                                                                                                                                                                                                                                                                                             | `None`                                       | `--all gemini-flash`                                                            |
-| `-cc`, `--corrected-captions`          | Make the video accessible (WCAG 2.1 AA / [Section 508](https://www.section508.gov/create/captions-transcripts/)): corrected captions (SRT + WebVTT) with speakers named, audio description (WebVTT tracks + descriptive transcript), the original video, a copy with captions burned in and descriptions narrated, and an Able Player test page. Format: `{model}` or `{model}-{source}`; without a value uses `gemini-4-argon-gemini-3.5-transcribe`. See [Corrected Captions and Audio Description](#corrected-captions-and-audio-description).                                                                                                           | `None`                                       | `-cc`                                                                           |
-| `-pp`, `--post-process`                | Post-process the transcript with JSON operations. Supported operations: `word count` (case-insensitive, whole-word). Values can be a single string or a list. Results are added as new columns in the output CSV (e.g. `Post-process: word count(apple)`).                                                                                                                                                                                                                                                                                                                                                                                                  | `None`                                       | `-pp '{"word count": ["apple", "banana"]}'`                                     |
-| `--verbose`                            | Enable verbose output.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `False`                                      | `--verbose`                                                                     |
+With no options, you get the transcript only. Add options for the outputs you want. Options marked *bare* can be used without a value to get the default shown.
+
+### Options
+
+| Option | What it does | Default |
+| :--- | :--- | :--- |
+| `-m`, `--model` | Speakers, Q&A, tags and summaries with an LLM. Comma-separate to compare models. | Bare: `gemini-3.5-flash-lite` |
+| `-t`, `--transcript` | Where the transcript comes from: `youtube`, or a speech-to-text model such as `gemini-3.5-transcribe`, `gcp-chirp3` or `aws-transcribe`. | `youtube` |
+| `-i`, `--infographic` | An infographic, with alt text, from an image model. Comma-separate for one per model. | Bare: `gemini-3-pro-image` |
+| `--alt-text-model` | The LLM that writes the infographic alt text. | The `-m` model |
+| `--tts` | An audio summary. Format: `{model}-{voice}`, e.g. `gemini-3.8-flash-lite-tts-Kore`, `gcp-chirp3-Kore` or `aws-polly-Ruth`. | None |
+| `-cia`, `--combine-infographic-audio` | An MP4 that plays the audio summary over the infographic. Needs `-i` and `--tts`. | Off |
+| `-tr`, `--translate` | Translate every output. Format: `{model}-{language}`, e.g. `gemini-3.5-flash-lite-es`, `aws-translate-es` or `gcp-translate-french`. | None |
+| `-cc`, `--corrected-captions` | Corrected captions and audio description. See [Corrected captions and audio description](#corrected-captions-and-audio-description). | Bare: `gemini-4-argon-gemini-3.5-transcribe` |
+| `-fv`, `--from-video` | Also make the summary, speakers and Q&A from the video itself with Gemini: `agentic`, `static` or `agentic,static`. | None |
+| `-nys`, `--no-youtube-summary` | With an AI transcript, skip the extra summary of the YouTube transcript. | Off |
+| `-a`, `--all` | Use a model suite for summary, TTS and infographic (and set `-nys`): `gemini-flash`, `gemini-pro`, `gemini-flash-pro-image`, `gcp-pro` or `anthropic-opus`. | None |
+| `-pp`, `--post-process` | Extra columns from the transcript. Supports `word count`, e.g. `'{"word count": ["apple", "banana"]}'`. | None |
+| `-o`, `--outfile` | Where to save: a CSV path, `workspace` (`w`) or a Drive folder ID, `sharepoint` (`s`), `hf`, `memory` (`m`) or `none` (`n`). | `youtube-to-docs-artifacts/youtube-docs.csv` |
+| `--hugging-face-dataset` | The dataset for `-o hf`: a repo ID (`username/my-dataset`) or a name. | The playlist title |
+| `--verbose` | More detailed logs. | Off |
+| `-V`, `--version` | Show the version. | |
+
+`-i`, `-cc` and `-fv` turn on `-m gemini-3.5-flash-lite` if you don't set `-m`. Model names and prices are on the [Pricing](pricing.md) page, and speed and cost comparisons are on the [Performance](performance.md) page.
 
 ### Examples
 
-**1. Summarize the default video using a single model:**
+**Transcript only:**
 
 ```bash
-youtube-to-docs
+youtube-to-docs atmGAHYpf_c
 ```
 
-**2. Generate a transcript using Gemini 2.0 Flash and summarize (using default model):**
+**Summaries, Q&A, speakers and tags with the default model:**
 
 ```bash
-youtube-to-docs -t gemini-2.0-flash-exp
+youtube-to-docs atmGAHYpf_c -m
 ```
 
-**3. Process the default video and save to a custom CSV:**
-
-```bash
-youtube-to-docs -o my-docs.csv
-```
-
-**4. Summarize a Playlist using multiple models (Gemini and Vertex):**
+**Compare two models across a playlist:**
 
 ```bash
 youtube-to-docs PLGKTTEqwhiHHWO-jdxM1KtzTbWo6h0Ycl -m gemini-3.5-flash-lite,vertex-claude-haiku-5-5
 ```
 
-**5. Process a Channel with Summaries, TTS, and Infographics:**
+**Transcribe the audio with Gemini 3.5 Transcribe** (word timestamps and speaker labels in the SRT):
 
 ```bash
-youtube-to-docs @mga-othercommittees6625 -m vertex-claude-haiku-5-5 --tts gemini-3.8-flash-lite-tts-Kore --infographic gemini-nano-banana-2.1
+youtube-to-docs atmGAHYpf_c -t gemini-3.5-transcribe -m
 ```
 
-**6. Compare infographics from Gemini and Azure Foundry:**
+**A whole channel with infographics and audio summaries:**
 
 ```bash
-youtube-to-docs atmGAHYpf_c -m gemini-3.5-flash-lite --infographic gemini-nano-banana-2.1,foundry-gpt-image-2.5-sunburst
+youtube-to-docs @mga-othercommittees6625 -m -i --tts gemini-3.8-flash-lite-tts-Kore
 ```
 
-**7. Create a Video (Infographic + Audio Summary):**
+**A video summary** (the infographic with the audio summary):
 
 ```bash
-youtube-to-docs atmGAHYpf_c -m gemini-3.5-flash-lite --tts gemini-3.8-flash-lite-tts-Kore --infographic gemini-nano-banana-2.1 --combine-infographic-audio
+youtube-to-docs atmGAHYpf_c -m -i --tts gemini-3.8-flash-lite-tts-Kore -cia
 ```
 
-**8. Translate all outputs to Spanish:**
+**Everything in English and Spanish:**
 
 ```bash
-youtube-to-docs atmGAHYpf_c -m gemini-3.5-flash-lite -tr gemini-3.5-flash-lite-es
+youtube-to-docs atmGAHYpf_c -m -i --tts gemini-3.8-flash-lite-tts-Kore -cia -tr gemini-3.5-flash-lite-es
 ```
 
-**9. Full multilingual pipeline — English + Spanish summaries, audio, infographics, and videos:**
+**Compare infographics from Gemini and Azure Foundry:**
 
 ```bash
-youtube-to-docs atmGAHYpf_c -m gemini-3.5-flash-lite -tr gemini-3.5-flash-lite-es --tts gemini-3.8-flash-lite-tts-Kore --infographic gemini-nano-banana-2.1 --combine-infographic-audio
+youtube-to-docs atmGAHYpf_c -m -i gemini-3-pro-image,foundry-gpt-image-2.5-sunburst
 ```
 
-**10. Make the video accessible: corrected captions, audio description and accessible videos (transcribes with `gemini-3.5-transcribe`, corrects and describes with `gemini-4-argon`):**
+**Accessible captions and audio description:**
 
 ```bash
 youtube-to-docs atmGAHYpf_c -cc
 ```
 
-**11. Correct the YouTube captions instead (no transcription):**
+**Save to Google Drive:**
 
 ```bash
-youtube-to-docs atmGAHYpf_c -cc gemini-4-argon-youtube
+uvx --with "youtube-to-docs[all]" youtube-to-docs atmGAHYpf_c -m -o workspace
 ```
 
-**12. Correct an existing GCP Chirp 3 transcript with a cheaper model:**
-
-```bash
-youtube-to-docs atmGAHYpf_c -t gcp-chirp3 -cc gemini-3.5-flash-lite-gcp-chirp3
-```
-
-**13. Post-process a transcript to count word occurrences:**
+**Count words in the transcript:**
 
 ```bash
 youtube-to-docs atmGAHYpf_c -pp '{"word count": ["apple", "banana"]}'
 ```
 
-**14. Transcribe with Gemini 3.5 Transcribe (word timestamps + speaker diarization):**
-
-```bash
-youtube-to-docs atmGAHYpf_c -t gemini-3.5-transcribe
-```
-
-The resulting SRT is built from the model's word-level offsets and carries a
-`[Speaker N]` label wherever the speaker changes. Requires `GEMINI_API_KEY`.
-
-## Corrected Captions and Audio Description
+## Corrected captions and audio description
 
 `-cc` / `--corrected-captions` makes a video accessible under WCAG 2.1 Level AA (1.2.2 Captions, 1.2.5 Audio Description) and [Section 508](https://www.section508.gov/create/captions-transcripts/), following the DCMP Captioning and Description Keys.
 
@@ -254,6 +218,16 @@ youtube-to-docs VIDEO_ID -cc
 ```
 
 Without a value it uses `gemini-4-argon-gemini-3.5-transcribe`: the audio is transcribed with `gemini-3.5-transcribe` (word timestamps and speaker diarization) unless `-t` is set, and `gemini-4-argon` reads on-screen context from the video, corrects the captions and describes the visual information. A 3-hour meeting takes about 20 minutes and roughly $3 in API calls.
+
+Other ways to run it:
+
+```bash
+# Correct the YouTube captions instead of transcribing
+youtube-to-docs VIDEO_ID -cc gemini-4-argon-youtube
+
+# Correct a GCP Chirp 3 transcript with a cheaper model
+youtube-to-docs VIDEO_ID -t gcp-chirp3 -cc gemini-3.5-flash-lite-gcp-chirp3
+```
 
 ### Outputs
 
@@ -278,17 +252,17 @@ Without a value it uses `gemini-4-argon-gemini-3.5-transcribe`: the audio is tra
 
 Audio description needs a Gemini model; with other models `-cc` produces the captions only.
 
-### Source argument rules
+### Choosing the source
 
 The format is `-cc {model}` or `-cc {model}-{source}`.
 
-| Source         | Behaviour                                                                                                                             | Example                                |
-| :------------- | :------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------- |
-| STT model name | Corrects the SRT from that STT run, transcribing it in the same run unless `-t` is set.                                                | `-cc gemini-4-argon-gemini-3.5-transcribe` |
-| `youtube`      | Corrects the YouTube SRT, using any STT SRT for the video as the second transcript.                                                   | `-cc gemini-4-argon-youtube`            |
-| Omitted        | Corrects the `-t` STT SRT, else the most recent AI SRT, else the YouTube SRT.                                                         | `-cc gemini-4-argon`                    |
+| Source | Behaviour | Example |
+| :--- | :--- | :--- |
+| STT model name | Corrects the SRT from that STT run, transcribing it in the same run unless `-t` is set. | `-cc gemini-4-argon-gemini-3.5-transcribe` |
+| `youtube` | Corrects the YouTube SRT, using any STT SRT for the video as the second transcript. | `-cc gemini-4-argon-youtube` |
+| Omitted | Corrects the `-t` STT SRT, else the most recent AI SRT, else the YouTube SRT. | `-cc gemini-4-argon` |
 
-If the requested source SRT doesn't exist (for example, `-t youtube -cc`), the available SRT is corrected instead, with a warning. Outputs that already exist aren't regenerated; delete them to run again. Parallel requests default to 6; set `YTD_CC_WORKERS` to lower this if you hit rate limits.
+If the requested source SRT doesn't exist (for example, `-t youtube -cc`), the available SRT is corrected instead, with a warning.
 
 ### Publishing
 
@@ -300,14 +274,15 @@ If the requested source SRT doesn't exist (for example, `-t youtube -cc`), the a
 1. **Validate them.** Paste a `.vtt` file into the [W3C WebVTT validator](https://w3c.github.io/webvtt.js/parser.html); it should report no errors.
 2. **Play them.** Open the `… player.html` file in a browser. Captions are on; select the Description button to hear the descriptions read aloud (the video pauses while each is read), and the Transcript button for an interactive transcript of the dialogue and descriptions. To hear the descriptions through a screen reader instead, add `data-desc-reader="screenreader"` to the `<video>` element and turn on NVDA, JAWS or VoiceOver.
 
-   The page works straight from disk: browsers won't load `.vtt` files into a page opened that way, so it carries copies of the tracks and uses those. To load the `.vtt` files themselves, as a website would, serve the artifacts folder with a server that supports range requests (Python's built-in `http.server` doesn't, so the browser can't seek in a long video):
+    The page works straight from disk: browsers won't load `.vtt` files into a page opened that way, so it carries copies of the tracks and uses those. To load the `.vtt` files themselves, as a website would, serve the artifacts folder with a server that supports range requests (Python's built-in `http.server` doesn't, so the browser can't seek in a long video):
 
-   ```bash
-   cd youtube-to-docs-artifacts
-   uv run --no-project --with rangehttpserver python -m RangeHTTPServer 8080 --bind 127.0.0.1
-   ```
+    ```bash
+    cd youtube-to-docs-artifacts
+    uv run --no-project --with rangehttpserver python -m RangeHTTPServer 8080 --bind 127.0.0.1
+    ```
 
-   Then open `http://127.0.0.1:8080/vtt-files/` and select the `… player.html` file.
+    Then open `http://127.0.0.1:8080/vtt-files/` and select the `… player.html` file.
+
 3. **Spot-check timing.** In VLC, open the original video and add the captions `.vtt` (Subtitle > Add Subtitle File...) to check that captions line up with the speech.
 
 ## Review and edit the outputs
@@ -324,195 +299,104 @@ You can also edit a summary, Q&A, speakers or alt text file directly. On the nex
 
 To make an output again, delete its file and remove the video's row from the CSV (or clear that output's columns), then run again. The tool finds your other files, including the edited transcript, by their file names.
 
-## CSV Column Reference
+## CSV columns
 
-The output CSV file contains a variety of columns depending on the arguments provided. Below is a reference of the possible columns:
+The CSV has one row per video. Which columns appear depends on the options you use. In column names, `{model}` is the model that made the output, and `{normalized_model}` is the model name without prefixes like `vertex-` or date suffixes.
 
-### Base Metadata
+### Video details
 
-- **URL**: The full YouTube video URL.
-- **Title**: The title of the video.
-- **Description**: The video description.
-- **Data Published**: The date the video was published.
-- **Channel**: The name of the YouTube channel.
-- **Tags**: Video tags from YouTube (comma-separated).
-- **Tags {Transcript} {Model} model**: Up to 5 AI-generated tags based on the transcript.
-- **Duration**: The duration of the video.
-- **Transcript characters from youtube**: The total number of characters in the YouTube transcript.
-- **Transcript characters from {model}**: The total number of characters in the AI-generated transcript (if applicable).
-- **Audio File**: Path to the extracted audio file (used for AI transcription).
+- **URL**, **Title**, **Description**, **Data Published**, **Channel**, **Duration**: From YouTube.
+- **Tags**: The video's YouTube tags.
+- **Tags {transcript} {model} model**: Up to 5 tags generated from the transcript.
+- **Transcript characters from youtube**, **Transcript characters from {model}**: The length of each transcript.
+- **Audio File**: The downloaded audio, used for AI transcription.
 
 ### Files
 
-- **Transcript File {type}**: Path to the saved transcript file. `{type}` is either `youtube generated`, `human generated`, or `{model} generated`. Suffix `(lang)` added for non-English.
-- **SRT File {type}**: Path to the saved SRT transcript file. Standardized timestamps for accessibility and timing.
-- **Speakers File {model}**: Path to the saved speaker extraction text file.
-- **QA File {model}**: Path to the saved Q&A Markdown file. Includes **Timestamp** and **Timestamp URL** (markdown hyperlink) columns. Suffix `(lang)` added for non-English.
-- **Summary File {model}**: Path to the Markdown summary file generated by a specific model. Suffix `(lang)` added for non-English.
-- **One Sentence Summary File {model}**: Path to the one-sentence summary file.
-- **Tags File {model}**: Path to the AI-generated tags file.
-- **Summary Infographic File {model} {infographic_model}**: Path to the generated infographic image.
-- **Summary Infographic Alt Text File {model} {infographic_model}**: Path to the generated alt text file.
-- **Summary Audio File {model} {tts_model} File**: Path to the generated TTS audio file. Suffix `(lang)` added for non-English.
-- **Video File**: Path to the generated MP4 video combining the English infographic and audio.
-- **Video File (lang)**: Path to the translated language video (e.g., `Video File (es)`). Only present when `--translate` and `--combine-infographic-audio` are both used.
+Paths to the saved outputs. Translated outputs end in the language code, such as `(es)`.
+
+- **Transcript File {type}**: The transcript. `{type}` is `youtube generated`, `human generated` or `{model} generated`.
+- **SRT File {type}**: The transcript as SRT captions.
+- **Speakers File {model}**, **QA File {model}**, **Summary File {model}**, **One Sentence Summary File {model}**, **Tags File {model}**: The text outputs. The Q&A table includes **Timestamp** and **Timestamp URL** columns that link to the moment in the video.
+- **Summary Infographic File {model} {infographic_model}**, **Summary Infographic Alt Text File {model} {infographic_model}**: The infographic and its alt text.
+- **Summary Audio File {model} {tts_model} File**: The audio summary.
+- **Video File**, **Video File (lang)**: The infographic and audio summary video (`-cia`), in English and the translated language.
 - **Corrected Captions File {model} from {source}**, **Captions VTT File {model} from {source}**: The corrected captions as SRT and WebVTT (`-cc`).
 - **Descriptions VTT File {model}**, **Extended Descriptions VTT File {model}**, **Descriptive Transcript File {model}**: The audio description (`-cc`).
 - **Original Video File**, **Captioned And Described Video File {model} from {source}**, **Player Page**: The original video, the copy with captions burned in and descriptions narrated, and the Able Player page (`-cc`).
-- **Post-process: word count({word})**: Count of occurrences of `{word}` in the transcript (case-insensitive, whole-word match). One column per word when using `-pp`.
+- **Post-process: word count({word})**: How many times `{word}` appears in the transcript (case-insensitive, whole words), one column per word (`-pp`).
 
-### AI Outputs & Costs
+### Text and costs
 
-- **Speakers {model}**: The extracted list of speakers and their roles.
-- **{normalized_model} Speaker extraction cost ($)**: The estimated API cost for speaker extraction.
-- **QA Text {model}**: The full text of the Q&A pairs (also saved to the Q&A file).
-- **{normalized_model} QA cost ($)**: The estimated API cost for Q&A generation.
-- **Summary Text {model}**: The full text of the summary (also saved to the summary file).
-- **One Sentence Summary {model}**: The one-sentence summary text.
-- **Summary Infographic Alt Text {model} {infographic_model}**: The full multimodal alt text for the infographic.
-- **{normalized_model} summary cost ($)**: The total estimated API cost for both speaker extraction and summarization.
-- **Summary Infographic Cost {model} {infographic_model} ($)**: The estimated API cost for infographic generation.
-- **Summary Infographic Alt Text Cost {model} {infographic_model} ($)**: The estimated API cost for alt text generation.
-- **{normalized_model} tags cost from {transcript} ($)**: The estimated API cost for AI tag generation.
-- **{normalized_model} STT cost ($)**: The estimated API cost for Speech-to-Text generation. For `gemini-3.5-transcribe` the API reports audio input tokens but not transcript output tokens, so this figure covers the input side only and understates the true cost.
-- **{normalized_model} corrected captions cost from {source} ($)**: The estimated API cost of correcting the captions with `-cc` (speaker identification and text correction, including thinking tokens). The on-screen context request and the audio description are recorded separately as `{normalized_model} video context cost from video-agentic ($)` and `{normalized_model} audio description cost ($)` (narration not included).
+- **Speakers {model}**: The speakers and their titles or roles, e.g. "Speaker 1 (Senator Katie Fry Hester, Co-Chair)". `UNKNOWN` marks a name or title that couldn't be found, and `NaN` means no speakers were found.
+- **QA Text {model}**, **Summary Text {model}**, **One Sentence Summary {model}**, **Summary Infographic Alt Text {model} {infographic_model}**: The text of each output.
+- **{normalized_model} Speaker extraction cost ($)**, **{normalized_model} QA cost ($)**, **{normalized_model} tags cost from {transcript} ($)**: Estimated API cost of each step.
+- **{normalized_model} summary cost ($)**: Speaker extraction plus summary.
+- **Summary Infographic Cost {model} {infographic_model} ($)**, **Summary Infographic Alt Text Cost {model} {infographic_model} ($)**: Infographic and alt text costs.
+- **{normalized_model} STT cost ($)**: Speech-to-text cost. For `gemini-3.5-transcribe` the API reports audio input tokens but not output tokens, so this understates the cost.
+- **{normalized_model} corrected captions cost from {source} ($)**: The `-cc` speaker identification and text correction, including thinking tokens. The on-screen context and the audio description are in **{normalized_model} video context cost from video-agentic ($)** and **{normalized_model} audio description cost ($)** (narration not included).
 
-> **Note**: `{normalized_model}` refers to the model name with prefixes (like `vertex-`) and date suffixes removed for cleaner column headers.
+## Web app
 
-## Speaker Extraction
-
-When a model is specified using the `-m` or `--model` argument, the tool automatically performs speaker extraction before generating a summary.
-
-- **Model Matching**: The extraction uses the same model as the summary. If multiple models are provided, each will perform its own extraction.
-- **Structured Output**: It identifies speakers and their professional titles or roles (e.g., "Speaker 1 (Senator Katie Fry Hester, Co-Chair)").
-- **Cost Tracking**: The cost of speaker extraction is tracked separately in the `{model} Speaker extraction cost ($)` column and included in the total `{model} summary cost ($)`.
-- **Unknowns**: If a speaker or title cannot be identified, the tool uses the placeholder `UNKNOWN`. If no speakers are detected at all, the field is set to `NaN`.
-
-## Web App
-
-`youtube-to-docs` includes a browser-based web interface powered by FastAPI. It provides the same functionality as the CLI in an interactive UI with real-time log streaming.
-
-### Running the Web App
+The web app runs the same pipeline in your browser, with the logs streamed live and links to every output when it finishes.
 
 ```bash
 uvx --with "youtube-to-docs[app]" youtube-to-docs-app
 ```
 
-This starts a local server at [http://localhost:8000](http://localhost:8000).
+Then open [http://localhost:8000](http://localhost:8000).
 
-#### Options
+| Flag | What it does | Default |
+| :--- | :--- | :--- |
+| `--host` | Host to bind to. `0.0.0.0` exposes it on your network, and the app has no sign-in. | `127.0.0.1` |
+| `--port` | Port to bind to. | `8000` |
+| `--reload` | Reload when the code changes (for development). | Off |
 
-| Flag       | Description                  | Default     |
-| :--------- | :--------------------------- | :---------- |
-| `--host`   | Host to bind to. Use `0.0.0.0` to expose on your network (the app has no authentication). | `127.0.0.1` |
-| `--port`   | Port to bind to.             | `8000`      |
-| `--reload` | Enable auto-reload for dev.  | `False`     |
+The app builds the same arguments as the CLI and calls the same code, so the results match. It also has a REST API:
 
-**Example: Run on a custom port with auto-reload**
+| Method | Endpoint | Returns |
+| :--- | :--- | :--- |
+| GET | `/` | The web page |
+| GET | `/api/model-suites` | The `--all` model suites |
+| POST | `/api/process` | Starts a job and returns its ID |
+| GET | `/api/jobs/{job_id}` | The job's status, output and artifacts |
+| GET | `/api/jobs/{job_id}/stream` | The job's logs as Server-Sent Events |
+| GET | `/api/artifacts/{path}` | A generated file |
 
-```bash
-uvx --with "youtube-to-docs[app]" youtube-to-docs-app --port 3000 --reload
-```
+## MCP server
 
-### Features
+The tool also runs as a Model Context Protocol (MCP) server, so AI agents can call it. Its `process_video` tool takes the same options as the CLI.
 
-- **Model suite dropdown** — Select from pre-configured suites (gemini-flash, gemini-pro, etc.) or configure individual models.
-- **All CLI parameters** — Transcript source, TTS, infographic, translation, corrected captions, post-processing, and output file are all configurable.
-- **Real-time log streaming** — Processing output streams to the browser via Server-Sent Events (SSE) as the job runs.
-- **Artifact browser** — After processing completes, generated files (summaries, Q&A, SRT files, infographics, audio, video) are listed with download links.
+The repository is a plugin for Claude Code and Antigravity. It adds the MCP server and a `youtube-to-docs` skill that tells the agent how to use it.
 
-### How It Works
+=== "Claude Code"
 
-1. Enter a YouTube URL or Video ID and select your options.
-2. Click **Process Video** — this starts a background job on the server.
-3. Logs stream to the browser in real time.
-4. When the job completes, any generated artifacts are listed with links to view or download them.
+    ```bash
+    claude plugin marketplace add DoIT-Artificial-Intelligence/youtube-to-docs
+    claude plugin install youtube-to-docs@youtube-to-docs
+    ```
 
-The web app builds CLI arguments internally and calls the same `main()` function as the CLI, so behavior is identical. Jobs run in background threads, allowing the server to handle multiple requests.
+=== "Antigravity"
 
-### API Endpoints
+    ```bash
+    agy plugin install https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs
+    ```
 
-The web app exposes a REST API that the frontend uses:
+Then ask in plain language, for example "Save a summary of https://www.youtube.com/watch?v=KuPc06JgI_A". The agent asks for anything it needs, such as the model, and calls the tool. You can also run the skill directly: `/youtube-to-docs <url> kitchen sink gemini pro spanish` or `/youtube-to-docs <url> captions`.
 
-| Method | Endpoint                     | Description                              |
-| :----- | :--------------------------- | :--------------------------------------- |
-| GET    | `/`                          | Serves the HTML frontend.                |
-| GET    | `/api/model-suites`          | Returns available model suite configs.   |
-| POST   | `/api/process`               | Starts a processing job. Returns job ID. |
-| GET    | `/api/jobs/{job_id}`         | Returns job status, output, artifacts.   |
-| GET    | `/api/jobs/{job_id}/stream`  | SSE stream of real-time log output.      |
-| GET    | `/api/artifacts/{path}`      | Serves a generated artifact file.        |
-
-## MCP Server
-
-This tool also works as a Model Context Protocol (MCP) server, so AI agents can use it as a tool. The server exposes a `process_video` tool that mirrors the CLI.
-
-### Install as a plugin
-
-The repository is a plugin for Claude Code and Antigravity. It adds the MCP server (defined in `mcp_config.json`) and one `youtube-to-docs` skill that tells the agent how to call it.
-
-Claude Code:
-
-```bash
-claude plugin marketplace add DoIT-Artificial-Intelligence/youtube-to-docs
-claude plugin install youtube-to-docs@youtube-to-docs
-```
-
-Antigravity:
-
-```bash
-agy plugin install https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs
-```
-
-### Usage
-
-Ask for what you want in plain language:
-
-> "Save a summary of https://www.youtube.com/watch?v=KuPc06JgI_A"
-
-The agent asks for any details it needs (like the model to use) and then calls the tool. You can also run the skill directly, e.g. `/youtube-to-docs <url> kitchen sink gemini pro spanish` or `/youtube-to-docs <url> captions`.
-
-### Other MCP clients
-
-Any MCP client can run the server with:
+Other MCP clients can start the server with:
 
 ```bash
 uv run --no-project --with "youtube-to-docs[all]" python -m youtube_to_docs.mcp_server
 ```
 
-## Library Usage
+## Python library
 
-While primarily a CLI, you can import core functions for custom workflows.
+You can also import the functions directly:
 
 ```python
 from youtube_to_docs.transcript import fetch_transcript
 
-video_id = "atmGAHYpf_c"
-transcript, is_generated = fetch_transcript(video_id)
+# Returns (text, is_generated, segments), or None if there is no transcript
+transcript, is_generated, segments = fetch_transcript("atmGAHYpf_c")
 ```
-
-## Why use `youtube-to-docs`?
-
-You might find other tools that download YouTube transcripts, but `youtube-to-docs` distinguishes itself in several ways:
-
-1.  **Multimodal Output**: It doesn't just stop at text.
-    - **Summaries**: Uses state-of-the-art LLMs to create concise summaries.
-    - **Speaker Extraction**: Automatically identifies speakers and their titles/roles from the transcript.
-    - **Audio (TTS)**: Converts summaries into audio files, perfect for listening on the go.
-    - **Tags**: Automatically generates up to 5 relevant tags for the video content.
-    - **Visuals (Infographics)**: Generates AI-created infographics to visually represent the content.
-    - **Timestamps & SRT**: Automatically generates `.srt` files and includes precision timestamps in Q&A tables, cross-referencing YouTube's own timing data for pinpoint accuracy when using AI transcripts.
-    - **Videos**: Combines infographics and audio into a shareable video summary.
-
-2.  **Structured Data (CSV/Polars)**:
-    - Instead of loose files, metadata and paths are organized into a robust CSV file using `polars`.
-    - This makes it incredibly easy to import the data into Google Sheets, Excel, or a database for further analysis or publishing.
-
-3.  **Batch Processing**:
-    - Seamlessly handles individual videos, entire playlists, or full channels with a single command.
-
-4.  **Multi-Provider Support**:
-    - Agnostic to the LLM provider. Whether you use Google Gemini, Vertex AI, AWS Bedrock, or Azure Foundry, you can plug in your preferred model.
-
-5.  **Cost Awareness**:
-    - When using paid API models, it tracks and estimates the cost of summarization, saving it directly to your data file.
