@@ -114,6 +114,23 @@ Slides, chart figures, on-screen text and votes are described for blind viewers 
 
 </div>
 
+### What the corrections look like
+
+These lines come from a [2 hour 43 minute Maryland Senate budget hearing](https://www.youtube.com/watch?v=fd1rMbv5loE) on the Departments of Information Technology, Labor and Commerce. The left column is YouTube's auto-captions. The right column is the `-cc` output, shown exactly as generated, with the changes in bold.
+
+| YouTube auto-captions | Corrected by `-cc` | Time |
+| --- | --- | --- |
+| Um we are first going to do the department of information technology this afternoon. Uh Yashadari Ry is our budget analyst | We are first going to do the **Department of Information Technology** this afternoon. **Yashodhara Rai** is our budget analyst, | [00:04:12](https://www.youtube.com/watch?v=fd1rMbv5loE&t=252) |
+| do it noted that it was working with the office of state procurement. | **DoIT** noted that it was working with the **Office of State Procurement**. | [00:06:28](https://www.youtube.com/watch?v=fd1rMbv5loE&t=388) |
+| 103,000 service test tickets were received in fiscal 25. Of these 84% were resolved by force contact | 103,000 service **desk** tickets were received in fiscal 25. Of these, 84% were resolved by **first** contact | [00:07:05](https://www.youtube.com/watch?v=fd1rMbv5loE&t=425) |
+| \>\> Thank you, Senator Bailey. \>\> Thank you, Madam Chair. | **[Chair Nancy J. King]** Thank you. Senator Bailey. **[Sen. Jack Bailey]** Thank you, Madam Chair. | [01:10:55](https://www.youtube.com/watch?v=fd1rMbv5loE&t=4255) |
+| I'm Stephan Covenant. | I'm **Stefan Komoniewski**. | [02:16:21](https://www.youtube.com/watch?v=fd1rMbv5loE&t=8181) |
+| my name is Britney Eris Mendy | My name is **Brittany Arizmendi**, | [02:33:27](https://www.youtube.com/watch?v=fd1rMbv5loE&t=9207) |
+
+Names, agencies and acronyms are fixed using what's said and shown in the video, and the speaker is named every time it changes. Across the hearing, `-cc` made 2,492 captions and restored 5 lines the transcription missed. A meeting this long takes about 20 minutes and roughly $3 with the default models. You also get an Able Player page that opens straight from disk, so you can check the captions and descriptions before you publish.
+
+[More on captions and audio description :material-arrow-right:](usage.md#corrected-captions-and-audio-description)
+
 </div>
 
 <div class="ytd-section" markdown>
