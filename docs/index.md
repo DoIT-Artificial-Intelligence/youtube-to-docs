@@ -129,6 +129,30 @@ These lines come from a [2 hour 43 minute Maryland Senate budget hearing](https:
 
 Names, agencies and acronyms are fixed using what's said and shown in the video, and the speaker is named every time it changes. Across the hearing, `-cc` made 2,492 captions and restored 5 lines the transcription missed. A meeting this long takes about 20 minutes and roughly $3 with the default models. You also get an Able Player page that opens straight from disk, so you can check the captions and descriptions before you publish.
 
+### What the audio description looks like
+
+The same run found the moments where something important is shown but not said, and described them. Short descriptions are spoken in pauses in the speech. Full descriptions go in the extended track and the descriptive transcript.
+
+<div class="ytd-grid ytd-grid--2 ytd-ad" markdown>
+
+<div class="ytd-card" markdown>
+<img src="assets/showcase/audio-description-lower-third.webp" alt="An empty chair at the committee desk beside a U.S. flag. A caption at the bottom reads: Education, Business and Admin. Chair Nancy J. King, District 39 - Montgomery County (D)." loading="lazy" />
+
+**Spoken in a pause** ([00:00:08](https://www.youtube.com/watch?v=fd1rMbv5loE&t=8)): "Text: Chair Nancy J. King, District 39, Montgomery County, Democrat."
+
+**Full description:** A lower-third graphic reads, "Education, Business and Admin., Chair Nancy J. King, District 39, Montgomery County, Democrat."
+</div>
+
+<div class="ytd-card" markdown>
+<img src="assets/showcase/audio-description-timer.webp" alt="A split screen with a 2:00 timer above it. On the left, Chair Nancy J. King at the committee desk. On the right, a witness at the witness table with the public seated behind him." loading="lazy" />
+
+**Spoken in a pause** ([01:19:36](https://www.youtube.com/watch?v=fd1rMbv5loE&t=4776)): "A two-minute timer appears above Chair Nancy J. King."
+
+**Full description:** A split-screen view shows Chair Nancy J. King speaking on the left beneath a two-minute timer, while Tim Walker sits at the witness table on the right.
+</div>
+
+</div>
+
 [More on captions and audio description :material-arrow-right:](usage.md#corrected-captions-and-audio-description)
 
 </div>
