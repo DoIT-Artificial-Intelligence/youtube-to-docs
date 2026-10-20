@@ -43,6 +43,7 @@ extra_css:
 
 extra_javascript:
   - javascripts/pricing.js
+  - javascripts/a11y.js
 
 hooks:
   - scripts/docs/pricing_hook.py
