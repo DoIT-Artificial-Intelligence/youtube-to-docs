@@ -19,5 +19,7 @@ Measured on 2026-10-19.
 | `gemini-3.8-flash` | 32.5 s | $0.043 | 37,663 | 3,806 |
 | `foundry-gpt-6.1-sol` | 32.6 s | $0.083 | 35,905 | 1,155 |
 | `vertex-gemini-3.8-flash` | 37.7 s | $0.034 | 37,662 | 1,497 |
+| `bedrock-claude-fable-5-1` | 39.7 s | $0.64 | 50,980 | 2,534 |
 | `vertex-claude-opus-5-5` | 44.1 s | $0.30 | 50,980 | 4,774 |
+| `vertex-claude-fable-5-1` | 45.8 s | $0.68 | 50,980 | 3,334 |
 | `bedrock-claude-opus-5-5` | 47.3 s | $0.30 | 50,980 | 5,039 |
