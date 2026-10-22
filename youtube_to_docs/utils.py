@@ -8,7 +8,20 @@ from pathlib import Path
 from typing import TypeVar
 
 import polars as pl
+from googleapiclient.http import HttpRequest
 from rich import print as rprint
+
+# Retries for Google API calls (Drive, Docs, Sheets, YouTube Data), with
+# exponential backoff: a network blip or a 429/5xx shouldn't end a long run.
+GOOGLE_API_RETRIES = 5
+
+
+class RetryingHttpRequest(HttpRequest):
+    """A Google API request whose execute() retries by default."""
+
+    def execute(self, http=None, num_retries=GOOGLE_API_RETRIES):
+        return super().execute(http=http, num_retries=num_retries)
+
 
 T = TypeVar("T")
 

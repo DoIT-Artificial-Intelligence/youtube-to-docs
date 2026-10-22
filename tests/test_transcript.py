@@ -64,7 +64,12 @@ class TestTranscript(unittest.TestCase):
     def test_get_youtube_service(self, mock_build):
         service = transcript.get_youtube_service()
         self.assertIsNotNone(service)
-        mock_build.assert_called_with("youtube", "v3", developerKey="fake_youtube_key")
+        mock_build.assert_called_with(
+            "youtube",
+            "v3",
+            developerKey="fake_youtube_key",
+            requestBuilder=transcript.RetryingHttpRequest,
+        )
 
     def test_get_youtube_service_no_key(self):
         with patch.dict(os.environ, {}, clear=True):

@@ -16,6 +16,8 @@ from youtube_transcript_api import (
     YouTubeTranscriptApi,
 )
 
+from youtube_to_docs.utils import RetryingHttpRequest
+
 
 def _js_runtimes() -> Dict[str, Dict[str, str]]:
     """yt-dlp needs a JavaScript runtime to solve YouTube's challenges, or
@@ -134,7 +136,9 @@ def get_youtube_service() -> Optional[Any]:
     """Builds and returns the YouTube Data API service."""
     try:
         api_key = os.environ["YOUTUBE_DATA_API_KEY"]
-        return build("youtube", "v3", developerKey=api_key)
+        return build(
+            "youtube", "v3", developerKey=api_key, requestBuilder=RetryingHttpRequest
+        )
     except KeyError:
         print(
             "Warning: YOUTUBE_DATA_API_KEY not found. Playlist and Channel expansion "

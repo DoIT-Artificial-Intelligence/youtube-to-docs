@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import MagicMock, patch
 
 import polars as pl
 
@@ -220,3 +221,15 @@ class TestErrorResponseAndCliBuilder(unittest.TestCase):
                 list(pool.map(lambda _: var.get(), range(3))), ["job-a"] * 3
             )
             self.assertEqual(pool.submit(var.get).result(), "job-a")
+
+
+class TestRetryingHttpRequest(unittest.TestCase):
+    def test_execute_retries_by_default(self):
+        from googleapiclient.http import HttpRequest
+
+        from youtube_to_docs.utils import GOOGLE_API_RETRIES, RetryingHttpRequest
+
+        request = RetryingHttpRequest(MagicMock(), MagicMock(), "https://x")
+        with patch.object(HttpRequest, "execute", return_value="ok") as execute:
+            self.assertEqual(request.execute(), "ok")
+        execute.assert_called_once_with(http=None, num_retries=GOOGLE_API_RETRIES)

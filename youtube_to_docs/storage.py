@@ -22,6 +22,8 @@ from googleapiclient.http import (
 )
 from rich import print as rprint
 
+from youtube_to_docs.utils import GOOGLE_API_RETRIES, RetryingHttpRequest
+
 
 class Storage(ABC):
     """Abstract base class for file storage operations."""
@@ -250,9 +252,15 @@ class GoogleDriveStorage(Storage):
 
     def __init__(self, output_arg: str):
         self.creds = self._get_creds()
-        self.service = build("drive", "v3", credentials=self.creds)
-        self.docs_service = build("docs", "v1", credentials=self.creds)
-        self.sheets_service = build("sheets", "v4", credentials=self.creds)
+        self.service = build(
+            "drive", "v3", credentials=self.creds, requestBuilder=RetryingHttpRequest
+        )
+        self.docs_service = build(
+            "docs", "v1", credentials=self.creds, requestBuilder=RetryingHttpRequest
+        )
+        self.sheets_service = build(
+            "sheets", "v4", credentials=self.creds, requestBuilder=RetryingHttpRequest
+        )
         self.root_folder_id = self._resolve_root_folder_id(output_arg)
         # Cache for folder IDs to avoid constant lookups
         self.folder_cache: dict[str, str] = {}
@@ -443,7 +451,7 @@ class GoogleDriveStorage(Storage):
             downloader = MediaIoBaseDownload(fh, request)
             done = False
             while done is False:
-                status, done = downloader.next_chunk()
+                status, done = downloader.next_chunk(num_retries=GOOGLE_API_RETRIES)
             return fh.getvalue().decode("utf-8")
 
     def read_bytes(self, path: str) -> bytes:
@@ -470,7 +478,7 @@ class GoogleDriveStorage(Storage):
         downloader = MediaIoBaseDownload(fh, request)
         done = False
         while done is False:
-            status, done = downloader.next_chunk()
+            status, done = downloader.next_chunk(num_retries=GOOGLE_API_RETRIES)
         return fh.getvalue()
 
     def _set_landscape(self, document_id: str) -> None:
