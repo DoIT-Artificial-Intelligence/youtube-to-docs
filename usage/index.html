@@ -1486,6 +1486,11 @@
 <td style="text-align: left;"><code>vtt-files/</code></td>
 <td style="text-align: left;">An Able Player page with the original video, the WebVTT tracks and an interactive transcript, for checking them (it opens straight from disk) and as a template for a website</td>
 </tr>
+<tr>
+<td style="text-align: left;"><code>… embed.html</code></td>
+<td style="text-align: left;"><code>vtt-files/</code></td>
+<td style="text-align: left;">The same player streaming the video from YouTube, with the tracks inside the page: a single file to paste into a site's embed box (e.g. Google Sites)</td>
+</tr>
 </tbody>
 </table>
 <h3 id="how-it-works">How it works</h3>
@@ -1529,6 +1534,7 @@
 <h3 id="publishing">Publishing</h3>
 <ul>
 <li><strong>Website:</strong> host the original video with <code>captions.vtt</code> and a descriptions track in a player that speaks descriptions, such as <a href="https://ableplayer.github.io/ableplayer/">Able Player</a>; the generated <code>player.html</code> shows the markup. Link the descriptive transcript next to the video.</li>
+<li><strong>Google Sites (or another site builder):</strong> open <code>… embed.html</code> in a text editor, copy all of it, and in Google Sites select <strong>Insert &gt; Embed &gt; Embed code</strong> and paste it. The video plays from YouTube with the corrected captions, the spoken descriptions and the interactive transcript; nothing else needs hosting. The descriptive transcript link is included when it is a full URL (such as a Google Doc, which must be shared with viewers). Embed boxes that sandbox the page without <code>allow-same-origin</code> stop the YouTube player from starting.</li>
 <li><strong>YouTube:</strong> upload the captioned and described video, or upload the original with the corrected SRT as its captions (YouTube has no description tracks, so audio description needs the described copy).</li>
 </ul>
 <h3 id="checking-the-webvtt-files">Checking the WebVTT files</h3>
@@ -1577,7 +1583,7 @@
 <li><strong>Video File</strong>, <strong>Video File (lang)</strong>: The infographic and audio summary video (<code>-cia</code>), in English and the translated language.</li>
 <li><strong>Corrected Captions File {model} from {source}</strong>, <strong>Captions VTT File {model} from {source}</strong>: The corrected captions as SRT and WebVTT (<code>-cc</code>).</li>
 <li><strong>Descriptions VTT File {model}</strong>, <strong>Extended Descriptions VTT File {model}</strong>, <strong>Descriptive Transcript File {model}</strong>: The audio description (<code>-cc</code>).</li>
-<li><strong>Original Video File</strong>, <strong>Captioned And Described Video File {model} from {source}</strong>, <strong>Player Page</strong>: The original video, the copy with captions burned in and descriptions narrated, and the Able Player page (<code>-cc</code>).</li>
+<li><strong>Original Video File</strong>, <strong>Captioned And Described Video File {model} from {source}</strong>, <strong>Player Page</strong>, <strong>Embed Page</strong>: The original video, the copy with captions burned in and descriptions narrated, the Able Player page, and its YouTube-streaming version for embedding in a site (<code>-cc</code>).</li>
 <li><strong>Post-process: word count({word})</strong>: How many times <code>{word}</code> appears in the transcript (case-insensitive, whole words), one column per word (<code>-pp</code>).</li>
 </ul>
 <h3 id="text-and-costs">Text and costs</h3>
