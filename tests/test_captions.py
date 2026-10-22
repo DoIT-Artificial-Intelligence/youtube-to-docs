@@ -26,6 +26,18 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(cues[0].text, "Good afternoon and welcome")
         self.assertAlmostEqual(cues[1].start, 3723.5)
 
+    def test_parse_srt_from_google_doc(self):
+        # Google Docs export each cue on one line, with a BOM and blank lines.
+        text = (
+            "\ufeff1 00:00:03,800 --> 00:00:04,100 [Speaker 1] Good morning.\r\n"
+            "\r\n\r\n2 00:00:05,200 --> 00:00:06,500 My name\r\n"
+        )
+        cues = cc.parse_srt(text)
+        self.assertEqual(
+            [c.text for c in cues], ["[Speaker 1] Good morning.", "My name"]
+        )
+        self.assertAlmostEqual(cues[1].end, 6.5)
+
     def test_format_timestamp_rounds(self):
         self.assertEqual(cc.format_timestamp(3723.4999), "01:02:03,500")
         self.assertEqual(cc.format_timestamp(-1), "00:00:00,000")

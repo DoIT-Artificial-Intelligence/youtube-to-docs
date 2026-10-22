@@ -188,7 +188,11 @@ def _to_seconds(hours: Optional[str], minutes: str, seconds: str, ms: str) -> fl
 
 
 def parse_srt(content: str) -> List[Cue]:
-    """Parses SRT text into cues, joining multi-line cue text with spaces."""
+    """
+    Parses SRT text into cues, joining multi-line cue text with spaces. Text on
+    the timing line is kept too: SRTs saved as Google Docs export each cue as
+    one line ("1 00:00:01,000 --> 00:00:02,000 Hello").
+    """
     cues: List[Cue] = []
     text = content.replace("\r\n", "\n").replace("\r", "\n").strip()
     for block in re.split(r"\n[ \t]*\n", text):
@@ -197,7 +201,8 @@ def parse_srt(content: str) -> List[Cue]:
             match = _TIMING_RE.search(line)
             if match:
                 groups = match.groups()
-                cue_text = " ".join(part for part in lines[i + 1 :] if part)
+                rest = [line[match.end() :].strip(), *lines[i + 1 :]]
+                cue_text = " ".join(part for part in rest if part)
                 cues.append(
                     Cue(
                         _to_seconds(*groups[:4]),
