@@ -2543,28 +2543,37 @@ def _main_impl(
                         duration_seconds=video_duration_seconds,
                         vprint=vprint,
                     )
-                    write_player_page(
-                        row=row,
-                        storage=storage,
-                        path=os.path.join(
-                            vtt_dir,
-                            f"{corrected_captions_model} - {video_id} - {safe_title}"
-                            " - player.html",
-                        ),
-                        title=video_title,
-                        video_path=original_path,
-                        captions_path=row.get(
-                            f"Captions VTT File {corrected_captions_model} from "
-                            f"{corrected.source}",
-                            "",
-                        ),
-                        descriptions_path=row.get(
-                            f"Extended Descriptions VTT File {ad_model}"
-                        ),
-                        transcript_path=row.get(
-                            f"Descriptive Transcript File {ad_model}"
-                        ),
-                    )
+                    # player.html plays the saved video; embed.html streams
+                    # it from YouTube and needs no other files, for pasting
+                    # into a site (e.g. Google Sites' Embed code).
+                    for page, youtube_id, column in (
+                        ("player", None, "Player Page"),
+                        ("embed", video_id, "Embed Page"),
+                    ):
+                        write_player_page(
+                            row=row,
+                            storage=storage,
+                            path=os.path.join(
+                                vtt_dir,
+                                f"{corrected_captions_model} - {video_id} - "
+                                f"{safe_title} - {page}.html",
+                            ),
+                            title=video_title,
+                            video_path=original_path,
+                            captions_path=row.get(
+                                f"Captions VTT File {corrected_captions_model} "
+                                f"from {corrected.source}",
+                                "",
+                            ),
+                            descriptions_path=row.get(
+                                f"Extended Descriptions VTT File {ad_model}"
+                            ),
+                            transcript_path=row.get(
+                                f"Descriptive Transcript File {ad_model}"
+                            ),
+                            youtube_id=youtube_id,
+                            column=column,
+                        )
                 # Downloads are large; don't keep them across a playlist (the
                 # saved original stays in video-files/).
                 for path in downloaded:

@@ -138,7 +138,7 @@ File names end in `({model}-{language})`, e.g. `(gcp-translate-es)`, to show how
 
 **Audio description**: scene changes in the downloaded video are described by the model from the frames and nearby dialogue, and fitted into pauses in the speech. The descriptions are saved as WebVTT description tracks (`vtt-files/`, standard and extended) and a descriptive transcript (`descriptive-transcript-files/`).
 
-`video-files/` gets the original video and a copy with the captions burned in and the descriptions narrated. `vtt-files/` also gets an [Able Player](https://ableplayer.github.io/ableplayer/) page for checking the tracks in a browser. See [Corrected Captions and Audio Description](usage.md#corrected-captions-and-audio-description) for the options.
+`video-files/` gets the original video and a copy with the captions burned in and the descriptions narrated. `vtt-files/` also gets an [Able Player](https://ableplayer.github.io/ableplayer/) page for checking the tracks in a browser, and a self-contained version that streams the video from YouTube, for pasting into a site such as Google Sites. See [Corrected Captions and Audio Description](usage.md#corrected-captions-and-audio-description) for the options.
 
 ## 6. Review, storage and cost
 

@@ -489,6 +489,7 @@ def player_page_html(
     descriptions_src: Optional[str],
     transcript_href: Optional[str],
     track_texts: Optional[Dict[str, str]] = None,
+    youtube_id: Optional[str] = None,
 ) -> str:
     """
     A web page that plays the video in Able Player with the WebVTT captions
@@ -499,17 +500,23 @@ def player_page_html(
     `track_texts` (WebVTT text by track kind) are embedded so the page also
     works when opened straight from disk: browsers won't load .vtt files into
     a file:// page, so there the tracks use the embedded copies.
+
+    With `youtube_id` the video streams from YouTube and the tracks always use
+    the embedded copies, so the page needs no other files: it can be pasted
+    into a site builder's embed box (e.g. Google Sites' Embed code).
     """
     name = html.escape(title or "Video")
     copies = ""
     if track_texts:
         # "<" is escaped so the text can't end the script element early.
         data = json.dumps(track_texts).replace("<", "\\u003c")
+        # Browsers won't load .vtt files into a page opened from disk, and a
+        # page pasted into a site has no files beside it.
+        condition = "true" if youtube_id else 'location.protocol === "file:"'
         copies = f"""
       <script type="application/json" id="track-copies">{data}</script>
       <script>
-        // Browsers won't load .vtt files into a page opened from disk.
-        if (location.protocol === "file:") {{
+        if ({condition}) {{
           const copies = JSON.parse(
             document.getElementById("track-copies").textContent);
           for (const track of document.querySelectorAll("#video1 track")) {{
@@ -520,6 +527,11 @@ def player_page_html(
           }}
         }}
       </script>"""
+    source = (
+        f' data-youtube-id="{html.escape(youtube_id)}">'
+        if youtube_id
+        else f'>\n        <source type="video/mp4" src="{html.escape(video_src)}">'
+    )
     descriptions = (
         f'\n        <track kind="descriptions" src="{html.escape(descriptions_src)}" '
         'srclang="en" label="English">'
@@ -551,8 +563,7 @@ def player_page_html(
       the slides and other visual information (the video pauses while each one
       is read), and the Transcript button to read along.</p>
       <video id="video1" data-able-player preload="metadata" playsinline
-        data-desc-pause-default="on" data-state-captions="on">
-        <source type="video/mp4" src="{html.escape(video_src)}">
+        data-desc-pause-default="on" data-state-captions="on"{source}
         <track kind="captions" src="{html.escape(captions_src)}" srclang="en"
           label="English" default>{descriptions}
       </video>{copies}{transcript}
@@ -574,15 +585,21 @@ def write_player_page(
     captions_path: str,
     descriptions_path: Optional[str],
     transcript_path: Optional[str],
+    youtube_id: Optional[str] = None,
+    column: str = "Player Page",
 ) -> None:
     """Writes the Able Player page (see player_page_html) with links relative
     to the page, so the folder can be served or published as it is, and
-    copies of the tracks for opening it straight from disk."""
+    copies of the tracks for opening it straight from disk. With `youtube_id`
+    it writes the self-contained embed version, which only links the
+    transcript if it has a full URL (e.g. a Google Doc)."""
     folder = os.path.dirname(path)
 
     def link(target: Optional[str]) -> Optional[str]:
         if not target:
             return None
+        if target.startswith("http"):
+            return target
         relative = os.path.relpath(target, folder).replace(os.sep, "/")
         return urllib.parse.quote(relative)
 
@@ -601,13 +618,21 @@ def write_player_page(
         link(video_path) or "",
         link(captions_path) or "",
         link(descriptions_path),
-        link(transcript_path),
+        (
+            transcript_path
+            if transcript_path and transcript_path.startswith("http")
+            else None
+        )
+        if youtube_id
+        else link(transcript_path),
         track_texts,
+        youtube_id,
     )
+    kind = "embed page" if youtube_id else "player page"
     try:
         saved = storage.write_text(path, page)
     except Exception as e:
-        print(f"Error writing the player page: {e}")
+        print(f"Error writing the {kind}: {e}")
         return
-    row["Player Page"] = saved
-    rprint(f"Saved player page: {format_clickable_path(saved)}")
+    row[column] = saved
+    rprint(f"Saved {kind}: {format_clickable_path(saved)}")
