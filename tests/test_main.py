@@ -1301,7 +1301,11 @@ class TestCorrectedCaptionsDefaults(unittest.TestCase):
         self.assertIs(video["descriptions"], described)
         self.assertEqual(video["captions_path"], "cc/out.srt")
         self.assertEqual(video["source"], "gemini-3.5-transcribe")
-        self.assertTrue(mock_page.call_args.kwargs["path"].endswith(" - player.html"))
+        player, embed = (c.kwargs for c in mock_page.call_args_list)
+        self.assertTrue(player["path"].endswith(" - player.html"))
+        self.assertIsNone(player["youtube_id"])
+        self.assertTrue(embed["path"].endswith(" - embed.html"))
+        self.assertEqual((embed["youtube_id"], embed["column"]), ("vid1", "Embed Page"))
 
     @patch("youtube_to_docs.main.write_player_page")
     @patch("youtube_to_docs.main.process_accessible_video")

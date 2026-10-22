@@ -241,6 +241,7 @@ youtube-to-docs VIDEO_ID -t gcp-chirp3 -cc gemini-3.5-flash-lite-gcp-chirp3
 | `{id} - {title} - original video.mp4` | `video-files/` | The source video for a website player |
 | `… captioned and described video (from {source}).mp4` | `video-files/` | A standalone accessible copy: captions burned in (white on an 80% opaque box) and the descriptions narrated in the pauses |
 | `… player.html` | `vtt-files/` | An Able Player page with the original video, the WebVTT tracks and an interactive transcript, for checking them (it opens straight from disk) and as a template for a website |
+| `… embed.html` | `vtt-files/` | The same player streaming the video from YouTube, with the tracks inside the page: a single file to paste into a site's embed box (e.g. Google Sites) |
 
 ### How it works
 
@@ -267,6 +268,7 @@ If the requested source SRT doesn't exist (for example, `-t youtube -cc`), the a
 ### Publishing
 
 - **Website:** host the original video with `captions.vtt` and a descriptions track in a player that speaks descriptions, such as [Able Player](https://ableplayer.github.io/ableplayer/); the generated `player.html` shows the markup. Link the descriptive transcript next to the video.
+- **Google Sites (or another site builder):** open `… embed.html` in a text editor, copy all of it, and in Google Sites select **Insert > Embed > Embed code** and paste it. The video plays from YouTube with the corrected captions, the spoken descriptions and the interactive transcript; nothing else needs hosting. The descriptive transcript link is included when it is a full URL (such as a Google Doc, which must be shared with viewers). Embed boxes that sandbox the page without `allow-same-origin` stop the YouTube player from starting.
 - **YouTube:** upload the captioned and described video, or upload the original with the corrected SRT as its captions (YouTube has no description tracks, so audio description needs the described copy).
 
 ### Checking the WebVTT files
@@ -323,7 +325,7 @@ Paths to the saved outputs. Translated outputs end in the language code, such as
 - **Video File**, **Video File (lang)**: The infographic and audio summary video (`-cia`), in English and the translated language.
 - **Corrected Captions File {model} from {source}**, **Captions VTT File {model} from {source}**: The corrected captions as SRT and WebVTT (`-cc`).
 - **Descriptions VTT File {model}**, **Extended Descriptions VTT File {model}**, **Descriptive Transcript File {model}**: The audio description (`-cc`).
-- **Original Video File**, **Captioned And Described Video File {model} from {source}**, **Player Page**: The original video, the copy with captions burned in and descriptions narrated, and the Able Player page (`-cc`).
+- **Original Video File**, **Captioned And Described Video File {model} from {source}**, **Player Page**, **Embed Page**: The original video, the copy with captions burned in and descriptions narrated, the Able Player page, and its YouTube-streaming version for embedding in a site (`-cc`).
 - **Post-process: word count({word})**: How many times `{word}` appears in the transcript (case-insensitive, whole words), one column per word (`-pp`).
 
 ### Text and costs

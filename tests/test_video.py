@@ -329,6 +329,49 @@ class TestAccessibleVideo(unittest.TestCase):
         self.assertIn("\\u003c/script>", copies)
         self.assertIn('if (location.protocol === "file:")', page)
 
+    def test_embed_page(self):
+        # Streams from YouTube and always uses the embedded tracks, so it can
+        # be pasted into a site with no files beside it.
+        row = {}
+        storage = MagicMock()
+        storage.write_text.side_effect = lambda path, text: path
+        storage.exists.return_value = True
+        storage.read_text.return_value = "WEBVTT\n\nHi."
+        write_player_page(
+            row=row,
+            storage=storage,
+            path="embed.html",
+            title="Title",
+            video_path="video-files/vid.mp4",
+            captions_path="https://drive.google.com/file/d/c/view",
+            descriptions_path="https://drive.google.com/file/d/d/view",
+            transcript_path="https://docs.google.com/document/d/t/edit",
+            youtube_id="Fpg75xTOMe4",
+            column="Embed Page",
+        )
+        page = storage.write_text.call_args.args[1]
+        self.assertIn('data-state-captions="on" data-youtube-id="Fpg75xTOMe4">', page)
+        self.assertNotIn("<source", page)
+        self.assertIn("if (true) {", page)
+        self.assertIn('href="https://docs.google.com/document/d/t/edit"', page)
+        self.assertEqual(row, {"Embed Page": "embed.html"})
+
+    def test_embed_page_skips_relative_transcript(self):
+        storage = MagicMock()
+        storage.exists.return_value = False
+        write_player_page(
+            row={},
+            storage=storage,
+            path="embed.html",
+            title="Title",
+            video_path="video.mp4",
+            captions_path="captions.vtt",
+            descriptions_path=None,
+            transcript_path="dt/transcript.md",
+            youtube_id="vid",
+        )
+        self.assertNotIn("Descriptive transcript", storage.write_text.call_args.args[1])
+
     def test_player_page_without_track_copies(self):
         storage = MagicMock()
         storage.exists.return_value = False
