@@ -12,6 +12,7 @@ from typing import Any, Callable, Dict, List, Optional
 import polars as pl
 from rich import print as rprint
 
+from youtube_to_docs.captions import normalize_srt
 from youtube_to_docs.storage import Storage
 from youtube_to_docs.utils import format_clickable_path
 
@@ -435,10 +436,14 @@ def process_accessible_video(
         return
 
     with tempfile.TemporaryDirectory() as work:
-        srt = storage.get_local_file(captions_path, download_dir=work)
-        if not srt:
-            print(f"Error: corrected captions not found at {captions_path}")
+        srt = os.path.join(work, "captions.srt")
+        try:
+            content = storage.read_text(captions_path)
+        except Exception as e:
+            print(f"Error: corrected captions not found at {captions_path}: {e}")
             return
+        with open(srt, "w", encoding="utf-8") as f:
+            f.write(normalize_srt(content))
         video = get_video()
         if not video:
             return

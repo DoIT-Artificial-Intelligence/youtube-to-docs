@@ -222,6 +222,27 @@ def get_google_credentials(scopes: list[str] | None = None):
     return creds
 
 
+# Content types for files uploaded to Google Drive as-is (not converted).
+_PLAIN_MIME_TYPES = {
+    ".wav": "audio/wav",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".srt": "text/plain",
+    ".vtt": "text/vtt",
+    ".html": "text/html",
+    ".json": "application/json",
+}
+
+
+def _is_google_editors_file(metadata: Optional[dict]) -> bool:
+    """Whether Drive metadata is for a Google Doc, Sheet or Slides file."""
+    mime_type = (metadata or {}).get("mimeType", "")
+    return mime_type.startswith("application/vnd.google-apps.") and (
+        mime_type != "application/vnd.google-apps.folder"
+    )
+
+
 class GoogleDriveStorage(Storage):
     """Implementation of Storage for Google Drive."""
 
@@ -382,7 +403,12 @@ class GoogleDriveStorage(Storage):
         # Check if path starts with http - it's a link we already stored
         if path.startswith("http"):
             return True  # Assume links exist
-        return self._get_file_id(path) is not None
+        metadata = self._get_file_metadata(path)
+        # Earlier versions saved .srt/.vtt/.html files as Google Docs, which
+        # merged their lines; those count as missing so they're made again.
+        if Path(path).suffix.lower() in (".srt", ".vtt", ".html"):
+            return metadata is not None and not _is_google_editors_file(metadata)
+        return metadata is not None
 
     def read_text(self, path: str) -> str:
         # This implies downloading the Google Doc as text/markdown
@@ -429,6 +455,15 @@ class GoogleDriveStorage(Storage):
         if not file_id:
             raise FileNotFoundError(f"File not found: {path}")
 
+        # Google Docs (text files saved by earlier versions) can't be
+        # downloaded as-is, only exported.
+        if path.startswith("http"):
+            is_doc = "docs.google.com/document/" in path
+        else:
+            is_doc = _is_google_editors_file(self._get_file_metadata(path))
+        if is_doc:
+            return self.read_text(path).encode("utf-8")
+
         request = self.service.files().get_media(fileId=file_id)
         fh = io.BytesIO()
 
@@ -459,6 +494,12 @@ class GoogleDriveStorage(Storage):
     def write_text(self, path: str, content: str) -> str:
         parent_id = self._get_parent_id(path)
         filename = Path(path).name
+
+        # Only Markdown and text become Google Docs. Machine-readable files
+        # (.srt, .vtt, .html, .json) stay plain files: converting them to a
+        # Doc merges their lines, and ffmpeg and browsers can't use a Doc.
+        if not filename.endswith((".md", ".txt")):
+            return self.write_bytes(path, content.encode("utf-8"))
 
         # Check if exists to overwrite?
         existing_id = self._get_file_id(path)
@@ -529,7 +570,16 @@ class GoogleDriveStorage(Storage):
         parent_id = self._get_parent_id(path)
         filename = Path(path).name
 
-        existing_id = self._get_file_id(path)
+        existing = self._get_file_metadata(path)
+        existing_id = existing["id"] if existing else None
+        if existing_id and _is_google_editors_file(existing):
+            # Earlier versions saved .srt/.vtt/.html files as Google Docs; a
+            # Doc can't hold plain content, so it is replaced by a new file.
+            self.service.files().update(
+                fileId=existing_id, body={"trashed": True}
+            ).execute()
+            self.file_cache.pop(path, None)
+            existing_id = None
 
         file_metadata = {
             "name": filename,
@@ -537,13 +587,9 @@ class GoogleDriveStorage(Storage):
         }
 
         fh = io.BytesIO(content)
-        mime_type = "application/octet-stream"
-        if filename.endswith(".wav"):
-            mime_type = "audio/wav"
-        elif filename.endswith(".png"):
-            mime_type = "image/png"
-        elif filename.endswith((".jpg", ".jpeg")):
-            mime_type = "image/jpeg"
+        mime_type = _PLAIN_MIME_TYPES.get(
+            Path(filename).suffix.lower(), "application/octet-stream"
+        )
         media = MediaIoBaseUpload(fh, mimetype=mime_type, resumable=True)
 
         if existing_id:
@@ -780,7 +826,8 @@ class GoogleDriveStorage(Storage):
 
             download_dir = tempfile.gettempdir()
 
-        filename = Path(path).name
+        filename = self.get_name(path) if path.startswith("http") else Path(path).name
+        os.makedirs(download_dir, exist_ok=True)
         local_path = os.path.join(download_dir, filename)
 
         try:

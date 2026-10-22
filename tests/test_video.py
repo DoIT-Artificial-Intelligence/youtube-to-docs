@@ -182,10 +182,12 @@ class TestAccessibleVideo(unittest.TestCase):
         storage = MagicMock()
         storage.exists.side_effect = lambda path: path in existing
         storage.get_full_path.side_effect = lambda path: path
-        storage.get_local_file.side_effect = lambda path, download_dir=None: (
-            self.srt if path == "cc.srt" else None
-        )
-        storage.read_text.side_effect = lambda path: (texts or {})[path]
+        # The corrected captions as a Google Doc exports them: one line a cue.
+        texts = {
+            "cc.srt": "\ufeff1 00:00:01,000 --> 00:00:02,000 Hi.\r\n",
+            **(texts or {}),
+        }
+        storage.read_text.side_effect = lambda path: texts[path]
         storage.upload_file.side_effect = lambda local, target, content_type=None: (
             target
         )
@@ -223,6 +225,10 @@ class TestAccessibleVideo(unittest.TestCase):
     @patch("youtube_to_docs.video.render_accessible_video", return_value=True)
     @patch("youtube_to_docs.audio_description.write_narration_track", return_value=True)
     def test_uses_this_runs_narration(self, mock_track, mock_render):
+        rendered = []
+        mock_render.side_effect = lambda video, srt, *args: (
+            rendered.append(open(srt, encoding="utf-8").read()) or True
+        )
         row = {}
         storage = self._storage()
         described = [MagicMock()]
@@ -230,7 +236,9 @@ class TestAccessibleVideo(unittest.TestCase):
         self.assertEqual(row[self.COLUMN], self.TARGET)
         self.assertIs(mock_track.call_args.args[0], described)
         video, srt, _, duration, narration = mock_render.call_args.args
-        self.assertEqual((video, srt, duration), (self.video, self.srt, 60.0))
+        self.assertEqual((video, duration), (self.video, 60.0))
+        self.assertEqual(os.path.basename(srt), "captions.srt")
+        self.assertEqual(rendered, ["1\n00:00:01,000 --> 00:00:02,000\nHi.\n"])
         self.assertTrue(narration.endswith("narration.wav"))
         self.assertEqual(storage.upload_file.call_args.args[1], self.TARGET)
 

@@ -214,6 +214,31 @@ def parse_srt(content: str) -> List[Cue]:
     return cues
 
 
+def normalize_srt(content: str) -> str:
+    """
+    The SRT with cue text that follows the timing on the same line (SRTs
+    exported from Google Docs) moved onto its own line, so players and ffmpeg
+    can read it. Well-formed SRTs come back unchanged apart from line endings.
+    """
+    blocks = []
+    text = content.replace("\r\n", "\n").replace("\r", "\n").strip("\ufeff \n")
+    for block in re.split(r"\n\s*\n", text):
+        lines = block.split("\n")
+        for i, line in enumerate(lines):
+            match = _TIMING_RE.search(line)
+            if match:
+                number = line[: match.start()].strip()
+                rest = line[match.end() :].strip()
+                lines[i : i + 1] = [
+                    *([number] if number else []),
+                    match.group(0),
+                    *([rest] if rest else []),
+                ]
+                break
+        blocks.append("\n".join(lines))
+    return "\n\n".join(blocks) + "\n"
+
+
 def format_timestamp(seconds: float) -> str:
     """Formats seconds as an SRT timestamp (HH:MM:SS,mmm)."""
     ms = max(0, round(seconds * 1000))
@@ -1528,11 +1553,13 @@ def srt_to_webvtt(content: str) -> str:
     for block in re.split(r"\n[ \t]*\n", text):
         lines = block.split("\n")
         for i, line in enumerate(lines):
-            if _TIMING_RE.search(line):
-                timing = re.sub(r"(\d),(\d)", r"\1.\2", line.strip())
+            match = _TIMING_RE.search(line)
+            if match:
+                timing = re.sub(r"(\d),(\d)", r"\1.\2", match.group(0))
+                # Text on the timing line too (SRTs exported from Google Docs).
                 body = [
-                    part.replace("&", "&amp;").replace("<", "&lt;")
-                    for part in lines[i + 1 :]
+                    part.strip().replace("&", "&amp;").replace("<", "&lt;")
+                    for part in [line[match.end() :], *lines[i + 1 :]]
                     if part.strip()
                 ]
                 if body:
