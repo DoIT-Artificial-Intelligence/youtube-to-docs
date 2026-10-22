@@ -38,6 +38,26 @@ class TestParsing(unittest.TestCase):
         )
         self.assertAlmostEqual(cues[1].end, 6.5)
 
+    def test_normalize_srt(self):
+        doc = (
+            "\ufeff1 00:00:01,000 --> 00:00:02,000 Hi\r\n\r\n\r\n"
+            "2 00:00:03,000 --> 00:00:04,000 Bye\r\n"
+        )
+        self.assertEqual(
+            cc.normalize_srt(doc),
+            "1\n00:00:01,000 --> 00:00:02,000\nHi\n\n"
+            "2\n00:00:03,000 --> 00:00:04,000\nBye\n",
+        )
+        well_formed = srt((1, 2, "Line one\nline two"), (3, 4, "Next"))
+        self.assertEqual(cc.normalize_srt(well_formed), well_formed + "\n")
+
+    def test_webvtt_from_google_doc_srt(self):
+        doc = "\ufeff1 00:00:01,000 --> 00:00:02,500 Q&A <b>\r\n"
+        self.assertEqual(
+            cc.srt_to_webvtt(doc),
+            "WEBVTT\n\n00:00:01.000 --> 00:00:02.500\nQ&amp;A &lt;b>\n",
+        )
+
     def test_format_timestamp_rounds(self):
         self.assertEqual(cc.format_timestamp(3723.4999), "01:02:03,500")
         self.assertEqual(cc.format_timestamp(-1), "00:00:00,000")
