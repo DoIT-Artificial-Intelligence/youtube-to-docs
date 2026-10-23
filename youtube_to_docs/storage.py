@@ -172,6 +172,14 @@ def _pandoc_format(filename: str) -> str:
     return "markdown+hard_line_breaks" if filename.endswith(".txt") else "md"
 
 
+def _pandoc_input(filename: str, content: str) -> str:
+    """Content to convert for a .md or .txt file. Text files keep their blank
+    lines as empty paragraphs, which Docs and Word would otherwise drop."""
+    if not filename.endswith(".txt"):
+        return content
+    return re.sub(r"\n[ \t]*\n\s*", "\n\n\u00a0\n\n", content.strip("\n"))
+
+
 def get_google_credentials(scopes: list[str] | None = None):
     """Load the saved Google OAuth token, refreshing it or signing in again.
 
@@ -536,7 +544,7 @@ class GoogleDriveStorage(Storage):
                 # Google Drive v3 API converts text/html to Google Docs very well.
                 # Extra args to preserve table formatting
                 html_content = pypandoc.convert_text(
-                    content,
+                    _pandoc_input(filename, content),
                     to="html",
                     format=_pandoc_format(filename),
                     extra_args=["--wrap=preserve"],
@@ -1109,7 +1117,7 @@ class M365Storage(Storage):
 
             try:
                 pypandoc.convert_text(
-                    content,
+                    _pandoc_input(filename, content),
                     to="docx",
                     format=_pandoc_format(filename),
                     outputfile=tmp_docx,
