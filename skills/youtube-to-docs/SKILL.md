@@ -56,6 +56,7 @@ The tool also writes multimodal alt text for each infographic with the summary m
 - If YouTube is named as the source, use `'gemini-4-argon-youtube'`, which starts from the YouTube captions and skips transcription.
 - If an STT model is named as the source, use `'gemini-4-argon-{stt model}'`, e.g. `'gemini-4-argon-gcp-chirp3'`.
 - If a cheaper or faster model is wanted ("flash", "cheap"), use `'gemini-3.5-flash-lite-gemini-3.5-transcribe'`.
+- Leave `model` unset: the summary, tags and description then use `gemini-4-argon` too.
 
 One run writes:
 
@@ -112,6 +113,7 @@ Files are saved in folders next to the CSV, and each one is linked from a CSV co
 
 - `srt-files/`: SRT transcripts (YouTube and AI)
 - `summary-files/`, `one-sentence-summary-files/`, `tag-files/`
+- `descriptions-files/`: a YouTube description (summary, chapters, hashtags) ready to paste
 - `qa-files/`: Q&A tables, with "Timestamp" and "Timestamp URL" links checked against the YouTube SRT timings
 - `infographic-alt-text/`, `infographic-prompts/`, `summary-prompts/`
 - `corrected-caption-files/`: corrected SRT captions

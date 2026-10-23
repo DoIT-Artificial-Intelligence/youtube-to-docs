@@ -1213,6 +1213,10 @@ class TestMain(unittest.TestCase):
 @patch("youtube_to_docs.main.generate_qa", return_value=("nan", 1, 1))
 @patch("youtube_to_docs.main.generate_one_sentence_summary", return_value=("S", 1, 1))
 @patch("youtube_to_docs.main.generate_tags", return_value=("tag", 1, 1))
+@patch(
+    "youtube_to_docs.main.generate_chapters",
+    return_value=("00:00 Intro\n00:20 Middle\n00:40 End", 1, 1),
+)
 class TestCorrectedCaptionsDefaults(unittest.TestCase):
     """`-cc` without a value transcribes with gemini-3.5-transcribe and corrects
     that SRT with gemini-4-argon, unless -t says otherwise."""
@@ -1256,6 +1260,13 @@ class TestCorrectedCaptionsDefaults(unittest.TestCase):
         self.assertEqual(kwargs["model_name"], "gemini-4-argon")
         self.assertEqual(kwargs["source"], "gemini-3.5-transcribe")
         self.assertEqual(kwargs["transcript_arg"], "gemini-3.5-transcribe")
+
+    def test_bare_flag_summarizes_with_gemini_4_argon(self, *mocks):
+        mock_chapters, *_ = mocks
+        mock_summary = mocks[5]
+        self._run(mocks, "-cc")
+        self.assertEqual(mock_summary.call_args.args[0], "gemini-4-argon")
+        self.assertEqual(mock_chapters.call_args.args[0], "gemini-4-argon")
 
     def test_explicit_transcript_source_is_kept(self, *mocks):
         mock_provider, mock_cc = self._run(mocks, "-t", "youtube", "-cc")
