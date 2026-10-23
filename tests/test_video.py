@@ -351,7 +351,9 @@ class TestAccessibleVideo(unittest.TestCase):
             column="Embed Page",
         )
         page = storage.write_text.call_args.args[1]
-        self.assertIn('data-state-descriptions="on" data-youtube-id="Fpg75xTOMe4">', page)
+        self.assertIn(
+            'data-state-descriptions="on" data-youtube-id="Fpg75xTOMe4">', page
+        )
         self.assertNotIn("<source", page)
         self.assertIn("if (true) {", page)
         self.assertIn('href="https://docs.google.com/document/d/t/edit"', page)
