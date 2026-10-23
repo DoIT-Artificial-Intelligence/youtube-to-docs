@@ -1343,5 +1343,48 @@ class TestCorrectedCaptionsDefaults(unittest.TestCase):
         self.assertEqual(mock_cc.call_args.kwargs["source"], "youtube")
 
 
+@patch("youtube_to_docs.main.get_youtube_service")
+@patch("youtube_to_docs.main.resolve_video_ids", return_value=["vid1"])
+@patch("youtube_to_docs.main.fetch_transcript", return_value=("Hi.", True, []))
+@patch("youtube_to_docs.main.generate_summary")
+@patch(
+    "youtube_to_docs.main.generate_chapters",
+    return_value=("00:00 Intro\n00:20 Middle\n00:40 End", 1, 1),
+)
+class TestDescriptionForExistingRow(unittest.TestCase):
+    def test_existing_summary_gets_a_description(self, mock_chapters, mock_summary, *_):
+        model = "gemini-3.5-flash-lite"
+        with tempfile.TemporaryDirectory() as tmp:
+            out = os.path.join(tmp, "out.csv")
+            pl.DataFrame(
+                {
+                    "URL": ["https://www.youtube.com/watch?v=vid1"],
+                    "Title": ["Title"],
+                    f"Summary Text {model} from youtube": ["The summary."],
+                    f"Tags youtube {model} model": ["economic development, ARC"],
+                    f"Speakers {model} from youtube": ["Jane Doe"],
+                    f"QA Text {model} from youtube": ["nan"],
+                }
+            ).write_csv(out)
+            with (
+                patch("youtube_to_docs.main.generate_qa", return_value=("nan", 1, 1)),
+                patch(
+                    "youtube_to_docs.main.extract_speakers",
+                    return_value=("Jane Doe", 1, 1),
+                ),
+            ):
+                main.main(["vid1", "-m", model, "-o", out])
+            mock_summary.assert_not_called()
+            mock_chapters.assert_called_once()
+            folder = os.path.join(tmp, "descriptions-files")
+            (name,) = os.listdir(folder)
+            with open(os.path.join(folder, name), encoding="utf-8") as f:
+                self.assertEqual(
+                    f.read(),
+                    "The summary.\n\nChapters:\n00:00 Intro\n00:20 Middle\n"
+                    "00:40 End\n\n#economicdevelopment #ARC\n",
+                )
+
+
 if __name__ == "__main__":
     unittest.main()
