@@ -494,8 +494,9 @@ def player_page_html(
     """
     A web page that plays the video in Able Player with the WebVTT captions
     and descriptions tracks, for checking them in a browser and as a template
-    for a website. Able Player reads the descriptions aloud and, by default,
-    pauses the video while each one is read (extended description).
+    for a website. Captions and descriptions start on: Able Player reads the
+    descriptions aloud and pauses the video while each one is read (extended
+    description).
 
     `track_texts` (WebVTT text by track kind) are embedded so the page also
     works when opened straight from disk: browsers won't load .vtt files into
@@ -559,11 +560,13 @@ def player_page_html(
   <body>
     <main>
       <h1>{name}</h1>
-      <p>Captions are on. Select the Description button to hear descriptions of
-      the slides and other visual information (the video pauses while each one
-      is read), and the Transcript button to read along.</p>
+      <p>Captions and audio descriptions are on: the slides and other visual
+      information are described aloud, and the video pauses while each
+      description is read. Select the Description button to turn them off, and
+      the Transcript button to read along.</p>
       <video id="video1" data-able-player preload="metadata" playsinline
-        data-desc-pause-default="on" data-state-captions="on"{source}
+        data-desc-pause-default="on" data-state-captions="on"
+        data-state-descriptions="on"{source}
         <track kind="captions" src="{html.escape(captions_src)}" srclang="en"
           label="English" default>{descriptions}
       </video>{copies}{transcript}
