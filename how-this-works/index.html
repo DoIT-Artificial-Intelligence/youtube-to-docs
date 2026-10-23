@@ -1157,9 +1157,14 @@
 <td style="text-align: left;">Up to 5 comma-separated topic tags</td>
 </tr>
 <tr>
+<td style="text-align: left;">Chapters</td>
+<td style="text-align: left;">The SRT</td>
+<td style="text-align: left;">One <code>MM:SS Title</code> line per section, following YouTube's chapter rules (first at <code>00:00</code>, at least 3, each 10+ seconds)</td>
+</tr>
+<tr>
 <td style="text-align: left;">Description</td>
-<td style="text-align: left;">Summary, the SRT and tags</td>
-<td style="text-align: left;">A YouTube description: the summary, <code>Chapters:</code> with one <code>MM:SS Title</code> line per section, and the tags as hashtags</td>
+<td style="text-align: left;">Summary, chapters and tags</td>
+<td style="text-align: left;">A plain-text YouTube description (no Markdown, ready to paste): a short description, <code>Chapters:</code>, then the tags as hashtags</td>
 </tr>
 </tbody>
 </table>
@@ -1370,15 +1375,16 @@
 <a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>├── summary-prompts/              # The exact prompts sent for each summary
 <a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>├── one-sentence-summary-files/   # One-sentence summaries
 <a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>├── tag-files/                    # Topic tags
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>├── descriptions-files/           # YouTube descriptions: summary, chapters, hashtags
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>├── video-context-files/          # On-screen context from the video (--from-video, -cc)
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>├── infographic-files/            # Infographic images
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>├── infographic-prompts/          # The exact prompts sent for each infographic
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>├── infographic-alt-text/         # Alt text for each infographic
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>├── corrected-caption-files/      # WCAG 2.1 AA / Section 508 SRT captions (-cc)
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>├── vtt-files/                    # WebVTT captions, description tracks and the Able Player page (-cc)
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>├── descriptive-transcript-files/ # Dialogue plus visual descriptions (-cc)
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>└── video-files/                  # Infographic + audio videos, and the captioned, described video (-cc)
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>├── chapter-files/                # YouTube chapters (MM:SS Title per line)
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>├── descriptions-files/           # Plain-text YouTube descriptions: description, chapters, hashtags
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>├── video-context-files/          # On-screen context from the video (--from-video, -cc)
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>├── infographic-files/            # Infographic images
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>├── infographic-prompts/          # The exact prompts sent for each infographic
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>├── infographic-alt-text/         # Alt text for each infographic
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>├── corrected-caption-files/      # WCAG 2.1 AA / Section 508 SRT captions (-cc)
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>├── vtt-files/                    # WebVTT captions, description tracks and the Able Player page (-cc)
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>├── descriptive-transcript-files/ # Dialogue plus visual descriptions (-cc)
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>└── video-files/                  # Infographic + audio videos, and the captioned, described video (-cc)
 </code></pre></div>
 <h2 id="about-the-explainer-video">About the explainer video</h2>
 <p>The video at the top of this page was made from code in <a href="https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs/blob/main/scripts/docs/explainer/build.py"><code>scripts/docs/explainer/build.py</code></a>. The slides are HTML rendered by headless Chrome, so the text on screen is exact. The narration is read one sentence at a time by Gemini TTS (<code>gemini-3.8-flash-tts</code>, voice Kore), so each caption is timed to its sentence exactly. To change the video, edit the slides or narration in that file and run:</p>
