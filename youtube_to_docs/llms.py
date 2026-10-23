@@ -35,6 +35,7 @@ from youtube_to_docs.prices import PRICES
 from youtube_to_docs.utils import (
     add_question_numbers,
     get_gcp_client,
+    is_error_response,
     normalize_model_name,
 )
 
@@ -2238,6 +2239,103 @@ def generate_tags(
         f"Summary: {summary_text}"
     )
     return _query_llm(model_name, prompt)
+
+
+_CHAPTER_LINE = re.compile(r"^\W*((?:\d{1,2}:)?\d{1,2}:\d{2})\W*\s+(.+?)\s*$")
+
+
+def _format_chapter_time(seconds: int) -> str:
+    """Formats seconds the way YouTube chapters do (MM:SS or H:MM:SS)."""
+    h, rem = divmod(seconds, 3600)
+    m, s = divmod(rem, 60)
+    return f"{h}:{m:02d}:{s:02d}" if h else f"{m:02d}:{s:02d}"
+
+
+def parse_chapters(text: str) -> str:
+    """Normalizes LLM chapter output to YouTube chapter lines.
+
+    Keeps lines that start with a timestamp, sorts them, drops duplicates and
+    chapters under 10 seconds apart, and starts the list at 00:00 as YouTube
+    requires. Returns "" if fewer than 3 chapters remain (YouTube's minimum).
+    """
+    chapters: list[tuple[int, str]] = []
+    for line in text.splitlines():
+        match = _CHAPTER_LINE.match(line.strip())
+        if not match:
+            continue
+        parts = [int(p) for p in match.group(1).split(":")]
+        while len(parts) < 3:
+            parts.insert(0, 0)
+        seconds = parts[0] * 3600 + parts[1] * 60 + parts[2]
+        title = match.group(2).strip(" -–—:|*")
+        if title:
+            chapters.append((seconds, title))
+    chapters.sort(key=lambda c: c[0])
+    if chapters:
+        chapters[0] = (0, chapters[0][1])
+    kept: list[tuple[int, str]] = []
+    for seconds, title in chapters:
+        if kept and seconds - kept[-1][0] < 10:
+            continue
+        kept.append((seconds, title))
+    if len(kept) < 3:
+        return ""
+    return "\n".join(f"{_format_chapter_time(s)} {t}" for s, t in kept)
+
+
+def generate_chapters(
+    model_name: str, transcript: str, language: str = "en"
+) -> Tuple[str, int, int]:
+    """
+    Generates YouTube chapters (one "MM:SS Title" line each) from a transcript,
+    ideally in SRT format so the timestamps are accurate.
+    Returns (chapters_text, input_tokens, output_tokens).
+    """
+    prompt = (
+        "I have included a transcript (which might be in SRT format with timestamps)."
+        "\n\n"
+        "Can you please split the video into YouTube chapters in "
+        f"{language}? "
+        "Each chapter is one line: a timestamp, a space, then a short title "
+        "(2-7 words) for that section. The first chapter must start at 00:00. "
+        "Use MM:SS, or H:MM:SS once the video passes an hour. Make 3 to 15 "
+        "chapters, each at least 10 seconds long, starting where the topic "
+        "changes. Take the timestamps from the transcript. "
+        "Return ONLY the chapter lines without any introductory or concluding "
+        "text, for example:"
+        "\n\n"
+        "00:00 Introduction\n02:50 Learning Objectives\n1:06:53 Q&A"
+        "\n\n"
+        f"Transcript: {transcript}"
+    )
+    text, input_tokens, output_tokens = _query_llm(model_name, prompt)
+    if is_error_response(text):
+        return text, input_tokens, output_tokens
+    return parse_chapters(text), input_tokens, output_tokens
+
+
+def tags_to_hashtags(tags: str) -> str:
+    """Turns comma-separated tags into hashtags, e.g. "economic development,
+    Appalachian Regional Commission" -> "#economicdevelopment
+    #AppalachianRegionalCommission"."""
+    hashtags = []
+    for tag in tags.split(","):
+        word = re.sub(r"[^\w]", "", tag)
+        if word:
+            hashtags.append(f"#{word}")
+    return " ".join(hashtags)
+
+
+def build_description(summary: str, chapters: str, tags: str) -> str:
+    """Builds a YouTube description: the summary, then the chapters, then the
+    tags as hashtags. Empty sections are left out."""
+    sections = [summary.strip()]
+    if chapters:
+        sections.append(f"Chapters:\n{chapters.strip()}")
+    hashtags = tags_to_hashtags(tags) if tags else ""
+    if hashtags:
+        sections.append(hashtags)
+    return "\n\n".join(s for s in sections if s) + "\n"
 
 
 def generate_alt_text(

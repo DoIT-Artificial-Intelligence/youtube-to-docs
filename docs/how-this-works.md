@@ -78,6 +78,7 @@ For each video, the model writes:
 | Summary | Transcript and video details | A Markdown summary |
 | One-sentence summary | Summary | One sentence for a catalog or listing |
 | Tags | Summary | Up to 5 comma-separated topic tags |
+| Description | Summary, the SRT and tags | A YouTube description: the summary, `Chapters:` with one `MM:SS Title` line per section, and the tags as hashtags |
 
 The SRT is passed with the Q&A prompt as a *timing reference*, so each answer's timestamp comes from the captions' real timings rather than a guess.
 
@@ -210,6 +211,7 @@ youtube-to-docs-artifacts/
 ├── summary-prompts/              # The exact prompts sent for each summary
 ├── one-sentence-summary-files/   # One-sentence summaries
 ├── tag-files/                    # Topic tags
+├── descriptions-files/           # YouTube descriptions: summary, chapters, hashtags
 ├── video-context-files/          # On-screen context from the video (--from-video, -cc)
 ├── infographic-files/            # Infographic images
 ├── infographic-prompts/          # The exact prompts sent for each infographic

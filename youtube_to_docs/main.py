@@ -21,8 +21,10 @@ from youtube_to_docs.infographic import (
     image_file_extension,
 )
 from youtube_to_docs.llms import (
+    build_description,
     build_summary_prompt,
     extract_speakers,
+    generate_chapters,
     generate_one_sentence_summary,
     generate_qa,
     generate_summary,
@@ -353,7 +355,8 @@ def _main_impl(
             "corrects the text (Gemini models; other models correct the text "
             "only). \n\n"
             f"Without a value, uses `{CORRECTED_CAPTIONS_DEFAULT}` (and transcribes "
-            "with `gemini-3.5-transcribe` unless `-t` is set). \n\n"
+            "with `gemini-3.5-transcribe` unless `-t` is set). Without `-m`, the "
+            "summary and other text outputs use `gemini-4-argon`. \n\n"
             "Format: `{model}` or `{model}-{source}` \n\n"
             "Source rules:\n"
             "  - `youtube` → correct the YouTube SRT "
@@ -386,11 +389,13 @@ def _main_impl(
 
     rprint(f"Running YouTube-to-docs version: {version}")
 
-    # Default to gemini-3.5-flash-lite if -cc, -i or -fv is set without explicit -m
-    if (
-        args.corrected_captions or args.infographic or args.from_video
-    ) and args.model is None:
-        args.model = "gemini-3.5-flash-lite"
+    # Without an explicit -m, -cc uses Gemini's strongest model and -i or -fv
+    # the cheaper gemini-3.5-flash-lite.
+    if args.model is None:
+        if args.corrected_captions:
+            args.model = "gemini-4-argon"
+        elif args.infographic or args.from_video:
+            args.model = "gemini-3.5-flash-lite"
 
     corrected_captions_model = None
     corrected_captions_source = None
@@ -535,6 +540,7 @@ def _main_impl(
     video_dir = os.path.join(base_dir, "video-files")
     one_sentence_summaries_dir = os.path.join(base_dir, "one-sentence-summary-files")
     tags_dir = os.path.join(base_dir, "tag-files")
+    descriptions_dir = os.path.join(base_dir, "descriptions-files")
     alt_text_dir = os.path.join(base_dir, "infographic-alt-text")
     infographic_prompts_dir = os.path.join(base_dir, "infographic-prompts")
     summary_prompts_dir = os.path.join(base_dir, "summary-prompts")
@@ -558,6 +564,7 @@ def _main_impl(
     storage.ensure_directory(video_dir)
     storage.ensure_directory(one_sentence_summaries_dir)
     storage.ensure_directory(tags_dir)
+    storage.ensure_directory(descriptions_dir)
     storage.ensure_directory(alt_text_dir)
     storage.ensure_directory(infographic_prompts_dir)
     storage.ensure_directory(summary_prompts_dir)
@@ -1790,6 +1797,68 @@ def _main_impl(
                                 row[tags_file_col] = tags_full_path
                             except Exception as e:
                                 print(f"Error writing tags: {e}")
+
+                # Description: summary, then chapters, then tags as hashtags,
+                # ready to paste into the YouTube description.
+                description_file_col = (
+                    f"Description File {model_name} from {transcript_arg}{col_suffix}"
+                )
+                description_cost_col_name = (
+                    f"{normalize_model_name(model_name)} "
+                    f"chapters cost from {transcript_arg}{col_suffix} ($)"
+                )
+                tags_val = row.get(tags_col_name)
+                if (
+                    descriptions_dir
+                    and not row.get(description_file_col)
+                    and row.get(summary_col_name)
+                    and not is_error_response(row.get(summary_col_name))
+                ):
+                    rprint(
+                        f"Generating chapters using model: {model_name} ({language})"
+                    )
+                    chapters_text, ch_input, ch_output = generate_chapters(
+                        model_name, srt_transcript, language=language
+                    )
+                    if is_error_response(chapters_text):
+                        rprint(
+                            f"[yellow]Warning: Chapter generation failed "
+                            f"({chapters_text}); description has no chapters."
+                            "[/yellow]"
+                        )
+                        chapters_text = ""
+                    description_text = build_description(
+                        row[summary_col_name],
+                        chapters_text,
+                        tags_val
+                        if isinstance(tags_val, str) and not is_error_response(tags_val)
+                        else "",
+                    )
+                    description_filename = (
+                        f"{model_name} - {video_id} - {safe_title} - "
+                        f"description (from {transcript_arg}){lang_str}.txt"
+                    )
+                    target_path = os.path.join(descriptions_dir, description_filename)
+                    try:
+                        description_full_path = storage.write_text(
+                            target_path, description_text
+                        )
+                        rprint(
+                            "Saved description: "
+                            f"{format_clickable_path(description_full_path)}"
+                        )
+                        row[description_file_col] = description_full_path
+                    except Exception as e:
+                        print(f"Error writing description: {e}")
+
+                    if verbose:
+                        input_price, output_price = get_model_pricing(model_name)
+                        if input_price is not None and output_price is not None:
+                            cost = (ch_input / 1_000_000) * input_price + (
+                                ch_output / 1_000_000
+                            ) * output_price
+                            row[description_cost_col_name] = round(cost, 2)
+                            vprint(f"Chapters cost: ${cost:.2f}")
 
                 # --- Secondary Speaker Extraction from YouTube (if applicable) ---
                 yt_speakers_text = 'float("nan")'

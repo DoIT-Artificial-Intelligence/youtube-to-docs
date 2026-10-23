@@ -536,5 +536,53 @@ class TestPricing(unittest.TestCase):
                 self.assertEqual(outp_alias, 50.0)
 
 
+class TestDescription(unittest.TestCase):
+    def test_parse_chapters_normalizes_youtube_format(self):
+        text = (
+            "Here are the chapters:\n"
+            "- 00:05 Introduction and Webinar Overview\n"
+            "**05:33** - Maryland State Perspective\n"
+            "02:50 Learning Objectives\n"
+            "02:55 Too close to the last one\n"
+            "01:06:53 Panel Q&A And Closing Remarks\n"
+        )
+        self.assertEqual(
+            llms.parse_chapters(text),
+            "00:00 Introduction and Webinar Overview\n"
+            "02:50 Learning Objectives\n"
+            "05:33 Maryland State Perspective\n"
+            "1:06:53 Panel Q&A And Closing Remarks",
+        )
+
+    def test_parse_chapters_needs_three(self):
+        self.assertEqual(llms.parse_chapters("00:00 Intro\n01:00 End"), "")
+
+    @patch("youtube_to_docs.llms._query_llm")
+    def test_generate_chapters(self, mock_query):
+        mock_query.return_value = ("0:00 A\n0:30 B\n1:00 C", 10, 5)
+        text, inp, out = llms.generate_chapters("m", "1\n00:00:00,000 --> ...")
+        self.assertEqual(text, "00:00 A\n00:30 B\n01:00 C")
+        self.assertEqual((inp, out), (10, 5))
+        self.assertIn("SRT", mock_query.call_args.args[1])
+
+    def test_tags_to_hashtags(self):
+        self.assertEqual(
+            llms.tags_to_hashtags(
+                "economic development, Appalachian Regional Commission, "
+                "grant-implementation"
+            ),
+            "#economicdevelopment #AppalachianRegionalCommission #grantimplementation",
+        )
+
+    def test_build_description(self):
+        self.assertEqual(
+            llms.build_description(
+                "The summary.\n", "00:00 Intro\n01:00 End", "a b, c"
+            ),
+            "The summary.\n\nChapters:\n00:00 Intro\n01:00 End\n\n#ab #c\n",
+        )
+        self.assertEqual(llms.build_description("S", "", ""), "S\n")
+
+
 if __name__ == "__main__":
     unittest.main()

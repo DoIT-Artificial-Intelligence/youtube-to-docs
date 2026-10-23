@@ -139,7 +139,7 @@ With no options, you get the transcript only. Add options for the outputs you wa
 | `--verbose` | More detailed logs. | Off |
 | `-V`, `--version` | Show the version. | |
 
-`-i`, `-cc` and `-fv` turn on `-m gemini-3.5-flash-lite` if you don't set `-m`. Model names and prices are on the [Pricing](pricing.md) page, and speed and cost comparisons are on the [Performance](performance.md) page.
+If you don't set `-m`, `-cc` turns on `-m gemini-4-argon`, and `-i` and `-fv` turn on `-m gemini-3.5-flash-lite`. Model names and prices are on the [Pricing](pricing.md) page, and speed and cost comparisons are on the [Performance](performance.md) page.
 
 ### Examples
 
