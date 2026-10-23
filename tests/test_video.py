@@ -317,6 +317,10 @@ class TestAccessibleVideo(unittest.TestCase):
         self.assertIn('data-state-descriptions="on"', page)
         self.assertIn('href="../dt/transcript.md"', page)
         self.assertIn("ableplayer@5.0.0/build/ableplayer.min.js", page)
+        # The Able Player fixes run after Able Player loads, before it starts.
+        self.assertLess(
+            page.index("ableplayer.min.js"), page.index("proto.showDescription")
+        )
         self.assertEqual(
             row["Player Page"], os.path.join("out", "vtt-files", "page.html")
         )

@@ -481,6 +481,84 @@ def process_accessible_video(
 ABLE_PLAYER_URL = "https://cdn.jsdelivr.net/npm/ableplayer@5.0.0/build"
 JQUERY_URL = "https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"
 
+# Able Player 5.0 pauses the video for each description and only resumes it
+# when the speech ends, so the video can stay paused: if the first
+# description comes before the browser's voices have loaded (nothing is
+# read), if the speech fails, or if Chrome drops the end of the speech.
+ABLE_PLAYER_FIXES = """
+    <script>
+      (function () {
+        const synth = window.speechSynthesis;
+        if (!window.AblePlayer || !synth) return;
+        const proto = AblePlayer.prototype;
+        // Chrome loads its voices in the background: start before Play.
+        synth.getVoices();
+        synth.addEventListener("voiceschanged", () => synth.getVoices());
+        // Chrome can drop the events of speech nothing else refers to.
+        const utterances = new Set();
+        const speak = synth.speak.bind(synth);
+        synth.speak = (utterance) => {
+          utterances.add(utterance);
+          const done = () => utterances.delete(utterance);
+          utterance.addEventListener("end", done);
+          utterance.addEventListener("error", done);
+          speak(utterance);
+        };
+        const players = new Set();
+        const showDescription = proto.showDescription;
+        proto.showDescription = function (now) {
+          players.add(this);
+          const reads = this.descReader !== "screenreader";
+          if (reads && !this.speechEnabled && synth.getVoices().length) {
+            // Speech is switched on by the first click, which can come
+            // before the voices have loaded.
+            this.speechEnabled = true;
+            this.getBrowserVoices();
+          }
+          // Only pause for a description that will be read aloud.
+          const pause = this.prefDescPause;
+          if (reads && !this.speechEnabled) this.prefDescPause = 0;
+          try {
+            showDescription.call(this, now);
+          } finally {
+            this.prefDescPause = pause;
+          }
+        };
+        // Able Player never clears this flag, so a later pause by the
+        // viewer could be undone when a description ends.
+        const playMedia = proto.playMedia;
+        proto.playMedia = function () {
+          this.pausedForDescription = false;
+          return playMedia.apply(this, arguments);
+        };
+        const handlePlay = proto.handlePlay;
+        proto.handlePlay = function (e) {
+          if (!this.paused) this.pausedForDescription = false;
+          return handlePlay.apply(this, arguments);
+        };
+        // Resume a video left paused for a description once the speech has
+        // stopped (or after a minute, if Chrome never says it ended).
+        setInterval(() => {
+          for (const player of players) {
+            const waiting = player.pausedForDescription && player.paused &&
+              player.okToPlay !== false && !synth.paused;
+            if (!waiting) {
+              player.descWaitStart = null;
+              continue;
+            }
+            player.descWaitStart = player.descWaitStart || Date.now();
+            const waited = Date.now() - player.descWaitStart;
+            const quiet = !synth.speaking && !synth.pending;
+            if ((quiet && waited > 1500) || waited > 60000) {
+              if (!quiet) synth.cancel();
+              player.descWaitStart = null;
+              player.playMedia();
+            }
+          }
+        }, 500);
+      })();
+    </script>"""
+
 
 def player_page_html(
     title: str,
@@ -572,7 +650,7 @@ def player_page_html(
       </video>{copies}{transcript}
     </main>
     <script src="{JQUERY_URL}"></script>
-    <script src="{ABLE_PLAYER_URL}/ableplayer.min.js"></script>
+    <script src="{ABLE_PLAYER_URL}/ableplayer.min.js"></script>{ABLE_PLAYER_FIXES}
   </body>
 </html>
 """
