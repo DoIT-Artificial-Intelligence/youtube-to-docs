@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from youtube_to_docs.storage import GoogleDriveStorage
+from youtube_to_docs.storage import GoogleDriveStorage, _pandoc_format
 
 
 class DriveTestCase(unittest.TestCase):
@@ -98,6 +98,12 @@ class TestGoogleDrivePlainTextFiles(DriveTestCase):
         self.assertEqual(data, b"text")
         read.assert_called_once()
         self.mock_service.files.return_value.get_media.assert_not_called()
+
+
+class TestPandocFormat(unittest.TestCase):
+    def test_text_files_keep_line_breaks(self):
+        self.assertEqual(_pandoc_format("a - tags.txt"), "markdown+hard_line_breaks")
+        self.assertEqual(_pandoc_format("a - summary.md"), "md")
 
 
 if __name__ == "__main__":

@@ -166,6 +166,12 @@ def _escape_drive_query_value(value: str) -> str:
 GOOGLE_DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 
 
+def _pandoc_format(filename: str) -> str:
+    """Pandoc input format for a .md or .txt file. Text files keep every line
+    break; plain Markdown would join single lines into one paragraph."""
+    return "markdown+hard_line_breaks" if filename.endswith(".txt") else "md"
+
+
 def get_google_credentials(scopes: list[str] | None = None):
     """Load the saved Google OAuth token, refreshing it or signing in again.
 
@@ -530,7 +536,10 @@ class GoogleDriveStorage(Storage):
                 # Google Drive v3 API converts text/html to Google Docs very well.
                 # Extra args to preserve table formatting
                 html_content = pypandoc.convert_text(
-                    content, to="html", format="md", extra_args=["--wrap=preserve"]
+                    content,
+                    to="html",
+                    format=_pandoc_format(filename),
+                    extra_args=["--wrap=preserve"],
                 )
                 upload_content = html_content.encode("utf-8")
                 mimetype = "text/html"
@@ -1102,7 +1111,7 @@ class M365Storage(Storage):
                 pypandoc.convert_text(
                     content,
                     to="docx",
-                    format="md",
+                    format=_pandoc_format(filename),
                     outputfile=tmp_docx,
                     extra_args=["--wrap=preserve"],
                 )
