@@ -25,11 +25,13 @@ from youtube_to_docs.llms import (
     build_summary_prompt,
     extract_speakers,
     generate_chapters,
+    generate_description_text,
     generate_one_sentence_summary,
     generate_qa,
     generate_summary,
     generate_tags,
     get_model_pricing,
+    parse_chapters,
 )
 from youtube_to_docs.models import MODEL_SUITES
 from youtube_to_docs.post_process import post_process_transcript
@@ -540,6 +542,7 @@ def _main_impl(
     video_dir = os.path.join(base_dir, "video-files")
     one_sentence_summaries_dir = os.path.join(base_dir, "one-sentence-summary-files")
     tags_dir = os.path.join(base_dir, "tag-files")
+    chapters_dir = os.path.join(base_dir, "chapter-files")
     descriptions_dir = os.path.join(base_dir, "descriptions-files")
     alt_text_dir = os.path.join(base_dir, "infographic-alt-text")
     infographic_prompts_dir = os.path.join(base_dir, "infographic-prompts")
@@ -564,6 +567,7 @@ def _main_impl(
     storage.ensure_directory(video_dir)
     storage.ensure_directory(one_sentence_summaries_dir)
     storage.ensure_directory(tags_dir)
+    storage.ensure_directory(chapters_dir)
     storage.ensure_directory(descriptions_dir)
     storage.ensure_directory(alt_text_dir)
     storage.ensure_directory(infographic_prompts_dir)
@@ -1271,71 +1275,128 @@ def _main_impl(
                 )
 
             def write_description(model_name: str) -> None:
-                """Writes the YouTube description: the summary, then chapters
-                from the SRT, then the tags as hashtags."""
+                """Saves the chapters (from the SRT) to chapter-files/, then the
+                plain-text YouTube description to descriptions-files/: a short
+                description, the chapters, then the tags as hashtags."""
                 summary_col_name = (
                     f"Summary Text {model_name} from {transcript_arg}{col_suffix}"
                 )
                 tags_col_name = f"Tags {transcript_arg} {model_name} model{col_suffix}"
+                chapters_col = (
+                    f"Chapters {model_name} from {transcript_arg}{col_suffix}"
+                )
+                chapters_file_col = (
+                    f"Chapters File {model_name} from {transcript_arg}{col_suffix}"
+                )
+                description_col = (
+                    f"Description Text {model_name} from {transcript_arg}{col_suffix}"
+                )
                 description_file_col = (
                     f"Description File {model_name} from {transcript_arg}{col_suffix}"
                 )
-                description_cost_col_name = (
-                    f"{normalize_model_name(model_name)} "
-                    f"chapters cost from {transcript_arg}{col_suffix} ($)"
-                )
-                tags_val = row.get(tags_col_name)
-                if (
-                    descriptions_dir
-                    and not row.get(description_file_col)
-                    and row.get(summary_col_name)
-                    and not is_error_response(row.get(summary_col_name))
-                ):
+                summary = row.get(summary_col_name)
+                if not summary or is_error_response(summary):
+                    return
+
+                def add_cost(kind: str, tokens_in: int, tokens_out: int) -> None:
+                    if not verbose:
+                        return
+                    input_price, output_price = get_model_pricing(model_name)
+                    if input_price is None or output_price is None:
+                        return
+                    cost = (tokens_in / 1_000_000) * input_price + (
+                        tokens_out / 1_000_000
+                    ) * output_price
+                    row[
+                        f"{normalize_model_name(model_name)} "
+                        f"{kind} cost from {transcript_arg}{col_suffix} ($)"
+                    ] = round(cost, 2)
+                    vprint(f"{kind.capitalize()} cost: ${cost:.2f}")
+
+                # Chapters: reuse the saved ones, else generate and save them.
+                chapters_text = row.get(chapters_col)
+                if not isinstance(chapters_text, str) or not chapters_text.strip():
+                    chapters_text = ""
+                    if row.get(chapters_file_col):
+                        try:
+                            chapters_text = parse_chapters(
+                                storage.read_text(str(row[chapters_file_col]))
+                            )
+                        except Exception as e:
+                            print(f"Warning: Failed to read chapters file: {e}")
+                if not chapters_text and chapters_dir:
                     rprint(
                         f"Generating chapters using model: {model_name} ({language})"
                     )
                     chapters_text, ch_input, ch_output = generate_chapters(
                         model_name, srt_transcript, language=language
                     )
-                    if is_error_response(chapters_text):
+                    add_cost("chapters", ch_input, ch_output)
+                    if is_error_response(chapters_text) or not chapters_text:
                         rprint(
-                            f"[yellow]Warning: Chapter generation failed "
-                            f"({chapters_text}); description has no chapters."
-                            "[/yellow]"
+                            "[yellow]Warning: Chapter generation failed "
+                            f"({chapters_text or 'fewer than 3 chapters'}); "
+                            "the description has no chapters.[/yellow]"
                         )
                         chapters_text = ""
-                    description_text = build_description(
-                        row[summary_col_name],
-                        chapters_text,
-                        tags_val
-                        if isinstance(tags_val, str) and not is_error_response(tags_val)
-                        else "",
-                    )
-                    description_filename = (
-                        f"{model_name} - {video_id} - {safe_title} - "
-                        f"description (from {transcript_arg}){lang_str}.txt"
-                    )
-                    target_path = os.path.join(descriptions_dir, description_filename)
-                    try:
-                        description_full_path = storage.write_text(
-                            target_path, description_text
+                    else:
+                        chapters_filename = (
+                            f"{model_name} - {video_id} - {safe_title} - "
+                            f"chapters (from {transcript_arg}){lang_str}.txt"
                         )
-                        rprint(
-                            "Saved description: "
-                            f"{format_clickable_path(description_full_path)}"
-                        )
-                        row[description_file_col] = description_full_path
-                    except Exception as e:
-                        print(f"Error writing description: {e}")
+                        target_path = os.path.join(chapters_dir, chapters_filename)
+                        try:
+                            chapters_full_path = storage.write_text(
+                                target_path, chapters_text
+                            )
+                            rprint(
+                                "Saved chapters: "
+                                f"{format_clickable_path(chapters_full_path)}"
+                            )
+                            row[chapters_file_col] = chapters_full_path
+                        except Exception as e:
+                            print(f"Error writing chapters: {e}")
+                if chapters_text:
+                    row[chapters_col] = chapters_text
 
-                    if verbose:
-                        input_price, output_price = get_model_pricing(model_name)
-                        if input_price is not None and output_price is not None:
-                            cost = (ch_input / 1_000_000) * input_price + (
-                                ch_output / 1_000_000
-                            ) * output_price
-                            row[description_cost_col_name] = round(cost, 2)
-                            vprint(f"Chapters cost: ${cost:.2f}")
+                if not descriptions_dir or row.get(description_file_col):
+                    return
+                rprint(f"Generating description using model: {model_name} ({language})")
+                intro, d_input, d_output = generate_description_text(
+                    model_name, summary, language=language
+                )
+                add_cost("description", d_input, d_output)
+                if is_error_response(intro):
+                    rprint(
+                        f"[yellow]Warning: Description generation failed "
+                        f"({intro}); skipping file save.[/yellow]"
+                    )
+                    return
+                tags_val = row.get(tags_col_name)
+                description_text = build_description(
+                    intro,
+                    chapters_text,
+                    tags_val
+                    if isinstance(tags_val, str) and not is_error_response(tags_val)
+                    else "",
+                )
+                row[description_col] = description_text
+                description_filename = (
+                    f"{model_name} - {video_id} - {safe_title} - "
+                    f"description (from {transcript_arg}){lang_str}.txt"
+                )
+                target_path = os.path.join(descriptions_dir, description_filename)
+                try:
+                    description_full_path = storage.write_text(
+                        target_path, description_text
+                    )
+                    rprint(
+                        "Saved description: "
+                        f"{format_clickable_path(description_full_path)}"
+                    )
+                    row[description_file_col] = description_full_path
+                except Exception as e:
+                    print(f"Error writing description: {e}")
 
             if not transcript:
                 vprint(
