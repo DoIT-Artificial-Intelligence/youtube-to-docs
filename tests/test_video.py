@@ -314,6 +314,7 @@ class TestAccessibleVideo(unittest.TestCase):
         self.assertIn('<track kind="captions" src="captions.vtt"', page)
         self.assertIn('<track kind="descriptions" src="extended.vtt"', page)
         self.assertIn('data-desc-pause-default="on"', page)
+        self.assertIn('data-state-descriptions="on"', page)
         self.assertIn('href="../dt/transcript.md"', page)
         self.assertIn("ableplayer@5.0.0/build/ableplayer.min.js", page)
         self.assertEqual(
@@ -350,7 +351,7 @@ class TestAccessibleVideo(unittest.TestCase):
             column="Embed Page",
         )
         page = storage.write_text.call_args.args[1]
-        self.assertIn('data-state-captions="on" data-youtube-id="Fpg75xTOMe4">', page)
+        self.assertIn('data-state-descriptions="on" data-youtube-id="Fpg75xTOMe4">', page)
         self.assertNotIn("<source", page)
         self.assertIn("if (true) {", page)
         self.assertIn('href="https://docs.google.com/document/d/t/edit"', page)
