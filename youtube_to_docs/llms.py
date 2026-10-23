@@ -2326,10 +2326,55 @@ def tags_to_hashtags(tags: str) -> str:
     return " ".join(hashtags)
 
 
-def build_description(summary: str, chapters: str, tags: str) -> str:
-    """Builds a YouTube description: the summary, then the chapters, then the
-    tags as hashtags. Empty sections are left out."""
-    sections = [summary.strip()]
+def to_plain_text(text: str) -> str:
+    """Strips Markdown so text pastes cleanly into a plain-text box such as the
+    YouTube description: no headings, bullets, numbering, emphasis, links,
+    indentation or rules, and at most one blank line between paragraphs."""
+    lines = []
+    for line in text.replace("\r\n", "\n").split("\n"):
+        line = line.strip()
+        if re.fullmatch(r"[-*_=]{3,}", line):
+            continue
+        line = re.sub(r"^#{1,6}\s+", "", line)
+        line = re.sub(r"^>\s?", "", line)
+        line = re.sub(r"^(?:[-*+•]|\d+[.)])\s+", "", line)
+        line = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", line)
+        line = re.sub(r"(\*\*|__|\*|`)", "", line)
+        lines.append(line.strip())
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
+
+
+def generate_description_text(
+    model_name: str, summary_text: str, language: str = "en"
+) -> Tuple[str, int, int]:
+    """
+    Writes a short plain-text YouTube description from the summary.
+    Returns (description_text, input_tokens, output_tokens).
+    """
+    prompt = (
+        "I have included a summary of a video."
+        "\n\n"
+        "Can you please write the description for this video's YouTube page in "
+        f"{language}? "
+        "YouTube descriptions are plain text, so do not use Markdown: no "
+        "headings, bullet points, numbered lists, bold, italics, links or "
+        "indentation. Write 1 to 3 short paragraphs (under 1,500 characters in "
+        "all) that say what the video covers and who speaks. "
+        "Return ONLY the description without any introductory or concluding "
+        "text."
+        "\n\n"
+        f"Summary: {summary_text}"
+    )
+    text, input_tokens, output_tokens = _query_llm(model_name, prompt)
+    if is_error_response(text):
+        return text, input_tokens, output_tokens
+    return to_plain_text(text), input_tokens, output_tokens
+
+
+def build_description(description: str, chapters: str, tags: str) -> str:
+    """Builds a plain-text YouTube description: the description, then the
+    chapters, then the tags as hashtags. Empty sections are left out."""
+    sections = [to_plain_text(description)]
     if chapters:
         sections.append(f"Chapters:\n{chapters.strip()}")
     hashtags = tags_to_hashtags(tags) if tags else ""

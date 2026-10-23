@@ -113,7 +113,8 @@ Files are saved in folders next to the CSV, and each one is linked from a CSV co
 
 - `srt-files/`: SRT transcripts (YouTube and AI)
 - `summary-files/`, `one-sentence-summary-files/`, `tag-files/`
-- `descriptions-files/`: a YouTube description (summary, chapters, hashtags) ready to paste
+- `chapter-files/`: YouTube chapters, one `MM:SS Title` line each
+- `descriptions-files/`: a plain-text YouTube description (description, chapters, hashtags) ready to paste
 - `qa-files/`: Q&A tables, with "Timestamp" and "Timestamp URL" links checked against the YouTube SRT timings
 - `infographic-alt-text/`, `infographic-prompts/`, `summary-prompts/`
 - `corrected-caption-files/`: corrected SRT captions

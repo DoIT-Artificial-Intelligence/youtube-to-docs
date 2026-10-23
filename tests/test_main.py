@@ -1213,6 +1213,7 @@ class TestMain(unittest.TestCase):
 @patch("youtube_to_docs.main.generate_qa", return_value=("nan", 1, 1))
 @patch("youtube_to_docs.main.generate_one_sentence_summary", return_value=("S", 1, 1))
 @patch("youtube_to_docs.main.generate_tags", return_value=("tag", 1, 1))
+@patch("youtube_to_docs.main.generate_description_text", return_value=("D", 1, 1))
 @patch(
     "youtube_to_docs.main.generate_chapters",
     return_value=("00:00 Intro\n00:20 Middle\n00:40 End", 1, 1),
@@ -1263,7 +1264,7 @@ class TestCorrectedCaptionsDefaults(unittest.TestCase):
 
     def test_bare_flag_summarizes_with_gemini_4_argon(self, *mocks):
         mock_chapters, *_ = mocks
-        mock_summary = mocks[5]
+        mock_summary = mocks[6]
         self._run(mocks, "-cc")
         self.assertEqual(mock_summary.call_args.args[0], "gemini-4-argon")
         self.assertEqual(mock_chapters.call_args.args[0], "gemini-4-argon")
@@ -1347,43 +1348,68 @@ class TestCorrectedCaptionsDefaults(unittest.TestCase):
 @patch("youtube_to_docs.main.resolve_video_ids", return_value=["vid1"])
 @patch("youtube_to_docs.main.fetch_transcript", return_value=("Hi.", True, []))
 @patch("youtube_to_docs.main.generate_summary")
+@patch("youtube_to_docs.main.generate_qa", return_value=("nan", 1, 1))
+@patch("youtube_to_docs.main.extract_speakers", return_value=("Jane Doe", 1, 1))
+@patch(
+    "youtube_to_docs.main.generate_description_text",
+    return_value=("A plain description.", 1, 1),
+)
 @patch(
     "youtube_to_docs.main.generate_chapters",
     return_value=("00:00 Intro\n00:20 Middle\n00:40 End", 1, 1),
 )
 class TestDescriptionForExistingRow(unittest.TestCase):
-    def test_existing_summary_gets_a_description(self, mock_chapters, mock_summary, *_):
-        model = "gemini-3.5-flash-lite"
+    model = "gemini-3.5-flash-lite"
+
+    def _write_csv(self, out, **extra):
+        pl.DataFrame(
+            {
+                "URL": ["https://www.youtube.com/watch?v=vid1"],
+                "Title": ["Title"],
+                f"Summary Text {self.model} from youtube": ["# **The summary.**"],
+                f"Tags youtube {self.model} model": ["economic development, ARC"],
+                f"Speakers {self.model} from youtube": ["Jane Doe"],
+                f"QA Text {self.model} from youtube": ["nan"],
+                **{k: [v] for k, v in extra.items()},
+            }
+        ).write_csv(out)
+
+    def test_existing_summary_gets_chapters_and_a_description(
+        self, mock_chapters, mock_description, *mocks
+    ):
+        mock_summary = mocks[2]
         with tempfile.TemporaryDirectory() as tmp:
             out = os.path.join(tmp, "out.csv")
-            pl.DataFrame(
-                {
-                    "URL": ["https://www.youtube.com/watch?v=vid1"],
-                    "Title": ["Title"],
-                    f"Summary Text {model} from youtube": ["The summary."],
-                    f"Tags youtube {model} model": ["economic development, ARC"],
-                    f"Speakers {model} from youtube": ["Jane Doe"],
-                    f"QA Text {model} from youtube": ["nan"],
-                }
-            ).write_csv(out)
-            with (
-                patch("youtube_to_docs.main.generate_qa", return_value=("nan", 1, 1)),
-                patch(
-                    "youtube_to_docs.main.extract_speakers",
-                    return_value=("Jane Doe", 1, 1),
-                ),
-            ):
-                main.main(["vid1", "-m", model, "-o", out])
+            self._write_csv(out)
+            main.main(["vid1", "-m", self.model, "-o", out])
             mock_summary.assert_not_called()
             mock_chapters.assert_called_once()
+            self.assertEqual(mock_description.call_args.args[1], "# **The summary.**")
+            (chapters,) = os.listdir(os.path.join(tmp, "chapter-files"))
+            self.assertTrue(chapters.endswith("chapters (from youtube).txt"))
             folder = os.path.join(tmp, "descriptions-files")
             (name,) = os.listdir(folder)
             with open(os.path.join(folder, name), encoding="utf-8") as f:
                 self.assertEqual(
                     f.read(),
-                    "The summary.\n\nChapters:\n00:00 Intro\n00:20 Middle\n"
-                    "00:40 End\n\n#economicdevelopment #ARC\n",
+                    "A plain description.\n\nChapters:\n00:00 Intro\n"
+                    "00:20 Middle\n00:40 End\n\n#economicdevelopment #ARC\n",
                 )
+            df = pl.read_csv(out)
+            self.assertIn(f"Chapters File {self.model} from youtube", df.columns)
+
+    def test_saved_chapters_are_reused(self, mock_chapters, mock_description, *_):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = os.path.join(tmp, "out.csv")
+            self._write_csv(
+                out,
+                **{
+                    f"Chapters {self.model} from youtube": ("00:00 A\n01:00 B\n02:00 C")
+                },
+            )
+            main.main(["vid1", "-m", self.model, "-o", out])
+            mock_chapters.assert_not_called()
+            mock_description.assert_called_once()
 
 
 if __name__ == "__main__":

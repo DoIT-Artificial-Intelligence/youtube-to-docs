@@ -574,6 +574,22 @@ class TestDescription(unittest.TestCase):
             "#economicdevelopment #AppalachianRegionalCommission #grantimplementation",
         )
 
+    def test_to_plain_text(self):
+        self.assertEqual(
+            llms.to_plain_text(
+                "# **Title**\n\n---\n1. **Role:**\n   * ARISE is [big](http://x).\n"
+                "   - Item `two`\n\n\n\nEnd"
+            ),
+            "Title\n\nRole:\nARISE is big.\nItem two\n\nEnd",
+        )
+
+    @patch("youtube_to_docs.llms._query_llm")
+    def test_generate_description_text_is_plain(self, mock_query):
+        mock_query.return_value = ("**Bold** start.\n\n* A point", 3, 2)
+        text, inp, out = llms.generate_description_text("m", "summary")
+        self.assertEqual(text, "Bold start.\n\nA point")
+        self.assertIn("plain text", mock_query.call_args.args[1])
+
     def test_build_description(self):
         self.assertEqual(
             llms.build_description(
