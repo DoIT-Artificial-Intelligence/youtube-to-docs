@@ -239,6 +239,31 @@ def normalize_srt(content: str) -> str:
     return "\n\n".join(blocks) + "\n"
 
 
+def srt_to_transcript(content: str) -> str:
+    """
+    The words of an SRT as a plain-text transcript, with a new paragraph at
+    each line that starts with a `[Name]` label (or a sound in brackets).
+    """
+    paragraphs: List[List[str]] = []
+    for block in normalize_srt(content).split("\n\n"):
+        lines = block.split("\n")
+        timing = next((i for i, line in enumerate(lines) if "-->" in line), None)
+        if timing is None:
+            continue
+        for line in lines[timing + 1 :]:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith("[") or not paragraphs:
+                paragraphs.append([])
+            paragraphs[-1].append(line)
+    return (
+        "\n\n".join(" ".join(words) for words in paragraphs) + "\n"
+        if paragraphs
+        else ""
+    )
+
+
 def format_timestamp(seconds: float) -> str:
     """Formats seconds as an SRT timestamp (HH:MM:SS,mmm)."""
     ms = max(0, round(seconds * 1000))
@@ -1803,6 +1828,35 @@ def _save_webvtt(
     rprint(f"Saved captions WebVTT: {format_clickable_path(saved)}")
 
 
+def _save_transcript(
+    row: Dict[str, Any],
+    storage: Any,
+    srt_path: str,
+    model_name: str,
+    source: str,
+    video_id: str,
+    safe_title: str,
+    transcripts_dir: str,
+) -> None:
+    """Writes the plain-text transcript of the corrected captions, if missing."""
+    col = f"Transcript File {model_name} corrected from {source}"
+    path = join_posix(
+        transcripts_dir,
+        f"{model_name} - {video_id} - {safe_title} - "
+        f"corrected captions (from {source}).txt",
+    )
+    if storage.exists(path):
+        row[col] = row.get(col) or path
+        return
+    try:
+        saved = storage.write_text(path, srt_to_transcript(storage.read_text(srt_path)))
+    except Exception as e:
+        print(f"Error writing corrected transcript: {e}")
+        return
+    row[col] = saved
+    rprint(f"Saved corrected transcript: {format_clickable_path(saved)}")
+
+
 def process_corrected_captions(
     *,
     row: Dict[str, Any],
@@ -1819,7 +1873,8 @@ def process_corrected_captions(
     vprint: Callable[..., None] = print,
 ) -> Optional[CaptionFiles]:
     """
-    Writes a corrected SRT for the video (`-cc`), and a WebVTT copy for
+    Writes a corrected SRT for the video (`-cc`) to the SRT folder, its
+    plain-text transcript to the transcript folder, and a WebVTT copy for
     websites. `source` is the SRT to correct ("youtube", an STT model, or None
     for the most relevant AI SRT); the other transcript is used as the
     reference. Skips if the output exists. Returns the files used, or None if
@@ -1857,12 +1912,22 @@ def process_corrected_captions(
 
     col = f"Corrected Captions File {model_name} from {chosen}"
     path = join_posix(
-        dirs["corrected_captions"],
+        dirs["srt"],
         f"{model_name} - {video_id} - {safe_title} - "
         f"corrected captions (from {chosen}).srt",
     )
 
     def done(saved: str) -> CaptionFiles:
+        _save_transcript(
+            row,
+            storage,
+            saved,
+            model_name,
+            chosen,
+            video_id,
+            safe_title,
+            dirs["transcript"],
+        )
         _save_webvtt(
             row, storage, saved, model_name, chosen, video_id, safe_title, dirs["vtt"]
         )

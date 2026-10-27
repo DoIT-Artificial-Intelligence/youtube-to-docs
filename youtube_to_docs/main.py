@@ -336,8 +336,8 @@ def _main_impl(
         help=(
             "Make the video accessible under WCAG 2.1 Level AA and Section 508 "
             "(https://www.section508.gov/create/captions-transcripts/): \n"
-            "- Corrected captions (`corrected-caption-files/` SRT and "
-            "`vtt-files/` WebVTT): timing checked word by word against a second "
+            "- Corrected captions (`srt-files/` SRT, `transcript-files/` text "
+            "and `vtt-files/` WebVTT): timing checked word by word against a second "
             "transcript, every speaker named on each change (`[Name]`) from "
             "diarization and the names and speaking times seen in the video, "
             "misheard words, names, punctuation, fillers, sounds and missed "
@@ -548,7 +548,6 @@ def _main_impl(
     infographic_prompts_dir = os.path.join(base_dir, "infographic-prompts")
     summary_prompts_dir = os.path.join(base_dir, "summary-prompts")
     srt_dir = os.path.join(base_dir, "srt-files")
-    corrected_captions_dir = os.path.join(base_dir, "corrected-caption-files")
     vtt_dir = os.path.join(base_dir, "vtt-files")
     descriptive_transcripts_dir = os.path.join(base_dir, "descriptive-transcript-files")
     video_context_dir = os.path.join(base_dir, "video-context-files")
@@ -574,7 +573,6 @@ def _main_impl(
     storage.ensure_directory(summary_prompts_dir)
     storage.ensure_directory(srt_dir)
     if corrected_captions_model:
-        storage.ensure_directory(corrected_captions_dir)
         storage.ensure_directory(vtt_dir)
         storage.ensure_directory(descriptive_transcripts_dir)
     if from_video_modes or corrected_captions_model:
@@ -2605,7 +2603,7 @@ def _main_impl(
                 url=url,
                 dirs={
                     "srt": srt_dir,
-                    "corrected_captions": corrected_captions_dir,
+                    "transcript": transcripts_dir,
                     "vtt": vtt_dir,
                     "video_context": video_context_dir,
                 },

@@ -111,13 +111,12 @@ Set `transcript_source` to an STT model, e.g. `'gemini-3.5-transcribe'`, `'gemin
 
 Files are saved in folders next to the CSV, and each one is linked from a CSV column:
 
-- `srt-files/`: SRT transcripts (YouTube and AI)
+- `srt-files/`: SRT transcripts (YouTube, AI and the `-cc` corrected captions)
 - `summary-files/`, `one-sentence-summary-files/`, `tag-files/`
 - `chapter-files/`: YouTube chapters, one `MM:SS Title` line each
 - `descriptions-files/`: a plain-text YouTube description (description, chapters, hashtags) ready to paste
 - `qa-files/`: Q&A tables, with "Timestamp" and "Timestamp URL" links checked against the YouTube SRT timings
 - `infographic-alt-text/`, `infographic-prompts/`, `summary-prompts/`
-- `corrected-caption-files/`: corrected SRT captions
 - `vtt-files/`: WebVTT captions and descriptions tracks, and the Able Player page
 - `descriptive-transcript-files/`: the dialogue by speaker, with descriptions of the visual information
 - `video-files/`: the original video, and the copy with captions burned in and descriptions narrated
