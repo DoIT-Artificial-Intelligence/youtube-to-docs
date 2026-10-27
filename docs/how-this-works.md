@@ -131,7 +131,7 @@ File names end in `({model}-{language})`, e.g. `(gcp-translate-es)`, to show how
 
 `-cc` / `--corrected-captions` makes the original video accessible under WCAG 2.1 Level AA and Section 508. Without a value it uses `gemini-4-argon-gemini-3.5-transcribe`: the audio is transcribed with `gemini-3.5-transcribe` (unless `-t` is set) and the captions are corrected with `gemini-4-argon`. The format is `{model}` or `{model}-{source}`, e.g. `gemini-4-argon-youtube`.
 
-**Captions** (`corrected-caption-files/`, and WebVTT in `vtt-files/`):
+**Captions** (SRT in `srt-files/`, a plain-text transcript in `transcript-files/`, and WebVTT in `vtt-files/`):
 
 1. **Timing.** The source SRT is aligned word by word with a second transcript of the same audio (YouTube's captions, or the STT transcript when correcting YouTube's), and cues with broken timestamps are re-timed.
 2. **Speakers.** Every cue is given a speaker, in windows of about 20 minutes, from diarization labels, the second transcript's speaker changes and the **on-screen context**: names and titles read from name plates, with the times each person is seen speaking. With Gemini, this context comes from one agentic request to the video, unless `--from-video` already made it.
@@ -203,8 +203,8 @@ The CSV (written with `polars`) has a row per video, with its details, the path 
 ```text
 youtube-to-docs-artifacts/
 ├── youtube-docs.csv              # One row per video: details, file paths, costs
-├── transcript-files/             # Plain-text transcripts
-├── srt-files/                    # Timed SRT transcripts
+├── transcript-files/             # Plain-text transcripts, including the corrected captions (-cc)
+├── srt-files/                    # Timed SRT transcripts, including the WCAG 2.1 AA / Section 508 corrected captions (-cc)
 ├── audio-files/                  # Downloaded audio (for speech-to-text) and audio summaries
 ├── speaker-extraction-files/     # Speakers and their titles
 ├── qa-files/                     # Q&A tables with timestamp links
@@ -218,7 +218,6 @@ youtube-to-docs-artifacts/
 ├── infographic-files/            # Infographic images
 ├── infographic-prompts/          # The exact prompts sent for each infographic
 ├── infographic-alt-text/         # Alt text for each infographic
-├── corrected-caption-files/      # WCAG 2.1 AA / Section 508 SRT captions (-cc)
 ├── vtt-files/                    # WebVTT captions, description tracks and the Able Player page (-cc)
 ├── descriptive-transcript-files/ # Dialogue plus visual descriptions (-cc)
 └── video-files/                  # Infographic + audio videos, and the captioned, described video (-cc)

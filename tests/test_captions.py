@@ -97,6 +97,21 @@ class TestParsing(unittest.TestCase):
         self.assertFalse(cues[2].turn_start)
         self.assertAlmostEqual(cues[2].end, cues[3].start)
 
+    def test_srt_to_transcript_paragraph_per_speaker(self):
+        content = (
+            "1\n00:00:01,000 --> 00:00:02,000\n"
+            "[Jane Doe] Good afternoon\nand welcome.\n\n"
+            "2\n00:00:02,000 --> 00:00:03,000\nLet's begin.\n[John Roe] Thanks.\n\n"
+            # One-line cue, as a Google Doc exports it.
+            "3 00:00:03,000 --> 00:00:04,000 Sure.\n"
+        )
+        self.assertEqual(
+            cc.srt_to_transcript(content),
+            "[Jane Doe] Good afternoon and welcome. Let's begin.\n\n"
+            "[John Roe] Thanks. Sure.\n",
+        )
+        self.assertEqual(cc.srt_to_transcript(""), "")
+
 
 class TestAlignmentAndTiming(unittest.TestCase):
     def test_align_blocks_match_global_diff(self):
@@ -505,7 +520,7 @@ class TestProcessCorrectedCaptions(unittest.TestCase):
                 url="https://www.youtube.com/watch?v=vid",
                 dirs={
                     "srt": "srt",
-                    "corrected_captions": "cc",
+                    "transcript": "txt",
                     "vtt": "vtt",
                     "video_context": "ctx",
                 },
@@ -533,7 +548,7 @@ class TestProcessCorrectedCaptions(unittest.TestCase):
         )
         self.assertEqual(
             row["Corrected Captions File gemini-4-argon from gemini-3.5-transcribe"],
-            "cc/gemini-4-argon - vid - Title - "
+            "srt/gemini-4-argon - vid - Title - "
             "corrected captions (from gemini-3.5-transcribe).srt",
         )
         # A WebVTT copy for websites (<track kind="captions">).
@@ -546,6 +561,19 @@ class TestProcessCorrectedCaptions(unittest.TestCase):
         self.assertIn("[Jane Doe] Hi &amp; bye.", vtt)
         self.assertEqual(
             row["Captions VTT File gemini-4-argon from gemini-3.5-transcribe"], vtt_path
+        )
+        # And a plain-text transcript of the corrected captions.
+        txt_path = (
+            "txt/gemini-4-argon - vid - Title - "
+            "corrected captions (from gemini-3.5-transcribe).txt"
+        )
+        self.assertEqual(
+            row["Transcript File gemini-4-argon corrected from gemini-3.5-transcribe"],
+            txt_path,
+        )
+        self.assertIn(
+            (txt_path, "[Jane Doe] Hi & bye.\n"),
+            [c.args for c in storage.write_text.call_args_list],
         )
 
     def test_missing_source_falls_back_to_youtube(self):
@@ -568,7 +596,9 @@ class TestProcessCorrectedCaptions(unittest.TestCase):
         self.assertEqual(correct.call_args.kwargs["reference_srt"], "STT")
 
     def test_skips_when_output_exists(self):
-        path = "cc/gemini-4-argon - vid - Title - corrected captions (from youtube).srt"
+        path = (
+            "srt/gemini-4-argon - vid - Title - corrected captions (from youtube).srt"
+        )
         files = {"srt/youtube generated - vid - Title.srt": "YT", path: "done"}
         row = {}
         correct, ctx, _ = self._run(row, "youtube", "youtube", files)
@@ -576,6 +606,22 @@ class TestProcessCorrectedCaptions(unittest.TestCase):
         ctx.assert_not_called()
         self.assertEqual(
             row["Corrected Captions File gemini-4-argon from youtube"], path
+        )
+
+    def test_existing_captions_get_missing_transcript(self):
+        path = (
+            "srt/gemini-4-argon - vid - Title - corrected captions (from youtube).srt"
+        )
+        files = {
+            "srt/youtube generated - vid - Title.srt": "YT",
+            path: "1\n00:00:01,000 --> 00:00:02,000\n[A] Hi\n",
+        }
+        row = {}
+        correct, _, _ = self._run(row, "youtube", "youtube", files)
+        correct.assert_not_called()
+        self.assertEqual(
+            row["Transcript File gemini-4-argon corrected from youtube"],
+            "txt/gemini-4-argon - vid - Title - corrected captions (from youtube).txt",
         )
 
     def test_no_srt_does_nothing(self):

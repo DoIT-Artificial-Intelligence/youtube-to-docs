@@ -98,10 +98,11 @@ def process_video(
             e.g., 'gemini-flash', 'gemini-pro', 'gemini-flash-pro-image', 'gcp-pro',
             or 'anthropic-opus'.
         corrected_captions: Make the video accessible (WCAG 2.1 Level AA and
-            Section 508): corrected captions (SRT in 'corrected-caption-files/',
-            WebVTT in 'vtt-files/') with real speaker names on every change and
-            corrected words, sounds and timing; audio description of the slides
-            and other visual information (WebVTT descriptions tracks in
+            Section 508): corrected captions (SRT in 'srt-files/', a
+            plain-text transcript in 'transcript-files/', WebVTT in
+            'vtt-files/') with real speaker names on every change and corrected
+            words, sounds and timing; audio description of the slides and other
+            visual information (WebVTT descriptions tracks in
             'vtt-files/' and a descriptive transcript in
             'descriptive-transcript-files/'); and in 'video-files/' the original
             video plus a copy with the captions burned in and the descriptions

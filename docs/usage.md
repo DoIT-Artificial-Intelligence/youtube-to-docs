@@ -233,7 +233,8 @@ youtube-to-docs VIDEO_ID -t gcp-chirp3 -cc gemini-3.5-flash-lite-gcp-chirp3
 
 | Output | Folder | Use |
 | :--- | :--- | :--- |
-| `… corrected captions (from {source}).srt` | `corrected-caption-files/` | Captions for YouTube or any player |
+| `… corrected captions (from {source}).srt` | `srt-files/` | Captions for YouTube or any player |
+| `… corrected captions (from {source}).txt` | `transcript-files/` | The corrected captions as a plain-text transcript, a paragraph per speaker |
 | `… captions (from {source}).vtt` | `vtt-files/` | Website: `<track kind="captions">` (browsers don't read SRT) |
 | `… descriptions.vtt` | `vtt-files/` | Website: `<track kind="descriptions">`, descriptions fitted into pauses (standard audio description, AA) |
 | `… extended descriptions.vtt` | `vtt-files/` | Website: every description where its visual appears, for players that pause the video while reading (Able Player does by default; extended audio description, WCAG 1.2.7) |
@@ -323,7 +324,7 @@ Paths to the saved outputs. Translated outputs end in the language code, such as
 - **Summary Infographic File {model} {infographic_model}**, **Summary Infographic Alt Text File {model} {infographic_model}**: The infographic and its alt text.
 - **Summary Audio File {model} {tts_model} File**: The audio summary.
 - **Video File**, **Video File (lang)**: The infographic and audio summary video (`-cia`), in English and the translated language.
-- **Corrected Captions File {model} from {source}**, **Captions VTT File {model} from {source}**: The corrected captions as SRT and WebVTT (`-cc`).
+- **Corrected Captions File {model} from {source}**, **Transcript File {model} corrected from {source}**, **Captions VTT File {model} from {source}**: The corrected captions as SRT, plain text and WebVTT (`-cc`).
 - **Descriptions VTT File {model}**, **Extended Descriptions VTT File {model}**, **Descriptive Transcript File {model}**: The audio description (`-cc`).
 - **Original Video File**, **Captioned And Described Video File {model} from {source}**, **Player Page**, **Embed Page**: The original video, the copy with captions burned in and descriptions narrated, the Able Player page, and its YouTube-streaming version for embedding in a site (`-cc`).
 - **Post-process: word count({word})**: How many times `{word}` appears in the transcript (case-insensitive, whole words), one column per word (`-pp`).
