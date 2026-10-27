@@ -1448,8 +1448,13 @@
 <tbody>
 <tr>
 <td style="text-align: left;"><code>… corrected captions (from {source}).srt</code></td>
-<td style="text-align: left;"><code>corrected-caption-files/</code></td>
+<td style="text-align: left;"><code>srt-files/</code></td>
 <td style="text-align: left;">Captions for YouTube or any player</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>… corrected captions (from {source}).txt</code></td>
+<td style="text-align: left;"><code>transcript-files/</code></td>
+<td style="text-align: left;">The corrected captions as a plain-text transcript, a paragraph per speaker</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>… captions (from {source}).vtt</code></td>
@@ -1581,7 +1586,7 @@
 <li><strong>Summary Infographic File {model} {infographic_model}</strong>, <strong>Summary Infographic Alt Text File {model} {infographic_model}</strong>: The infographic and its alt text.</li>
 <li><strong>Summary Audio File {model} {tts_model} File</strong>: The audio summary.</li>
 <li><strong>Video File</strong>, <strong>Video File (lang)</strong>: The infographic and audio summary video (<code>-cia</code>), in English and the translated language.</li>
-<li><strong>Corrected Captions File {model} from {source}</strong>, <strong>Captions VTT File {model} from {source}</strong>: The corrected captions as SRT and WebVTT (<code>-cc</code>).</li>
+<li><strong>Corrected Captions File {model} from {source}</strong>, <strong>Transcript File {model} corrected from {source}</strong>, <strong>Captions VTT File {model} from {source}</strong>: The corrected captions as SRT, plain text and WebVTT (<code>-cc</code>).</li>
 <li><strong>Descriptions VTT File {model}</strong>, <strong>Extended Descriptions VTT File {model}</strong>, <strong>Descriptive Transcript File {model}</strong>: The audio description (<code>-cc</code>).</li>
 <li><strong>Original Video File</strong>, <strong>Captioned And Described Video File {model} from {source}</strong>, <strong>Player Page</strong>, <strong>Embed Page</strong>: The original video, the copy with captions burned in and descriptions narrated, the Able Player page, and its YouTube-streaming version for embedding in a site (<code>-cc</code>).</li>
 <li><strong>Post-process: word count({word})</strong>: How many times <code>{word}</code> appears in the transcript (case-insensitive, whole words), one column per word (<code>-pp</code>).</li>

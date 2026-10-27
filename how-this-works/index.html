@@ -1270,7 +1270,7 @@
 <p>File names end in <code>({model}-{language})</code>, e.g. <code>(gcp-translate-es)</code>, to show how they were translated. CSV columns use the shorter <code>(es)</code>.</p>
 <h2 id="5-accessibility">5. Accessibility</h2>
 <p><code>-cc</code> / <code>--corrected-captions</code> makes the original video accessible under WCAG 2.1 Level AA and Section 508. Without a value it uses <code>gemini-4-argon-gemini-3.5-transcribe</code>: the audio is transcribed with <code>gemini-3.5-transcribe</code> (unless <code>-t</code> is set) and the captions are corrected with <code>gemini-4-argon</code>. The format is <code>{model}</code> or <code>{model}-{source}</code>, e.g. <code>gemini-4-argon-youtube</code>.</p>
-<p><strong>Captions</strong> (<code>corrected-caption-files/</code>, and WebVTT in <code>vtt-files/</code>):</p>
+<p><strong>Captions</strong> (SRT in <code>srt-files/</code>, a plain-text transcript in <code>transcript-files/</code>, and WebVTT in <code>vtt-files/</code>):</p>
 <ol>
 <li><strong>Timing.</strong> The source SRT is aligned word by word with a second transcript of the same audio (YouTube's captions, or the STT transcript when correcting YouTube's), and cues with broken timestamps are re-timed.</li>
 <li><strong>Speakers.</strong> Every cue is given a speaker, in windows of about 20 minutes, from diarization labels, the second transcript's speaker changes and the <strong>on-screen context</strong>: names and titles read from name plates, with the times each person is seen speaking. With Gemini, this context comes from one agentic request to the video, unless <code>--from-video</code> already made it.</li>
@@ -1366,8 +1366,8 @@
 <p>The CSV (written with <code>polars</code>) has a row per video, with its details, the path to every file and each step's cost. The files are organized by type:</p>
 <div class="language-text highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>youtube-to-docs-artifacts/
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>├── youtube-docs.csv              # One row per video: details, file paths, costs
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>├── transcript-files/             # Plain-text transcripts
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>├── srt-files/                    # Timed SRT transcripts
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>├── transcript-files/             # Plain-text transcripts, including the corrected captions (-cc)
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>├── srt-files/                    # Timed SRT transcripts, including the WCAG 2.1 AA / Section 508 corrected captions (-cc)
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>├── audio-files/                  # Downloaded audio (for speech-to-text) and audio summaries
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>├── speaker-extraction-files/     # Speakers and their titles
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>├── qa-files/                     # Q&amp;A tables with timestamp links
@@ -1381,10 +1381,9 @@
 <a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>├── infographic-files/            # Infographic images
 <a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>├── infographic-prompts/          # The exact prompts sent for each infographic
 <a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>├── infographic-alt-text/         # Alt text for each infographic
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>├── corrected-caption-files/      # WCAG 2.1 AA / Section 508 SRT captions (-cc)
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>├── vtt-files/                    # WebVTT captions, description tracks and the Able Player page (-cc)
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>├── descriptive-transcript-files/ # Dialogue plus visual descriptions (-cc)
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>└── video-files/                  # Infographic + audio videos, and the captioned, described video (-cc)
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>├── vtt-files/                    # WebVTT captions, description tracks and the Able Player page (-cc)
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>├── descriptive-transcript-files/ # Dialogue plus visual descriptions (-cc)
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>└── video-files/                  # Infographic + audio videos, and the captioned, described video (-cc)
 </code></pre></div>
 <h2 id="about-the-explainer-video">About the explainer video</h2>
 <p>The video at the top of this page was made from code in <a href="https://github.com/DoIT-Artificial-Intelligence/youtube-to-docs/blob/main/scripts/docs/explainer/build.py"><code>scripts/docs/explainer/build.py</code></a>. The slides are HTML rendered by headless Chrome, so the text on screen is exact. The narration is read one sentence at a time by Gemini TTS (<code>gemini-3.8-flash-tts</code>, voice Kore), so each caption is timed to its sentence exactly. To change the video, edit the slides or narration in that file and run:</p>
