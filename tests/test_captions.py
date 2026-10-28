@@ -155,6 +155,41 @@ class TestAlignmentAndTiming(unittest.TestCase):
         self.assertLess(abs(cues[2].start - 15), 0.5)
         self.assertLess(cues[2].end, 19)
 
+    def test_repair_cue_out_of_sync_with_reference(self):
+        # After a cue that ends before it starts, Gemini STT gave the next cue
+        # the previous one's start; its timestamps look plausible, but the
+        # reference times its words ten seconds later.
+        cues = cc.prepare_cues(
+            cc.parse_srt(
+                srt(
+                    (285, 290.5, "they may not operate near power lines roads"),
+                    (290.8, 291.7, "or bodies of water"),
+                    (292.4, 290.4, "electrical requirements also mandate compliance"),
+                    (290.8, 305.9, "electrical connections must be protected by a"),
+                    (305.9, 311.9, "device conforming to the electrical code"),
+                    (312.7, 317.4, "this is a reference image"),
+                )
+            )
+        )
+        reference = cc.prepare_cues(
+            cc.parse_srt(
+                srt(
+                    (285, 291.4, "they may not operate near power lines roads"),
+                    (291.4, 291.9, "or bodies of water"),
+                    (291.9, 300.8, "electrical requirements also mandate compliance"),
+                    (300.8, 305.1, "electrical connections must be protected by a"),
+                    (305.1, 312.9, "device conforming to the electrical code"),
+                    (312.9, 317.0, "this is a reference image"),
+                )
+            )
+        )
+        cue_words, ref_words = cc._words(cues), cc._words(reference)
+        pairs = cc._align([w.norm for w in cue_words], [w.norm for w in ref_words])
+        self.assertEqual(cc.repair_timing(cues, cue_words, ref_words, pairs), 2)
+        self.assertLess(abs(cues[3].start - 300.8), 0.5)
+        self.assertEqual(cues, sorted(cues, key=lambda cue: cue.start))
+        self.assertEqual((cues[5].start, cues[5].end), (312.7, 317.4))
+
     def test_repair_without_reference_interpolates(self):
         cues = cc.prepare_cues(
             cc.parse_srt(

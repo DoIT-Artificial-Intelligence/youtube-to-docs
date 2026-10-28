@@ -133,7 +133,7 @@ File names end in `({model}-{language})`, e.g. `(gcp-translate-es)`, to show how
 
 **Captions** (SRT in `srt-files/`, a plain-text transcript in `transcript-files/`, and WebVTT in `vtt-files/`):
 
-1. **Timing.** The source SRT is aligned word by word with a second transcript of the same audio (YouTube's captions, or the STT transcript when correcting YouTube's), and cues with broken timestamps are re-timed.
+1. **Timing.** The source SRT is aligned word by word with a second transcript of the same audio (YouTube's captions, or the STT transcript when correcting YouTube's), and cues with broken timestamps, or out of sync with the second transcript, are re-timed.
 2. **Speakers.** Every cue is given a speaker, in windows of about 20 minutes, from diarization labels, the second transcript's speaker changes and the **on-screen context**: names and titles read from name plates, with the times each person is seen speaking. With Gemini, this context comes from one agentic request to the video, unless `--from-video` already made it.
 3. **Text.** Sections are corrected in parallel against the second transcript and the on-screen spellings: misheard words and names, punctuation, fillers, non-speech sounds and missed speech. The model edits text by cue ID and never writes timestamps, so long videos can't drift out of sync.
 4. **Layout.** Words are laid out as captions of at most two 42-character lines over 1–7 seconds, broken at sentence and clause boundaries, with `[Name]` on each change of speaker and no overlapping cues.

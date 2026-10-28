@@ -6,7 +6,7 @@ file that meets WCAG 2.1 Level AA and Section 508
 1. Timing: the source SRT (by default `gemini-3.5-transcribe`, which has
    word-level timestamps) is aligned word by word with a second transcript of
    the same audio (usually YouTube's captions), and cues with broken timestamps
-   are re-timed from it.
+   or out of sync with it are re-timed from it.
 2. Speakers: the speaker of every cue is named in ~20-minute windows from
    diarization labels, the second transcript's speaker changes (`>>`), the
    times the video shows each person speaking (written onto the lines they
@@ -82,6 +82,11 @@ SPEAKER_CONTEXT_BEFORE = 30
 SPEAKER_CONTEXT_AFTER = 10
 # Words are aligned in blocks of this many, so long videos stay fast.
 ALIGN_BLOCK_WORDS = 2000
+# A cue is re-timed from the second transcript when (with at least
+# REFERENCE_DRIFT_MIN_WORDS aligned words) the second transcript times its
+# words this much further from the cue than the two transcripts usually differ.
+REFERENCE_DRIFT_SECONDS = 2.0
+REFERENCE_DRIFT_MIN_WORDS = 3
 
 UNKNOWN_SPEAKER = "Unidentified Speaker"
 
@@ -421,18 +426,33 @@ def repair_timing(
     pairs: List[Tuple[int, int]],
 ) -> int:
     """
-    Re-times cues with broken timestamps, from the second transcript's timing
-    for the same words when they align, otherwise by spreading them between
-    their nearest good neighbors. Returns the number of cues repaired.
+    Re-times cues with broken timestamps, or out of sync with the second
+    transcript, from the second transcript's timing for the same words when
+    they align, otherwise by spreading them between their nearest good
+    neighbors. Returns the number of cues repaired.
     """
-    broken = [i for i in range(len(cues)) if _is_broken(cues, i)]
-    if not broken:
-        return 0
-
     matched: Dict[int, List[Tuple[int, float]]] = {}
+    offsets: Dict[int, List[float]] = {}
     for i, j in pairs:
         word = cue_words[i]
         matched.setdefault(word.cue, []).append((word.pos, ref_words[j].time))
+        offsets.setdefault(word.cue, []).append(ref_words[j].time - word.time)
+
+    # Timestamps can look plausible and still be wrong: Gemini STT sometimes
+    # gives a cue after a broken one the previous cue's start, and sorting then
+    # puts it ahead of speech it follows, delaying every caption after it.
+    broken_set = {i for i in range(len(cues)) if _is_broken(cues, i)}
+    good = [d for cue, diffs in offsets.items() if cue not in broken_set for d in diffs]
+    typical = statistics.median(good) if good else 0.0
+    broken_set.update(
+        cue
+        for cue, diffs in offsets.items()
+        if len(diffs) >= REFERENCE_DRIFT_MIN_WORDS
+        and abs(statistics.median(diffs) - typical) > REFERENCE_DRIFT_SECONDS
+    )
+    broken = sorted(broken_set)
+    if not broken:
+        return 0
 
     unresolved = set()
     for i in broken:
