@@ -1,4 +1,6 @@
 import argparse
+import codecs
+import io
 import logging
 import os
 import re
@@ -108,9 +110,9 @@ def _use_utf8_output() -> None:
     help text or many video titles, and raises UnicodeEncodeError.
     """
     for stream in (sys.stdout, sys.stderr):
-        encoding = (getattr(stream, "encoding", None) or "").lower()
-        if encoding.replace("-", "").replace("_", "") != "utf8" and hasattr(
-            stream, "reconfigure"
+        if (
+            isinstance(stream, io.TextIOWrapper)
+            and codecs.lookup(stream.encoding).name != "utf-8"
         ):
             stream.reconfigure(encoding="utf-8", errors="replace")
 
