@@ -1,4 +1,6 @@
+import io
 import os
+import sys
 import tempfile
 import unittest
 from typing import Any, cast
@@ -9,6 +11,21 @@ import polars as pl
 from youtube_to_docs import main
 from youtube_to_docs.captions import CaptionFiles
 from youtube_to_docs.llms import build_summary_prompt
+
+
+class TestUtf8Output(unittest.TestCase):
+    def test_help_on_cp1252_pipe(self):
+        # Windows pipes default to the ANSI code page, which has no "→".
+        out = io.TextIOWrapper(io.BytesIO(), encoding="cp1252")
+        err = io.TextIOWrapper(io.BytesIO(), encoding="cp1252")
+        with patch.object(sys, "stdout", out), patch.object(sys, "stderr", err):
+            with self.assertRaises(SystemExit) as raised:
+                main.main(["--help"])
+            sys.stdout.flush()
+            written = sys.stdout.buffer.getvalue().decode("utf-8")
+        self.assertEqual(raised.exception.code, 0)
+        self.assertEqual(out.encoding, "utf-8")
+        self.assertIn("→", written)
 
 
 class TestMain(unittest.TestCase):

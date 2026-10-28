@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import shutil
+import sys
 import tempfile
 import time
 from itertools import product
@@ -100,7 +101,22 @@ class VerboseRow(dict):
             rprint(f"Updated column: {k}")
 
 
+def _use_utf8_output() -> None:
+    """
+    Writes output as UTF-8. On Windows, piped or redirected output otherwise
+    uses the ANSI code page (e.g. cp1252), which can't encode the arrows in the
+    help text or many video titles, and raises UnicodeEncodeError.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        encoding = (getattr(stream, "encoding", None) or "").lower()
+        if encoding.replace("-", "").replace("_", "") != "utf8" and hasattr(
+            stream, "reconfigure"
+        ):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
+
 def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
+    _use_utf8_output()
     local_temp_dir = tempfile.mkdtemp(prefix="ytd_temp_")
     try:
         return _main_impl(args_list, local_temp_dir=local_temp_dir)
