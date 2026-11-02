@@ -108,7 +108,8 @@ def process_video(
             video plus a copy with the captions burned in and the descriptions
             narrated (tts_model, default 'gemini-3.8-flash-tts-Kore'). Also
             writes an Able Player page in 'vtt-files/' for checking the WebVTT
-            tracks. Use 'default' for the best results (gemini-4-argon on a
+            tracks. The Q&A, summary and tags are then written from the
+            corrected captions. Use 'default' for the best results (gemini-4-argon on a
             gemini-3.5-transcribe transcript, transcribed in the same run), or
             `{model}` / `{model}-{source}` where source is 'youtube' or a
             transcript model name (e.g. 'gemini-4-argon-youtube'). Takes about

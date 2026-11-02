@@ -10,6 +10,7 @@ import tempfile
 import time
 from itertools import product
 from pathlib import Path
+from typing import Any, Optional, Tuple
 
 import isodate
 import polars as pl
@@ -17,7 +18,11 @@ from rich import print as rprint
 from rich_argparse import RichHelpFormatter
 
 from youtube_to_docs.audio_description import process_audio_description
-from youtube_to_docs.captions import process_corrected_captions
+from youtube_to_docs.captions import (
+    CaptionFiles,
+    load_corrected_captions,
+    process_corrected_captions,
+)
 from youtube_to_docs.infographic import (
     build_infographic_prompt,
     generate_infographic,
@@ -373,7 +378,9 @@ def _main_impl(
             "WebVTT tracks in a browser (serve the folder over HTTP). \n"
             "The model reads on-screen context from the video, describes it and "
             "corrects the text (Gemini models; other models correct the text "
-            "only). \n\n"
+            "only). \n"
+            "The Q&A, summary, tags and chapters are then written from the "
+            "corrected captions. \n\n"
             f"Without a value, uses `{CORRECTED_CAPTIONS_DEFAULT}` (and transcribes "
             "with `gemini-3.5-transcribe` unless `-t` is set). Without `-m`, the "
             "summary and other text outputs use `gemini-4-argon`. \n\n"
@@ -775,6 +782,32 @@ def _main_impl(
                     )
                     row["Audio File"] = uploaded_path_or_link
                     audio_file_path = uploaded_path_or_link
+
+        # Corrected captions (`-cc`), made once per video before the English
+        # Q&A, summary and tags so they can be generated from them.
+        cc_attempted = False
+        corrected: Optional[CaptionFiles] = None
+
+        def run_corrected_captions(model_name: str) -> Optional[CaptionFiles]:
+            return process_corrected_captions(
+                row=row,
+                storage=storage,
+                model_name=model_name,
+                source=corrected_captions_source,
+                transcript_arg=transcript_arg,
+                video_id=video_id,
+                video_title=video_title,
+                safe_title=safe_title,
+                url=url,
+                dirs={
+                    "srt": srt_dir,
+                    "transcript": transcripts_dir,
+                    "vtt": vtt_dir,
+                    "video_context": video_context_dir,
+                },
+                verbose=verbose,
+                vprint=vprint,
+            )
 
         # --- Language Dependent Logic ---
         for language in languages:
@@ -1432,62 +1465,18 @@ def _main_impl(
                 if pp_results:
                     vprint(f"Post-process results: {pp_results}")
 
-            # Summarize for each requested model
-            for model_name in model_names:
-                # Outputs generated directly from the video. Run first: the
-                # transcript-based steps below `continue` early when their
-                # outputs already exist, which would otherwise skip this.
-                run_from_video(model_name)
-
-                summary_col_name = (
-                    f"Summary Text {model_name} from {transcript_arg}{col_suffix}"
-                )
-                summary_file_col_name = (
-                    f"Summary File {model_name} from {transcript_arg}{col_suffix}"
-                )
+            def ensure_speakers(model_name: str) -> Tuple[Any, int, int]:
+                """The speakers found by `model_name` in the transcript, loaded
+                from storage or extracted. Returns (speakers, input tokens,
+                output tokens); the tokens are 0 when the speakers were loaded."""
                 speakers_col_name = f"Speakers {model_name} from {transcript_arg}"
                 speakers_file_col_name = (
                     f"Speakers File {model_name} from {transcript_arg}"
-                )
-                summary_cost_col_name = (
-                    f"{normalize_model_name(model_name)} "
-                    f"summary cost from {transcript_arg}{col_suffix} ($)"
                 )
                 speaker_cost_col_name = (
                     f"{normalize_model_name(model_name)} "
                     f"Speaker extraction cost from {transcript_arg} ($)"
                 )
-                summary_prompt_file_col_name = (
-                    f"Summary Prompt Path {model_name} from "
-                    f"{transcript_arg}{col_suffix}"
-                )
-
-                # Save the exact prompt sent to the LLM. Done before generation
-                # so the prompt is recorded even if summarization later fails.
-                if not row.get(summary_prompt_file_col_name):
-                    summary_prompt_text = build_summary_prompt(
-                        transcript, video_title, url, language=language
-                    )
-                    summary_prompt_filename = (
-                        f"{model_name} - {video_id} - {safe_title} - "
-                        f"summary-prompt (from {transcript_arg}){lang_str}.txt"
-                    )
-                    target_path = os.path.join(
-                        summary_prompts_dir, summary_prompt_filename
-                    )
-                    try:
-                        saved_prompt_path = storage.write_text(
-                            target_path, summary_prompt_text
-                        )
-                        rprint(
-                            "Saved summary prompt: "
-                            f"{format_clickable_path(saved_prompt_path)}"
-                        )
-                        row[summary_prompt_file_col_name] = saved_prompt_path
-                    except Exception as e:
-                        print(f"Error writing summary prompt: {e}")
-
-                # Speaker Extraction
                 speakers_text = ""
                 speakers_input = 0
                 speakers_output = 0
@@ -1572,6 +1561,79 @@ def _main_impl(
                             ) * output_price
                             row[speaker_cost_col_name] = round(speaker_cost, 2)
                             vprint(f"Speaker extraction cost: ${speaker_cost:.2f}")
+                return speakers_text, speakers_input, speakers_output
+
+            # Outputs generated directly from the video, and the speakers, for
+            # every model first: `-cc` names the speakers in the captions from
+            # them, and the Q&A, summary and tags below are then generated
+            # from the corrected captions. Run before the loop: the
+            # transcript-based steps `continue` early when their outputs
+            # already exist.
+            speakers_by_model = {}
+            for model_name in model_names:
+                run_from_video(model_name)
+                speakers_by_model[model_name] = ensure_speakers(model_name)
+
+            if corrected_captions_model and language == "en" and not cc_attempted:
+                cc_attempted = True
+                corrected = run_corrected_captions(corrected_captions_model)
+                corrected_text = load_corrected_captions(storage, corrected)
+                if corrected_text:
+                    transcript, srt_transcript = corrected_text
+                    rprint(
+                        "Generating the Q&A, summary and tags from the corrected "
+                        "captions."
+                    )
+
+            # Summarize for each requested model
+            for model_name in model_names:
+                speakers_text, speakers_input, speakers_output = speakers_by_model[
+                    model_name
+                ]
+
+                summary_col_name = (
+                    f"Summary Text {model_name} from {transcript_arg}{col_suffix}"
+                )
+                summary_file_col_name = (
+                    f"Summary File {model_name} from {transcript_arg}{col_suffix}"
+                )
+                summary_cost_col_name = (
+                    f"{normalize_model_name(model_name)} "
+                    f"summary cost from {transcript_arg}{col_suffix} ($)"
+                )
+                speaker_cost_col_name = (
+                    f"{normalize_model_name(model_name)} "
+                    f"Speaker extraction cost from {transcript_arg} ($)"
+                )
+                summary_prompt_file_col_name = (
+                    f"Summary Prompt Path {model_name} from "
+                    f"{transcript_arg}{col_suffix}"
+                )
+
+                # Save the exact prompt sent to the LLM. Done before generation
+                # so the prompt is recorded even if summarization later fails.
+                if not row.get(summary_prompt_file_col_name):
+                    summary_prompt_text = build_summary_prompt(
+                        transcript, video_title, url, language=language
+                    )
+                    summary_prompt_filename = (
+                        f"{model_name} - {video_id} - {safe_title} - "
+                        f"summary-prompt (from {transcript_arg}){lang_str}.txt"
+                    )
+                    target_path = os.path.join(
+                        summary_prompts_dir, summary_prompt_filename
+                    )
+                    try:
+                        saved_prompt_path = storage.write_text(
+                            target_path, summary_prompt_text
+                        )
+                        rprint(
+                            "Saved summary prompt: "
+                            f"{format_clickable_path(saved_prompt_path)}"
+                        )
+                        row[summary_prompt_file_col_name] = saved_prompt_path
+                    except Exception as e:
+                        print(f"Error writing summary prompt: {e}")
 
                 # QA Generation
                 qa_col_name = f"QA Text {model_name} from {transcript_arg}{col_suffix}"
@@ -2609,25 +2671,8 @@ def _main_impl(
 
         # --- Corrected Captions ---
         if corrected_captions_model:
-            corrected = process_corrected_captions(
-                row=row,
-                storage=storage,
-                model_name=corrected_captions_model,
-                source=corrected_captions_source,
-                transcript_arg=transcript_arg,
-                video_id=video_id,
-                video_title=video_title,
-                safe_title=safe_title,
-                url=url,
-                dirs={
-                    "srt": srt_dir,
-                    "transcript": transcripts_dir,
-                    "vtt": vtt_dir,
-                    "video_context": video_context_dir,
-                },
-                verbose=verbose,
-                vprint=vprint,
-            )
+            if not cc_attempted:  # e.g. no English transcript to summarize
+                corrected = run_corrected_captions(corrected_captions_model)
             if corrected:
                 original_path = os.path.join(
                     video_dir, f"{video_id} - {safe_title} - original video.mp4"

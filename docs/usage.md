@@ -252,6 +252,8 @@ youtube-to-docs VIDEO_ID -t gcp-chirp3 -cc gemini-3.5-flash-lite-gcp-chirp3
 4. **Layout.** The corrected words are re-segmented into captions of at most two lines of 42 characters, 1–7 seconds long, broken at sentence and clause boundaries (not inside names or after articles). `[Name]` labels mark every change of speaker, crosstalk is placed at the nearest sentence break, quick exchanges share a two-line caption, and captions never overlap.
 5. **Audio description.** The video is downloaded and scanned for scene changes (new slides, changes of shot); the model looks at the frame at each change with the dialogue around it and writes a short spoken version and a full description of what isn't said aloud: slide titles, key on-screen text, the main figures in charts and tables, votes and video clips. Standard audio description is spoken only in pauses, so the short versions are fitted into pauses while their visual is on screen (most important first, shortened if needed), narrated with `--tts` (default `gemini-3.8-flash-tts-Kore`) and mixed in with the programme audio lowered. Nothing is narrated over speech; the extended track and the descriptive transcript carry every description.
 
+The captions are corrected after the speakers are found and before the other text outputs. So with `-cc`, the Q&A, summary, one-sentence summary, tags and chapters are written from the corrected captions, with real speaker names and corrected spellings, instead of the raw transcript. Their CSV columns and file names still say `from {transcript}` (e.g. `from gemini-3.5-transcribe`). Outputs made before this change aren't regenerated: delete them to rebuild them from the corrected captions.
+
 Audio description needs a Gemini model; with other models `-cc` produces the captions only.
 
 ### Choosing the source
@@ -296,7 +298,7 @@ Outputs that already exist aren't regenerated. When you run the same video again
 
 1. Get the transcript only (the default): `youtube-to-docs <url>`.
 2. Fix the transcript in `transcript-files/` (and the matching `.srt` in `srt-files/` if you plan to make captions).
-3. Run again with the outputs you want, such as `-m -i --tts gemini-3.8-flash-lite-tts-Kore` or `-cc`. The summary, Q&A, infographic, audio and captions are built from your corrected transcript.
+3. Run again with the outputs you want, such as `-m -i --tts gemini-3.8-flash-lite-tts-Kore` or `-cc`. The summary, Q&A, infographic, audio and captions are built from your corrected transcript. With `-cc`, the summary, Q&A and tags are built from the corrected captions, so you can edit the corrected `.srt` instead, then delete those outputs and run again.
 
 You can also edit a summary, Q&A, speakers or alt text file directly. On the next run, the edited text is loaded back into the CSV, and outputs made later, such as the infographic and audio, use it.
 

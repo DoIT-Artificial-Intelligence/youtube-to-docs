@@ -138,6 +138,8 @@ File names end in `({model}-{language})`, e.g. `(gcp-translate-es)`, to show how
 3. **Text.** Sections are corrected in parallel against the second transcript and the on-screen spellings: misheard words and names, punctuation, fillers, non-speech sounds and missed speech. The model edits text by cue ID and never writes timestamps, so long videos can't drift out of sync.
 4. **Layout.** Words are laid out as captions of at most two 42-character lines over 1–7 seconds, broken at sentence and clause boundaries, with `[Name]` on each change of speaker and no overlapping cues.
 
+The captions are made right after the speakers, so the Q&A, summary, tags and chapters are then written from the corrected captions, with real names and corrected spellings.
+
 **Audio description**: scene changes in the downloaded video are described by the model from the frames and nearby dialogue, and fitted into pauses in the speech. The descriptions are saved as WebVTT description tracks (`vtt-files/`, standard and extended) and a descriptive transcript (`descriptive-transcript-files/`).
 
 `video-files/` gets the original video and a copy with the captions burned in and the descriptions narrated. `vtt-files/` also gets an [Able Player](https://ableplayer.github.io/ableplayer/) page for checking the tracks in a browser, and a self-contained version that streams the video from YouTube, for pasting into a site such as Google Sites. See [Corrected Captions and Audio Description](usage.md#corrected-captions-and-audio-description) for the options.
