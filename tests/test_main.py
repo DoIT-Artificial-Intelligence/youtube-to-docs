@@ -1355,6 +1355,45 @@ class TestCorrectedCaptionsDefaults(unittest.TestCase):
         printed = " ".join(str(c.args[0]) for c in mock_print.call_args_list if c.args)
         self.assertIn("Couldn't download the video", printed)
 
+    @patch("youtube_to_docs.main.download_video", return_value=None)
+    @patch("youtube_to_docs.main.load_corrected_captions")
+    def test_qa_summary_and_tags_use_the_corrected_captions(
+        self, mock_load, _download, *mocks
+    ):
+        mock_chapters, _desc, mock_tags, _oss, mock_qa, mock_speakers = mocks[:6]
+        mock_summary, mock_cc = mocks[6], mocks[-1]
+        files = CaptionFiles("cc/out.srt", "gemini-3.5-transcribe", "stt.srt", None)
+        corrected_srt = "1\n00:00:00,000 --> 00:00:01,000\n[Jane Doe] Hi.\n"
+        mock_load.return_value = ("[Jane Doe] Hi.\n", corrected_srt)
+        order: list = []
+        mock_speakers.side_effect = lambda *a, **k: (
+            order.append("speakers") or ("Jane Doe", 1, 1)
+        )
+        mock_cc.side_effect = lambda **k: order.append("cc") or files
+        mock_qa.side_effect = lambda *a, **k: order.append("qa") or ("nan", 1, 1)
+        self._run(mocks, "-cc")
+        # Speakers feed -cc, and -cc runs once, before the Q&A (then the
+        # secondary outputs from the YouTube transcript).
+        self.assertEqual(order[:3], ["speakers", "cc", "qa"])
+        self.assertEqual(order.count("cc"), 1)
+        mock_load.assert_called_once()
+        self.assertIs(mock_load.call_args.args[1], files)
+        self.assertEqual(mock_qa.call_args_list[0].args[1], corrected_srt)
+        self.assertEqual(mock_summary.call_args_list[0].args[1], "[Jane Doe] Hi.\n")
+        self.assertEqual(mock_chapters.call_args.args[1], corrected_srt)
+        # Speakers are still extracted from the speech-to-text transcript.
+        self.assertEqual(mock_speakers.call_args_list[0].args[1], "Hi.")
+        mock_tags.assert_called_once()
+
+    @patch("youtube_to_docs.main.load_corrected_captions", return_value=None)
+    def test_without_corrected_captions_the_transcript_is_used(self, _load, *mocks):
+        mock_qa, mock_summary, mock_cc = mocks[4], mocks[6], mocks[-1]
+        mock_cc.return_value = None
+        self._run(mocks, "-cc")
+        mock_cc.assert_called_once()  # not retried after the summary
+        self.assertIn("[Speaker 1] Hi.", mock_qa.call_args_list[0].args[1])
+        self.assertEqual(mock_summary.call_args_list[0].args[1], "Hi.")
+
     def test_youtube_source_needs_no_transcription(self, *mocks):
         mock_provider, mock_cc = self._run(mocks, "-cc", "gemini-4-argon-youtube")
         mock_provider.assert_not_called()

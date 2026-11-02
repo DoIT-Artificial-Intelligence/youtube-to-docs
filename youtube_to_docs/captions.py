@@ -1820,6 +1820,24 @@ class CaptionFiles(NamedTuple):
     reference_srt: Optional[str]
 
 
+def load_corrected_captions(
+    storage: Any, files: Optional[CaptionFiles]
+) -> Optional[Tuple[str, str]]:
+    """
+    The corrected captions as (plain-text transcript, SRT), for generating the
+    Q&A, summary and tags from them, or None if there are none to read.
+    """
+    if not files or not isinstance(files.path, str) or not files.path:
+        return None
+    try:
+        srt = storage.read_text(files.path)
+    except Exception as e:
+        print(f"Warning: Couldn't read the corrected captions {files.path}: {e}")
+        return None
+    text = srt_to_transcript(srt)
+    return (text, srt) if text.strip() else None
+
+
 def _save_webvtt(
     row: Dict[str, Any],
     storage: Any,
