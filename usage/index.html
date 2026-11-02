@@ -1506,6 +1506,7 @@
 <li><strong>Layout.</strong> The corrected words are re-segmented into captions of at most two lines of 42 characters, 1–7 seconds long, broken at sentence and clause boundaries (not inside names or after articles). <code>[Name]</code> labels mark every change of speaker, crosstalk is placed at the nearest sentence break, quick exchanges share a two-line caption, and captions never overlap.</li>
 <li><strong>Audio description.</strong> The video is downloaded and scanned for scene changes (new slides, changes of shot); the model looks at the frame at each change with the dialogue around it and writes a short spoken version and a full description of what isn't said aloud: slide titles, key on-screen text, the main figures in charts and tables, votes and video clips. Standard audio description is spoken only in pauses, so the short versions are fitted into pauses while their visual is on screen (most important first, shortened if needed), narrated with <code>--tts</code> (default <code>gemini-3.8-flash-tts-Kore</code>) and mixed in with the programme audio lowered. Nothing is narrated over speech; the extended track and the descriptive transcript carry every description.</li>
 </ol>
+<p>The captions are corrected after the speakers are found and before the other text outputs. So with <code>-cc</code>, the Q&amp;A, summary, one-sentence summary, tags and chapters are written from the corrected captions, with real speaker names and corrected spellings, instead of the raw transcript. Their CSV columns and file names still say <code>from {transcript}</code> (e.g. <code>from gemini-3.5-transcribe</code>). Outputs made before this change aren't regenerated: delete them to rebuild them from the corrected captions.</p>
 <p>Audio description needs a Gemini model; with other models <code>-cc</code> produces the captions only.</p>
 <h3 id="choosing-the-source">Choosing the source</h3>
 <p>The format is <code>-cc {model}</code> or <code>-cc {model}-{source}</code>.</p>
@@ -1563,7 +1564,7 @@
 <ol>
 <li>Get the transcript only (the default): <code>youtube-to-docs &lt;url&gt;</code>.</li>
 <li>Fix the transcript in <code>transcript-files/</code> (and the matching <code>.srt</code> in <code>srt-files/</code> if you plan to make captions).</li>
-<li>Run again with the outputs you want, such as <code>-m -i --tts gemini-3.8-flash-lite-tts-Kore</code> or <code>-cc</code>. The summary, Q&amp;A, infographic, audio and captions are built from your corrected transcript.</li>
+<li>Run again with the outputs you want, such as <code>-m -i --tts gemini-3.8-flash-lite-tts-Kore</code> or <code>-cc</code>. The summary, Q&amp;A, infographic, audio and captions are built from your corrected transcript. With <code>-cc</code>, the summary, Q&amp;A and tags are built from the corrected captions, so you can edit the corrected <code>.srt</code> instead, then delete those outputs and run again.</li>
 </ol>
 <p>You can also edit a summary, Q&amp;A, speakers or alt text file directly. On the next run, the edited text is loaded back into the CSV, and outputs made later, such as the infographic and audio, use it.</p>
 <p>To make an output again, delete its file and remove the video's row from the CSV (or clear that output's columns), then run again. The tool finds your other files, including the edited transcript, by their file names.</p>
