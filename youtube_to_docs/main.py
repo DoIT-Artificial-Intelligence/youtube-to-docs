@@ -291,7 +291,7 @@ def _main_impl(
             "directly from the video using Gemini video understanding (no "
             "download needed). Value is the processing mode: `agentic` (the model "
             "navigates the video, loading only what it needs; Gemini 3.5 "
-            "Flash-Lite and later, e.g. gemini-3.8-flash, gemini-4-carbon) or "
+            "Flash-Lite and later, e.g. gemini-4-hydrogen, gemini-4-carbon) or "
             "`static` (frames at 1 FPS; any Gemini model). Use `agentic,static` "
             "to run both for comparison. Outputs are labelled "
             "`from video-agentic` / `from video-static`."
