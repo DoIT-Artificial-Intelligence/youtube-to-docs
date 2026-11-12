@@ -83,7 +83,7 @@ def process_video(
         from_video: Also generate the summary, one sentence summary, speakers and
             Q&A directly from the video with Gemini video understanding. Value is
             the processing mode: 'agentic' (the model navigates the video; Gemini
-            3.5 Flash-Lite and later, e.g. gemini-3.8-flash, gemini-4-carbon), 'static'
+            3.5 Flash-Lite and later, e.g. gemini-4-hydrogen, gemini-4-carbon), 'static'
             (frames at 1 FPS; any Gemini model), or 'agentic,static' for both.
         translate: Translate all outputs to a target language after generating in
             English. Format: `{model}-{language}` e.g. `gemini-3.5-flash-lite-es`,

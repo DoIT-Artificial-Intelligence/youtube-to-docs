@@ -99,7 +99,7 @@ The SRT is passed with the Q&A prompt as a *timing reference*, so each answer's 
 
 `--from-video agentic|static` (or `agentic,static`) sends the YouTube URL to Gemini through the Interactions API, without downloading the video. Gemini writes a summary, one-sentence summary, speakers, Q&A and on-screen context (`video-context-files/`) from the video itself, so it can use slides, charts and name plates that a transcript misses. These are saved next to the transcript-based outputs under the source `video-agentic` or `video-static`, and get infographics and audio too.
 
-- **Agentic** (Gemini 3.5 Flash-Lite and later, e.g. `gemini-3.8-flash`, `gemini-4-carbon`): the model moves around the video, loading transcript, frames or audio only when it needs them. Works on multi-hour videos.
+- **Agentic** (Gemini 3.5 Flash-Lite and later, e.g. `gemini-4-hydrogen`, `gemini-4-carbon`): the model moves around the video, loading transcript, frames or audio only when it needs them. Works on multi-hour videos.
 - **Static**: frames are sampled at 1 FPS for the whole video. Limited to videos that fit in the model's context window (about 3 hours at the default resolution).
 
 The first request loads the video, and later requests continue the same server-side session. Requests run in the background and are polled, with a 30-minute timeout. Costs include the model's reasoning (thought tokens) and the content it loads (tool use tokens). The transcript-based pipeline still runs alongside.
