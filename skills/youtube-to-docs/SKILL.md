@@ -19,7 +19,7 @@ If this skill was run with arguments (`$ARGUMENTS`), take the URL from them, pic
 | User says                     | `model`                  | `tts_model`                      | `infographic_model`      | `all_suite`    |
 | :---------------------------- | :----------------------- | :------------------------------- | :----------------------- | :------------- |
 | "gemini", "gemini flash", "flash" | `gemini-3.5-flash-lite`  | `gemini-3.8-flash-lite-tts-Kore` | `gemini-nano-banana-2.1` | `gemini-flash` |
-| "gemini pro", "pro"           | `gemini-4-argon`         | `gemini-3.8-flash-tts-Kore`      | `gemini-3-pro-image`     | `gemini-pro`   |
+| "gemini pro", "pro"           | `gemini-4-carbon`         | `gemini-3.8-flash-tts-Kore`      | `gemini-3-pro-image`     | `gemini-pro`   |
 | "aws"                         | `bedrock-nova-2-lite-v1` | `aws-polly-Ruth`                 | `gemini-3-pro-image`     | -              |
 | "gcp"                         | -                        | -                                | -                        | `gcp-pro`      |
 
@@ -36,7 +36,7 @@ If this skill was run with arguments (`$ARGUMENTS`), take the URL from them, pic
 "Make an infographic", "summarize this".
 
 - Flash (the default when no family is given): `model='gemini-3.5-flash-lite'`, `infographic_model='gemini-nano-banana-2.1'`
-- Pro: `model='gemini-4-argon'`, `infographic_model='gemini-3-pro-image'`
+- Pro: `model='gemini-4-carbon'`, `infographic_model='gemini-3-pro-image'`
 
 The tool also writes multimodal alt text for each infographic with the summary model. Set `alt_text_model` to use a different model.
 
@@ -52,11 +52,11 @@ The tool also writes multimodal alt text for each infographic with the summary m
 
 "Fix the captions", "make this compliant", "audio description", "best captions", "cc".
 
-- `corrected_captions='default'` gives the best results (recommended). It runs `gemini-4-argon` on a `gemini-3.5-transcribe` transcript made in the same run, with names and speaking times read from the video.
-- If YouTube is named as the source, use `'gemini-4-argon-youtube'`, which starts from the YouTube captions and skips transcription.
-- If an STT model is named as the source, use `'gemini-4-argon-{stt model}'`, e.g. `'gemini-4-argon-gcp-chirp3'`.
+- `corrected_captions='default'` gives the best results (recommended). It runs `gemini-4-carbon` on a `gemini-3.5-transcribe` transcript made in the same run, with names and speaking times read from the video.
+- If YouTube is named as the source, use `'gemini-4-carbon-youtube'`, which starts from the YouTube captions and skips transcription.
+- If an STT model is named as the source, use `'gemini-4-carbon-{stt model}'`, e.g. `'gemini-4-carbon-gcp-chirp3'`.
 - If a cheaper or faster model is wanted ("flash", "cheap"), use `'gemini-3.5-flash-lite-gemini-3.5-transcribe'`.
-- Leave `model` unset: the summary, tags and description then use `gemini-4-argon` too.
+- Leave `model` unset: the summary, tags and description then use `gemini-4-carbon` too.
 
 One run writes:
 
@@ -98,7 +98,7 @@ Set `transcript_source` to an STT model, e.g. `'gemini-3.5-transcribe'`, `'gemin
 | `all_suite`                 | Model suite for everything.                                                                                         | `gemini-flash`, `gemini-pro`, `gemini-flash-pro-image`, `gcp-pro`    |
 | `combine_infographic_audio` | Combine the infographic and audio summary into an MP4. Needs `tts_model` and `infographic_model`.                   | `True`                                                               |
 | `translate`                 | Translate all outputs: `{model}-{language}`, `aws-translate-{language}` or `gcp-translate-{language}`.              | `gemini-3.5-flash-lite-es`, `aws-translate-es`, `gcp-translate-es`   |
-| `corrected_captions`        | Make the video accessible (see above). `'default'` for the best, or `{model}` / `{model}-{source}`.                 | `default`, `gemini-4-argon-youtube`                                  |
+| `corrected_captions`        | Make the video accessible (see above). `'default'` for the best, or `{model}` / `{model}-{source}`.                 | `default`, `gemini-4-carbon-youtube`                                  |
 | `from_video`                | Also generate outputs from the video itself.                                                                        | `agentic`, `static`, `agentic,static`                                |
 | `transcript_source`         | Transcript source. Defaults to `youtube`, or to the STT model that `corrected_captions` corrects.                   | `gemini-3.5-transcribe`, `gcp-chirp3`                                |
 | `no_youtube_summary`        | Skip the extra summary of the YouTube transcript when an AI transcript is used.                                     | `True`                                                               |
@@ -127,14 +127,14 @@ Files are saved in folders next to the CSV, and each one is linked from a CSV co
 | Request                                                           | Call                                                                                                                           |
 | :---------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------- |
 | "Get me a transcript of this video."                              | `process_video(url='...')`                                                                                                     |
-| "Make an infographic for this video using Gemini Pro."            | `process_video(url='...', model='gemini-4-argon', infographic_model='gemini-3-pro-image')`                                     |
+| "Make an infographic for this video using Gemini Pro."            | `process_video(url='...', model='gemini-4-carbon', infographic_model='gemini-3-pro-image')`                                     |
 | "Do a kitchen sink run on this video in Spanish."                 | `process_video(url='...', all_suite='gemini-pro', combine_infographic_audio=True, verbose=True, translate='gemini-3.5-flash-lite-es')` |
 | "Summarize this playlist and save it to Drive."                   | `process_video(url='PL...', model='gemini-3.5-flash-lite', output_file='workspace')`                                           |
 | "Make the best accessible captions for this video."               | `process_video(url='...', corrected_captions='default')`                                                                       |
-| "Correct the YouTube captions for this video for accessibility."  | `process_video(url='...', corrected_captions='gemini-4-argon-youtube')`                                                        |
+| "Correct the YouTube captions for this video for accessibility."  | `process_video(url='...', corrected_captions='gemini-4-carbon-youtube')`                                                        |
 | "Make an audio-described version of this video."                  | `process_video(url='...', corrected_captions='default')`                                                                       |
 | "Count how many times 'apple' appears in the transcript."         | `process_video(url='...', post_process='{"word count": "apple"}')`                                                             |
-| "Summarize this hearing from the video and get the names right."  | `process_video(url='...', model='gemini-4-argon', from_video='agentic')`                                                       |
+| "Summarize this hearing from the video and get the names right."  | `process_video(url='...', model='gemini-4-carbon', from_video='agentic')`                                                       |
 
 ## Without the MCP server
 

@@ -37,7 +37,7 @@ def main():
     selected_model = get_default_model(available_models)
     print(f"\nUsing model: {selected_model}")
 
-    translate_arg = "gemini-4-argon-es"
+    translate_arg = "gemini-4-carbon-es"
 
     # 4. Run Regression with Workspace Target
     run_regression(

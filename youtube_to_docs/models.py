@@ -6,10 +6,10 @@ MODEL_SUITES = {
         "transcript": "gemini-3.5-flash-lite",
     },
     "gemini-pro": {
-        "model": "gemini-4-argon",
+        "model": "gemini-4-carbon",
         "tts": "gemini-3.8-flash-tts-Kore",
         "infographic": "gemini-3-pro-image",
-        "transcript": "gemini-4-argon",
+        "transcript": "gemini-4-carbon",
     },
     "gemini-flash-pro-image": {
         "model": "gemini-3.5-flash-lite",
@@ -18,7 +18,7 @@ MODEL_SUITES = {
         "transcript": "gemini-3.5-flash-lite",
     },
     "gcp-pro": {
-        "model": "gemini-4-argon",
+        "model": "gemini-4-carbon",
         "tts": "gcp-chirp3",
         "infographic": "gemini-3-pro-image",
         "transcript": "gcp-chirp3",

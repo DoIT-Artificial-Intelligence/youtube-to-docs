@@ -200,7 +200,7 @@ class TestDescribe(unittest.TestCase):
         captions = [Cue(1, 2, "Welcome."), Cue(10, 11, "All in favor?")]
         with patch.object(ad, "FRAMES_PER_REQUEST", 8):
             found, in_tok, out_tok = ad.describe_moments(
-                "gemini-4-argon", moments, ["", "", ""], captions, "Meeting", "- Jane"
+                "gemini-4-carbon", moments, ["", "", ""], captions, "Meeting", "- Jane"
             )
         self.assertEqual(
             [(d.time, d.priority, d.spoken, d.text) for d in found],
@@ -226,12 +226,12 @@ class TestDescribe(unittest.TestCase):
 
 class TestProcessAudioDescription(unittest.TestCase):
     OUTPUTS = {
-        "vtt/gemini-4-argon - vid - Title - descriptions.vtt",
-        "vtt/gemini-4-argon - vid - Title - extended descriptions.vtt",
-        "dt/gemini-4-argon - vid - Title - descriptive transcript.md",
+        "vtt/gemini-4-carbon - vid - Title - descriptions.vtt",
+        "vtt/gemini-4-carbon - vid - Title - extended descriptions.vtt",
+        "dt/gemini-4-carbon - vid - Title - descriptive transcript.md",
     }
 
-    def _run(self, model_name="gemini-4-argon", existing=()):
+    def _run(self, model_name="gemini-4-carbon", existing=()):
         storage = MagicMock()
         storage.exists.side_effect = lambda path: path in existing
         storage.read_text.side_effect = lambda path: (
@@ -293,18 +293,18 @@ class TestProcessAudioDescription(unittest.TestCase):
         self.assertEqual(
             sorted(row),
             [
-                "Descriptions VTT File gemini-4-argon",
-                "Descriptive Transcript File gemini-4-argon",
-                "Extended Descriptions VTT File gemini-4-argon",
+                "Descriptions VTT File gemini-4-carbon",
+                "Descriptive Transcript File gemini-4-carbon",
+                "Extended Descriptions VTT File gemini-4-carbon",
             ],
         )
         written = {c.args[0]: c.args[1] for c in storage.write_text.call_args_list}
         self.assertIn(
             "Title slide.",
-            written["vtt/gemini-4-argon - vid - Title - descriptions.vtt"],
+            written["vtt/gemini-4-carbon - vid - Title - descriptions.vtt"],
         )
         extended = written[
-            "vtt/gemini-4-argon - vid - Title - extended descriptions.vtt"
+            "vtt/gemini-4-carbon - vid - Title - extended descriptions.vtt"
         ]
         self.assertIn("A title slide reads Meeting.", extended)
         self.assertEqual([d.spoken for d in placed], ["Title slide."])

@@ -988,10 +988,11 @@ class TestMain(unittest.TestCase):
         ):
             main.main()
 
-        # Check if generate_summary was called with gemini-4-argon
+        # Check if generate_summary was called with gemini-4-carbon
         mock_gen_summary.assert_called()
         any_pro_summary = any(
-            call.args[0] == "gemini-4-argon" for call in mock_gen_summary.call_args_list
+            call.args[0] == "gemini-4-carbon"
+            for call in mock_gen_summary.call_args_list
         )
         self.assertTrue(any_pro_summary)
 
@@ -1237,7 +1238,7 @@ class TestMain(unittest.TestCase):
 )
 class TestCorrectedCaptionsDefaults(unittest.TestCase):
     """`-cc` without a value transcribes with gemini-3.5-transcribe and corrects
-    that SRT with gemini-4-argon, unless -t says otherwise."""
+    that SRT with gemini-4-carbon, unless -t says otherwise."""
 
     def _run(self, mocks, *args):
         (*_, mock_details, _resolve, _svc, mock_extract, mock_provider, mock_cc) = mocks
@@ -1275,16 +1276,16 @@ class TestCorrectedCaptionsDefaults(unittest.TestCase):
         mock_provider, mock_cc = self._run(mocks, "-cc")
         mock_provider.assert_called_with("gemini-3.5-transcribe")
         kwargs = mock_cc.call_args.kwargs
-        self.assertEqual(kwargs["model_name"], "gemini-4-argon")
+        self.assertEqual(kwargs["model_name"], "gemini-4-carbon")
         self.assertEqual(kwargs["source"], "gemini-3.5-transcribe")
         self.assertEqual(kwargs["transcript_arg"], "gemini-3.5-transcribe")
 
-    def test_bare_flag_summarizes_with_gemini_4_argon(self, *mocks):
+    def test_bare_flag_summarizes_with_gemini_4_carbon(self, *mocks):
         mock_chapters, *_ = mocks
         mock_summary = mocks[6]
         self._run(mocks, "-cc")
-        self.assertEqual(mock_summary.call_args.args[0], "gemini-4-argon")
-        self.assertEqual(mock_chapters.call_args.args[0], "gemini-4-argon")
+        self.assertEqual(mock_summary.call_args.args[0], "gemini-4-carbon")
+        self.assertEqual(mock_chapters.call_args.args[0], "gemini-4-carbon")
 
     def test_explicit_transcript_source_is_kept(self, *mocks):
         mock_provider, mock_cc = self._run(mocks, "-t", "youtube", "-cc")
@@ -1320,12 +1321,12 @@ class TestCorrectedCaptionsDefaults(unittest.TestCase):
             _, mock_cc = self._run(mocks, "-cc")
             self.assertFalse(os.path.exists(seen[0]))  # temporary copy removed
         mock_download.assert_called_once()  # shared by every step
-        self.assertEqual(mock_cc.call_args.kwargs["model_name"], "gemini-4-argon")
+        self.assertEqual(mock_cc.call_args.kwargs["model_name"], "gemini-4-carbon")
         self.assertTrue(
             mock_original.call_args.kwargs["path"].endswith(" - original video.mp4")
         )
         self.assertIs(mock_ad.call_args.kwargs["captions"], files)
-        self.assertEqual(mock_ad.call_args.kwargs["model_name"], "gemini-4-argon")
+        self.assertEqual(mock_ad.call_args.kwargs["model_name"], "gemini-4-carbon")
         video = mock_video.call_args.kwargs
         self.assertIs(video["descriptions"], described)
         self.assertEqual(video["captions_path"], "cc/out.srt")
@@ -1395,7 +1396,7 @@ class TestCorrectedCaptionsDefaults(unittest.TestCase):
         self.assertEqual(mock_summary.call_args_list[0].args[1], "Hi.")
 
     def test_youtube_source_needs_no_transcription(self, *mocks):
-        mock_provider, mock_cc = self._run(mocks, "-cc", "gemini-4-argon-youtube")
+        mock_provider, mock_cc = self._run(mocks, "-cc", "gemini-4-carbon-youtube")
         mock_provider.assert_not_called()
         self.assertEqual(mock_cc.call_args.kwargs["source"], "youtube")
 

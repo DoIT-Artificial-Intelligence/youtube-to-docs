@@ -129,7 +129,7 @@ With no options, you get the transcript only. Add options for the outputs you wa
 | `--tts` | An audio summary. Format: `{model}-{voice}`, e.g. `gemini-3.8-flash-lite-tts-Kore`, `gcp-chirp3-Kore` or `aws-polly-Ruth`. | None |
 | `-cia`, `--combine-infographic-audio` | An MP4 that plays the audio summary over the infographic. Needs `-i` and `--tts`. | Off |
 | `-tr`, `--translate` | Translate every output. Format: `{model}-{language}`, e.g. `gemini-3.5-flash-lite-es`, `aws-translate-es` or `gcp-translate-french`. | None |
-| `-cc`, `--corrected-captions` | Corrected captions and audio description. See [Corrected captions and audio description](#corrected-captions-and-audio-description). | Bare: `gemini-4-argon-gemini-3.5-transcribe` |
+| `-cc`, `--corrected-captions` | Corrected captions and audio description. See [Corrected captions and audio description](#corrected-captions-and-audio-description). | Bare: `gemini-4-carbon-gemini-3.5-transcribe` |
 | `-fv`, `--from-video` | Also make the summary, speakers and Q&A from the video itself with Gemini: `agentic`, `static` or `agentic,static`. | None |
 | `-nys`, `--no-youtube-summary` | With an AI transcript, skip the extra summary of the YouTube transcript. | Off |
 | `-a`, `--all` | Use a model suite for summary, TTS and infographic (and set `-nys`): `gemini-flash`, `gemini-pro`, `gemini-flash-pro-image`, `gcp-pro` or `anthropic-opus`. | None |
@@ -139,7 +139,7 @@ With no options, you get the transcript only. Add options for the outputs you wa
 | `--verbose` | More detailed logs. | Off |
 | `-V`, `--version` | Show the version. | |
 
-If you don't set `-m`, `-cc` turns on `-m gemini-4-argon`, and `-i` and `-fv` turn on `-m gemini-3.5-flash-lite`. Model names and prices are on the [Pricing](pricing.md) page, and speed and cost comparisons are on the [Performance](performance.md) page.
+If you don't set `-m`, `-cc` turns on `-m gemini-4-carbon`, and `-i` and `-fv` turn on `-m gemini-3.5-flash-lite`. Model names and prices are on the [Pricing](pricing.md) page, and speed and cost comparisons are on the [Performance](performance.md) page.
 
 ### Examples
 
@@ -217,13 +217,13 @@ youtube-to-docs atmGAHYpf_c -pp '{"word count": ["apple", "banana"]}'
 youtube-to-docs VIDEO_ID -cc
 ```
 
-Without a value it uses `gemini-4-argon-gemini-3.5-transcribe`: the audio is transcribed with `gemini-3.5-transcribe` (word timestamps and speaker diarization) unless `-t` is set, and `gemini-4-argon` reads on-screen context from the video, corrects the captions and describes the visual information. A 3-hour meeting takes about 20 minutes and roughly $3 in API calls.
+Without a value it uses `gemini-4-carbon-gemini-3.5-transcribe`: the audio is transcribed with `gemini-3.5-transcribe` (word timestamps and speaker diarization) unless `-t` is set, and `gemini-4-carbon` reads on-screen context from the video, corrects the captions and describes the visual information. A 3-hour meeting takes about 20 minutes and roughly $3 in API calls.
 
 Other ways to run it:
 
 ```bash
 # Correct the YouTube captions instead of transcribing
-youtube-to-docs VIDEO_ID -cc gemini-4-argon-youtube
+youtube-to-docs VIDEO_ID -cc gemini-4-carbon-youtube
 
 # Correct a GCP Chirp 3 transcript with a cheaper model
 youtube-to-docs VIDEO_ID -t gcp-chirp3 -cc gemini-3.5-flash-lite-gcp-chirp3
@@ -262,9 +262,9 @@ The format is `-cc {model}` or `-cc {model}-{source}`.
 
 | Source | Behaviour | Example |
 | :--- | :--- | :--- |
-| STT model name | Corrects the SRT from that STT run, transcribing it in the same run unless `-t` is set. | `-cc gemini-4-argon-gemini-3.5-transcribe` |
-| `youtube` | Corrects the YouTube SRT, using any STT SRT for the video as the second transcript. | `-cc gemini-4-argon-youtube` |
-| Omitted | Corrects the `-t` STT SRT, else the most recent AI SRT, else the YouTube SRT. | `-cc gemini-4-argon` |
+| STT model name | Corrects the SRT from that STT run, transcribing it in the same run unless `-t` is set. | `-cc gemini-4-carbon-gemini-3.5-transcribe` |
+| `youtube` | Corrects the YouTube SRT, using any STT SRT for the video as the second transcript. | `-cc gemini-4-carbon-youtube` |
+| Omitted | Corrects the `-t` STT SRT, else the most recent AI SRT, else the YouTube SRT. | `-cc gemini-4-carbon` |
 
 If the requested source SRT doesn't exist (for example, `-t youtube -cc`), the available SRT is corrected instead, with a warning.
 

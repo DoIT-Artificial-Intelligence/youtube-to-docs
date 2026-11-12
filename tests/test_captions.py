@@ -460,7 +460,7 @@ class TestCorrectCaptions(unittest.TestCase):
     @patch.object(cc, "_query_llm", side_effect=fake_llm)
     def test_end_to_end(self, mock_llm):
         result = cc.correct_captions(
-            "gemini-4-argon",
+            "gemini-4-carbon",
             STT,
             reference_srt=YOUTUBE,
             video_context="## People\n- Isiah Leggett (Chair) — speaking at 00:01",
@@ -499,7 +499,7 @@ class TestCorrectCaptions(unittest.TestCase):
             if prompt.startswith("You are identifying")
             else ("Error: rate limited", 0, 0)
         )
-        result = cc.correct_captions("gemini-4-argon", STT)
+        result = cc.correct_captions("gemini-4-carbon", STT)
         self.assertEqual(result.fallback_cues, 4)
         self.assertIn(
             "[Jane Doe] okay good afternoon everyone", result.srt.replace("\n", " ")
@@ -546,7 +546,7 @@ class TestProcessCorrectedCaptions(unittest.TestCase):
             cc.process_corrected_captions(
                 row=row,
                 storage=storage,
-                model_name="gemini-4-argon",
+                model_name="gemini-4-carbon",
                 source=source,
                 transcript_arg=transcript_arg,
                 video_id="vid",
@@ -569,41 +569,42 @@ class TestProcessCorrectedCaptions(unittest.TestCase):
             "srt/gemini-3.5-transcribe generated - vid - Title.srt": "STT",
             "srt/youtube generated - vid - Title.srt": "YT",
         }
-        row = {"Speakers gemini-4-argon from video-agentic": "Jane Doe (Chair)"}
+        row = {"Speakers gemini-4-carbon from video-agentic": "Jane Doe (Chair)"}
         correct, ctx, storage = self._run(
             row, "gemini-3.5-transcribe", "gemini-3.5-transcribe", files
         )
         args, kwargs = correct.call_args
-        self.assertEqual(args[:2], ("gemini-4-argon", "STT"))
+        self.assertEqual(args[:2], ("gemini-4-carbon", "STT"))
         self.assertEqual(kwargs["reference_srt"], "YT")
         self.assertEqual(kwargs["video_context"], "## People")
         self.assertEqual(
             kwargs["speaker_lists"],
-            [("gemini-4-argon from video-agentic", "Jane Doe (Chair)")],
+            [("gemini-4-carbon from video-agentic", "Jane Doe (Chair)")],
         )
         self.assertEqual(
-            row["Corrected Captions File gemini-4-argon from gemini-3.5-transcribe"],
-            "srt/gemini-4-argon - vid - Title - "
+            row["Corrected Captions File gemini-4-carbon from gemini-3.5-transcribe"],
+            "srt/gemini-4-carbon - vid - Title - "
             "corrected captions (from gemini-3.5-transcribe).srt",
         )
         # A WebVTT copy for websites (<track kind="captions">).
         vtt_path, vtt = storage.write_text.call_args_list[-1].args
         self.assertEqual(
             vtt_path,
-            "vtt/gemini-4-argon - vid - Title - "
+            "vtt/gemini-4-carbon - vid - Title - "
             "captions (from gemini-3.5-transcribe).vtt",
         )
         self.assertIn("[Jane Doe] Hi &amp; bye.", vtt)
         self.assertEqual(
-            row["Captions VTT File gemini-4-argon from gemini-3.5-transcribe"], vtt_path
+            row["Captions VTT File gemini-4-carbon from gemini-3.5-transcribe"],
+            vtt_path,
         )
         # And a plain-text transcript of the corrected captions.
         txt_path = (
-            "txt/gemini-4-argon - vid - Title - "
+            "txt/gemini-4-carbon - vid - Title - "
             "corrected captions (from gemini-3.5-transcribe).txt"
         )
         self.assertEqual(
-            row["Transcript File gemini-4-argon corrected from gemini-3.5-transcribe"],
+            row["Transcript File gemini-4-carbon corrected from gemini-3.5-transcribe"],
             txt_path,
         )
         self.assertIn(
@@ -617,7 +618,7 @@ class TestProcessCorrectedCaptions(unittest.TestCase):
         correct, _, _ = self._run(row, "gemini-3.5-transcribe", "youtube", files)
         self.assertEqual(correct.call_args.args[1], "YT")
         self.assertEqual(correct.call_args.kwargs["reference_srt"], "")
-        self.assertIn("Corrected Captions File gemini-4-argon from youtube", row)
+        self.assertIn("Corrected Captions File gemini-4-carbon from youtube", row)
 
     def test_youtube_source_uses_stt_as_reference(self):
         files = {"stt.srt": "STT", "yt.srt": "YT"}
@@ -632,7 +633,7 @@ class TestProcessCorrectedCaptions(unittest.TestCase):
 
     def test_skips_when_output_exists(self):
         path = (
-            "srt/gemini-4-argon - vid - Title - corrected captions (from youtube).srt"
+            "srt/gemini-4-carbon - vid - Title - corrected captions (from youtube).srt"
         )
         files = {"srt/youtube generated - vid - Title.srt": "YT", path: "done"}
         row = {}
@@ -640,12 +641,12 @@ class TestProcessCorrectedCaptions(unittest.TestCase):
         correct.assert_not_called()
         ctx.assert_not_called()
         self.assertEqual(
-            row["Corrected Captions File gemini-4-argon from youtube"], path
+            row["Corrected Captions File gemini-4-carbon from youtube"], path
         )
 
     def test_existing_captions_get_missing_transcript(self):
         path = (
-            "srt/gemini-4-argon - vid - Title - corrected captions (from youtube).srt"
+            "srt/gemini-4-carbon - vid - Title - corrected captions (from youtube).srt"
         )
         files = {
             "srt/youtube generated - vid - Title.srt": "YT",
@@ -655,8 +656,8 @@ class TestProcessCorrectedCaptions(unittest.TestCase):
         correct, _, _ = self._run(row, "youtube", "youtube", files)
         correct.assert_not_called()
         self.assertEqual(
-            row["Transcript File gemini-4-argon corrected from youtube"],
-            "txt/gemini-4-argon - vid - Title - corrected captions (from youtube).txt",
+            row["Transcript File gemini-4-carbon corrected from youtube"],
+            "txt/gemini-4-carbon - vid - Title - corrected captions (from youtube).txt",
         )
 
     def test_no_srt_does_nothing(self):
@@ -669,7 +670,7 @@ class TestProcessCorrectedCaptions(unittest.TestCase):
         row = {}
         self._run(row, "youtube", "youtube", files, verbose=True, tokens=(10**6, 10**5))
         self.assertEqual(
-            row["gemini-4-argon corrected captions cost from youtube ($)"], 3.0
+            row["gemini-4-carbon corrected captions cost from youtube ($)"], 3.0
         )
 
 

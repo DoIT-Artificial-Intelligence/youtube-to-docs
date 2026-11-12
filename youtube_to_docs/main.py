@@ -90,7 +90,7 @@ from youtube_to_docs.video_understanding import parse_video_modes, process_from_
 
 # `-cc` without a value: correct the dedicated Gemini STT transcript (word
 # timestamps and diarization) with Gemini's strongest model.
-CORRECTED_CAPTIONS_DEFAULT = "gemini-4-argon-gemini-3.5-transcribe"
+CORRECTED_CAPTIONS_DEFAULT = "gemini-4-carbon-gemini-3.5-transcribe"
 
 
 class VerboseRow(dict):
@@ -198,7 +198,7 @@ def _main_impl(
         help=(
             "The transcript source to use. \n"
             "Can be `youtube` (default) to fetch existing YouTube transcripts, \n"
-            "AI model name (e.g. `gemini-3.5-transcribe`, `gemini-4-argon`, "
+            "AI model name (e.g. `gemini-3.5-transcribe`, `gemini-4-carbon`, "
             "`gemini-3.5-flash-lite`, `gcp-chirp3`, `aws-transcribe`) to "
             "perform STT on extracted audio. \n"
             "`gemini-3.5-transcribe` is Google's dedicated STT model: it returns "
@@ -291,7 +291,7 @@ def _main_impl(
             "directly from the video using Gemini video understanding (no "
             "download needed). Value is the processing mode: `agentic` (the model "
             "navigates the video, loading only what it needs; Gemini 3.5 "
-            "Flash-Lite and later, e.g. gemini-3.8-flash, gemini-4-argon) or "
+            "Flash-Lite and later, e.g. gemini-3.8-flash, gemini-4-carbon) or "
             "`static` (frames at 1 FPS; any Gemini model). Use `agentic,static` "
             "to run both for comparison. Outputs are labelled "
             "`from video-agentic` / `from video-static`."
@@ -329,13 +329,13 @@ def _main_impl(
             "`gemini-flash`: summarization (`gemini-3.5-flash-lite`), "
             "TTS (`gemini-3.8-flash-lite-tts-Kore`), "
             "and Infographic (`gemini-nano-banana-2.1`). \n"
-            "`gemini-pro`: summarization (`gemini-4-argon`), "
+            "`gemini-pro`: summarization (`gemini-4-carbon`), "
             "TTS (`gemini-3.8-flash-tts-Kore`), "
             "and Infographic (`gemini-3-pro-image`). \n"
             "`gemini-flash-pro-image`: summarization (`gemini-3.5-flash-lite`), "
             "TTS (`gemini-3.8-flash-lite-tts-Kore`), "
             "and Infographic (`gemini-3-pro-image`). \n"
-            "`gcp-pro`: summarization (`gemini-4-argon`), "
+            "`gcp-pro`: summarization (`gemini-4-carbon`), "
             "TTS (`gcp-chirp3`), "
             "and Infographic (`gemini-3-pro-image`). \n"
             "`anthropic-opus`: summarization (`claude-opus-5-5`), "
@@ -383,19 +383,19 @@ def _main_impl(
             "corrected captions. \n\n"
             f"Without a value, uses `{CORRECTED_CAPTIONS_DEFAULT}` (and transcribes "
             "with `gemini-3.5-transcribe` unless `-t` is set). Without `-m`, the "
-            "summary and other text outputs use `gemini-4-argon`. \n\n"
+            "summary and other text outputs use `gemini-4-carbon`. \n\n"
             "Format: `{model}` or `{model}-{source}` \n\n"
             "Source rules:\n"
             "  - `youtube` → correct the YouTube SRT "
-            "(e.g. `-cc gemini-4-argon-youtube`).\n"
+            "(e.g. `-cc gemini-4-carbon-youtube`).\n"
             "  - Any transcript model name → correct the SRT from that STT run, "
             "transcribing in the same run unless `-t` is set "
-            "(e.g. `-cc gemini-4-argon-gcp-chirp3`).\n"
+            "(e.g. `-cc gemini-4-carbon-gcp-chirp3`).\n"
             "  - Omit source → the `-t` STT SRT, else the most recent AI SRT, "
             "else the YouTube SRT. \n\n"
             "Examples:\n"
             "  Everything, best quality:      -cc\n"
-            "  Correct YouTube captions:      -cc gemini-4-argon-youtube\n"
+            "  Correct YouTube captions:      -cc gemini-4-carbon-youtube\n"
             "  Cheaper model:                 "
             "-cc gemini-3.5-flash-lite-gemini-3.5-transcribe"
         ),
@@ -420,7 +420,7 @@ def _main_impl(
     # the cheaper gemini-3.5-flash-lite.
     if args.model is None:
         if args.corrected_captions:
-            args.model = "gemini-4-argon"
+            args.model = "gemini-4-carbon"
         elif args.infographic or args.from_video:
             args.model = "gemini-3.5-flash-lite"
 
