@@ -3,7 +3,7 @@ Regression test for --corrected-captions (default).
 
 Runs bare `-cc`: transcribes with gemini-3.5-transcribe (word timestamps
 and diarization), extracts on-screen context from the video, and corrects
-the STT SRT with gemini-4-argon against the YouTube captions.
+the STT SRT with gemini-4-carbon against the YouTube captions.
 
 Requires:
     GEMINI_API_KEY
@@ -43,7 +43,7 @@ def main() -> None:
         corrected_captions="default",
     )
     verify_corrected_captions(
-        out, "Corrected Captions File gemini-4-argon from gemini-3.5-transcribe"
+        out, "Corrected Captions File gemini-4-carbon from gemini-3.5-transcribe"
     )
     print("\n=== SUCCESS ===")
 

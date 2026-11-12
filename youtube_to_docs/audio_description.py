@@ -50,7 +50,7 @@ from youtube_to_docs.utils import (
     normalize_model_name,
 )
 
-DEFAULT_DESCRIPTION_MODEL = "gemini-4-argon"
+DEFAULT_DESCRIPTION_MODEL = "gemini-4-carbon"
 DEFAULT_NARRATION_TTS = "gemini-3.8-flash-tts-Kore"
 
 # A scene-change score above this (0-1, on a small copy of each frame) is a

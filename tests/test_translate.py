@@ -610,9 +610,9 @@ class TestParseCorrectedCaptionsArg(unittest.TestCase):
     def test_default_value(self):
         """The bare -cc default corrects the dedicated Gemini STT transcript."""
         model, source = parse_corrected_captions_arg(
-            "gemini-4-argon-gemini-3.5-transcribe"
+            "gemini-4-carbon-gemini-3.5-transcribe"
         )
-        self.assertEqual(model, "gemini-4-argon")
+        self.assertEqual(model, "gemini-4-carbon")
         self.assertEqual(source, "gemini-3.5-transcribe")
 
     def test_model_with_gcp_source(self):
@@ -653,7 +653,7 @@ class TestParseCorrectedCaptionsArg(unittest.TestCase):
 
     def test_various_model_only_cases(self):
         cases = [
-            "gemini-4-argon",
+            "gemini-4-carbon",
             "foundry-gpt-6-luna",
         ]
         for arg in cases:

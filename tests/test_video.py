@@ -199,7 +199,7 @@ class TestAccessibleVideo(unittest.TestCase):
             row=row,
             storage=storage,
             captions_path="cc.srt",
-            model_name="gemini-4-argon",
+            model_name="gemini-4-carbon",
             source="gemini-3.5-transcribe",
             descriptions=descriptions,
             descriptions_vtt=vtt,
@@ -215,11 +215,11 @@ class TestAccessibleVideo(unittest.TestCase):
 
     TARGET = os.path.join(
         "video-files",
-        "gemini-4-argon - vid - Title - captioned and described video "
+        "gemini-4-carbon - vid - Title - captioned and described video "
         "(from gemini-3.5-transcribe).mp4",
     )
     COLUMN = (
-        "Captioned And Described Video File gemini-4-argon from gemini-3.5-transcribe"
+        "Captioned And Described Video File gemini-4-carbon from gemini-3.5-transcribe"
     )
 
     @patch("youtube_to_docs.video.render_accessible_video", return_value=True)

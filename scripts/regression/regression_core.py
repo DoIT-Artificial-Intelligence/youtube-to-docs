@@ -184,8 +184,8 @@ def verify_output(
         tts_model = "gemini-3.8-flash-lite-tts-Kore"
         no_youtube_summary = True
     elif all_gemini_arg == "gemini-pro":
-        model = "gemini-4-argon"
-        transcript_model = transcript_model or "gemini-4-argon"
+        model = "gemini-4-carbon"
+        transcript_model = transcript_model or "gemini-4-carbon"
         infographic_model = "gemini-3-pro-image"
         tts_model = "gemini-3.8-flash-lite-tts-Kore"
         no_youtube_summary = True

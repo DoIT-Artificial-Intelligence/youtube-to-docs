@@ -98,10 +98,10 @@ def parse_corrected_captions_arg(arg: str) -> Tuple[str, Optional[str]]:
     is 'youtube' or begins with a known source prefix.
 
     Examples:
-      "gemini-4-argon"                      -> ("gemini-4-argon", None)
-      "gemini-4-argon-youtube"              -> ("gemini-4-argon", "youtube")
-      "gemini-4-argon-gemini-3.5-transcribe"
-          -> ("gemini-4-argon", "gemini-3.5-transcribe")
+      "gemini-4-carbon"                      -> ("gemini-4-carbon", None)
+      "gemini-4-carbon-youtube"              -> ("gemini-4-carbon", "youtube")
+      "gemini-4-carbon-gemini-3.5-transcribe"
+          -> ("gemini-4-carbon", "gemini-3.5-transcribe")
       "gemini-3.5-flash-lite-gcp-chirp3"    -> ("gemini-3.5-flash-lite", "gcp-chirp3")
       "bedrock-nova-2-lite-v1-youtube"       -> ("bedrock-nova-2-lite-v1", "youtube")
 

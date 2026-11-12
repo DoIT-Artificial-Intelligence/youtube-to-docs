@@ -83,7 +83,7 @@ def process_video(
         from_video: Also generate the summary, one sentence summary, speakers and
             Q&A directly from the video with Gemini video understanding. Value is
             the processing mode: 'agentic' (the model navigates the video; Gemini
-            3.5 Flash-Lite and later, e.g. gemini-3.8-flash, gemini-4-argon), 'static'
+            3.5 Flash-Lite and later, e.g. gemini-3.8-flash, gemini-4-carbon), 'static'
             (frames at 1 FPS; any Gemini model), or 'agentic,static' for both.
         translate: Translate all outputs to a target language after generating in
             English. Format: `{model}-{language}` e.g. `gemini-3.5-flash-lite-es`,
@@ -109,10 +109,10 @@ def process_video(
             narrated (tts_model, default 'gemini-3.8-flash-tts-Kore'). Also
             writes an Able Player page in 'vtt-files/' for checking the WebVTT
             tracks. The Q&A, summary and tags are then written from the
-            corrected captions. Use 'default' for the best results (gemini-4-argon on a
+            corrected captions. Use 'default' for the best results (gemini-4-carbon on a
             gemini-3.5-transcribe transcript, transcribed in the same run), or
             `{model}` / `{model}-{source}` where source is 'youtube' or a
-            transcript model name (e.g. 'gemini-4-argon-youtube'). Takes about
+            transcript model name (e.g. 'gemini-4-carbon-youtube'). Takes about
             20 minutes for a 3-hour video.
         post_process: Post-process the transcript with JSON operations.
             Example: '{"word count": "apple"}' counts occurrences of 'apple'.

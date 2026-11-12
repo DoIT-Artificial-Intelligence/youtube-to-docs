@@ -12,7 +12,7 @@ description: What it costs to turn a YouTube video into documents with each AI m
 
 <div class="ytd-kpis">
   <div class="ytd-kpi"><span>Summarize a 1-hour video</span><b id="kpi-cheapest">&nbsp;</b><small id="kpi-cheapest-model">&nbsp;</small></div>
-  <div class="ytd-kpi"><span>Real run: a 3h49m hearing</span><b>$1.01</b><small>Gemini 4 Argon: speakers, Q&amp;A, summary, tags and an infographic</small></div>
+  <div class="ytd-kpi"><span>Real run: a 3h49m hearing</span><b>$1.01</b><small>Gemini 4 Carbon: speakers, Q&amp;A, summary, tags and an infographic</small></div>
   <div class="ytd-kpi"><span>Transcribe an hour of audio</span><b id="kpi-stt">&nbsp;</b><small id="kpi-stt-model">&nbsp;</small></div>
 </div>
 

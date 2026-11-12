@@ -29,7 +29,7 @@ class TestParsing(unittest.TestCase):
 
     def test_video_mode_error(self):
         self.assertIsNone(vu.video_mode_error("gemini-3.5-flash-lite"))
-        self.assertIsNone(vu.video_mode_error("gemini-4-argon"))
+        self.assertIsNone(vu.video_mode_error("gemini-4-carbon"))
         error = vu.video_mode_error("vertex-claude-opus-5-5")
         assert error is not None
         self.assertIn("Gemini API model", error)
@@ -190,7 +190,7 @@ class TestProcessFromVideo(unittest.TestCase):
 
 
 class TestEnsureVideoContext(unittest.TestCase):
-    def _run(self, row, model_name="gemini-4-argon", files=None):
+    def _run(self, row, model_name="gemini-4-carbon", files=None):
         files = files or {}
         storage = MagicMock()
         storage.exists.side_effect = lambda path: path in files
@@ -222,13 +222,13 @@ class TestEnsureVideoContext(unittest.TestCase):
     @patch("youtube_to_docs.video_understanding.VideoSession")
     def test_reads_previously_saved_file(self, mock_session_cls):
         path = (
-            "ctx/gemini-4-argon - vid1 - Title - video-context (from video-agentic).md"
+            "ctx/gemini-4-carbon - vid1 - Title - video-context (from video-agentic).md"
         )
         row = {}
         text, _ = self._run(row, files={path: "saved"})
         self.assertEqual(text, "saved")
         self.assertEqual(
-            row["Video Context File gemini-4-argon from video-agentic"], path
+            row["Video Context File gemini-4-carbon from video-agentic"], path
         )
         mock_session_cls.assert_not_called()
 
@@ -239,11 +239,11 @@ class TestEnsureVideoContext(unittest.TestCase):
         text, storage = self._run(row)
         self.assertEqual(text, "## People\n- B")
         mock_session_cls.assert_called_once_with(
-            "gemini-4-argon", "https://www.youtube.com/watch?v=vid1", "agentic"
+            "gemini-4-carbon", "https://www.youtube.com/watch?v=vid1", "agentic"
         )
         self.assertEqual(mock_session_cls.return_value.ask.call_count, 1)
         self.assertIn("## People", mock_session_cls.return_value.ask.call_args.args[0])
-        self.assertEqual(row["Video Context gemini-4-argon from video-agentic"], text)
+        self.assertEqual(row["Video Context gemini-4-carbon from video-agentic"], text)
         storage.write_text.assert_called_once()
 
     @patch("youtube_to_docs.video_understanding.VideoSession")

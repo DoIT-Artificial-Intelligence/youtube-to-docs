@@ -90,16 +90,16 @@ The SRT is passed with the Q&A prompt as a *timing reference*, so each answer's 
 | Suite | Text model | Transcript | Infographic | Voice |
 | :--- | :--- | :--- | :--- | :--- |
 | `gemini-flash` | `gemini-3.5-flash-lite` | `gemini-3.5-flash-lite` | `gemini-nano-banana-2.1` | `gemini-3.8-flash-lite-tts-Kore` |
-| `gemini-pro` | `gemini-4-argon` | `gemini-4-argon` | `gemini-3-pro-image` | `gemini-3.8-flash-tts-Kore` |
+| `gemini-pro` | `gemini-4-carbon` | `gemini-4-carbon` | `gemini-3-pro-image` | `gemini-3.8-flash-tts-Kore` |
 | `gemini-flash-pro-image` | `gemini-3.5-flash-lite` | `gemini-3.5-flash-lite` | `gemini-3-pro-image` | `gemini-3.8-flash-lite-tts-Kore` |
-| `gcp-pro` | `gemini-4-argon` | `gcp-chirp3` | `gemini-3-pro-image` | `gcp-chirp3` |
+| `gcp-pro` | `gemini-4-carbon` | `gcp-chirp3` | `gemini-3-pro-image` | `gcp-chirp3` |
 | `anthropic-opus` | `claude-opus-5-5` (Bedrock) | `aws-transcribe` | `gemini-3-pro-image` | `aws-polly-Ruth` |
 
 ### Video understanding (`--from-video`)
 
 `--from-video agentic|static` (or `agentic,static`) sends the YouTube URL to Gemini through the Interactions API, without downloading the video. Gemini writes a summary, one-sentence summary, speakers, Q&A and on-screen context (`video-context-files/`) from the video itself, so it can use slides, charts and name plates that a transcript misses. These are saved next to the transcript-based outputs under the source `video-agentic` or `video-static`, and get infographics and audio too.
 
-- **Agentic** (Gemini 3.5 Flash-Lite and later, e.g. `gemini-3.8-flash`, `gemini-4-argon`): the model moves around the video, loading transcript, frames or audio only when it needs them. Works on multi-hour videos.
+- **Agentic** (Gemini 3.5 Flash-Lite and later, e.g. `gemini-3.8-flash`, `gemini-4-carbon`): the model moves around the video, loading transcript, frames or audio only when it needs them. Works on multi-hour videos.
 - **Static**: frames are sampled at 1 FPS for the whole video. Limited to videos that fit in the model's context window (about 3 hours at the default resolution).
 
 The first request loads the video, and later requests continue the same server-side session. Requests run in the background and are polled, with a 30-minute timeout. Costs include the model's reasoning (thought tokens) and the content it loads (tool use tokens). The transcript-based pipeline still runs alongside.
@@ -129,7 +129,7 @@ File names end in `({model}-{language})`, e.g. `(gcp-translate-es)`, to show how
 
 ## 5. Accessibility
 
-`-cc` / `--corrected-captions` makes the original video accessible under WCAG 2.1 Level AA and Section 508. Without a value it uses `gemini-4-argon-gemini-3.5-transcribe`: the audio is transcribed with `gemini-3.5-transcribe` (unless `-t` is set) and the captions are corrected with `gemini-4-argon`. The format is `{model}` or `{model}-{source}`, e.g. `gemini-4-argon-youtube`.
+`-cc` / `--corrected-captions` makes the original video accessible under WCAG 2.1 Level AA and Section 508. Without a value it uses `gemini-4-carbon-gemini-3.5-transcribe`: the audio is transcribed with `gemini-3.5-transcribe` (unless `-t` is set) and the captions are corrected with `gemini-4-carbon`. The format is `{model}` or `{model}-{source}`, e.g. `gemini-4-carbon-youtube`.
 
 **Captions** (SRT in `srt-files/`, a plain-text transcript in `transcript-files/`, and WebVTT in `vtt-files/`):
 
