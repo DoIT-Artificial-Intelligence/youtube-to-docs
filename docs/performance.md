@@ -29,13 +29,13 @@ How long each image model takes to draw an infographic from the same summary, an
 
 </div>
 
-`gemini-3-pro-image`, the default for `-i`, was the only model with no text errors on both videos we compared (this one and a 3h49m hearing). Image models can still misspell words, so check the text before you publish an infographic. Select an image to open the preview at full width.
+`foundry-gpt-image-2.5-sunburst` is the default for `-i`. `gemini-3-pro-image` was the only model with no text errors on both videos we compared (this one and a 3h49m hearing). Image models can still misspell words, so check the text before you publish an infographic. Select an image to open the preview at full width.
 
 <div class="ytd-gallery" markdown>
 
 <figure markdown>
 <a href="../assets/infographics/gemini-3-pro-image.webp"><img src="../assets/infographics/gemini-3-pro-image.webp" alt="Infographic titled MJM Committee Session Summary: AI in Maryland State Government (10/1/2025 #1), naming co-chairs Senator Katie Fry Hester and Delegate Ann Kaiser. Panels cover the federal overview from NCSL, a Maryland DoIT update (responsible AI policy, 1 in 4 employees using enterprise AI, 100+ agency use cases), state agency chatbots, national best practices from Denver, Oregon and Google Public Sector, and committee Q&A themes on data, bias and cost savings." loading="lazy" /></a>
-<figcaption><code>gemini-3-pro-image</code>: Default for <code>-i</code>. Clear 16:9 layout with no text errors found.</figcaption>
+<figcaption><code>gemini-3-pro-image</code>: Clear 16:9 layout with no text errors found.</figcaption>
 </figure>
 
 <figure markdown>
@@ -55,7 +55,7 @@ How long each image model takes to draw an infographic from the same summary, an
 
 <figure markdown>
 <a href="../assets/infographics/foundry-gpt-image-2.5-sunburst.webp"><img src="../assets/infographics/foundry-gpt-image-2.5-sunburst.webp" alt="Infographic titled MJM Committee Session, 10/1/2025 #1, with a Maryland flag and State House banner. Colored columns cover the federal overview, Maryland DoIT update, state agency implementations and other states' examples, with call-out figures such as 40% of 311 interactions, 90% customer satisfaction and 26 FTE saved per month, and a closing panel reading Smarter tools. Stronger services. A brighter Maryland." loading="lazy" /></a>
-<figcaption><code>foundry-gpt-image-2.5-sunburst</code>: The most polished, poster-like design, but with several misspellings.</figcaption>
+<figcaption><code>foundry-gpt-image-2.5-sunburst</code>: Default for <code>-i</code>. The most polished, poster-like design, but with several misspellings.</figcaption>
 </figure>
 
 </div>

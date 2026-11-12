@@ -108,7 +108,7 @@ The first request loads the video, and later requests continue the same server-s
 
 | Flag | Output | Details |
 | :--- | :--- | :--- |
-| `-i` / `--infographic` | One infographic per summary, in `infographic-files/` | Gemini (`gemini-3-pro-image` for a bare `-i`, `gemini-nano-banana-2.1`, `gemini-3.1-flash-lite-image`) or Azure Foundry GPT Image 2.5 (`foundry-gpt-image-2.5-sunburst`, `foundry-gpt-image-2.5-flare`). 16:9 landscape at the model's highest resolution, so it works as a thumbnail. The prompt (video title and summary) is saved in `infographic-prompts/`. |
+| `-i` / `--infographic` | One infographic per summary, in `infographic-files/` | Azure Foundry GPT Image 2.5 (`foundry-gpt-image-2.5-sunburst` for a bare `-i`, `foundry-gpt-image-2.5-flare`) or Gemini (`gemini-3-pro-image`, `gemini-nano-banana-2.1`, `gemini-3.1-flash-lite-image`). 16:9 landscape at the model's highest resolution, so it works as a thumbnail. The prompt (video title and summary) is saved in `infographic-prompts/`. |
 | `--alt-text-model` | Alt text for each infographic, in `infographic-alt-text/` | A multimodal model looks at the image itself and describes its layout and content. Defaults to the summary model. Prefixes such as "Alt text:" are removed. |
 | `--tts` | The summary read aloud, in `audio-files/` | Gemini TTS (e.g. `gemini-3.8-flash-lite-tts-Kore`), Google Cloud (`gcp-chirp3`) or Amazon Polly (`aws-polly-Ruth`). |
 | `--combine-infographic-audio` | An MP4 of the infographic with the audio, in `video-files/` | Made with `static-ffmpeg`, so there's no FFmpeg to install. Scaled to fit 3840×2160. |
