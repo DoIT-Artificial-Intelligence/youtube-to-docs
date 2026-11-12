@@ -253,14 +253,14 @@ def _main_impl(
         "-i",
         "--infographic",
         nargs="?",
-        const="gemini-3-pro-image",
+        const="foundry-gpt-image-2.5-sunburst",
         default=None,
         help=(
             "The image model to use for generating an infographic. "
             "If set as a flag without a value, defaults to "
-            "`gemini-3-pro-image`. "
-            "e.g. `gemini-nano-banana-2.1`, `gemini-3-pro-image` or "
-            "`foundry-gpt-image-2.5-sunburst`. "
+            "`foundry-gpt-image-2.5-sunburst` (needs `AZURE_FOUNDRY_ENDPOINT` "
+            "and `AZURE_FOUNDRY_API_KEY`). "
+            "e.g. `gemini-nano-banana-2.1` or `gemini-3-pro-image`. "
             "Can be a comma-separated list to generate one infographic per model "
             "(e.g. `gemini-nano-banana-2.1,gemini-3-pro-image`)."
         ),

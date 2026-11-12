@@ -124,7 +124,7 @@ With no options, you get the transcript only. Add options for the outputs you wa
 | :--- | :--- | :--- |
 | `-m`, `--model` | Speakers, Q&A, tags and summaries with an LLM. Comma-separate to compare models. | Bare: `gemini-3.5-flash-lite` |
 | `-t`, `--transcript` | Where the transcript comes from: `youtube`, or a speech-to-text model such as `gemini-3.5-transcribe`, `gcp-chirp3` or `aws-transcribe`. | `youtube` |
-| `-i`, `--infographic` | An infographic, with alt text, from an image model. Comma-separate for one per model. | Bare: `gemini-3-pro-image` |
+| `-i`, `--infographic` | An infographic, with alt text, from an image model. Comma-separate for one per model. | Bare: `foundry-gpt-image-2.5-sunburst` |
 | `--alt-text-model` | The LLM that writes the infographic alt text. | The `-m` model |
 | `--tts` | An audio summary. Format: `{model}-{voice}`, e.g. `gemini-3.8-flash-lite-tts-Kore`, `gcp-chirp3-Kore` or `aws-polly-Ruth`. | None |
 | `-cia`, `--combine-infographic-audio` | An MP4 that plays the audio summary over the infographic. Needs `-i` and `--tts`. | Off |
