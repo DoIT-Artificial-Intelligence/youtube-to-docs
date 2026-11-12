@@ -1222,7 +1222,7 @@
 <h3 id="video-understanding-from-video">Video understanding (<code>--from-video</code>)</h3>
 <p><code>--from-video agentic|static</code> (or <code>agentic,static</code>) sends the YouTube URL to Gemini through the Interactions API, without downloading the video. Gemini writes a summary, one-sentence summary, speakers, Q&amp;A and on-screen context (<code>video-context-files/</code>) from the video itself, so it can use slides, charts and name plates that a transcript misses. These are saved next to the transcript-based outputs under the source <code>video-agentic</code> or <code>video-static</code>, and get infographics and audio too.</p>
 <ul>
-<li><strong>Agentic</strong> (Gemini 3.5 Flash-Lite and later, e.g. <code>gemini-3.8-flash</code>, <code>gemini-4-carbon</code>): the model moves around the video, loading transcript, frames or audio only when it needs them. Works on multi-hour videos.</li>
+<li><strong>Agentic</strong> (Gemini 3.5 Flash-Lite and later, e.g. <code>gemini-4-hydrogen</code>, <code>gemini-4-carbon</code>): the model moves around the video, loading transcript, frames or audio only when it needs them. Works on multi-hour videos.</li>
 <li><strong>Static</strong>: frames are sampled at 1 FPS for the whole video. Limited to videos that fit in the model's context window (about 3 hours at the default resolution).</li>
 </ul>
 <p>The first request loads the video, and later requests continue the same server-side session. Requests run in the background and are polled, with a 30-minute timeout. Costs include the model's reasoning (thought tokens) and the content it loads (tool use tokens). The transcript-based pipeline still runs alongside.</p>
