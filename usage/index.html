@@ -1345,7 +1345,7 @@
 <tr>
 <td style="text-align: left;"><code>-cc</code>, <code>--corrected-captions</code></td>
 <td style="text-align: left;">Corrected captions and audio description. See <a href="#corrected-captions-and-audio-description">Corrected captions and audio description</a>.</td>
-<td style="text-align: left;">Bare: <code>gemini-4-argon-gemini-3.5-transcribe</code></td>
+<td style="text-align: left;">Bare: <code>gemini-4-carbon-gemini-3.5-transcribe</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>-fv</code>, <code>--from-video</code></td>
@@ -1389,7 +1389,7 @@
 </tr>
 </tbody>
 </table>
-<p>If you don't set <code>-m</code>, <code>-cc</code> turns on <code>-m gemini-4-argon</code>, and <code>-i</code> and <code>-fv</code> turn on <code>-m gemini-3.5-flash-lite</code>. Model names and prices are on the <a href="../pricing/">Pricing</a> page, and speed and cost comparisons are on the <a href="../performance/">Performance</a> page.</p>
+<p>If you don't set <code>-m</code>, <code>-cc</code> turns on <code>-m gemini-4-carbon</code>, and <code>-i</code> and <code>-fv</code> turn on <code>-m gemini-3.5-flash-lite</code>. Model names and prices are on the <a href="../pricing/">Pricing</a> page, and speed and cost comparisons are on the <a href="../performance/">Performance</a> page.</p>
 <h3 id="examples">Examples</h3>
 <p><strong>Transcript only:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c
@@ -1428,10 +1428,10 @@
 <p><code>-cc</code> / <code>--corrected-captions</code> makes a video accessible under WCAG 2.1 Level AA (1.2.2 Captions, 1.2.5 Audio Description) and <a href="https://www.section508.gov/create/captions-transcripts/">Section 508</a>, following the DCMP Captioning and Description Keys.</p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>youtube-to-docs<span class="w"> </span>VIDEO_ID<span class="w"> </span>-cc
 </code></pre></div>
-<p>Without a value it uses <code>gemini-4-argon-gemini-3.5-transcribe</code>: the audio is transcribed with <code>gemini-3.5-transcribe</code> (word timestamps and speaker diarization) unless <code>-t</code> is set, and <code>gemini-4-argon</code> reads on-screen context from the video, corrects the captions and describes the visual information. A 3-hour meeting takes about 20 minutes and roughly $3 in API calls.</p>
+<p>Without a value it uses <code>gemini-4-carbon-gemini-3.5-transcribe</code>: the audio is transcribed with <code>gemini-3.5-transcribe</code> (word timestamps and speaker diarization) unless <code>-t</code> is set, and <code>gemini-4-carbon</code> reads on-screen context from the video, corrects the captions and describes the visual information. A 3-hour meeting takes about 20 minutes and roughly $3 in API calls.</p>
 <p>Other ways to run it:</p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1"># Correct the YouTube captions instead of transcribing</span>
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>youtube-to-docs<span class="w"> </span>VIDEO_ID<span class="w"> </span>-cc<span class="w"> </span>gemini-4-argon-youtube
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>youtube-to-docs<span class="w"> </span>VIDEO_ID<span class="w"> </span>-cc<span class="w"> </span>gemini-4-carbon-youtube
 <a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
 <a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="c1"># Correct a GCP Chirp 3 transcript with a cheaper model</span>
 <a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>youtube-to-docs<span class="w"> </span>VIDEO_ID<span class="w"> </span>-t<span class="w"> </span>gcp-chirp3<span class="w"> </span>-cc<span class="w"> </span>gemini-3.5-flash-lite-gcp-chirp3
@@ -1522,17 +1522,17 @@
 <tr>
 <td style="text-align: left;">STT model name</td>
 <td style="text-align: left;">Corrects the SRT from that STT run, transcribing it in the same run unless <code>-t</code> is set.</td>
-<td style="text-align: left;"><code>-cc gemini-4-argon-gemini-3.5-transcribe</code></td>
+<td style="text-align: left;"><code>-cc gemini-4-carbon-gemini-3.5-transcribe</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>youtube</code></td>
 <td style="text-align: left;">Corrects the YouTube SRT, using any STT SRT for the video as the second transcript.</td>
-<td style="text-align: left;"><code>-cc gemini-4-argon-youtube</code></td>
+<td style="text-align: left;"><code>-cc gemini-4-carbon-youtube</code></td>
 </tr>
 <tr>
 <td style="text-align: left;">Omitted</td>
 <td style="text-align: left;">Corrects the <code>-t</code> STT SRT, else the most recent AI SRT, else the YouTube SRT.</td>
-<td style="text-align: left;"><code>-cc gemini-4-argon</code></td>
+<td style="text-align: left;"><code>-cc gemini-4-carbon</code></td>
 </tr>
 </tbody>
 </table>
