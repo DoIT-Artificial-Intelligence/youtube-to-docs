@@ -502,10 +502,13 @@ class TestPricing(unittest.TestCase):
     def test_get_model_pricing_openai_gpt_6(self):
         """OpenAI models resolve to prices via Foundry names and old aliases."""
         cases = {
-            "foundry-gpt-6-astra": (10.0, 50.0),
-            "foundry-gpt-6.1-sol": (2.0, 10.0),
+            "foundry-gpt-6.2-astra": (8.0, 40.0),
+            "foundry-gpt-6.2-sol": (2.0, 10.0),
+            "foundry-gpt-6.1-terra": (1.0, 5.0),
             "foundry-gpt-6-luna": (0.1, 0.5),
-            "gpt-5.5": (10.0, 50.0),
+            "foundry-gpt-6-astra": (8.0, 40.0),
+            "foundry-gpt-6.1-sol": (2.0, 10.0),
+            "gpt-5.5": (8.0, 40.0),
             "gpt-5.4": (2.0, 10.0),
             "gpt-5.4-mini": (0.1, 0.5),
         }

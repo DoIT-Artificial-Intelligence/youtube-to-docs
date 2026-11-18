@@ -122,24 +122,34 @@ PRICES = {
             "input_cached": None,
         },
         {
-            "id": "gpt-6-astra",
+            "id": "gpt-6.2-astra",
             "vendor": "openai",
-            "name": "GPT-6 Astra",
-            # Prompts <=272k tokens. Prompts >272k are billed at 20 / 75.
-            "note": "Prompts over 272k tokens are billed at $20 / $75.",
-            "input": 10.0,
-            "output": 50.0,
-            "input_cached": 1.0,
+            "name": "GPT-6.2 Astra",
+            # Prompts <=272k tokens. Prompts >272k are billed at 16 / 60.
+            "note": "Prompts over 272k tokens are billed at $16 / $60.",
+            "input": 8.0,
+            "output": 40.0,
+            "input_cached": 0.4,
         },
         {
-            "id": "gpt-6.1-sol",
+            "id": "gpt-6.2-sol",
             "vendor": "openai",
-            "name": "GPT-6.1 Sol",
+            "name": "GPT-6.2 Sol",
             # Prompts <=272k tokens. Prompts >272k are billed at 4 / 15.
             "note": "Prompts over 272k tokens are billed at $4 / $15.",
             "input": 2.0,
             "output": 10.0,
             "input_cached": 0.1,
+        },
+        {
+            "id": "gpt-6.1-terra",
+            "vendor": "openai",
+            "name": "GPT-6.1 Terra",
+            # Prompts <=272k tokens. Prompts >272k are billed at 2 / 7.5.
+            "note": "Prompts over 272k tokens are billed at $2 / $7.50.",
+            "input": 1.0,
+            "output": 5.0,
+            "input_cached": 0.05,
         },
         {
             "id": "gpt-6-luna",
@@ -307,8 +317,10 @@ PRICES = {
         "gemini-3.1-pro-preview": "gemini-4-carbon",
         "gemini-4-argon": "gemini-4-carbon",
         "gemini-3.1-flash-tts-preview": "gemini-3.8-flash-lite-tts",
-        "gpt-5.5": "gpt-6-astra",
-        "gpt-5.4": "gpt-6.1-sol",
+        "gpt-5.5": "gpt-6.2-astra",
+        "gpt-6-astra": "gpt-6.2-astra",
+        "gpt-5.4": "gpt-6.2-sol",
+        "gpt-6.1-sol": "gpt-6.2-sol",
         "gpt-5.4-mini": "gpt-6-luna",
     },
 }
