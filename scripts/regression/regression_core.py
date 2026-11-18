@@ -24,7 +24,7 @@ MODELS_TO_CHECK = {
 def normalize_model_name(model_name: str) -> str:
     """Normalizes a model name by stripping prefixes and suffixes."""
     normalized = model_name
-    prefixes = ["vertex-", "bedrock-", "foundry-"]
+    prefixes = ["vertex-", "bedrock-", "foundry-", "nvidia-"]
     for prefix in prefixes:
         if normalized.startswith(prefix):
             normalized = normalized[len(prefix) :]
