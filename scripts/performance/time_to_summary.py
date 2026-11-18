@@ -20,8 +20,9 @@ MODELS = [
     "bedrock-claude-opus-5-5",
     "bedrock-claude-fable-5-2",
     "bedrock-gpt-6-luna",
-    "bedrock-gpt-6.1-sol",
-    "bedrock-gpt-6-astra",
+    "bedrock-gpt-6.1-terra",
+    "bedrock-gpt-6.2-sol",
+    "bedrock-gpt-6.2-astra",
     "gemini-3.5-flash-lite",
     "gemini-4-hydrogen",
     "gemini-4-carbon",
@@ -33,8 +34,9 @@ MODELS = [
     "vertex-claude-opus-5-5",
     "vertex-claude-fable-5-2",
     "foundry-gpt-6-luna",
-    "foundry-gpt-6.1-sol",
-    "foundry-gpt-6-astra",
+    "foundry-gpt-6.1-terra",
+    "foundry-gpt-6.2-sol",
+    "foundry-gpt-6.2-astra",
 ]
 
 
