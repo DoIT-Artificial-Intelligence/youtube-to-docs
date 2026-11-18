@@ -88,7 +88,8 @@ class TestModelNormalization(unittest.TestCase):
         )
         self.assertEqual(utils.normalize_model_name("foundry-gpt-4"), "gpt-4")
         self.assertEqual(
-            utils.normalize_model_name("nvidia-gemma-4-31b-it"), "gemma-4-31b-it"
+            utils.normalize_model_name("nvidia-nemotron-3.5-lightning-30b-a3b"),
+            "nemotron-3.5-lightning-30b-a3b",
         )
         self.assertEqual(utils.normalize_model_name("claude-3-5"), "claude-3-5")
 
