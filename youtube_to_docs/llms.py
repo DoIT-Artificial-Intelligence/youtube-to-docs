@@ -68,6 +68,15 @@ NVIDIA_TIMEOUT_SECONDS = (30, 15 * 60)
 # Seconds to wait before each retry of a rate-limited (HTTP 429) NVIDIA request.
 NVIDIA_RETRY_WAITS_SECONDS = (5, 15, 30, 60)
 
+# NVIDIA's hosted speech models are served by Riva over gRPC, not by the
+# OpenAI-compatible endpoint. Each model is a cloud function picked by its ID.
+NVIDIA_RIVA_URI = "grpc.nvcf.nvidia.com:443"
+NVIDIA_FUNCTIONS_URL = "https://api.nvcf.nvidia.com/v2/nvcf/functions"
+
+# Seconds to wait for a transcription. A 93-minute recording takes under a
+# minute; the limit exists so a stalled request fails instead of hanging forever.
+NVIDIA_STT_TIMEOUT_SECONDS = 15 * 60
+
 
 def get_model_pricing(model_name: str) -> Tuple[float | None, float | None]:
     """
@@ -934,7 +943,173 @@ def resolve_nvidia_model(model_name: str, api_key: str) -> str:
     return f"nvidia/{name}"
 
 
-class NvidiaProvider(BaseProvider, LLMProvider):
+_nvidia_function_ids: Optional[Dict[str, str]] = None
+
+
+def _nvidia_functions(api_key: str) -> Dict[str, str]:
+    """Maps NVIDIA cloud function names to IDs, fetched once per run."""
+    global _nvidia_function_ids
+    if _nvidia_function_ids is None:
+        response = requests.get(
+            NVIDIA_FUNCTIONS_URL,
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=NVIDIA_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+        _nvidia_function_ids = {
+            function["name"]: function["id"]
+            for function in response.json().get("functions", [])
+            if function.get("status") == "ACTIVE"
+        }
+    return _nvidia_function_ids
+
+
+def resolve_nvidia_function_id(model_name: str, api_key: str) -> Optional[str]:
+    """
+    Finds the cloud function ID of an NVIDIA speech model.
+
+    `nvidia-parakeet-tdt-0.6b-v2` is the function `ai-parakeet-tdt-0_6b-v2`.
+    Returns None when NVIDIA hosts no such function.
+    """
+    name = model_name.removeprefix("nvidia-")
+    return _nvidia_functions(api_key).get(f"ai-{name.replace('.', '_')}")
+
+
+def _transcribe_nvidia(
+    model_name: str, audio_path: str, language: str = "en"
+) -> Tuple[str, str, int, int]:
+    """
+    Transcribes audio with a speech model hosted by NVIDIA (e.g.
+    `nvidia-parakeet-tdt-0.6b-v2`), in one request with word timestamps.
+
+    Returns (transcript_text, srt_content, 0, 0): the hosted models are free.
+    """
+    api_key = os.environ.get("NVIDIA_API_KEY")
+    if not api_key:
+        return "Error: NVIDIA_API_KEY not found", "", 0, 0
+
+    try:
+        import riva.client
+    except ImportError:
+        return (
+            "Error: nvidia-riva-client is required for NVIDIA speech-to-text. "
+            "Install with `pip install 'youtube-to-docs[nvidia]'`",
+            "",
+            0,
+            0,
+        )
+
+    try:
+        import static_ffmpeg
+
+        static_ffmpeg.add_paths()
+    except ImportError:
+        pass  # Fall back to an ffmpeg already on the PATH.
+
+    try:
+        function_id = resolve_nvidia_function_id(model_name, api_key)
+    except Exception as e:
+        return f"Error: listing NVIDIA speech models failed: {e}", "", 0, 0
+    if not function_id:
+        return (
+            f"Error: NVIDIA hosts no speech-to-text model named {model_name}",
+            "",
+            0,
+            0,
+        )
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Riva takes WAV, Ogg or Opus, not the M4A that yt-dlp saves. Opus keeps
+        # the upload about eight times smaller than WAV.
+        ogg_path = os.path.join(temp_dir, "audio.ogg")
+        try:
+            subprocess.run(
+                [
+                    "ffmpeg",
+                    "-i",
+                    audio_path,
+                    "-vn",
+                    "-ac",
+                    "1",
+                    "-ar",
+                    "16000",
+                    "-c:a",
+                    "libopus",
+                    "-b:a",
+                    "32k",
+                    "-loglevel",
+                    "error",
+                    ogg_path,
+                ],
+                check=True,
+            )
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            return f"Error: converting audio with ffmpeg failed: {e}", "", 0, 0
+        with open(ogg_path, "rb") as f:
+            audio_bytes = f.read()
+
+    try:
+        auth = riva.client.Auth(
+            uri=NVIDIA_RIVA_URI,
+            use_ssl=True,
+            metadata_args=[
+                ["function-id", function_id],
+                ["authorization", f"Bearer {api_key}"],
+            ],
+            # The client annotates option values as str; gRPC wants ints here.
+            options=cast(
+                Any,
+                [
+                    ("grpc.max_send_message_length", -1),
+                    ("grpc.max_receive_message_length", -1),
+                ],
+            ),
+        )
+        config = riva.client.RecognitionConfig(
+            language_code="en-US" if language == "en" else language,
+            max_alternatives=1,
+            enable_automatic_punctuation=True,
+            enable_word_time_offsets=True,
+        )
+        response = (
+            riva.client.ASRService(auth)
+            .offline_recognize(audio_bytes, config, future=True)
+            .result(timeout=NVIDIA_STT_TIMEOUT_SECONDS)
+        )
+    except Exception as e:
+        details = getattr(e, "details", None)
+        message = details() if callable(details) else str(e)
+        print(f"NVIDIA speech-to-text error: {message}")
+        return f"Error: NVIDIA speech-to-text failed: {message}", "", 0, 0
+
+    text_parts: List[str] = []
+    words: List[Tuple[str, float, float]] = []
+    for result in response.results:
+        if not result.alternatives:
+            continue
+        alternative = result.alternatives[0]
+        text_parts.append(alternative.transcript.strip())
+        # Riva reports word times in milliseconds.
+        words.extend(
+            (word.word, word.start_time / 1000, word.end_time / 1000)
+            for word in alternative.words
+        )
+
+    srt_entries, _ = _words_to_srt_entries(words, 1)
+    return " ".join(text_parts), "\n".join(srt_entries), 0, 0
+
+
+class NvidiaProvider(BaseProvider, LLMProvider, STTProvider):
+    def transcribe(
+        self,
+        audio_path: str,
+        url: str,
+        language: str = "en",
+        duration_seconds: Optional[float] = None,
+        **kwargs,
+    ) -> Tuple[str, str, int, int]:
+        return _transcribe_nvidia(self.model_name, audio_path, language)
+
     def generate_content(self, prompt: str, **kwargs) -> Tuple[str, int, int]:
         try:
             api_key = os.environ["NVIDIA_API_KEY"]

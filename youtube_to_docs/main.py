@@ -199,8 +199,8 @@ def _main_impl(
             "The transcript source to use. \n"
             "Can be `youtube` (default) to fetch existing YouTube transcripts, \n"
             "AI model name (e.g. `gemini-3.5-transcribe`, `gemini-4-carbon`, "
-            "`gemini-3.5-flash-lite`, `gcp-chirp3`, `aws-transcribe`) to "
-            "perform STT on extracted audio. \n"
+            "`gemini-3.5-flash-lite`, `gcp-chirp3`, `aws-transcribe`, "
+            "`nvidia-parakeet-tdt-0.6b-v2`) to perform STT on extracted audio. \n"
             "`gemini-3.5-transcribe` is Google's dedicated STT model: it returns "
             "word-level timestamps and speaker diarization, so the SRT carries real "
             "offsets and `[Speaker N]` labels on speaker changes. \n"
@@ -209,7 +209,9 @@ def _main_impl(
             "is transcribed in the same run. \n"
             "For `gcp-` models (Cloud Speech-to-Text V2), `GOOGLE_CLOUD_PROJECT` "
             "is required and `YTD_GCS_BUCKET_NAME` is optional/recommended. \n"
-            "For `aws-transcribe`, `YTD_S3_BUCKET_NAME` is required."
+            "For `aws-transcribe`, `YTD_S3_BUCKET_NAME` is required. \n"
+            "For `nvidia-` speech models (free, English), `NVIDIA_API_KEY` and the "
+            "`nvidia` extra are required."
         ),
     )
     parser.add_argument(

@@ -36,6 +36,7 @@ This directory contains regression tests for the `youtube-to-docs` tool.
 
 - **[regression_workspace.py](regression_workspace.py)**: Stores results in Google Drive (folder `youtube-to-docs-test-drive`).
 - **[regression_workspace_es.py](regression_workspace_es.py)**: Spanish run stored in Google Drive using Gemini Pro models.
+- **[regression_nvidia_stt.py](regression_nvidia_stt.py)**: Transcribes with NVIDIA's hosted Parakeet model (`-t nvidia-parakeet-tdt-0.6b-v2`). Needs `NVIDIA_API_KEY`.
 - **[regression_nvidia.py](regression_nvidia.py)**: Summarizes with open models from the NVIDIA API catalog (`nvidia-…`). Needs `NVIDIA_API_KEY`.
 - **[regression_sharepoint.py](regression_sharepoint.py)**: Stores results in SharePoint/OneDrive. Uses `foundry-gpt-6-luna` for summarization.
 - **[regression_huggingface.py](regression_huggingface.py)**: Processes a single video and stores results in a Hugging Face dataset (`-o hf`). The cheap smoke test for HF storage. Requires the `HF_TOKEN` env var (write token). Override the dataset with `HF_DATASET` or the YouTube target with `HF_VIDEO`.

@@ -17,7 +17,7 @@ test = [
 
 [project]
 name = "youtube-to-docs"
-version = "0.0.148"
+version = "0.0.149"
 description = "Convert YouTube videos into structured docs, summaries, audio, and visual assets for easier discovery"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -65,6 +65,11 @@ m365 = [
 huggingface = [
     "huggingface_hub>=1.21.0",
 ]
+nvidia = [
+    # Speech-to-text only (`-t nvidia-parakeet-tdt-0.6b-v2`). NVIDIA's LLMs
+    # (`-m nvidia-...`) need no extra.
+    "nvidia-riva-client>=2.28.0",
+]
 audio = [
     # YouTube downloads need yt-dlp's challenge solver (yt-dlp-ejs, in its
     # default extra) and a JavaScript runtime to run it, or YouTube cuts them
@@ -80,7 +85,7 @@ app = [
     "uvicorn[standard]>=0.41.0",
 ]
 all = [
-    "youtube-to-docs[aws,azure,gcp,workspace,m365,huggingface,audio,video,app]",
+    "youtube-to-docs[aws,azure,gcp,workspace,m365,huggingface,nvidia,audio,video,app]",
 ]
 
 [project.scripts]

@@ -28,6 +28,7 @@ To keep the installation light, some features are optional. You can enable them 
 - `workspace`: Required for Google Drive integration.
 - `m365`: Required for Microsoft SharePoint/OneDrive integration.
 - `huggingface`: Required for storing artifacts to a Hugging Face dataset (uses `huggingface_hub`).
+- `nvidia`: Required for NVIDIA speech-to-text, e.g. `-t nvidia-parakeet-tdt-0.6b-v2` (uses `nvidia-riva-client`). NVIDIA LLMs need no extra.
 - `aws`: AWS Bedrock support.
 - `azure`: Required for Azure OpenAI models.
 - `gcp`: Required for Google Gemini, Vertex AI models, and GCP Cloud TTS (uses `google-genai` and google-cloud libs).
