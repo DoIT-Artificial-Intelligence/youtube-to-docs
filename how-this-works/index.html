@@ -1031,7 +1031,7 @@
 <ol>
 <li><strong><a href="#1-input">Point it at YouTube</a>.</strong> A video URL or ID, a playlist, an <code>@channel</code>, or a comma-separated list.</li>
 <li><strong><a href="#2-transcripts">Get the words</a>.</strong> YouTube's captions, or a fresh speech-to-text transcript with word timings and speaker labels. Either way you get a transcript and an SRT file.</li>
-<li><strong><a href="#3-text-outputs">Let the model read</a>.</strong> An LLM on Gemini, Vertex AI, AWS Bedrock or Azure Foundry writes the speakers, Q&amp;A, summaries and tags.</li>
+<li><strong><a href="#3-text-outputs">Let the model read</a>.</strong> An LLM on Gemini, Vertex AI, AWS Bedrock, Azure Foundry or NVIDIA writes the speakers, Q&amp;A, summaries and tags.</li>
 <li><strong><a href="#4-media-and-translation">Turn it into media</a>.</strong> An infographic with alt text, an audio summary, a video that combines them, and translations.</li>
 <li><strong><a href="#5-accessibility">Make the video accessible</a>.</strong> <code>-cc</code> writes corrected WCAG 2.1 AA captions and an audio description.</li>
 <li><strong><a href="#6-review-storage-and-cost">You stay in control</a>.</strong> Every output is a file you can edit, saved locally or to Google Drive, SharePoint or Hugging Face, with costs in the CSV.</li>
@@ -1118,9 +1118,14 @@
 <td style="text-align: left;"><code>foundry-</code></td>
 <td style="text-align: left;"><code>foundry-gpt-6-luna</code></td>
 </tr>
+<tr>
+<td style="text-align: left;">NVIDIA API catalog (open models)</td>
+<td style="text-align: left;"><code>nvidia-</code></td>
+<td style="text-align: left;"><code>nvidia-nemotron-3-ultra-550b-a55b</code>, <code>nvidia-gemma-4-31b-it</code></td>
+</tr>
 </tbody>
 </table>
-<p>OpenAI GPT models on Bedrock are called through the Bedrock Mantle Chat Completions endpoint. A comma-separated list runs several models side by side, each with its own columns.</p>
+<p>OpenAI GPT models on Bedrock are called through the Bedrock Mantle Chat Completions endpoint. NVIDIA models are the open models hosted at <a href="https://build.nvidia.com/models">build.nvidia.com</a>: they are free but rate limited, and a busy model can take minutes to answer. Use the model's name without its publisher, so <code>moonshotai/kimi-k3.1-pro</code> is <code>nvidia-kimi-k3.1-pro</code>. A comma-separated list runs several models side by side, each with its own columns.</p>
 <p>For each video, the model writes:</p>
 <table>
 <thead>
