@@ -513,27 +513,29 @@ class TestPricing(unittest.TestCase):
             with self.subTest(model=model):
                 self.assertEqual(llms.get_model_pricing(model), expected)
 
-    def test_get_model_pricing_claude_fable_5_1(self):
+    def test_get_model_pricing_claude_fable_5_2(self):
         """Test that get_model_pricing retrieves the correct prices for
-        claude-fable-5.1 and its aliases.
+        claude-fable-5.2 and its aliases.
         """
         # Test exact match
-        inp, outp = llms.get_model_pricing("claude-fable-5.1")
-        self.assertEqual(inp, 10.0)
-        self.assertEqual(outp, 50.0)
+        inp, outp = llms.get_model_pricing("claude-fable-5.2")
+        self.assertEqual(inp, 8.0)
+        self.assertEqual(outp, 40.0)
 
         # Test alias matches
         for alias in [
+            "bedrock-claude-fable-5-2",
+            "vertex-claude-fable-5-2",
             "bedrock-claude-fable-5-1",
-            "vertex-claude-fable-5-1",
+            "claude-fable-5.1",
             "claude-fable-5",
             "anthropic-5-fable",
             "anthrophic-5-fable",
         ]:
             with self.subTest(alias=alias):
                 inp_alias, outp_alias = llms.get_model_pricing(alias)
-                self.assertEqual(inp_alias, 10.0)
-                self.assertEqual(outp_alias, 50.0)
+                self.assertEqual(inp_alias, 8.0)
+                self.assertEqual(outp_alias, 40.0)
 
 
 class TestDescription(unittest.TestCase):
