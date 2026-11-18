@@ -1074,7 +1074,7 @@
 <p><code>-t</code> / <code>--transcript</code> chooses where the words come from:</p>
 <ul>
 <li><strong>YouTube</strong> (default): the video's existing captions, either uploaded or automatic. Automatic captions come from speech recognition, so they can contain errors, and they aren't always available straight away.</li>
-<li><strong>Speech-to-text</strong>: an AI model name (e.g. <code>gemini-3.5-transcribe</code>, <code>gcp-chirp3</code>, <code>aws-transcribe</code>) downloads the audio with <code>yt-dlp</code> and transcribes it again.</li>
+<li><strong>Speech-to-text</strong>: an AI model name (e.g. <code>gemini-3.5-transcribe</code>, <code>gcp-chirp3</code>, <code>aws-transcribe</code>, <code>nvidia-parakeet-tdt-0.6b-v2</code>) downloads the audio with <code>yt-dlp</code> and transcribes it again.</li>
 </ul>
 <p>Both give a plain-text transcript and an <code>.srt</code> file with timings. The SRT is used later to put timestamps on the Q&amp;A and to make corrected captions.</p>
 <details class="info">
@@ -1084,6 +1084,7 @@
 <li>Other Gemini models (e.g. <code>gemini-3.5-flash-lite</code>) can be prompted to transcribe too.</li>
 <li><code>gcp-</code> models (Cloud Speech-to-Text V2) need <code>GOOGLE_CLOUD_PROJECT</code>; <code>YTD_GCS_BUCKET_NAME</code> is recommended.</li>
 <li><code>aws-transcribe</code> needs <code>YTD_S3_BUCKET_NAME</code>.</li>
+<li><code>nvidia-parakeet-tdt-0.6b-v2</code> is NVIDIA's open Parakeet model, hosted free at <a href="https://build.nvidia.com/nvidia/parakeet-tdt-0_6b-v2">build.nvidia.com</a>. It needs <code>NVIDIA_API_KEY</code> and the <code>nvidia</code> extra. It's English only and fast: the audio is sent in one request, with no bucket, and the SRT is built from word timestamps. It doesn't label speakers.</li>
 <li>With an AI transcript, a second summary is also written from the YouTube transcript for comparison. <code>--no-youtube-summary</code> skips it.</li>
 </ul>
 </details>
