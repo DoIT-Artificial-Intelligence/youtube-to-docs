@@ -15,7 +15,7 @@ from regression_core import (
 # Open models from the NVIDIA API catalog (build.nvidia.com): free, rate limited.
 NVIDIA_MODELS = [
     "nvidia-nemotron-3-ultra-550b-a55b",
-    "nvidia-gemma-4-31b-it",
+    "nvidia-nemotron-3.5-lightning-30b-a3b",
 ]
 
 

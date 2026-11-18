@@ -407,7 +407,10 @@ class TestLLMs(unittest.TestCase):
             "nvidia/nemotron-3-ultra-550b-a55b",
         )
 
-    @patch("youtube_to_docs.llms._nvidia_model_ids", ["google/gemma-4-31b-it"])
+    @patch(
+        "youtube_to_docs.llms._nvidia_model_ids",
+        ["nvidia/nemotron-3.5-lightning-30b-a3b"],
+    )
     @patch("youtube_to_docs.llms.time.sleep")
     @patch("youtube_to_docs.llms.requests.post")
     def test_nvidia_retries_when_rate_limited(self, mock_post, mock_sleep):
@@ -417,20 +420,25 @@ class TestLLMs(unittest.TestCase):
         ]
 
         with patch.dict(os.environ, {"NVIDIA_API_KEY": "fake_nvidia_key"}):
-            text, _, _ = llms._query_llm("nvidia-gemma-4-31b-it", "prompt")
+            text, _, _ = llms._query_llm(
+                "nvidia-nemotron-3.5-lightning-30b-a3b", "prompt"
+            )
 
         self.assertEqual(text, "NVIDIA Summary")
         self.assertEqual(mock_post.call_count, 2)
         mock_sleep.assert_called_once_with(llms.NVIDIA_RETRY_WAITS_SECONDS[0])
 
-    @patch("youtube_to_docs.llms._nvidia_model_ids", ["google/gemma-4-31b-it"])
+    @patch(
+        "youtube_to_docs.llms._nvidia_model_ids",
+        ["nvidia/nemotron-3.5-lightning-30b-a3b"],
+    )
     @patch("youtube_to_docs.llms.requests.post")
     def test_nvidia_api_error_is_returned_as_error_text(self, mock_post):
         mock_post.return_value = self._nvidia_response(status=404, text="Not Found")
 
         with patch.dict(os.environ, {"NVIDIA_API_KEY": "fake_nvidia_key"}):
             text, in_tokens, out_tokens = llms._query_llm(
-                "nvidia-gemma-4-31b-it", "prompt"
+                "nvidia-nemotron-3.5-lightning-30b-a3b", "prompt"
             )
 
         self.assertTrue(text.startswith("Error: NVIDIA API Error 404"))
@@ -439,7 +447,9 @@ class TestLLMs(unittest.TestCase):
     def test_nvidia_requires_api_key(self):
         env = {k: v for k, v in os.environ.items() if k != "NVIDIA_API_KEY"}
         with patch.dict(os.environ, env, clear=True):
-            text, _, _ = llms._query_llm("nvidia-gemma-4-31b-it", "prompt")
+            text, _, _ = llms._query_llm(
+                "nvidia-nemotron-3.5-lightning-30b-a3b", "prompt"
+            )
         self.assertEqual(text, "Error: NVIDIA_API_KEY not found")
 
     def test_nvidia_models_are_free(self):

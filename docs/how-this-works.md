@@ -66,9 +66,9 @@ Both give a plain-text transcript and an `.srt` file with timings. The SRT is us
 | Google Cloud Vertex AI | `vertex-` | `vertex-claude-haiku-5-5` |
 | AWS Bedrock | `bedrock-` (or a bare `claude-` or `nova-`) | `bedrock-claude-haiku-5-5`, `bedrock-gpt-6-luna` |
 | Azure Foundry | `foundry-` | `foundry-gpt-6-luna` |
-| NVIDIA API catalog (open models) | `nvidia-` | `nvidia-nemotron-3-ultra-550b-a55b`, `nvidia-gemma-4-31b-it` |
+| NVIDIA API catalog (open models) | `nvidia-` | `nvidia-nemotron-3-ultra-550b-a55b`, `nvidia-nemotron-3.5-lightning-30b-a3b` |
 
-OpenAI GPT models on Bedrock are called through the Bedrock Mantle Chat Completions endpoint. NVIDIA models are the open models hosted at [build.nvidia.com](https://build.nvidia.com/models): they are free but rate limited, and a busy model can take minutes to answer. Use the model's name without its publisher, so `moonshotai/kimi-k3.1-pro` is `nvidia-kimi-k3.1-pro`. A comma-separated list runs several models side by side, each with its own columns.
+OpenAI GPT models on Bedrock are called through the Bedrock Mantle Chat Completions endpoint. NVIDIA models are the open models hosted at [build.nvidia.com](https://build.nvidia.com/models): they are free but rate limited, and a busy model can take minutes to answer. Use the model's name without its publisher, so `nvidia/nemotron-3-ultra-550b-a55b` is `nvidia-nemotron-3-ultra-550b-a55b`. A comma-separated list runs several models side by side, each with its own columns.
 
 For each video, the model writes:
 
