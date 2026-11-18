@@ -108,5 +108,9 @@ def get_provider(model_name: str) -> BaseProvider:
         from youtube_to_docs.llms import AzureFoundryProvider
 
         return AzureFoundryProvider(model_name)
+    elif model_name.startswith("nvidia-"):
+        from youtube_to_docs.llms import NvidiaProvider
+
+        return NvidiaProvider(model_name)
 
     raise ValueError(f"Unknown provider for model: {model_name}")

@@ -275,6 +275,16 @@ PRICES = {
             "input_cached": None,
         },
         {
+            # NVIDIA API catalog (build.nvidia.com): free, rate limited. Every
+            # `nvidia-` model costs 0; this one is listed as the example.
+            "id": "nemotron-3-ultra-550b-a55b",
+            "vendor": "nvidia",
+            "name": "Nemotron 3 Ultra (open source)",
+            "input": 0,
+            "output": 0,
+            "input_cached": None,
+        },
+        {
             "id": "gcp-translate",
             "vendor": "google",
             "name": "GCP Cloud Translation*",

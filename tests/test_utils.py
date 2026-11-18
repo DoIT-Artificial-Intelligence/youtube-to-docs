@@ -87,6 +87,9 @@ class TestModelNormalization(unittest.TestCase):
             utils.normalize_model_name("bedrock-nova-2-lite"), "nova-2-lite"
         )
         self.assertEqual(utils.normalize_model_name("foundry-gpt-4"), "gpt-4")
+        self.assertEqual(
+            utils.normalize_model_name("nvidia-gemma-4-31b-it"), "gemma-4-31b-it"
+        )
         self.assertEqual(utils.normalize_model_name("claude-3-5"), "claude-3-5")
 
     def test_suffixes(self):

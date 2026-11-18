@@ -58,6 +58,16 @@ SRT_SEGMENT_CHAR_LIMIT = 80
 # exists so a stalled request fails instead of hanging forever.
 BEDROCK_TIMEOUT_SECONDS = (30, 15 * 60)
 
+# NVIDIA's hosted API catalog (build.nvidia.com): free, rate-limited access to
+# open models through an OpenAI-compatible endpoint.
+NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
+
+# (connect, read) timeout in seconds. Free-tier requests can queue for minutes.
+NVIDIA_TIMEOUT_SECONDS = (30, 15 * 60)
+
+# Seconds to wait before each retry of a rate-limited (HTTP 429) NVIDIA request.
+NVIDIA_RETRY_WAITS_SECONDS = (5, 15, 30, 60)
+
 
 def get_model_pricing(model_name: str) -> Tuple[float | None, float | None]:
     """
@@ -72,6 +82,10 @@ def get_model_pricing(model_name: str) -> Tuple[float | None, float | None]:
         for p in prices:
             if p["id"] == model_name:
                 return p["input"], p["output"]
+
+        # NVIDIA's hosted API catalog is free (rate limited), whatever the model.
+        if model_name.startswith("nvidia-"):
+            return 0, 0
 
         # 2. Try normalized name
         normalized_name = normalize_model_name(model_name)
@@ -882,6 +896,93 @@ class AzureFoundryProvider(BaseProvider, LLMProvider):
             response_text = f"Error: {e}"
 
         return response_text, input_tokens, output_tokens
+
+
+_nvidia_model_ids: Optional[List[str]] = None
+
+
+def _nvidia_catalog(api_key: str) -> List[str]:
+    """Returns the model IDs in NVIDIA's API catalog, fetched once per run."""
+    global _nvidia_model_ids
+    if _nvidia_model_ids is None:
+        response = requests.get(
+            f"{NVIDIA_BASE_URL}/models",
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=60,
+        )
+        response.raise_for_status()
+        _nvidia_model_ids = [m["id"] for m in response.json().get("data", [])]
+    return _nvidia_model_ids
+
+
+def resolve_nvidia_model(model_name: str, api_key: str) -> str:
+    """
+    Maps `nvidia-<model>` to the catalog ID `<publisher>/<model>`.
+
+    The publisher is left out of the CLI name because model names are used in
+    file names, where a slash would be read as a folder. So
+    `nvidia-kimi-k3.1-pro` resolves to `moonshotai/kimi-k3.1-pro`. If the
+    catalog cannot be read or has no match, NVIDIA is assumed as publisher.
+    """
+    name = model_name.removeprefix("nvidia-")
+    try:
+        for model_id in _nvidia_catalog(api_key):
+            if model_id.split("/")[-1] == name:
+                return model_id
+    except Exception as e:
+        print(f"NVIDIA catalog lookup failed: {e}")
+    return f"nvidia/{name}"
+
+
+class NvidiaProvider(BaseProvider, LLMProvider):
+    def generate_content(self, prompt: str, **kwargs) -> Tuple[str, int, int]:
+        try:
+            api_key = os.environ["NVIDIA_API_KEY"]
+        except KeyError:
+            print("Error: NVIDIA_API_KEY environment variable required.")
+            return "Error: NVIDIA_API_KEY not found", 0, 0
+
+        try:
+            model_id = resolve_nvidia_model(self.model_name, api_key)
+            waits = list(NVIDIA_RETRY_WAITS_SECONDS)
+            while True:
+                response = requests.post(
+                    f"{NVIDIA_BASE_URL}/chat/completions",
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {api_key}",
+                    },
+                    json={
+                        "model": model_id,
+                        "messages": [{"role": "user", "content": prompt}],
+                    },
+                    timeout=NVIDIA_TIMEOUT_SECONDS,
+                )
+                if response.status_code != 429 or not waits:
+                    break
+                wait = waits.pop(0)
+                print(f"NVIDIA rate limit reached. Retrying in {wait}s...")
+                time.sleep(wait)
+
+            if response.status_code != 200:
+                return (
+                    f"Error: NVIDIA API Error {response.status_code}: {response.text}",
+                    0,
+                    0,
+                )
+            data = response.json()
+            # Reasoning models put their thinking in `reasoning_content`; only
+            # the answer is kept.
+            response_text = data["choices"][0]["message"].get("content") or ""
+            usage = data.get("usage") or {}
+            return (
+                response_text,
+                usage.get("prompt_tokens") or 0,
+                usage.get("completion_tokens") or 0,
+            )
+        except Exception as e:
+            print(f"NVIDIA Request Error: {e}")
+            return f"Error: {e}", 0, 0
 
 
 class GCPProvider(BaseProvider, STTProvider, TTSProvider, TranslationProvider):

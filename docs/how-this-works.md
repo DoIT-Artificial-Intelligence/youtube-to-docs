@@ -18,7 +18,7 @@
 
 1. **[Point it at YouTube](#1-input).** A video URL or ID, a playlist, an `@channel`, or a comma-separated list.
 2. **[Get the words](#2-transcripts).** YouTube's captions, or a fresh speech-to-text transcript with word timings and speaker labels. Either way you get a transcript and an SRT file.
-3. **[Let the model read](#3-text-outputs).** An LLM on Gemini, Vertex AI, AWS Bedrock or Azure Foundry writes the speakers, Q&A, summaries and tags.
+3. **[Let the model read](#3-text-outputs).** An LLM on Gemini, Vertex AI, AWS Bedrock, Azure Foundry or NVIDIA writes the speakers, Q&A, summaries and tags.
 4. **[Turn it into media](#4-media-and-translation).** An infographic with alt text, an audio summary, a video that combines them, and translations.
 5. **[Make the video accessible](#5-accessibility).** `-cc` writes corrected WCAG 2.1 AA captions and an audio description.
 6. **[You stay in control](#6-review-storage-and-cost).** Every output is a file you can edit, saved locally or to Google Drive, SharePoint or Hugging Face, with costs in the CSV.
@@ -66,8 +66,9 @@ Both give a plain-text transcript and an `.srt` file with timings. The SRT is us
 | Google Cloud Vertex AI | `vertex-` | `vertex-claude-haiku-5-5` |
 | AWS Bedrock | `bedrock-` (or a bare `claude-` or `nova-`) | `bedrock-claude-haiku-5-5`, `bedrock-gpt-6-luna` |
 | Azure Foundry | `foundry-` | `foundry-gpt-6-luna` |
+| NVIDIA API catalog (open models) | `nvidia-` | `nvidia-nemotron-3-ultra-550b-a55b`, `nvidia-gemma-4-31b-it` |
 
-OpenAI GPT models on Bedrock are called through the Bedrock Mantle Chat Completions endpoint. A comma-separated list runs several models side by side, each with its own columns.
+OpenAI GPT models on Bedrock are called through the Bedrock Mantle Chat Completions endpoint. NVIDIA models are the open models hosted at [build.nvidia.com](https://build.nvidia.com/models): they are free but rate limited, and a busy model can take minutes to answer. Use the model's name without its publisher, so `moonshotai/kimi-k3.1-pro` is `nvidia-kimi-k3.1-pro`. A comma-separated list runs several models side by side, each with its own columns.
 
 For each video, the model writes:
 

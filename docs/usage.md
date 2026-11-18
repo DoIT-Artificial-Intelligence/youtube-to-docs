@@ -70,6 +70,7 @@ Set the variables for the providers you use.
 | `AWS_BEARER_TOKEN_BEDROCK` | AWS Bedrock models (`bedrock-…`) |
 | `YTD_S3_BUCKET_NAME` | AWS Transcribe (`-t aws-transcribe`), for temporary audio |
 | `AZURE_FOUNDRY_ENDPOINT`, `AZURE_FOUNDRY_API_KEY` | Azure Foundry models (`foundry-…`) |
+| `NVIDIA_API_KEY` | Open models from the NVIDIA API catalog (`nvidia-…`). The key is free at [build.nvidia.com](https://build.nvidia.com/) and rate limited. No extra to install. |
 | `HF_TOKEN` | Saving to Hugging Face (`-o hf`) |
 | `YTD_CC_WORKERS` | Optional. Parallel `-cc` requests (default 6). Lower it if you hit rate limits. |
 

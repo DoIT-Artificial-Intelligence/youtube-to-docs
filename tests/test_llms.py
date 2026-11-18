@@ -357,6 +357,94 @@ class TestLLMs(unittest.TestCase):
         self.assertEqual(in_tokens, 100)
         self.assertEqual(out_tokens, 50)
 
+    def _nvidia_response(self, status=200, body=None, text=""):
+        resp = MagicMock()
+        resp.status_code = status
+        resp.text = text
+        resp.json.return_value = body or {
+            "choices": [
+                {
+                    "message": {
+                        "content": "NVIDIA Summary",
+                        "reasoning_content": "thinking",
+                    }
+                }
+            ],
+            "usage": {"prompt_tokens": 100, "completion_tokens": 50},
+        }
+        return resp
+
+    @patch("youtube_to_docs.llms._nvidia_model_ids", None)
+    @patch("youtube_to_docs.llms.requests.get")
+    @patch("youtube_to_docs.llms.requests.post")
+    def test_generate_summary_nvidia(self, mock_post, mock_get):
+        """nvidia-<model> resolves the publisher from NVIDIA's catalog."""
+        mock_get.return_value.json.return_value = {
+            "data": [
+                {"id": "nvidia/nemotron-3-ultra-550b-a55b"},
+                {"id": "moonshotai/kimi-k3.1-pro"},
+            ]
+        }
+        mock_post.return_value = self._nvidia_response()
+
+        with patch.dict(os.environ, {"NVIDIA_API_KEY": "fake_nvidia_key"}):
+            summary, in_tokens, out_tokens = llms.generate_summary(
+                "nvidia-kimi-k3.1-pro", "transcript", "Title", "url"
+            )
+
+        self.assertEqual(summary, "NVIDIA Summary")
+        self.assertEqual(in_tokens, 100)
+        self.assertEqual(out_tokens, 50)
+        _, kwargs = mock_post.call_args
+        self.assertEqual(kwargs["json"]["model"], "moonshotai/kimi-k3.1-pro")
+        self.assertEqual(kwargs["headers"]["Authorization"], "Bearer fake_nvidia_key")
+
+    @patch("youtube_to_docs.llms._nvidia_model_ids", None)
+    @patch("youtube_to_docs.llms.requests.get", side_effect=Exception("offline"))
+    def test_resolve_nvidia_model_falls_back_to_nvidia_publisher(self, _mock_get):
+        self.assertEqual(
+            llms.resolve_nvidia_model("nvidia-nemotron-3-ultra-550b-a55b", "key"),
+            "nvidia/nemotron-3-ultra-550b-a55b",
+        )
+
+    @patch("youtube_to_docs.llms._nvidia_model_ids", ["google/gemma-4-31b-it"])
+    @patch("youtube_to_docs.llms.time.sleep")
+    @patch("youtube_to_docs.llms.requests.post")
+    def test_nvidia_retries_when_rate_limited(self, mock_post, mock_sleep):
+        mock_post.side_effect = [
+            self._nvidia_response(status=429, text="Too Many Requests"),
+            self._nvidia_response(),
+        ]
+
+        with patch.dict(os.environ, {"NVIDIA_API_KEY": "fake_nvidia_key"}):
+            text, _, _ = llms._query_llm("nvidia-gemma-4-31b-it", "prompt")
+
+        self.assertEqual(text, "NVIDIA Summary")
+        self.assertEqual(mock_post.call_count, 2)
+        mock_sleep.assert_called_once_with(llms.NVIDIA_RETRY_WAITS_SECONDS[0])
+
+    @patch("youtube_to_docs.llms._nvidia_model_ids", ["google/gemma-4-31b-it"])
+    @patch("youtube_to_docs.llms.requests.post")
+    def test_nvidia_api_error_is_returned_as_error_text(self, mock_post):
+        mock_post.return_value = self._nvidia_response(status=404, text="Not Found")
+
+        with patch.dict(os.environ, {"NVIDIA_API_KEY": "fake_nvidia_key"}):
+            text, in_tokens, out_tokens = llms._query_llm(
+                "nvidia-gemma-4-31b-it", "prompt"
+            )
+
+        self.assertTrue(text.startswith("Error: NVIDIA API Error 404"))
+        self.assertEqual((in_tokens, out_tokens), (0, 0))
+
+    def test_nvidia_requires_api_key(self):
+        env = {k: v for k, v in os.environ.items() if k != "NVIDIA_API_KEY"}
+        with patch.dict(os.environ, env, clear=True):
+            text, _, _ = llms._query_llm("nvidia-gemma-4-31b-it", "prompt")
+        self.assertEqual(text, "Error: NVIDIA_API_KEY not found")
+
+    def test_nvidia_models_are_free(self):
+        self.assertEqual(llms.get_model_pricing("nvidia-any-catalog-model"), (0, 0))
+
     def test_vertex_gemma_raises_not_implemented(self):
         """vertex-gemma-* should raise NotImplementedError (requires deployment)."""
         with self.assertRaises(NotImplementedError):
