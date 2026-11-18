@@ -455,6 +455,105 @@ class TestLLMs(unittest.TestCase):
     def test_nvidia_models_are_free(self):
         self.assertEqual(llms.get_model_pricing("nvidia-any-catalog-model"), (0, 0))
 
+    @patch("youtube_to_docs.llms._nvidia_function_ids", None)
+    @patch("youtube_to_docs.llms.requests.get")
+    def test_resolve_nvidia_function_id(self, mock_get):
+        """nvidia-<model> maps to the active `ai-<model>` cloud function."""
+        mock_get.return_value.json.return_value = {
+            "functions": [
+                {"name": "ai-parakeet-tdt-0_6b-v2", "id": "fn-1", "status": "ACTIVE"},
+                {"name": "ai-canary-1b-asr", "id": "fn-2", "status": "INACTIVE"},
+            ]
+        }
+
+        self.assertEqual(
+            llms.resolve_nvidia_function_id("nvidia-parakeet-tdt-0.6b-v2", "key"),
+            "fn-1",
+        )
+        self.assertIsNone(llms.resolve_nvidia_function_id("nvidia-canary-1b-asr", "k"))
+        mock_get.assert_called_once()
+
+    @patch(
+        "youtube_to_docs.llms._nvidia_function_ids",
+        {"ai-parakeet-tdt-0_6b-v2": "fn-1"},
+    )
+    @patch("youtube_to_docs.llms.subprocess.run")
+    def test_transcribe_nvidia(self, mock_run):
+        """Riva's word times (milliseconds) become the transcript and SRT."""
+
+        def fake_ffmpeg(cmd, check):
+            with open(cmd[-1], "wb") as f:
+                f.write(b"ogg-bytes")
+
+        mock_run.side_effect = fake_ffmpeg
+
+        def word(text, start, end):
+            return MagicMock(word=text, start_time=start, end_time=end)
+
+        result = MagicMock()
+        result.alternatives = [
+            MagicMock(
+                transcript="Hello there. ",
+                words=[word("Hello", 500, 900), word("there.", 1000, 1500)],
+            )
+        ]
+        riva_client = MagicMock()
+        recognize = riva_client.ASRService.return_value.offline_recognize
+        recognize.return_value.result.return_value.results = [
+            result,
+            MagicMock(alternatives=[]),
+        ]
+        riva = MagicMock(client=riva_client)
+
+        with (
+            patch.dict(os.environ, {"NVIDIA_API_KEY": "fake_nvidia_key"}),
+            patch.dict("sys.modules", {"riva": riva, "riva.client": riva_client}),
+        ):
+            text, srt, in_tokens, out_tokens = llms.generate_transcript_with_srt(
+                "nvidia-parakeet-tdt-0.6b-v2", "audio.m4a", "url"
+            )
+
+        self.assertEqual(text, "Hello there.")
+        self.assertEqual(srt, "1\n00:00:00,500 --> 00:00:01,500\nHello there.\n")
+        self.assertEqual((in_tokens, out_tokens), (0, 0))
+        self.assertEqual(recognize.call_args.args[0], b"ogg-bytes")
+        self.assertIn(
+            ["function-id", "fn-1"], riva_client.Auth.call_args.kwargs["metadata_args"]
+        )
+        self.assertEqual(
+            riva_client.RecognitionConfig.call_args.kwargs["language_code"], "en-US"
+        )
+
+    @patch("youtube_to_docs.llms._nvidia_function_ids", {})
+    def test_transcribe_nvidia_unknown_model(self):
+        riva_client = MagicMock()
+        with (
+            patch.dict(os.environ, {"NVIDIA_API_KEY": "fake_nvidia_key"}),
+            patch.dict(
+                "sys.modules",
+                {"riva": MagicMock(client=riva_client), "riva.client": riva_client},
+            ),
+        ):
+            text, srt, _, _ = llms.generate_transcript_with_srt(
+                "nvidia-nemotron-3-ultra-550b-a55b", "audio.m4a", "url"
+            )
+
+        self.assertEqual(
+            text,
+            "Error: NVIDIA hosts no speech-to-text model named "
+            "nvidia-nemotron-3-ultra-550b-a55b",
+        )
+        self.assertEqual(srt, "")
+        riva_client.ASRService.assert_not_called()
+
+    def test_transcribe_nvidia_requires_api_key(self):
+        env = {k: v for k, v in os.environ.items() if k != "NVIDIA_API_KEY"}
+        with patch.dict(os.environ, env, clear=True):
+            text, _, _, _ = llms.generate_transcript_with_srt(
+                "nvidia-parakeet-tdt-0.6b-v2", "audio.m4a", "url"
+            )
+        self.assertEqual(text, "Error: NVIDIA_API_KEY not found")
+
     def test_vertex_gemma_raises_not_implemented(self):
         """vertex-gemma-* should raise NotImplementedError (requires deployment)."""
         with self.assertRaises(NotImplementedError):

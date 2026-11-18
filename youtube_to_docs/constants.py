@@ -6,5 +6,6 @@ KNOWN_SRT_SOURCE_PREFIXES = (
     "bedrock-",
     "vertex-",
     "foundry-",
+    "nvidia-",
     "gemini-",
 )

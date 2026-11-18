@@ -52,6 +52,7 @@ uvx --with "youtube-to-docs[all]" youtube-to-docs ...
 | `workspace` | Saving to Google Drive | `google-auth-oauthlib`, `pypandoc`, `pypandoc_binary` |
 | `m365` | Saving to SharePoint or OneDrive | `msal`, `fastexcel`, `xlsxwriter`, `pypandoc`, `pypandoc_binary` |
 | `huggingface` | Saving to a Hugging Face dataset | `huggingface_hub` |
+| `nvidia` | NVIDIA speech-to-text (`-t nvidia-parakeet-tdt-0.6b-v2`). NVIDIA LLMs need no extra. | `nvidia-riva-client` |
 | `app` | The [web app](#web-app) | `fastapi`, `uvicorn` |
 | `all` | All of the above | |
 
@@ -70,7 +71,7 @@ Set the variables for the providers you use.
 | `AWS_BEARER_TOKEN_BEDROCK` | AWS Bedrock models (`bedrock-…`) |
 | `YTD_S3_BUCKET_NAME` | AWS Transcribe (`-t aws-transcribe`), for temporary audio |
 | `AZURE_FOUNDRY_ENDPOINT`, `AZURE_FOUNDRY_API_KEY` | Azure Foundry models (`foundry-…`) |
-| `NVIDIA_API_KEY` | Open models from the NVIDIA API catalog (`nvidia-…`). The key is free at [build.nvidia.com](https://build.nvidia.com/) and rate limited. No extra to install. |
+| `NVIDIA_API_KEY` | Open models from the NVIDIA API catalog (`nvidia-…`). The key is free at [build.nvidia.com](https://build.nvidia.com/) and rate limited. LLMs need no extra; speech-to-text (`-t nvidia-parakeet-tdt-0.6b-v2`) needs the `nvidia` extra. |
 | `HF_TOKEN` | Saving to Hugging Face (`-o hf`) |
 | `YTD_CC_WORKERS` | Optional. Parallel `-cc` requests (default 6). Lower it if you hit rate limits. |
 
@@ -124,7 +125,7 @@ With no options, you get the transcript only. Add options for the outputs you wa
 | Option | What it does | Default |
 | :--- | :--- | :--- |
 | `-m`, `--model` | Speakers, Q&A, tags and summaries with an LLM. Comma-separate to compare models. | Bare: `gemini-3.5-flash-lite` |
-| `-t`, `--transcript` | Where the transcript comes from: `youtube`, or a speech-to-text model such as `gemini-3.5-transcribe`, `gcp-chirp3` or `aws-transcribe`. | `youtube` |
+| `-t`, `--transcript` | Where the transcript comes from: `youtube`, or a speech-to-text model such as `gemini-3.5-transcribe`, `gcp-chirp3`, `aws-transcribe` or `nvidia-parakeet-tdt-0.6b-v2`. | `youtube` |
 | `-i`, `--infographic` | An infographic, with alt text, from an image model. Comma-separate for one per model. | Bare: `foundry-gpt-image-2.5-sunburst` |
 | `--alt-text-model` | The LLM that writes the infographic alt text. | The `-m` model |
 | `--tts` | An audio summary. Format: `{model}-{voice}`, e.g. `gemini-3.8-flash-lite-tts-Kore`, `gcp-chirp3-Kore` or `aws-polly-Ruth`. | None |

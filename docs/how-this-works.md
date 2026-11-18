@@ -44,7 +44,7 @@ The entry point (`youtube_to_docs/main.py`) accepts:
 `-t` / `--transcript` chooses where the words come from:
 
 - **YouTube** (default): the video's existing captions, either uploaded or automatic. Automatic captions come from speech recognition, so they can contain errors, and they aren't always available straight away.
-- **Speech-to-text**: an AI model name (e.g. `gemini-3.5-transcribe`, `gcp-chirp3`, `aws-transcribe`) downloads the audio with `yt-dlp` and transcribes it again.
+- **Speech-to-text**: an AI model name (e.g. `gemini-3.5-transcribe`, `gcp-chirp3`, `aws-transcribe`, `nvidia-parakeet-tdt-0.6b-v2`) downloads the audio with `yt-dlp` and transcribes it again.
 
 Both give a plain-text transcript and an `.srt` file with timings. The SRT is used later to put timestamps on the Q&A and to make corrected captions.
 
@@ -54,6 +54,7 @@ Both give a plain-text transcript and an `.srt` file with timings. The SRT is us
     - Other Gemini models (e.g. `gemini-3.5-flash-lite`) can be prompted to transcribe too.
     - `gcp-` models (Cloud Speech-to-Text V2) need `GOOGLE_CLOUD_PROJECT`; `YTD_GCS_BUCKET_NAME` is recommended.
     - `aws-transcribe` needs `YTD_S3_BUCKET_NAME`.
+    - `nvidia-parakeet-tdt-0.6b-v2` is NVIDIA's open Parakeet model, hosted free at [build.nvidia.com](https://build.nvidia.com/nvidia/parakeet-tdt-0_6b-v2). It needs `NVIDIA_API_KEY` and the `nvidia` extra. It's English only and fast: the audio is sent in one request, with no bucket, and the SRT is built from word timestamps. It doesn't label speakers.
     - With an AI transcript, a second summary is also written from the YouTube transcript for comparison. `--no-youtube-summary` skips it.
 
 ## 3. Text outputs
