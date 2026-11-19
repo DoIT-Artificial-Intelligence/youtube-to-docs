@@ -108,6 +108,11 @@ def get_provider(model_name: str) -> BaseProvider:
         from youtube_to_docs.llms import AzureFoundryProvider
 
         return AzureFoundryProvider(model_name)
+    elif model_name == "nvidia-nemotron-3.5-transcribe":
+        # Runs on the user's own GPU, not NVIDIA's hosted API.
+        from youtube_to_docs.nemotron_transcribe import NemotronTranscribeProvider
+
+        return NemotronTranscribeProvider(model_name)
     elif model_name.startswith("nvidia-"):
         from youtube_to_docs.llms import NvidiaProvider
 
