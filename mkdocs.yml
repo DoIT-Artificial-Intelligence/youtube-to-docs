@@ -61,6 +61,7 @@ extra:
 nav:
   - Home: index.md
   - Usage: usage.md
+  - Maryland Hearings: maryland-hearings.md
   - How It Works: how-this-works.md
   - Performance: performance.md
   - Pricing: pricing.md
