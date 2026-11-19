@@ -170,7 +170,7 @@ youtube-to-docs PLGKTTEqwhiHHWO-jdxM1KtzTbWo6h0Ycl -m gemini-3.5-flash-lite,vert
 youtube-to-docs atmGAHYpf_c -t gemini-3.5-transcribe -m
 ```
 
-**A whole channel with infographics and audio summaries:**
+**A whole channel with infographics and audio summaries** (see [Maryland hearings](maryland-hearings.md) for every Maryland General Assembly channel):
 
 ```bash
 youtube-to-docs @mga-othercommittees6625 -m -i --tts gemini-3.8-flash-lite-tts-Kore
