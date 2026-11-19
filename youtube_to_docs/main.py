@@ -42,6 +42,13 @@ from youtube_to_docs.llms import (
     parse_chapters,
 )
 from youtube_to_docs.models import MODEL_SUITES
+from youtube_to_docs.nemotron_transcribe import (
+    NEMOTRON_TRANSCRIBE_MODEL,
+    NemotronSetupError,
+    check_nemotron_hardware,
+    check_nemotron_server,
+    uses_local_server,
+)
 from youtube_to_docs.post_process import post_process_transcript
 from youtube_to_docs.providers import (
     MultimodalProvider,
@@ -127,6 +134,11 @@ def main(args_list: list[str] | None = None) -> "MemoryStorage | None":
     local_temp_dir = tempfile.mkdtemp(prefix="ytd_temp_")
     try:
         return _main_impl(args_list, local_temp_dir=local_temp_dir)
+    except NemotronSetupError as e:
+        if args_list is not None:
+            raise  # Called from the app or MCP server, which report errors.
+        rprint(f"[red]{e}[/red]")
+        sys.exit(1)
     finally:
         shutil.rmtree(local_temp_dir, ignore_errors=True)
 
@@ -211,7 +223,12 @@ def _main_impl(
             "is required and `YTD_GCS_BUCKET_NAME` is optional/recommended. \n"
             "For `aws-transcribe`, `YTD_S3_BUCKET_NAME` is required. \n"
             "For `nvidia-` speech models (free, English), `NVIDIA_API_KEY` and the "
-            "`nvidia` extra are required."
+            "`nvidia` extra are required. \n"
+            "`nvidia-nemotron-3.5-transcribe` runs NVIDIA's open model on your own "
+            "GPU through a vLLM server, with word timestamps and speaker labels "
+            "in 40 languages. It needs 80 GB for BF16, 48 GB for FP8, or a 32 GB "
+            "Blackwell card for NVFP4. Set `NEMOTRON_TRANSCRIBE_URL` to use a "
+            "server on another machine."
         ),
     )
     parser.add_argument(
@@ -478,6 +495,17 @@ def _main_impl(
         args.transcript = "youtube"
 
     transcript_arg = args.transcript
+    if transcript_arg == NEMOTRON_TRANSCRIBE_MODEL:
+        # Check the GPU and server before downloading anything.
+        if uses_local_server():
+            hardware_ok, hardware_message = check_nemotron_hardware()
+            if not hardware_ok:
+                raise NemotronSetupError(hardware_message)
+            rprint(f"[green]{hardware_message}[/green]")
+        server_ok, server_message = check_nemotron_server()
+        if not server_ok:
+            raise NemotronSetupError(server_message)
+        rprint(f"[green]{server_message}[/green]")
     video_id_input = args.video_id
     outfile = args.outfile
     hugging_face_dataset = args.hugging_face_dataset

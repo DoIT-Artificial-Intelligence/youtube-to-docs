@@ -72,6 +72,7 @@ Set the variables for the providers you use.
 | `YTD_S3_BUCKET_NAME` | AWS Transcribe (`-t aws-transcribe`), for temporary audio |
 | `AZURE_FOUNDRY_ENDPOINT`, `AZURE_FOUNDRY_API_KEY` | Azure Foundry models (`foundry-…`) |
 | `NVIDIA_API_KEY` | Open models from the NVIDIA API catalog (`nvidia-…`). The key is free at [build.nvidia.com](https://build.nvidia.com/) and rate limited. LLMs need no extra; speech-to-text (`-t nvidia-parakeet-tdt-0.6b-v2`) needs the `nvidia` extra. |
+| `NEMOTRON_TRANSCRIBE_URL` | Optional. The vLLM server for `-t nvidia-nemotron-3.5-transcribe`, if it runs on another machine (default `http://127.0.0.1:8000/v1`). See [Running Nemotron 3.5 Transcribe](../scripts/nemotron_transcribe/README.md). |
 | `HF_TOKEN` | Saving to Hugging Face (`-o hf`) |
 | `YTD_CC_WORKERS` | Optional. Parallel `-cc` requests (default 6). Lower it if you hit rate limits. |
 
@@ -125,7 +126,7 @@ With no options, you get the transcript only. Add options for the outputs you wa
 | Option | What it does | Default |
 | :--- | :--- | :--- |
 | `-m`, `--model` | Speakers, Q&A, tags and summaries with an LLM. Comma-separate to compare models. | Bare: `gemini-3.5-flash-lite` |
-| `-t`, `--transcript` | Where the transcript comes from: `youtube`, or a speech-to-text model such as `gemini-3.5-transcribe`, `gcp-chirp3`, `aws-transcribe` or `nvidia-parakeet-tdt-0.6b-v2`. | `youtube` |
+| `-t`, `--transcript` | Where the transcript comes from: `youtube`, or a speech-to-text model such as `gemini-3.5-transcribe`, `gcp-chirp3`, `aws-transcribe`, `nvidia-parakeet-tdt-0.6b-v2` or `nvidia-nemotron-3.5-transcribe`. | `youtube` |
 | `-i`, `--infographic` | An infographic, with alt text, from an image model. Comma-separate for one per model. | Bare: `foundry-gpt-image-2.5-sunburst` |
 | `--alt-text-model` | The LLM that writes the infographic alt text. | The `-m` model |
 | `--tts` | An audio summary. Format: `{model}-{voice}`, e.g. `gemini-3.8-flash-lite-tts-Kore`, `gcp-chirp3-Kore` or `aws-polly-Ruth`. | None |
