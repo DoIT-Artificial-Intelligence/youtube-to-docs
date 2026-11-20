@@ -165,8 +165,8 @@ class TestSetup(unittest.TestCase):
             text, srt, _, _ = transcribe_mai("mai-transcribe-2", "a.m4a", "url")
         self.assertEqual(
             text,
-            "Error: AZURE_TRANSCRIPTION_ENDPOINT and AZURE_TRANSCRIPTION_API_KEY "
-            "not set",
+            "Error: set AZURE_TRANSCRIPTION_ENDPOINT and "
+            "AZURE_TRANSCRIPTION_API_KEY to use MAI-Transcribe",
         )
 
     def test_provider_routing(self):

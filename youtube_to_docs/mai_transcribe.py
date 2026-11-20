@@ -149,13 +149,18 @@ def transcribe_mai(
     """
     from youtube_to_docs.llms import minute_pseudo_tokens
 
-    missing = [
-        name
-        for name in (MAI_TRANSCRIBE_ENDPOINT_ENV, MAI_TRANSCRIBE_API_KEY_ENV)
-        if not os.environ.get(name)
-    ]
-    if missing:
-        return f"Error: {' and '.join(missing)} not set", "", 0, 0
+    if not (
+        os.environ.get(MAI_TRANSCRIBE_ENDPOINT_ENV)
+        and os.environ.get(MAI_TRANSCRIBE_API_KEY_ENV)
+    ):
+        # A fixed message, so nothing read near the key reaches the transcript.
+        return (
+            "Error: set AZURE_TRANSCRIPTION_ENDPOINT and "
+            "AZURE_TRANSCRIPTION_API_KEY to use MAI-Transcribe",
+            "",
+            0,
+            0,
+        )
 
     try:
         import static_ffmpeg
