@@ -75,7 +75,7 @@ A 3-hour meeting takes about 20 minutes and costs about $3.
 
 ### AI transcription
 
-Set `transcript_source` to an STT model, e.g. `'gemini-3.5-transcribe'`, `'gemini-3.5-flash-lite'` or `'gcp-chirp3'`. `gemini-3.5-transcribe` returns word-level timestamps and adds `[Speaker N]` labels on speaker changes. `gcp-` models need `GOOGLE_CLOUD_PROJECT`, and `YTD_GCS_BUCKET_NAME` is recommended. With an AI transcript, the tool also summarizes the YouTube transcript; set `no_youtube_summary=True` to skip that.
+Set `transcript_source` to an STT model, e.g. `'gemini-3.5-transcribe'`, `'gemini-3.5-flash-lite'` or `'gcp-chirp3'`. `gemini-3.5-transcribe` and `mai-transcribe-2` return word-level timestamps and add `[Speaker N]` labels on speaker changes. `mai-transcribe-2` needs `AZURE_TRANSCRIPTION_ENDPOINT` and `AZURE_TRANSCRIPTION_API_KEY`. `gcp-` models need `GOOGLE_CLOUD_PROJECT`, and `YTD_GCS_BUCKET_NAME` is recommended. With an AI transcript, the tool also summarizes the YouTube transcript; set `no_youtube_summary=True` to skip that.
 
 ### Output locations
 

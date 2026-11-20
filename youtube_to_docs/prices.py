@@ -237,6 +237,17 @@ PRICES = {
             "input_cached": None,
         },
         {
+            "id": "mai-transcribe-2",
+            "vendor": "microsoft",
+            "name": "Microsoft MAI-Transcribe-2 (STT)*",
+            # $0.54 per hour => $0.009 per minute (Azure Speech, Nov 2026).
+            # 1M tokens ≈ 5000 minutes => $45.00
+            # Splitting cost 50/50 between input and output tokens for comparison.
+            "input": 22.5,
+            "output": 22.5,
+            "input_cached": None,
+        },
+        {
             "id": "gcp-chirp3-tts",
             "vendor": "google",
             "name": "GCP Chirp 3 (TTS)*",
