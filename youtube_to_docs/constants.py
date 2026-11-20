@@ -8,4 +8,5 @@ KNOWN_SRT_SOURCE_PREFIXES = (
     "foundry-",
     "nvidia-",
     "gemini-",
+    "mai-transcribe",
 )

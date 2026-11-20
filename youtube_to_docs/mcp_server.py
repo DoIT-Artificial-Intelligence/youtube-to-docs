@@ -63,6 +63,8 @@ def process_video(
             to perform STT on extracted audio. 'gemini-3.5-transcribe' is Google's
             dedicated STT model and returns word-level timestamps plus speaker
             diarization, so its SRT has real offsets and '[Speaker N]' labels.
+            'mai-transcribe-2' (Microsoft, on Azure Speech) does the same and needs
+            AZURE_TRANSCRIPTION_ENDPOINT and AZURE_TRANSCRIPTION_API_KEY.
             When corrected_captions corrects an STT transcript, that model is the
             default instead.
         model: The LLM model to use for speaker extraction, Q&A, and summarization

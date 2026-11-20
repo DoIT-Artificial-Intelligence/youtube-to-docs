@@ -44,7 +44,7 @@ The entry point (`youtube_to_docs/main.py`) accepts:
 `-t` / `--transcript` chooses where the words come from:
 
 - **YouTube** (default): the video's existing captions, either uploaded or automatic. Automatic captions come from speech recognition, so they can contain errors, and they aren't always available straight away.
-- **Speech-to-text**: an AI model name (e.g. `gemini-3.5-transcribe`, `gcp-chirp3`, `aws-transcribe`, `nvidia-parakeet-tdt-0.6b-v2`, `nvidia-nemotron-3.5-transcribe`) downloads the audio with `yt-dlp` and transcribes it again.
+- **Speech-to-text**: an AI model name (e.g. `gemini-3.5-transcribe`, `gcp-chirp3`, `aws-transcribe`, `nvidia-parakeet-tdt-0.6b-v2`, `nvidia-nemotron-3.5-transcribe`, `mai-transcribe-2`) downloads the audio with `yt-dlp` and transcribes it again.
 
 Both give a plain-text transcript and an `.srt` file with timings. The SRT is used later to put timestamps on the Q&A and to make corrected captions.
 
@@ -56,6 +56,7 @@ Both give a plain-text transcript and an `.srt` file with timings. The SRT is us
     - `aws-transcribe` needs `YTD_S3_BUCKET_NAME`.
     - `nvidia-parakeet-tdt-0.6b-v2` is NVIDIA's open Parakeet model, hosted free at [build.nvidia.com](https://build.nvidia.com/nvidia/parakeet-tdt-0_6b-v2). It needs `NVIDIA_API_KEY` and the `nvidia` extra. It's English only and fast: the audio is sent in one request, with no bucket, and the SRT is built from word timestamps. It doesn't label speakers.
     - `nvidia-nemotron-3.5-transcribe` is NVIDIA's open Nemotron 3.5 Transcribe model. NVIDIA doesn't host it, so it runs on your own GPU (80 GB for full precision) behind a vLLM server: see [Running Nemotron 3.5 Transcribe](../scripts/nemotron_transcribe/README.md). It gives word timestamps and `[Speaker N]` labels in 40 languages. Before downloading anything, it checks the GPU, unless `NEMOTRON_TRANSCRIBE_URL` points at a server elsewhere, and that the server is up.
+    - `mai-transcribe-2` is Microsoft's MAI-Transcribe model on the Azure Speech fast transcription API. It needs `AZURE_TRANSCRIPTION_ENDPOINT` and `AZURE_TRANSCRIPTION_API_KEY`. Like `gemini-3.5-transcribe`, it's asked for word timestamps and speaker diarization, so the SRT has real word offsets and `[Speaker N]` labels. The transcript is verbatim, with fillers such as "um" kept. The audio is sent as FLAC in 30-minute chunks, with no bucket. Speakers are numbered separately in each chunk, so the same person can get two numbers in a recording over 30 minutes. It costs $0.54 an hour of audio.
     - With an AI transcript, a second summary is also written from the YouTube transcript for comparison. `--no-youtube-summary` skips it.
 
 ## 3. Text outputs

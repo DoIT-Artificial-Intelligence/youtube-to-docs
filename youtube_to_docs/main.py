@@ -212,7 +212,8 @@ def _main_impl(
             "Can be `youtube` (default) to fetch existing YouTube transcripts, \n"
             "AI model name (e.g. `gemini-3.5-transcribe`, `gemini-4-carbon`, "
             "`gemini-3.5-flash-lite`, `gcp-chirp3`, `aws-transcribe`, "
-            "`nvidia-parakeet-tdt-0.6b-v2`) to perform STT on extracted audio. \n"
+            "`nvidia-parakeet-tdt-0.6b-v2`, `mai-transcribe-2`) to perform STT on "
+            "extracted audio. \n"
             "`gemini-3.5-transcribe` is Google's dedicated STT model: it returns "
             "word-level timestamps and speaker diarization, so the SRT carries real "
             "offsets and `[Speaker N]` labels on speaker changes. \n"
@@ -228,7 +229,10 @@ def _main_impl(
             "GPU through a vLLM server, with word timestamps and speaker labels "
             "in 40 languages. It needs 80 GB for BF16, 48 GB for FP8, or a 32 GB "
             "Blackwell card for NVFP4. Set `NEMOTRON_TRANSCRIBE_URL` to use a "
-            "server on another machine."
+            "server on another machine. \n"
+            "`mai-transcribe-2` is Microsoft's STT model on Azure Speech, with word "
+            "timestamps and speaker labels. It needs "
+            "`AZURE_TRANSCRIPTION_ENDPOINT` and `AZURE_TRANSCRIPTION_API_KEY`."
         ),
     )
     parser.add_argument(
