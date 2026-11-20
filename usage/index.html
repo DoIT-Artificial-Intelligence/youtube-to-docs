@@ -1310,6 +1310,10 @@
 <td style="text-align: left;">Azure Foundry models (<code>foundry-…</code>)</td>
 </tr>
 <tr>
+<td style="text-align: left;"><code>AZURE_TRANSCRIPTION_ENDPOINT</code>, <code>AZURE_TRANSCRIPTION_API_KEY</code></td>
+<td style="text-align: left;">Microsoft MAI-Transcribe (<code>-t mai-transcribe-2</code>). The endpoint and key of an Azure Speech or Foundry resource in a <a href="https://learn.microsoft.com/azure/ai-services/speech-service/regions?tabs=llmspeech">region that has MAI-Transcribe</a>.</td>
+</tr>
+<tr>
 <td style="text-align: left;"><code>NVIDIA_API_KEY</code></td>
 <td style="text-align: left;">Open models from the NVIDIA API catalog (<code>nvidia-…</code>). The key is free at <a href="https://build.nvidia.com/">build.nvidia.com</a> and rate limited. LLMs need no extra; speech-to-text (<code>-t nvidia-parakeet-tdt-0.6b-v2</code>) needs the <code>nvidia</code> extra.</td>
 </tr>
@@ -1373,7 +1377,7 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>-t</code>, <code>--transcript</code></td>
-<td style="text-align: left;">Where the transcript comes from: <code>youtube</code>, or a speech-to-text model such as <code>gemini-3.5-transcribe</code>, <code>gcp-chirp3</code>, <code>aws-transcribe</code>, <code>nvidia-parakeet-tdt-0.6b-v2</code> or <code>nvidia-nemotron-3.5-transcribe</code>.</td>
+<td style="text-align: left;">Where the transcript comes from: <code>youtube</code>, or a speech-to-text model such as <code>gemini-3.5-transcribe</code>, <code>gcp-chirp3</code>, <code>aws-transcribe</code>, <code>nvidia-parakeet-tdt-0.6b-v2</code>, <code>nvidia-nemotron-3.5-transcribe</code> or <code>mai-transcribe-2</code>.</td>
 <td style="text-align: left;"><code>youtube</code></td>
 </tr>
 <tr>

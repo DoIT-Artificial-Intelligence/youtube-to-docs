@@ -1120,7 +1120,7 @@
 <p><code>-t</code> / <code>--transcript</code> chooses where the words come from:</p>
 <ul>
 <li><strong>YouTube</strong> (default): the video's existing captions, either uploaded or automatic. Automatic captions come from speech recognition, so they can contain errors, and they aren't always available straight away.</li>
-<li><strong>Speech-to-text</strong>: an AI model name (e.g. <code>gemini-3.5-transcribe</code>, <code>gcp-chirp3</code>, <code>aws-transcribe</code>, <code>nvidia-parakeet-tdt-0.6b-v2</code>, <code>nvidia-nemotron-3.5-transcribe</code>) downloads the audio with <code>yt-dlp</code> and transcribes it again.</li>
+<li><strong>Speech-to-text</strong>: an AI model name (e.g. <code>gemini-3.5-transcribe</code>, <code>gcp-chirp3</code>, <code>aws-transcribe</code>, <code>nvidia-parakeet-tdt-0.6b-v2</code>, <code>nvidia-nemotron-3.5-transcribe</code>, <code>mai-transcribe-2</code>) downloads the audio with <code>yt-dlp</code> and transcribes it again.</li>
 </ul>
 <p>Both give a plain-text transcript and an <code>.srt</code> file with timings. The SRT is used later to put timestamps on the Q&amp;A and to make corrected captions.</p>
 <details class="info">
@@ -1132,6 +1132,7 @@
 <li><code>aws-transcribe</code> needs <code>YTD_S3_BUCKET_NAME</code>.</li>
 <li><code>nvidia-parakeet-tdt-0.6b-v2</code> is NVIDIA's open Parakeet model, hosted free at <a href="https://build.nvidia.com/nvidia/parakeet-tdt-0_6b-v2">build.nvidia.com</a>. It needs <code>NVIDIA_API_KEY</code> and the <code>nvidia</code> extra. It's English only and fast: the audio is sent in one request, with no bucket, and the SRT is built from word timestamps. It doesn't label speakers.</li>
 <li><code>nvidia-nemotron-3.5-transcribe</code> is NVIDIA's open Nemotron 3.5 Transcribe model. NVIDIA doesn't host it, so it runs on your own GPU (80 GB for full precision) behind a vLLM server: see <a href="../scripts/nemotron_transcribe/README.md">Running Nemotron 3.5 Transcribe</a>. It gives word timestamps and <code>[Speaker N]</code> labels in 40 languages. Before downloading anything, it checks the GPU, unless <code>NEMOTRON_TRANSCRIBE_URL</code> points at a server elsewhere, and that the server is up.</li>
+<li><code>mai-transcribe-2</code> is Microsoft's MAI-Transcribe model on the Azure Speech fast transcription API. It needs <code>AZURE_TRANSCRIPTION_ENDPOINT</code> and <code>AZURE_TRANSCRIPTION_API_KEY</code>. Like <code>gemini-3.5-transcribe</code>, it's asked for word timestamps and speaker diarization, so the SRT has real word offsets and <code>[Speaker N]</code> labels. The transcript is verbatim, with fillers such as "um" kept. The audio is sent as FLAC in 30-minute chunks, with no bucket. Speakers are numbered separately in each chunk, so the same person can get two numbers in a recording over 30 minutes. It costs $0.54 an hour of audio.</li>
 <li>With an AI transcript, a second summary is also written from the YouTube transcript for comparison. <code>--no-youtube-summary</code> skips it.</li>
 </ul>
 </details>
