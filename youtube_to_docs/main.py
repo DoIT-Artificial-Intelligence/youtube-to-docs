@@ -42,6 +42,12 @@ from youtube_to_docs.llms import (
     parse_chapters,
 )
 from youtube_to_docs.models import MODEL_SUITES
+from youtube_to_docs.nemotron_llm import (
+    check_nemotron_llm_hardware,
+    check_nemotron_llm_server,
+    is_nemotron_llm_model,
+    uses_local_llm_server,
+)
 from youtube_to_docs.nemotron_transcribe import (
     NEMOTRON_TRANSCRIBE_MODEL,
     NemotronSetupError,
@@ -255,7 +261,10 @@ def _main_impl(
             "`foundry-gpt-6-luna`)\n"
             "NVIDIA API catalog model, free and rate limited (prefix with "
             "`nvidia-` and leave out the publisher; e.g. "
-            "`nvidia-nemotron-3-ultra-550b-a55b`; needs `NVIDIA_API_KEY`)\n"
+            "`nvidia-nemotron-3-ultra-550b-a55b`; needs `NVIDIA_API_KEY`). "
+            "`nvidia-nemotron-3.5-lightning` runs on your own GPU behind vLLM "
+            "when a compatible GPU is detected or `NEMOTRON_LLM_URL` is set, "
+            "and otherwise falls back to build.nvidia.com.\n"
             "Can also be a comma-separated list of models (e.g. "
             "`gemini-3.5-flash-lite,bedrock-claude-haiku-5-5`).\n"
             "Defaults to `None` (Transcript only)."
@@ -532,6 +541,29 @@ def _main_impl(
     translate_lang = None
     if translate_arg:
         translate_model, translate_lang = parse_translate_arg(translate_arg)
+
+    nemotron_llm_models = [
+        m.strip()
+        for m in (*model_names, *([translate_model] if translate_model else []))
+        if is_nemotron_llm_model(m.strip())
+    ]
+    for nemotron_model in dict.fromkeys(nemotron_llm_models):
+        # Check the GPU and vLLM server before downloading anything. If no
+        # compatible local GPU is detected (and NEMOTRON_LLM_URL is unset),
+        # fall back to NVIDIA's hosted API catalog (build.nvidia.com).
+        if uses_local_llm_server():
+            hardware_ok, hardware_message = check_nemotron_llm_hardware(nemotron_model)
+            if not hardware_ok:
+                rprint(
+                    f"[yellow]No compatible local GPU detected for {nemotron_model}; "
+                    "routing to build.nvidia.com (requires NVIDIA_API_KEY).[/yellow]"
+                )
+                continue
+            rprint(f"[green]{hardware_message}[/green]")
+        server_ok, server_message = check_nemotron_llm_server(nemotron_model)
+        if not server_ok:
+            raise NemotronSetupError(server_message)
+        rprint(f"[green]{server_message}[/green]")
 
     languages = ["en"]
     if translate_lang:
