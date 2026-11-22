@@ -41,12 +41,15 @@ NEMOTRON_CHUNK_SECONDS = 45 * 60
 # an H100; the limit exists so a stalled server fails instead of hanging.
 NEMOTRON_TIMEOUT_SECONDS = (30, 30 * 60)
 
-# The model card's prompt for speaker-attributed transcription. It returns
-# `<spk:N>` tags in the text and per-word times and speakers alongside.
+# Clean (non-verbatim) speaker-attributed transcription prompt based on the
+# model card's wording, matching MAI-Transcribe-2 and Gemini Transcribe style
+# (no fillers/repetitions, digits for numbers) while keeping `<spk:N>` tags and
+# per-word CTC timestamps.
 NEMOTRON_PROMPT = (
-    "Transcribe this audio with punctuation and capitalization. Include all "
-    "spoken words and verbal fillers. Write numbers in their standard written "
-    "form. Put speaker tags <spk:0> <spk:1> <spk:2> <spk:3> on the transcription."
+    "Transcribe this audio with punctuation and capitalization. Omit fillers "
+    "and accidental repetitions; keep the remaining spoken wording unchanged. "
+    "Write numbers as digits and use standard abbreviations. Put speaker tags "
+    "<spk:0> <spk:1> <spk:2> <spk:3> on the transcription."
 )
 
 _SPEAKER_TAG = re.compile(r"\s*<spk:\d+>\s*")
