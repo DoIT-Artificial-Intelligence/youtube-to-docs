@@ -1168,13 +1168,13 @@
 <td style="text-align: left;"><code>foundry-gpt-6-luna</code></td>
 </tr>
 <tr>
-<td style="text-align: left;">NVIDIA API catalog (open models)</td>
+<td style="text-align: left;">NVIDIA API catalog &amp; self-hosted Nemotron</td>
 <td style="text-align: left;"><code>nvidia-</code></td>
-<td style="text-align: left;"><code>nvidia-nemotron-3-ultra-550b-a55b</code>, <code>nvidia-nemotron-3.5-lightning-30b-a3b</code></td>
+<td style="text-align: left;"><code>nvidia-nemotron-3-ultra-550b-a55b</code>, <code>nvidia-nemotron-3.5-lightning</code></td>
 </tr>
 </tbody>
 </table>
-<p>OpenAI GPT models on Bedrock are called through the Bedrock Mantle Chat Completions endpoint. NVIDIA models are the open models hosted at <a href="https://build.nvidia.com/models">build.nvidia.com</a>: they are free but rate limited, and a busy model can take minutes to answer. Use the model's name without its publisher, so <code>nvidia/nemotron-3-ultra-550b-a55b</code> is <code>nvidia-nemotron-3-ultra-550b-a55b</code>. A comma-separated list runs several models side by side, each with its own columns.</p>
+<p>OpenAI GPT models on Bedrock are called through the Bedrock Mantle Chat Completions endpoint. NVIDIA models use the open models hosted at <a href="https://build.nvidia.com/models">build.nvidia.com</a>: they are free but rate limited, and a busy model can take minutes to answer. Use the model's name without its publisher, so <code>nvidia/nemotron-3-ultra-550b-a55b</code> is <code>nvidia-nemotron-3-ultra-550b-a55b</code>. For <code>nvidia-nemotron-3.5-lightning</code>, if a compatible local GPU is detected (24 GB for NVFP4 or 80 GB for BF16) or <code>NEMOTRON_LLM_URL</code> is set, it runs against your own vLLM server (see <a href="../scripts/nemotron_llm/README.md">Running Nemotron 3.5 Lightning</a>); otherwise it automatically falls back to <code>build.nvidia.com</code> (<code>NVIDIA_API_KEY</code>). A comma-separated list runs several models side by side, each with its own columns.</p>
 <p>For each video, the model writes:</p>
 <table>
 <thead>
