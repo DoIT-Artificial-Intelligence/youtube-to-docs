@@ -7,6 +7,7 @@ import requests
 from youtube_to_docs import llms, main, utils
 from youtube_to_docs.nemotron_llm import (
     NEMOTRON_LIGHTNING_MODEL,
+    NEMOTRON_SUPER_MODEL,
     NemotronLlmProvider,
     NemotronSetupError,
     _served_model_cache,
@@ -19,6 +20,9 @@ from youtube_to_docs.nemotron_llm import (
 from youtube_to_docs.nemotron_transcribe import GpuInfo
 from youtube_to_docs.providers import get_provider
 
+B200 = GpuInfo("NVIDIA B200", 183359, 10.0)
+H200 = GpuInfo("NVIDIA H200", 143771, 9.0)
+RTX_PRO_6000 = GpuInfo("NVIDIA RTX PRO 6000 Blackwell", 97887, 12.0)
 H100 = GpuInfo("NVIDIA H100 80GB HBM3", 81559, 9.0)
 A100_80 = GpuInfo("NVIDIA A100-SXM4-80GB", 81920, 8.0)
 A100_40 = GpuInfo("NVIDIA A100-SXM4-40GB", 40960, 8.0)
@@ -311,6 +315,96 @@ class TestGenerateNemotronLlm(unittest.TestCase):
         self.assertEqual(
             utils.normalize_model_name(NEMOTRON_LIGHTNING_MODEL),
             "nemotron-3.5-lightning",
+        )
+
+
+class TestNemotronSuper(unittest.TestCase):
+    def setUp(self):
+        _served_model_cache.clear()
+
+    def test_hardware_single_and_multi_gpu(self):
+        ok, msg = check_nemotron_llm_hardware(
+            NEMOTRON_SUPER_MODEL, [RTX_PRO_6000], platform="linux"
+        )
+        self.assertTrue(ok)
+        self.assertIn("NVFP4", msg)
+
+        ok, msg = check_nemotron_llm_hardware(
+            NEMOTRON_SUPER_MODEL, [H200], platform="linux"
+        )
+        self.assertTrue(ok)
+        self.assertIn("FP8", msg)
+
+        ok, msg = check_nemotron_llm_hardware(
+            NEMOTRON_SUPER_MODEL, [B200], platform="linux"
+        )
+        self.assertTrue(ok)
+        self.assertIn("FP8", msg)
+
+        ok, msg = check_nemotron_llm_hardware(
+            NEMOTRON_SUPER_MODEL, [H100, H100], platform="linux"
+        )
+        self.assertTrue(ok)
+        self.assertIn("2x", msg)
+        self.assertIn("FP8", msg)
+
+        ok, msg = check_nemotron_llm_hardware(
+            NEMOTRON_SUPER_MODEL, [H100, H100, H100, H100], platform="linux"
+        )
+        self.assertTrue(ok)
+        self.assertIn("4x", msg)
+        self.assertIn("BF16", msg)
+
+        ok, msg = check_nemotron_llm_hardware(
+            NEMOTRON_SUPER_MODEL, [H100], platform="linux"
+        )
+        self.assertFalse(ok)
+        self.assertIn("too small", msg)
+
+    @patch("youtube_to_docs.nemotron_llm.requests.get")
+    def test_server_ok_fp8(self, mock_get):
+        mock_get.return_value.json.return_value = {
+            "data": [{"id": "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-FP8"}]
+        }
+        ok, message = check_nemotron_llm_server(NEMOTRON_SUPER_MODEL)
+        self.assertTrue(ok)
+        self.assertIn("FP8", message)
+
+    @patch(
+        "youtube_to_docs.llms._nvidia_model_ids",
+        ["nvidia/nemotron-3.5-super-vl-120b-a12b"],
+    )
+    @patch("youtube_to_docs.llms.requests.post")
+    @patch(
+        "youtube_to_docs.nemotron_llm.check_nemotron_llm_hardware",
+        return_value=(False, "Found NVIDIA H100, which is too small."),
+    )
+    def test_falls_back_to_build_nvidia_hosted_super(self, _, mock_post):
+        mock_post.return_value.status_code = 200
+        mock_post.return_value.json.return_value = {
+            "choices": [{"message": {"content": "Super hosted summary."}}],
+            "usage": {"prompt_tokens": 100, "completion_tokens": 40},
+        }
+        with patch.dict(os.environ, {"NVIDIA_API_KEY": "fake_key"}, clear=False):
+            os.environ.pop("NEMOTRON_LLM_URL", None)
+            provider = get_provider(NEMOTRON_SUPER_MODEL)
+            assert isinstance(provider, NemotronLlmProvider)
+            text, in_tok, out_tok = provider.generate_content("Summarize.")
+
+        self.assertEqual(text, "Super hosted summary.")
+        self.assertEqual((in_tok, out_tok), (100, 40))
+        self.assertEqual(
+            mock_post.call_args.kwargs["json"]["model"],
+            "nvidia/nemotron-3.5-super-vl-120b-a12b",
+        )
+
+    def test_routing_pricing_and_normalization(self):
+        provider = get_provider(NEMOTRON_SUPER_MODEL)
+        self.assertIsInstance(provider, NemotronLlmProvider)
+        self.assertEqual(llms.get_model_pricing(NEMOTRON_SUPER_MODEL), (0, 0))
+        self.assertEqual(
+            utils.normalize_model_name(NEMOTRON_SUPER_MODEL),
+            "nemotron-3.5-super",
         )
 
 
