@@ -69,9 +69,9 @@ Both give a plain-text transcript and an `.srt` file with timings. The SRT is us
 | Google Cloud Vertex AI | `vertex-` | `vertex-claude-haiku-5-5` |
 | AWS Bedrock | `bedrock-` (or a bare `claude-` or `nova-`) | `bedrock-claude-haiku-5-5`, `bedrock-gpt-6-luna` |
 | Azure Foundry | `foundry-` | `foundry-gpt-6-luna` |
-| NVIDIA API catalog & self-hosted Nemotron | `nvidia-` | `nvidia-nemotron-3-ultra-550b-a55b`, `nvidia-nemotron-3.5-lightning` |
+| NVIDIA API catalog & self-hosted Nemotron | `nvidia-` | `nvidia-nemotron-3-ultra-550b-a55b`, `nvidia-nemotron-3.5-super`, `nvidia-nemotron-3.5-lightning` |
 
-OpenAI GPT models on Bedrock are called through the Bedrock Mantle Chat Completions endpoint. NVIDIA models use the open models hosted at [build.nvidia.com](https://build.nvidia.com/models): they are free but rate limited, and a busy model can take minutes to answer. Use the model's name without its publisher, so `nvidia/nemotron-3-ultra-550b-a55b` is `nvidia-nemotron-3-ultra-550b-a55b`. For `nvidia-nemotron-3.5-lightning`, if a compatible local GPU is detected (24 GB for NVFP4 or 80 GB for BF16) or `NEMOTRON_LLM_URL` is set, it runs against your own vLLM server (see [Running Nemotron 3.5 Lightning](../scripts/nemotron_llm/README.md)); otherwise it automatically falls back to `build.nvidia.com` (`NVIDIA_API_KEY`). A comma-separated list runs several models side by side, each with its own columns.
+OpenAI GPT models on Bedrock are called through the Bedrock Mantle Chat Completions endpoint. NVIDIA models use the open models hosted at [build.nvidia.com](https://build.nvidia.com/models): they are free but rate limited, and a busy model can take minutes to answer. Use the model's name without its publisher, so `nvidia/nemotron-3-ultra-550b-a55b` is `nvidia-nemotron-3-ultra-550b-a55b`. For `nvidia-nemotron-3.5-lightning` (24 GB NVFP4 / 80 GB BF16) and `nvidia-nemotron-3.5-super` (96 GB Blackwell NVFP4 / 130 GB FP8 / 260 GB BF16), if compatible local GPU hardware is detected or `NEMOTRON_LLM_URL` is set, they run against your own vLLM server (see [Running Nemotron LLMs](../scripts/nemotron_llm/README.md)); otherwise they automatically fall back to `build.nvidia.com` (`NVIDIA_API_KEY`). A comma-separated list runs several models side by side, each with its own columns.
 
 For each video, the model writes:
 

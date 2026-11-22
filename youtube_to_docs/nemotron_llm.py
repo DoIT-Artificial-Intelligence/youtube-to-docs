@@ -31,6 +31,7 @@ NEMOTRON_LLM_DEFAULT_URL = "http://127.0.0.1:8000/v1"
 NEMOTRON_LLM_TIMEOUT_SECONDS = (30, 15 * 60)
 
 NEMOTRON_LIGHTNING_MODEL = "nvidia-nemotron-3.5-lightning"
+NEMOTRON_SUPER_MODEL = "nvidia-nemotron-3.5-super"
 
 
 @dataclass(frozen=True)
@@ -67,6 +68,33 @@ NEMOTRON_LLM_SPECS: Dict[str, NemotronLlmSpec] = {
                 "24 GB",
                 "L4, RTX 4090, L40S, RTX 5090, RTX PRO 6000",
             ),
+        ),
+        readme_path="scripts/nemotron_llm/README.md",
+    ),
+    NEMOTRON_SUPER_MODEL: NemotronLlmSpec(
+        cli_name=NEMOTRON_SUPER_MODEL,
+        hosted_model_name="nvidia-nemotron-3.5-super-vl-120b-a12b",
+        default_hf_id="nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-NVFP4",
+        hf_ids=(
+            "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-NVFP4",
+            "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-FP8",
+            "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16",
+            "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B",
+        ),
+        # All 120B weights must fit in VRAM (single GPU or tensor-parallel across
+        # multiple GPUs). The vision encoder stays in BF16 even for quantized
+        # checkpoints, so NVFP4 needs ~80 GB weights (~96 GB GPU like RTX PRO 6000
+        # or B200), FP8 needs ~130 GB (1x H200 or 2x H100), BF16 needs ~260 GB.
+        requirements=(
+            ("BF16", 8.0, 260_000, "260 GB total", "4x H100 80GB, 2x H200, 2x B200"),
+            (
+                "FP8",
+                8.9,
+                130_000,
+                "130 GB total",
+                "1x H200 141GB, 2x H100 80GB, 1x B200",
+            ),
+            ("NVFP4", 10.0, 90_000, "96 GB Blackwell", "1x RTX PRO 6000 96GB, 1x B200"),
         ),
         readme_path="scripts/nemotron_llm/README.md",
     ),
@@ -135,27 +163,35 @@ def check_nemotron_llm_hardware(
     if not gpus:
         return False, f"nvidia-smi found no GPUs.\n{_requirements_text(spec)}"
 
-    usable = [(gpu, best_llm_precision(gpu, spec)) for gpu in gpus]
-    usable = [(gpu, precision) for gpu, precision in usable if precision]
-    if not usable:
-        found = ", ".join(
-            f"{gpu.name} ({gpu.memory_mib / 1024:.0f} GB, compute capability "
-            f"{gpu.compute_capability})"
+    # Prefer the highest precision: first check if any single GPU can run it,
+    # then check aggregate VRAM across multiple compatible GPUs (tensor parallel).
+    for precision, min_cc, min_mib, _, _ in spec.requirements:
+        single = [
+            gpu
             for gpu in gpus
-        )
-        return False, (
-            f"Found {found}, which is too small.\n{_requirements_text(spec)}"
-        )
+            if gpu.compute_capability >= min_cc and gpu.memory_mib >= min_mib
+        ]
+        if single:
+            gpu = max(single, key=lambda g: g.memory_mib)
+            return True, (
+                f"{gpu.name} ({gpu.memory_mib / 1024:.0f} GB) can run "
+                f"{spec.cli_name} in {precision}."
+            )
+        compatible = [gpu for gpu in gpus if gpu.compute_capability >= min_cc]
+        total_mib = sum(gpu.memory_mib for gpu in compatible)
+        if len(compatible) > 1 and total_mib >= min_mib:
+            names = ", ".join(dict.fromkeys(gpu.name for gpu in compatible))
+            return True, (
+                f"{len(compatible)}x {names} ({total_mib / 1024:.0f} GB total) "
+                f"can run {spec.cli_name} in {precision}."
+            )
 
-    # Prefer the GPU that runs the most precise checkpoint, then the most memory.
-    order = [precision for precision, *_ in spec.requirements]
-    gpu, precision = min(
-        usable, key=lambda item: (order.index(item[1]), -item[0].memory_mib)
+    found = ", ".join(
+        f"{gpu.name} ({gpu.memory_mib / 1024:.0f} GB, compute capability "
+        f"{gpu.compute_capability})"
+        for gpu in gpus
     )
-    return True, (
-        f"{gpu.name} ({gpu.memory_mib / 1024:.0f} GB) can run "
-        f"{spec.cli_name} in {precision}."
-    )
+    return False, (f"Found {found}, which is too small.\n{_requirements_text(spec)}")
 
 
 def nemotron_llm_server_url() -> str:
@@ -295,6 +331,7 @@ __all__ = [
     "NEMOTRON_LLM_DEFAULT_URL",
     "NEMOTRON_LLM_SPECS",
     "NEMOTRON_LLM_URL_ENV",
+    "NEMOTRON_SUPER_MODEL",
     "NemotronLlmProvider",
     "NemotronLlmSpec",
     "NemotronSetupError",

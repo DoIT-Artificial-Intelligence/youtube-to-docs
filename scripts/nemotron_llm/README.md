@@ -1,19 +1,29 @@
-# Running Nemotron 3.5 Lightning (Self-Hosted vLLM)
+# Running NVIDIA Nemotron LLMs (Self-Hosted vLLM)
 
-`-m nvidia-nemotron-3.5-lightning` runs NVIDIA's open **Nemotron 3.5 Lightning (30B total / 3B active)** hybrid Mamba-2 + Transformer MoE model on your own GPU behind a vLLM server, with no API rate limits or per-token charges.
+`-m nvidia-nemotron-3.5-lightning` (30B total / 3B active) and `-m nvidia-nemotron-3.5-super` (120B total / 12B active) run NVIDIA's open hybrid Mamba-2 + Transformer MoE models on your own GPU(s) behind a vLLM server, with no API rate limits or per-token charges.
 
 If no compatible local GPU is detected (and `NEMOTRON_LLM_URL` is not set), `youtube-to-docs` automatically falls back to NVIDIA's free rate-limited hosted API at `build.nvidia.com` (`NVIDIA_API_KEY`).
 
 ## What you need
 
-One NVIDIA GPU, on Linux or WSL2:
+Linux or WSL2 with NVIDIA GPU(s):
+
+### `nvidia-nemotron-3.5-lightning` (`serve.sh`)
 
 | Checkpoint | GPU memory | Examples (GCP / local) |
 | :--- | :--- | :--- |
 | NVFP4 (`NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4`) | 24 GB (compute capability 8.9+) | GCP `g2-standard-12` (L4 24GB, 48 GB RAM), `g4` (RTX PRO 6000), RTX 4090 / 5090, L40S |
 | BF16 (`NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16`) | 80 GB (compute capability 8.0+) | GCP `a2-ultragpu-1g` (A100 80GB), `a3-highgpu-1g` (H100), H200, B200 |
 
-`serve.sh` runs the NVFP4 checkpoint by default (using vLLM's Marlin MoE backend so it works on Ada/Hopper GPUs like the L4 as well as Blackwell).
+### `nvidia-nemotron-3.5-super` (`serve_super.sh`)
+
+| Checkpoint | GPU memory | Examples (GCP / local) |
+| :--- | :--- | :--- |
+| NVFP4 (`NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-NVFP4`) | 96 GB Blackwell (compute capability 10.0+) | GCP `g4` (1× RTX PRO 6000 96GB), `a4` (1× B200) |
+| FP8 (`NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-FP8`) | 130 GB total (compute capability 8.9+) | 1× H200 141GB, 2× H100 80GB (`TENSOR_PARALLEL_SIZE=2`) |
+| BF16 (`NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16`) | 260 GB total (compute capability 8.0+) | 4× H100 80GB, 2× H200, 2× B200 |
+
+`serve.sh` runs the Lightning NVFP4 checkpoint by default (using vLLM's Marlin MoE backend so it works on Ada/Hopper GPUs like the L4 as well as Blackwell). `serve_super.sh` runs the Super VL NVFP4 checkpoint by default (set `TENSOR_PARALLEL_SIZE=2` and override `MODEL_DIR`/`SERVED_MODEL_NAME` for 2× H100 FP8).
 
 ## Set up the server
 
