@@ -119,6 +119,14 @@ def get_provider(model_name: str) -> BaseProvider:
 
         return NemotronTranscribeProvider(model_name)
     elif model_name.startswith("nvidia-"):
+        from youtube_to_docs.nemotron_llm import (
+            NemotronLlmProvider,
+            is_nemotron_llm_model,
+        )
+
+        if is_nemotron_llm_model(model_name):
+            return NemotronLlmProvider(model_name)
+
         from youtube_to_docs.llms import NvidiaProvider
 
         return NvidiaProvider(model_name)
