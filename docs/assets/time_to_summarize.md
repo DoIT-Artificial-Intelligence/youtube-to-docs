@@ -1,7 +1,8 @@
-Measured on 2026-10-19.
+Measured on 2026-10-19, 2026-11-22.
 
 | Model | Time | Cost | Tokens in | Tokens out |
 | :--- | ---: | ---: | ---: | ---: |
+| `nvidia-nemotron-3.5-lightning` | 5.0 s | $0.000 | 37,350 | 1,037 |
 | `gemini-3.5-flash-lite` | 5.6 s | $0.014 | 37,663 | 1,065 |
 | `vertex-gemini-3.5-flash-lite` | 7.5 s | $0.015 | 37,662 | 1,311 |
 | `bedrock-gpt-6-luna` | 13.3 s | $0.004 | 35,905 | 1,366 |
@@ -16,9 +17,11 @@ Measured on 2026-10-19.
 | `gemini-4-argon` | 28.0 s | $0.093 | 37,691 | 1,787 |
 | `foundry-gpt-6-astra` | 28.0 s | $0.43 | 35,905 | 1,357 |
 | `bedrock-gpt-6-astra` | 28.2 s | $0.42 | 35,905 | 1,176 |
+| `nvidia-nemotron-3.5-bolt` | 32.5 s | $0.000 | 37,350 | 4,243 |
 | `gemini-3.8-flash` | 32.5 s | $0.043 | 37,663 | 3,806 |
 | `foundry-gpt-6.1-sol` | 32.6 s | $0.083 | 35,905 | 1,155 |
 | `vertex-gemini-3.8-flash` | 37.7 s | $0.034 | 37,662 | 1,497 |
+| `nvidia-nemotron-3.5-super` | 38.7 s | $0.000 | 37,350 | 3,375 |
 | `bedrock-claude-fable-5-1` | 39.7 s | $0.64 | 50,980 | 2,534 |
 | `vertex-claude-opus-5-5` | 44.1 s | $0.30 | 50,980 | 4,774 |
 | `vertex-claude-fable-5-1` | 45.8 s | $0.68 | 50,980 | 3,334 |
