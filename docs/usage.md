@@ -127,13 +127,13 @@ With no options, you get the transcript only. Add options for the outputs you wa
 | Option | What it does | Default |
 | :--- | :--- | :--- |
 | `-m`, `--model` | Speakers, Q&A, tags and summaries with an LLM. Comma-separate to compare models. | Bare: `gemini-3.5-flash-lite` |
-| `-t`, `--transcript` | Where the transcript comes from: `youtube`, or a speech-to-text model such as `gemini-3.5-transcribe`, `gcp-chirp3`, `aws-transcribe`, `nvidia-parakeet-tdt-0.6b-v2`, `nvidia-nemotron-3.5-transcribe` or `mai-transcribe-2`. | `youtube` |
+| `-t`, `--transcript` | Where the transcript comes from: `youtube`, or a speech-to-text model such as `mai-transcribe-2`, `gemini-3.5-transcribe`, `gcp-chirp3`, `aws-transcribe`, `nvidia-parakeet-tdt-0.6b-v2` or `nvidia-nemotron-3.5-transcribe`. | Omitted: `youtube`<br>Bare: `mai-transcribe-2` |
 | `-i`, `--infographic` | An infographic, with alt text, from an image model. Comma-separate for one per model. | Bare: `foundry-gpt-image-2.5-sunburst` |
 | `--alt-text-model` | The LLM that writes the infographic alt text. | The `-m` model |
 | `--tts` | An audio summary. Format: `{model}-{voice}`, e.g. `gemini-3.8-flash-lite-tts-Kore`, `gcp-chirp3-Kore` or `aws-polly-Ruth`. | None |
 | `-cia`, `--combine-infographic-audio` | An MP4 that plays the audio summary over the infographic. Needs `-i` and `--tts`. | Off |
 | `-tr`, `--translate` | Translate every output. Format: `{model}-{language}`, e.g. `gemini-3.5-flash-lite-es`, `aws-translate-es` or `gcp-translate-french`. | None |
-| `-cc`, `--corrected-captions` | Corrected captions and audio description. See [Corrected captions and audio description](#corrected-captions-and-audio-description). | Bare: `gemini-4-carbon-gemini-3.5-transcribe` |
+| `-cc`, `--corrected-captions` | Corrected captions and audio description. See [Corrected captions and audio description](#corrected-captions-and-audio-description). | Bare: `gemini-4-carbon-mai-transcribe-2` |
 | `-fv`, `--from-video` | Also make the summary, speakers and Q&A from the video itself with Gemini: `agentic`, `static` or `agentic,static`. | None |
 | `-nys`, `--no-youtube-summary` | With an AI transcript, skip the extra summary of the YouTube transcript. | Off |
 | `-a`, `--all` | Use a model suite for summary, TTS and infographic (and set `-nys`): `gemini-flash`, `gemini-pro`, `gemini-flash-pro-image`, `gcp-pro` or `anthropic-opus`. | None |
@@ -165,10 +165,10 @@ youtube-to-docs atmGAHYpf_c -m
 youtube-to-docs PLGKTTEqwhiHHWO-jdxM1KtzTbWo6h0Ycl -m gemini-3.5-flash-lite,vertex-claude-haiku-5-5
 ```
 
-**Transcribe the audio with Gemini 3.5 Transcribe** (word timestamps and speaker labels in the SRT):
+**Transcribe the audio with the default STT model (`mai-transcribe-2`)** (word timestamps and speaker labels in the SRT):
 
 ```bash
-youtube-to-docs atmGAHYpf_c -t gemini-3.5-transcribe -m
+youtube-to-docs atmGAHYpf_c -t -m
 ```
 
 **A whole channel with infographics and audio summaries** (see [Maryland hearings](maryland-hearings.md) for every Maryland General Assembly channel):
@@ -221,7 +221,7 @@ youtube-to-docs atmGAHYpf_c -pp '{"word count": ["apple", "banana"]}'
 youtube-to-docs VIDEO_ID -cc
 ```
 
-Without a value it uses `gemini-4-carbon-gemini-3.5-transcribe`: the audio is transcribed with `gemini-3.5-transcribe` (word timestamps and speaker diarization) unless `-t` is set, and `gemini-4-carbon` reads on-screen context from the video, corrects the captions and describes the visual information. A 3-hour meeting takes about 20 minutes and roughly $3 in API calls.
+Without a value it uses `gemini-4-carbon-mai-transcribe-2`: the audio is transcribed with `mai-transcribe-2` (word timestamps and speaker diarization; needs `AZURE_TRANSCRIPTION_ENDPOINT` and `AZURE_TRANSCRIPTION_API_KEY`) unless `-t` is set, and `gemini-4-carbon` reads on-screen context from the video, corrects the captions and describes the visual information. A 3-hour meeting takes about 20 minutes and roughly $3 in API calls.
 
 Other ways to run it:
 
@@ -256,7 +256,7 @@ youtube-to-docs VIDEO_ID -t gcp-chirp3 -cc gemini-3.5-flash-lite-gcp-chirp3
 4. **Layout.** The corrected words are re-segmented into captions of at most two lines of 42 characters, 1–7 seconds long, broken at sentence and clause boundaries (not inside names or after articles). `[Name]` labels mark every change of speaker, crosstalk is placed at the nearest sentence break, quick exchanges share a two-line caption, and captions never overlap.
 5. **Audio description.** The video is downloaded and scanned for scene changes (new slides, changes of shot); the model looks at the frame at each change with the dialogue around it and writes a short spoken version and a full description of what isn't said aloud: slide titles, key on-screen text, the main figures in charts and tables, votes and video clips. Standard audio description is spoken only in pauses, so the short versions are fitted into pauses while their visual is on screen (most important first, shortened if needed), narrated with `--tts` (default `gemini-3.8-flash-tts-Kore`) and mixed in with the programme audio lowered. Nothing is narrated over speech; the extended track and the descriptive transcript carry every description.
 
-The captions are corrected after the speakers are found and before the other text outputs. So with `-cc`, the Q&A, summary, one-sentence summary, tags and chapters are written from the corrected captions, with real speaker names and corrected spellings, instead of the raw transcript. Their CSV columns and file names still say `from {transcript}` (e.g. `from gemini-3.5-transcribe`). Outputs made before this change aren't regenerated: delete them to rebuild them from the corrected captions.
+The captions are corrected after the speakers are found and before the other text outputs. So with `-cc`, the Q&A, summary, one-sentence summary, tags and chapters are written from the corrected captions, with real speaker names and corrected spellings, instead of the raw transcript. Their CSV columns and file names still say `from {transcript}` (e.g. `from mai-transcribe-2`). Outputs made before this change aren't regenerated: delete them to rebuild them from the corrected captions.
 
 Audio description needs a Gemini model; with other models `-cc` produces the captions only.
 
@@ -266,7 +266,7 @@ The format is `-cc {model}` or `-cc {model}-{source}`.
 
 | Source | Behaviour | Example |
 | :--- | :--- | :--- |
-| STT model name | Corrects the SRT from that STT run, transcribing it in the same run unless `-t` is set. | `-cc gemini-4-carbon-gemini-3.5-transcribe` |
+| STT model name | Corrects the SRT from that STT run, transcribing it in the same run unless `-t` is set. | `-cc gemini-4-carbon-mai-transcribe-2` |
 | `youtube` | Corrects the YouTube SRT, using any STT SRT for the video as the second transcript. | `-cc gemini-4-carbon-youtube` |
 | Omitted | Corrects the `-t` STT SRT, else the most recent AI SRT, else the YouTube SRT. | `-cc gemini-4-carbon` |
 

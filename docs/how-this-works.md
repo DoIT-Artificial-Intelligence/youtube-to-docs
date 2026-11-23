@@ -43,8 +43,8 @@ The entry point (`youtube_to_docs/main.py`) accepts:
 
 `-t` / `--transcript` chooses where the words come from:
 
-- **YouTube** (default): the video's existing captions, either uploaded or automatic. Automatic captions come from speech recognition, so they can contain errors, and they aren't always available straight away.
-- **Speech-to-text**: an AI model name (e.g. `gemini-3.5-transcribe`, `gcp-chirp3`, `aws-transcribe`, `nvidia-parakeet-tdt-0.6b-v2`, `nvidia-nemotron-3.5-transcribe`, `mai-transcribe-2`) downloads the audio with `yt-dlp` and transcribes it again.
+- **YouTube** (when `-t` is omitted): the video's existing captions, either uploaded or automatic. Automatic captions come from speech recognition, so they can contain errors, and they aren't always available straight away.
+- **Speech-to-text**: a bare `-t` (defaults to `mai-transcribe-2`) or an AI model name (e.g. `mai-transcribe-2`, `gemini-3.5-transcribe`, `gcp-chirp3`, `aws-transcribe`, `nvidia-parakeet-tdt-0.6b-v2`, `nvidia-nemotron-3.5-transcribe`) downloads the audio with `yt-dlp` and transcribes it again.
 
 Both give a plain-text transcript and an `.srt` file with timings. The SRT is used later to put timestamps on the Q&A and to make corrected captions.
 
@@ -133,7 +133,7 @@ File names end in `({model}-{language})`, e.g. `(gcp-translate-es)`, to show how
 
 ## 5. Accessibility
 
-`-cc` / `--corrected-captions` makes the original video accessible under WCAG 2.1 Level AA and Section 508. Without a value it uses `gemini-4-carbon-gemini-3.5-transcribe`: the audio is transcribed with `gemini-3.5-transcribe` (unless `-t` is set) and the captions are corrected with `gemini-4-carbon`. The format is `{model}` or `{model}-{source}`, e.g. `gemini-4-carbon-youtube`.
+`-cc` / `--corrected-captions` makes the original video accessible under WCAG 2.1 Level AA and Section 508. Without a value it uses `gemini-4-carbon-mai-transcribe-2`: the audio is transcribed with `mai-transcribe-2` (unless `-t` is set) and the captions are corrected with `gemini-4-carbon`. The format is `{model}` or `{model}-{source}`, e.g. `gemini-4-carbon-youtube`.
 
 **Captions** (SRT in `srt-files/`, a plain-text transcript in `transcript-files/`, and WebVTT in `vtt-files/`):
 

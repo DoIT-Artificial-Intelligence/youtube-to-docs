@@ -52,10 +52,10 @@ The tool also writes multimodal alt text for each infographic with the summary m
 
 "Fix the captions", "make this compliant", "audio description", "best captions", "cc".
 
-- `corrected_captions='default'` gives the best results (recommended). It runs `gemini-4-carbon` on a `gemini-3.5-transcribe` transcript made in the same run, with names and speaking times read from the video.
+- `corrected_captions='default'` gives the best results (recommended). It runs `gemini-4-carbon` on a `mai-transcribe-2` transcript made in the same run, with names and speaking times read from the video.
 - If YouTube is named as the source, use `'gemini-4-carbon-youtube'`, which starts from the YouTube captions and skips transcription.
 - If an STT model is named as the source, use `'gemini-4-carbon-{stt model}'`, e.g. `'gemini-4-carbon-gcp-chirp3'`.
-- If a cheaper or faster model is wanted ("flash", "cheap"), use `'gemini-3.5-flash-lite-gemini-3.5-transcribe'`.
+- If a cheaper or faster model is wanted ("flash", "cheap"), use `'gemini-3.5-flash-lite-mai-transcribe-2'`.
 - Leave `model` unset: the summary, tags and description then use `gemini-4-carbon` too.
 
 One run writes:
@@ -75,7 +75,7 @@ A 3-hour meeting takes about 20 minutes and costs about $3.
 
 ### AI transcription
 
-Set `transcript_source` to an STT model, e.g. `'gemini-3.5-transcribe'`, `'gemini-3.5-flash-lite'` or `'gcp-chirp3'`. `gemini-3.5-transcribe` and `mai-transcribe-2` return word-level timestamps and add `[Speaker N]` labels on speaker changes. `mai-transcribe-2` needs `AZURE_TRANSCRIPTION_ENDPOINT` and `AZURE_TRANSCRIPTION_API_KEY`. `gcp-` models need `GOOGLE_CLOUD_PROJECT`, and `YTD_GCS_BUCKET_NAME` is recommended. With an AI transcript, the tool also summarizes the YouTube transcript; set `no_youtube_summary=True` to skip that.
+Set `transcript_source='default'` (uses `mai-transcribe-2`) or an explicit STT model, e.g. `'mai-transcribe-2'`, `'gemini-3.5-transcribe'`, `'gemini-3.5-flash-lite'` or `'gcp-chirp3'`. `mai-transcribe-2` and `gemini-3.5-transcribe` return word-level timestamps and add `[Speaker N]` labels on speaker changes. `mai-transcribe-2` needs `AZURE_TRANSCRIPTION_ENDPOINT` and `AZURE_TRANSCRIPTION_API_KEY`. `gcp-` models need `GOOGLE_CLOUD_PROJECT`, and `YTD_GCS_BUCKET_NAME` is recommended. With an AI transcript, the tool also summarizes the YouTube transcript; set `no_youtube_summary=True` to skip that.
 
 ### Output locations
 
@@ -100,7 +100,7 @@ Set `transcript_source` to an STT model, e.g. `'gemini-3.5-transcribe'`, `'gemin
 | `translate`                 | Translate all outputs: `{model}-{language}`, `aws-translate-{language}` or `gcp-translate-{language}`.              | `gemini-3.5-flash-lite-es`, `aws-translate-es`, `gcp-translate-es`   |
 | `corrected_captions`        | Make the video accessible (see above). `'default'` for the best, or `{model}` / `{model}-{source}`.                 | `default`, `gemini-4-carbon-youtube`                                  |
 | `from_video`                | Also generate outputs from the video itself.                                                                        | `agentic`, `static`, `agentic,static`                                |
-| `transcript_source`         | Transcript source. Defaults to `youtube`, or to the STT model that `corrected_captions` corrects.                   | `gemini-3.5-transcribe`, `gcp-chirp3`                                |
+| `transcript_source`         | Transcript source. Defaults to `youtube` when omitted, `mai-transcribe-2` for `'default'`, or the STT model that `corrected_captions` corrects. | `default`, `mai-transcribe-2`, `gemini-3.5-transcribe`, `gcp-chirp3` |
 | `no_youtube_summary`        | Skip the extra summary of the YouTube transcript when an AI transcript is used.                                     | `True`                                                               |
 | `post_process`              | JSON operations on the transcript. The results become CSV columns.                                                  | `'{"word count": "apple"}'`, `'{"word count": ["apple", "banana"]}'` |
 | `output_file`               | Where the CSV goes (see above).                                                                                     | `workspace`, `sharepoint`, `hf`, `memory`, `none`                    |

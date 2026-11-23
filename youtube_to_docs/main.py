@@ -102,9 +102,14 @@ from youtube_to_docs.video import (
 )
 from youtube_to_docs.video_understanding import parse_video_modes, process_from_video
 
-# `-cc` without a value: correct the dedicated Gemini STT transcript (word
-# timestamps and diarization) with Gemini's strongest model.
-CORRECTED_CAPTIONS_DEFAULT = "gemini-4-carbon-gemini-3.5-transcribe"
+# `-t` without a value: Microsoft MAI-Transcribe-2 (word timestamps and
+# diarization; needs AZURE_TRANSCRIPTION_ENDPOINT and
+# AZURE_TRANSCRIPTION_API_KEY).
+TRANSCRIPT_DEFAULT = "mai-transcribe-2"
+
+# `-cc` without a value: correct the default STT transcript (word timestamps
+# and diarization) with Gemini's strongest model.
+CORRECTED_CAPTIONS_DEFAULT = f"gemini-4-carbon-{TRANSCRIPT_DEFAULT}"
 
 
 class VerboseRow(dict):
@@ -213,19 +218,28 @@ def _main_impl(
     parser.add_argument(
         "-t",
         "--transcript",
+        nargs="?",
+        const=TRANSCRIPT_DEFAULT,
         default=None,
         help=(
             "The transcript source to use. \n"
-            "Can be `youtube` (default) to fetch existing YouTube transcripts, \n"
-            "AI model name (e.g. `gemini-3.5-transcribe`, `gemini-4-carbon`, "
+            "Omitting `-t` uses `youtube` to fetch existing YouTube transcripts. \n"
+            f"Setting `-t` without a value defaults to `{TRANSCRIPT_DEFAULT}` "
+            "(needs `AZURE_TRANSCRIPTION_ENDPOINT` and "
+            "`AZURE_TRANSCRIPTION_API_KEY`). \n"
+            "Or pass an AI model name (e.g. `mai-transcribe-2`, "
+            "`gemini-3.5-transcribe`, `gemini-4-carbon`, "
             "`gemini-3.5-flash-lite`, `gcp-chirp3`, `aws-transcribe`, "
-            "`nvidia-parakeet-tdt-0.6b-v2`, `mai-transcribe-2`) to perform STT on "
-            "extracted audio. \n"
+            "`nvidia-parakeet-tdt-0.6b-v2`, `nvidia-nemotron-3.5-transcribe`) "
+            "to perform STT on extracted audio. \n"
+            "`mai-transcribe-2` is Microsoft's STT model on Azure Speech, with "
+            "word timestamps and speaker labels. It needs "
+            "`AZURE_TRANSCRIPTION_ENDPOINT` and `AZURE_TRANSCRIPTION_API_KEY`. \n"
             "`gemini-3.5-transcribe` is Google's dedicated STT model: it returns "
             "word-level timestamps and speaker diarization, so the SRT carries real "
             "offsets and `[Speaker N]` labels on speaker changes. \n"
             "When `-cc` corrects an STT transcript (by default "
-            "`gemini-3.5-transcribe`), that model is the default instead, so it "
+            f"`{TRANSCRIPT_DEFAULT}`), that model is the default instead, so it "
             "is transcribed in the same run. \n"
             "For `gcp-` models (Cloud Speech-to-Text V2), `GOOGLE_CLOUD_PROJECT` "
             "is required and `YTD_GCS_BUCKET_NAME` is optional/recommended. \n"
@@ -236,10 +250,7 @@ def _main_impl(
             "GPU through a vLLM server, with word timestamps and speaker labels "
             "in 40 languages. It needs 80 GB for BF16, 48 GB for FP8, or a 32 GB "
             "Blackwell card for NVFP4. Set `NEMOTRON_TRANSCRIBE_URL` to use a "
-            "server on another machine. \n"
-            "`mai-transcribe-2` is Microsoft's STT model on Azure Speech, with word "
-            "timestamps and speaker labels. It needs "
-            "`AZURE_TRANSCRIPTION_ENDPOINT` and `AZURE_TRANSCRIPTION_API_KEY`."
+            "server on another machine."
         ),
     )
     parser.add_argument(
@@ -420,7 +431,7 @@ def _main_impl(
             "The Q&A, summary, tags and chapters are then written from the "
             "corrected captions. \n\n"
             f"Without a value, uses `{CORRECTED_CAPTIONS_DEFAULT}` (and transcribes "
-            "with `gemini-3.5-transcribe` unless `-t` is set). Without `-m`, the "
+            f"with `{TRANSCRIPT_DEFAULT}` unless `-t` is set). Without `-m`, the "
             "summary and other text outputs use `gemini-4-carbon`. \n\n"
             "Format: `{model}` or `{model}-{source}` \n\n"
             "Source rules:\n"
@@ -435,7 +446,7 @@ def _main_impl(
             "  Everything, best quality:      -cc\n"
             "  Correct YouTube captions:      -cc gemini-4-carbon-youtube\n"
             "  Cheaper model:                 "
-            "-cc gemini-3.5-flash-lite-gemini-3.5-transcribe"
+            f"-cc gemini-3.5-flash-lite-{TRANSCRIPT_DEFAULT}"
         ),
     )
     parser.add_argument(

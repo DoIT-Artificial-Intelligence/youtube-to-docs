@@ -209,6 +209,16 @@ class TestErrorResponseAndCliBuilder(unittest.TestCase):
             ["abc12345678", "--outfile", "out.csv"],
         )
 
+    def test_build_cli_args_default_transcript_passes_bare_flag(self):
+        self.assertEqual(
+            utils.build_cli_args(
+                url="abc12345678",
+                output_file="out.csv",
+                transcript_source="default",
+            ),
+            ["abc12345678", "--outfile", "out.csv", "--transcript"],
+        )
+
     def test_join_posix(self):
         self.assertEqual(utils.join_posix("a", "b", "c.md"), "a/b/c.md")
         self.assertNotIn("\\", utils.join_posix("dir", "file.srt"))
