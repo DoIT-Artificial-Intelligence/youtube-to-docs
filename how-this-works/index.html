@@ -1119,8 +1119,8 @@
 <h2 id="2-transcripts">2. Transcripts</h2>
 <p><code>-t</code> / <code>--transcript</code> chooses where the words come from:</p>
 <ul>
-<li><strong>YouTube</strong> (default): the video's existing captions, either uploaded or automatic. Automatic captions come from speech recognition, so they can contain errors, and they aren't always available straight away.</li>
-<li><strong>Speech-to-text</strong>: an AI model name (e.g. <code>gemini-3.5-transcribe</code>, <code>gcp-chirp3</code>, <code>aws-transcribe</code>, <code>nvidia-parakeet-tdt-0.6b-v2</code>, <code>nvidia-nemotron-3.5-transcribe</code>, <code>mai-transcribe-2</code>) downloads the audio with <code>yt-dlp</code> and transcribes it again.</li>
+<li><strong>YouTube</strong> (when <code>-t</code> is omitted): the video's existing captions, either uploaded or automatic. Automatic captions come from speech recognition, so they can contain errors, and they aren't always available straight away.</li>
+<li><strong>Speech-to-text</strong>: a bare <code>-t</code> (defaults to <code>mai-transcribe-2</code>) or an AI model name (e.g. <code>mai-transcribe-2</code>, <code>gemini-3.5-transcribe</code>, <code>gcp-chirp3</code>, <code>aws-transcribe</code>, <code>nvidia-parakeet-tdt-0.6b-v2</code>, <code>nvidia-nemotron-3.5-transcribe</code>) downloads the audio with <code>yt-dlp</code> and transcribes it again.</li>
 </ul>
 <p>Both give a plain-text transcript and an <code>.srt</code> file with timings. The SRT is used later to put timestamps on the Q&amp;A and to make corrected captions.</p>
 <details class="info">
@@ -1323,7 +1323,7 @@
 </ol>
 <p>File names end in <code>({model}-{language})</code>, e.g. <code>(gcp-translate-es)</code>, to show how they were translated. CSV columns use the shorter <code>(es)</code>.</p>
 <h2 id="5-accessibility">5. Accessibility</h2>
-<p><code>-cc</code> / <code>--corrected-captions</code> makes the original video accessible under WCAG 2.1 Level AA and Section 508. Without a value it uses <code>gemini-4-carbon-gemini-3.5-transcribe</code>: the audio is transcribed with <code>gemini-3.5-transcribe</code> (unless <code>-t</code> is set) and the captions are corrected with <code>gemini-4-carbon</code>. The format is <code>{model}</code> or <code>{model}-{source}</code>, e.g. <code>gemini-4-carbon-youtube</code>.</p>
+<p><code>-cc</code> / <code>--corrected-captions</code> makes the original video accessible under WCAG 2.1 Level AA and Section 508. Without a value it uses <code>gemini-4-carbon-mai-transcribe-2</code>: the audio is transcribed with <code>mai-transcribe-2</code> (unless <code>-t</code> is set) and the captions are corrected with <code>gemini-4-carbon</code>. The format is <code>{model}</code> or <code>{model}-{source}</code>, e.g. <code>gemini-4-carbon-youtube</code>.</p>
 <p><strong>Captions</strong> (SRT in <code>srt-files/</code>, a plain-text transcript in <code>transcript-files/</code>, and WebVTT in <code>vtt-files/</code>):</p>
 <ol>
 <li><strong>Timing.</strong> The source SRT is aligned word by word with a second transcript of the same audio (YouTube's captions, or the STT transcript when correcting YouTube's), and cues with broken timestamps, or out of sync with the second transcript, are re-timed.</li>

@@ -1377,8 +1377,8 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>-t</code>, <code>--transcript</code></td>
-<td style="text-align: left;">Where the transcript comes from: <code>youtube</code>, or a speech-to-text model such as <code>gemini-3.5-transcribe</code>, <code>gcp-chirp3</code>, <code>aws-transcribe</code>, <code>nvidia-parakeet-tdt-0.6b-v2</code>, <code>nvidia-nemotron-3.5-transcribe</code> or <code>mai-transcribe-2</code>.</td>
-<td style="text-align: left;"><code>youtube</code></td>
+<td style="text-align: left;">Where the transcript comes from: <code>youtube</code>, or a speech-to-text model such as <code>mai-transcribe-2</code>, <code>gemini-3.5-transcribe</code>, <code>gcp-chirp3</code>, <code>aws-transcribe</code>, <code>nvidia-parakeet-tdt-0.6b-v2</code> or <code>nvidia-nemotron-3.5-transcribe</code>.</td>
+<td style="text-align: left;">Omitted: <code>youtube</code><br>Bare: <code>mai-transcribe-2</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>-i</code>, <code>--infographic</code></td>
@@ -1408,7 +1408,7 @@
 <tr>
 <td style="text-align: left;"><code>-cc</code>, <code>--corrected-captions</code></td>
 <td style="text-align: left;">Corrected captions and audio description. See <a href="#corrected-captions-and-audio-description">Corrected captions and audio description</a>.</td>
-<td style="text-align: left;">Bare: <code>gemini-4-carbon-gemini-3.5-transcribe</code></td>
+<td style="text-align: left;">Bare: <code>gemini-4-carbon-mai-transcribe-2</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>-fv</code>, <code>--from-video</code></td>
@@ -1463,8 +1463,8 @@
 <p><strong>Compare two models across a playlist:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>youtube-to-docs<span class="w"> </span>PLGKTTEqwhiHHWO-jdxM1KtzTbWo6h0Ycl<span class="w"> </span>-m<span class="w"> </span>gemini-3.5-flash-lite,vertex-claude-haiku-5-5
 </code></pre></div>
-<p><strong>Transcribe the audio with Gemini 3.5 Transcribe</strong> (word timestamps and speaker labels in the SRT):</p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-t<span class="w"> </span>gemini-3.5-transcribe<span class="w"> </span>-m
+<p><strong>Transcribe the audio with the default STT model (<code>mai-transcribe-2</code>)</strong> (word timestamps and speaker labels in the SRT):</p>
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>youtube-to-docs<span class="w"> </span>atmGAHYpf_c<span class="w"> </span>-t<span class="w"> </span>-m
 </code></pre></div>
 <p><strong>A whole channel with infographics and audio summaries</strong> (see <a href="../maryland-hearings/">Maryland hearings</a> for every Maryland General Assembly channel):</p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>youtube-to-docs<span class="w"> </span>@mga-othercommittees6625<span class="w"> </span>-m<span class="w"> </span>-i<span class="w"> </span>--tts<span class="w"> </span>gemini-3.8-flash-lite-tts-Kore
@@ -1491,7 +1491,7 @@
 <p><code>-cc</code> / <code>--corrected-captions</code> makes a video accessible under WCAG 2.1 Level AA (1.2.2 Captions, 1.2.5 Audio Description) and <a href="https://www.section508.gov/create/captions-transcripts/">Section 508</a>, following the DCMP Captioning and Description Keys.</p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>youtube-to-docs<span class="w"> </span>VIDEO_ID<span class="w"> </span>-cc
 </code></pre></div>
-<p>Without a value it uses <code>gemini-4-carbon-gemini-3.5-transcribe</code>: the audio is transcribed with <code>gemini-3.5-transcribe</code> (word timestamps and speaker diarization) unless <code>-t</code> is set, and <code>gemini-4-carbon</code> reads on-screen context from the video, corrects the captions and describes the visual information. A 3-hour meeting takes about 20 minutes and roughly $3 in API calls.</p>
+<p>Without a value it uses <code>gemini-4-carbon-mai-transcribe-2</code>: the audio is transcribed with <code>mai-transcribe-2</code> (word timestamps and speaker diarization; needs <code>AZURE_TRANSCRIPTION_ENDPOINT</code> and <code>AZURE_TRANSCRIPTION_API_KEY</code>) unless <code>-t</code> is set, and <code>gemini-4-carbon</code> reads on-screen context from the video, corrects the captions and describes the visual information. A 3-hour meeting takes about 20 minutes and roughly $3 in API calls.</p>
 <p>Other ways to run it:</p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1"># Correct the YouTube captions instead of transcribing</span>
 <a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>youtube-to-docs<span class="w"> </span>VIDEO_ID<span class="w"> </span>-cc<span class="w"> </span>gemini-4-carbon-youtube
@@ -1569,7 +1569,7 @@
 <li><strong>Layout.</strong> The corrected words are re-segmented into captions of at most two lines of 42 characters, 1–7 seconds long, broken at sentence and clause boundaries (not inside names or after articles). <code>[Name]</code> labels mark every change of speaker, crosstalk is placed at the nearest sentence break, quick exchanges share a two-line caption, and captions never overlap.</li>
 <li><strong>Audio description.</strong> The video is downloaded and scanned for scene changes (new slides, changes of shot); the model looks at the frame at each change with the dialogue around it and writes a short spoken version and a full description of what isn't said aloud: slide titles, key on-screen text, the main figures in charts and tables, votes and video clips. Standard audio description is spoken only in pauses, so the short versions are fitted into pauses while their visual is on screen (most important first, shortened if needed), narrated with <code>--tts</code> (default <code>gemini-3.8-flash-tts-Kore</code>) and mixed in with the programme audio lowered. Nothing is narrated over speech; the extended track and the descriptive transcript carry every description.</li>
 </ol>
-<p>The captions are corrected after the speakers are found and before the other text outputs. So with <code>-cc</code>, the Q&amp;A, summary, one-sentence summary, tags and chapters are written from the corrected captions, with real speaker names and corrected spellings, instead of the raw transcript. Their CSV columns and file names still say <code>from {transcript}</code> (e.g. <code>from gemini-3.5-transcribe</code>). Outputs made before this change aren't regenerated: delete them to rebuild them from the corrected captions.</p>
+<p>The captions are corrected after the speakers are found and before the other text outputs. So with <code>-cc</code>, the Q&amp;A, summary, one-sentence summary, tags and chapters are written from the corrected captions, with real speaker names and corrected spellings, instead of the raw transcript. Their CSV columns and file names still say <code>from {transcript}</code> (e.g. <code>from mai-transcribe-2</code>). Outputs made before this change aren't regenerated: delete them to rebuild them from the corrected captions.</p>
 <p>Audio description needs a Gemini model; with other models <code>-cc</code> produces the captions only.</p>
 <h3 id="choosing-the-source">Choosing the source</h3>
 <p>The format is <code>-cc {model}</code> or <code>-cc {model}-{source}</code>.</p>
@@ -1585,7 +1585,7 @@
 <tr>
 <td style="text-align: left;">STT model name</td>
 <td style="text-align: left;">Corrects the SRT from that STT run, transcribing it in the same run unless <code>-t</code> is set.</td>
-<td style="text-align: left;"><code>-cc gemini-4-carbon-gemini-3.5-transcribe</code></td>
+<td style="text-align: left;"><code>-cc gemini-4-carbon-mai-transcribe-2</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>youtube</code></td>
