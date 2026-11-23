@@ -1,3 +1,4 @@
+import argparse
 import os
 import time
 from datetime import date
@@ -40,7 +41,37 @@ MODELS = [
 ]
 
 
+COLUMNS = [
+    "model",
+    "time (seconds)",
+    "total_cost",
+    "input_tokens",
+    "output_tokens",
+    "input_price_per_1m",
+    "output_price_per_1m",
+    "date (today)",
+]
+
+
 def main():
+    parser = argparse.ArgumentParser(
+        description="Benchmark time to summarize for one or more LLM models."
+    )
+    parser.add_argument(
+        "--models",
+        help=(
+            "Comma-separated list of models to benchmark and upsert into the "
+            "existing time_to_summarize.csv (instead of overwriting all models)."
+        ),
+    )
+    args = parser.parse_args()
+    models_to_run = (
+        [m.strip() for m in args.models.split(",") if m.strip()]
+        if args.models
+        else MODELS
+    )
+    upsert = bool(args.models)
+
     print(f"Fetching transcript for {VIDEO_ID}...")
 
     yt_service = get_youtube_service()
@@ -61,7 +92,6 @@ def main():
     transcript_text = transcript_data[0]
     print(f"Transcript fetched. Length: {len(transcript_text)} characters.")
 
-    results = []
     today = date.today()
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -72,7 +102,13 @@ def main():
     output_path = os.path.join(docs_assets_dir, "time_to_summarize.csv")
     md_output_path = os.path.join(docs_assets_dir, "time_to_summarize.md")
 
-    for model in MODELS:
+    if upsert and os.path.exists(output_path):
+        existing = pl.read_csv(output_path, try_parse_dates=True)
+        existing_rows = {r["model"]: r for r in existing.iter_rows(named=True)}
+    else:
+        existing_rows = {}
+
+    for model in models_to_run:
         print(f"Testing model: {model}")
         start_time = time.time()
         input_tokens = 0
@@ -108,34 +144,19 @@ def main():
             print(f"Model {model} failed: {e}")
             elapsed_time = 999.0
 
-        results.append(
-            {
-                "model": model,
-                "time (seconds)": elapsed_time,
-                "total_cost": cost,
-                "input_tokens": input_tokens,
-                "output_tokens": output_tokens,
-                "input_price_per_1m": input_price if input_price is not None else 0.0,
-                "output_price_per_1m": output_price
-                if output_price is not None
-                else 0.0,
-                "date (today)": today,
-            }
-        )
+        existing_rows[model] = {
+            "model": model,
+            "time (seconds)": elapsed_time,
+            "total_cost": cost,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "input_price_per_1m": input_price if input_price is not None else 0.0,
+            "output_price_per_1m": output_price if output_price is not None else 0.0,
+            "date (today)": today,
+        }
 
-        df = pl.DataFrame(results)
-        df = df.select(
-            [
-                "model",
-                "time (seconds)",
-                "total_cost",
-                "input_tokens",
-                "output_tokens",
-                "input_price_per_1m",
-                "output_price_per_1m",
-                "date (today)",
-            ]
-        )
+        df = pl.DataFrame(list(existing_rows.values()))
+        df = df.select(COLUMNS)
         df = df.sort("time (seconds)")
         df.write_csv(output_path)
 
