@@ -152,7 +152,7 @@ def build_cli_args(
     args = [url, "--outfile", output_file]
 
     if transcript_source:
-        args.extend(["--transcript", transcript_source])
+        args.extend(optional_value_args("--transcript", transcript_source))
     if hugging_face_dataset:
         args.extend(["--hugging-face-dataset", hugging_face_dataset])
     if translate:

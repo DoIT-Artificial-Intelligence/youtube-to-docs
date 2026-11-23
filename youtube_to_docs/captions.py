@@ -3,7 +3,7 @@ Corrected captions (`-cc`): turns a speech-to-text SRT into a complete caption
 file that meets WCAG 2.1 Level AA and Section 508
 (https://www.section508.gov/create/captions-transcripts/).
 
-1. Timing: the source SRT (by default `gemini-3.5-transcribe`, which has
+1. Timing: the source SRT (by default `mai-transcribe-2`, which has
    word-level timestamps) is aligned word by word with a second transcript of
    the same audio (usually YouTube's captions), and cues with broken timestamps
    or out of sync with it are re-timed from it.

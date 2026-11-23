@@ -1237,7 +1237,7 @@ class TestMain(unittest.TestCase):
     return_value=("00:00 Intro\n00:20 Middle\n00:40 End", 1, 1),
 )
 class TestCorrectedCaptionsDefaults(unittest.TestCase):
-    """`-cc` without a value transcribes with gemini-3.5-transcribe and corrects
+    """`-cc` without a value transcribes with mai-transcribe-2 and corrects
     that SRT with gemini-4-carbon, unless -t says otherwise."""
 
     def _run(self, mocks, *args):
@@ -1274,11 +1274,21 @@ class TestCorrectedCaptionsDefaults(unittest.TestCase):
 
     def test_bare_flag_uses_best_defaults(self, *mocks):
         mock_provider, mock_cc = self._run(mocks, "-cc")
-        mock_provider.assert_called_with("gemini-3.5-transcribe")
+        mock_provider.assert_called_with("mai-transcribe-2")
         kwargs = mock_cc.call_args.kwargs
         self.assertEqual(kwargs["model_name"], "gemini-4-carbon")
-        self.assertEqual(kwargs["source"], "gemini-3.5-transcribe")
-        self.assertEqual(kwargs["transcript_arg"], "gemini-3.5-transcribe")
+        self.assertEqual(kwargs["source"], "mai-transcribe-2")
+        self.assertEqual(kwargs["transcript_arg"], "mai-transcribe-2")
+
+    def test_bare_transcript_flag_uses_mai_transcribe(self, *mocks):
+        mock_provider, mock_cc = self._run(mocks, "-t")
+        mock_provider.assert_called_with("mai-transcribe-2")
+        mock_cc.assert_not_called()
+
+    def test_omitted_transcript_flag_uses_youtube(self, *mocks):
+        mock_provider, mock_cc = self._run(mocks)
+        mock_provider.assert_not_called()
+        mock_cc.assert_not_called()
 
     def test_bare_flag_summarizes_with_gemini_4_carbon(self, *mocks):
         mock_chapters, *_ = mocks

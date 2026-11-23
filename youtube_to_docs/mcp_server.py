@@ -57,16 +57,17 @@ def process_video(
             under the authenticated user. If omitted and the input is a playlist,
             the playlist's title is used as the dataset name. Requires the HF_TOKEN
             environment variable.
-        transcript_source: The transcript source to use. 'youtube' (default)
-            fetches existing transcripts. Provide an AI model name
-            (e.g., 'gemini-3.5-transcribe', 'gemini-3.5-flash-lite', 'gcp-chirp3')
-            to perform STT on extracted audio. 'gemini-3.5-transcribe' is Google's
-            dedicated STT model and returns word-level timestamps plus speaker
-            diarization, so its SRT has real offsets and '[Speaker N]' labels.
-            'mai-transcribe-2' (Microsoft, on Azure Speech) does the same and needs
-            AZURE_TRANSCRIPTION_ENDPOINT and AZURE_TRANSCRIPTION_API_KEY.
-            When corrected_captions corrects an STT transcript, that model is the
-            default instead.
+        transcript_source: The transcript source to use. Omit (or 'youtube')
+            to fetch existing YouTube transcripts. Pass 'default' to use the
+            default STT model ('mai-transcribe-2'), or provide an AI model name
+            (e.g., 'mai-transcribe-2', 'gemini-3.5-transcribe',
+            'gemini-3.5-flash-lite', 'gcp-chirp3') to perform STT on extracted
+            audio. 'mai-transcribe-2' (Microsoft, on Azure Speech; needs
+            AZURE_TRANSCRIPTION_ENDPOINT and AZURE_TRANSCRIPTION_API_KEY) and
+            'gemini-3.5-transcribe' (Google) return word-level timestamps plus
+            speaker diarization, so their SRT has real offsets and
+            '[Speaker N]' labels. When corrected_captions corrects an STT
+            transcript, that model is the default instead.
         model: The LLM model to use for speaker extraction, Q&A, and summarization
             (e.g., 'gemini-3.5-flash-lite'). Can be a comma-separated list.
             Defaults to None (Transcript only).
@@ -112,7 +113,7 @@ def process_video(
             writes an Able Player page in 'vtt-files/' for checking the WebVTT
             tracks. The Q&A, summary and tags are then written from the
             corrected captions. Use 'default' for the best results (gemini-4-carbon on a
-            gemini-3.5-transcribe transcript, transcribed in the same run), or
+            mai-transcribe-2 transcript, transcribed in the same run), or
             `{model}` / `{model}-{source}` where source is 'youtube' or a
             transcript model name (e.g. 'gemini-4-carbon-youtube'). Takes about
             20 minutes for a 3-hour video.

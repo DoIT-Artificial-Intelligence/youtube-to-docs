@@ -52,7 +52,7 @@ This directory contains regression tests for the `youtube-to-docs` tool.
 
 These scripts test the complete WCAG 2.1 Level AA / Section 508 corrected SRT. Each checks the output has named speakers, no `[Speaker N]` labels, lines of at most 42 characters and no overlapping cues. The YouTube and Chirp 3 scripts accept a `CC_MODEL` env var to override the correction model (default: best available from `check_cloud_stack`).
 
-- **[regression_cc_default.py](regression_cc_default.py)**: Bare `-cc`: transcribes with `gemini-3.5-transcribe`, reads on-screen context from the video and corrects with `gemini-4-carbon`. Requires `GEMINI_API_KEY`.
+- **[regression_cc_default.py](regression_cc_default.py)**: Bare `-cc`: transcribes with `mai-transcribe-2`, reads on-screen context from the video and corrects with `gemini-4-carbon`. Requires `GEMINI_API_KEY`, `AZURE_TRANSCRIPTION_ENDPOINT`, and `AZURE_TRANSCRIPTION_API_KEY`.
 
   ```bash
   uv run --extra all python scripts/regression/regression_cc_default.py
@@ -108,7 +108,7 @@ uv run --extra gcp --extra aws python scripts/regression/regression_gcp_tts.py
 # AWS Polly TTS
 uv run --extra aws python scripts/regression/regression_aws_polly.py
 
-# Corrected captions — default (gemini-3.5-transcribe + gemini-4-carbon)
+# Corrected captions — default (mai-transcribe-2 + gemini-4-carbon)
 uv run --extra all python scripts/regression/regression_cc_default.py
 
 # Corrected captions — YouTube SRT

@@ -1,12 +1,14 @@
 """
 Regression test for --corrected-captions (default).
 
-Runs bare `-cc`: transcribes with gemini-3.5-transcribe (word timestamps
+Runs bare `-cc`: transcribes with mai-transcribe-2 (word timestamps
 and diarization), extracts on-screen context from the video, and corrects
 the STT SRT with gemini-4-carbon against the YouTube captions.
 
 Requires:
     GEMINI_API_KEY
+    AZURE_TRANSCRIPTION_ENDPOINT
+    AZURE_TRANSCRIPTION_API_KEY
 
 Run with:
     uv run --extra all python scripts/regression/regression_cc_default.py
@@ -26,8 +28,17 @@ from regression_core import (
 def main() -> None:
     print("=== Regression: --corrected-captions (default) ===\n")
 
-    if "GEMINI_API_KEY" not in os.environ:
-        print("ERROR: GEMINI_API_KEY is required.")
+    missing = [
+        var
+        for var in (
+            "GEMINI_API_KEY",
+            "AZURE_TRANSCRIPTION_ENDPOINT",
+            "AZURE_TRANSCRIPTION_API_KEY",
+        )
+        if var not in os.environ
+    ]
+    if missing:
+        print(f"ERROR: {', '.join(missing)} required.")
         sys.exit(1)
 
     clear_artifacts()
@@ -43,7 +54,7 @@ def main() -> None:
         corrected_captions="default",
     )
     verify_corrected_captions(
-        out, "Corrected Captions File gemini-4-carbon from gemini-3.5-transcribe"
+        out, "Corrected Captions File gemini-4-carbon from mai-transcribe-2"
     )
     print("\n=== SUCCESS ===")
 
