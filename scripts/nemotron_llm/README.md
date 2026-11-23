@@ -1,8 +1,8 @@
 # Running NVIDIA Nemotron LLMs (Self-Hosted vLLM)
 
-`-m nvidia-nemotron-3.5-lightning` (30B total / 3B active) and `-m nvidia-nemotron-3.5-super` (120B total / 12B active) run NVIDIA's open hybrid Mamba-2 + Transformer MoE models on your own GPU(s) behind a vLLM server, with no API rate limits or per-token charges.
+`-m nvidia-nemotron-3.5-lightning` (30B total / 3B active), `-m nvidia-nemotron-3.5-bolt` (74B total / 9B active), and `-m nvidia-nemotron-3.5-super` (120B total / 12B active) run NVIDIA's open hybrid Mamba-2 + Transformer MoE models on your own GPU(s) behind a vLLM server, with no API rate limits or per-token charges.
 
-If no compatible local GPU is detected (and `NEMOTRON_LLM_URL` is not set), `youtube-to-docs` automatically falls back to NVIDIA's free rate-limited hosted API at `build.nvidia.com` (`NVIDIA_API_KEY`).
+If no compatible local GPU is detected (and `NEMOTRON_LLM_URL` is not set), `lightning` and `super` automatically fall back to NVIDIA's free rate-limited hosted API at `build.nvidia.com` (`NVIDIA_API_KEY`). `nvidia-nemotron-3.5-bolt` (74B-A9B) is self-hosted only.
 
 ## What you need
 
@@ -14,6 +14,15 @@ Linux or WSL2 with NVIDIA GPU(s):
 | :--- | :--- | :--- |
 | NVFP4 (`NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4`) | 24 GB (compute capability 8.9+) | GCP `g2-standard-12` (L4 24GB, 48 GB RAM), `g4` (RTX PRO 6000), RTX 4090 / 5090, L40S |
 | BF16 (`NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16`) | 80 GB (compute capability 8.0+) | GCP `a2-ultragpu-1g` (A100 80GB), `a3-highgpu-1g` (H100), H200, B200 |
+
+### `nvidia-nemotron-3.5-bolt` (`serve_bolt.sh`)
+
+| Checkpoint | GPU memory | Examples (GCP / local) |
+| :--- | :--- | :--- |
+| IQ2 (`NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB`) | 24 GB Blackwell SM12x (compute capability 12.0+, requires `b12x`) | GCP `g4-standard-48` (1× RTX PRO 6000 96GB), RTX 5090, DGX Spark |
+| BF16 (`NVIDIA-Nemotron-3.5-Bolt-74B-A9B-BF16`) | 160 GB total (compute capability 8.0+) | 2× H100 80GB (`TENSOR_PARALLEL_SIZE=2`), 2× A100 80GB, 1× B200 |
+
+Note: In vLLM, the 24 GB IQ2 checkpoint requires `b12x` (`uv pip install b12x`) on SM12x Blackwell GPUs (compute capability 12.0+); older GPUs (L4, A100, H100) will fail with `Block-quantized dense weights require b12x on SM12x`.
 
 ### `nvidia-nemotron-3.5-super` (`serve_super.sh`)
 
