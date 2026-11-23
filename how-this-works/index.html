@@ -1170,11 +1170,11 @@
 <tr>
 <td style="text-align: left;">NVIDIA API catalog &amp; self-hosted Nemotron</td>
 <td style="text-align: left;"><code>nvidia-</code></td>
-<td style="text-align: left;"><code>nvidia-nemotron-3-ultra-550b-a55b</code>, <code>nvidia-nemotron-3.5-super</code>, <code>nvidia-nemotron-3.5-lightning</code></td>
+<td style="text-align: left;"><code>nvidia-nemotron-3-ultra-550b-a55b</code>, <code>nvidia-nemotron-3.5-super</code>, <code>nvidia-nemotron-3.5-bolt</code>, <code>nvidia-nemotron-3.5-lightning</code></td>
 </tr>
 </tbody>
 </table>
-<p>OpenAI GPT models on Bedrock are called through the Bedrock Mantle Chat Completions endpoint. NVIDIA models use the open models hosted at <a href="https://build.nvidia.com/models">build.nvidia.com</a>: they are free but rate limited, and a busy model can take minutes to answer. Use the model's name without its publisher, so <code>nvidia/nemotron-3-ultra-550b-a55b</code> is <code>nvidia-nemotron-3-ultra-550b-a55b</code>. For <code>nvidia-nemotron-3.5-lightning</code> (24 GB NVFP4 / 80 GB BF16) and <code>nvidia-nemotron-3.5-super</code> (96 GB Blackwell NVFP4 / 130 GB FP8 / 260 GB BF16), if compatible local GPU hardware is detected or <code>NEMOTRON_LLM_URL</code> is set, they run against your own vLLM server (see <a href="../scripts/nemotron_llm/README.md">Running Nemotron LLMs</a>); otherwise they automatically fall back to <code>build.nvidia.com</code> (<code>NVIDIA_API_KEY</code>). A comma-separated list runs several models side by side, each with its own columns.</p>
+<p>OpenAI GPT models on Bedrock are called through the Bedrock Mantle Chat Completions endpoint. NVIDIA models use the open models hosted at <a href="https://build.nvidia.com/models">build.nvidia.com</a>: they are free but rate limited, and a busy model can take minutes to answer. Use the model's name without its publisher, so <code>nvidia/nemotron-3-ultra-550b-a55b</code> is <code>nvidia-nemotron-3-ultra-550b-a55b</code>. For <code>nvidia-nemotron-3.5-lightning</code> (24 GB NVFP4 / 80 GB BF16), <code>nvidia-nemotron-3.5-bolt</code> (24 GB Blackwell SM12x IQ2 / 160 GB BF16, self-hosted only), and <code>nvidia-nemotron-3.5-super</code> (96 GB Blackwell NVFP4 / 130 GB FP8 / 260 GB BF16), if compatible local GPU hardware is detected or <code>NEMOTRON_LLM_URL</code> is set, they run against your own vLLM server (see <a href="../scripts/nemotron_llm/README.md">Running Nemotron LLMs</a>); otherwise <code>lightning</code> and <code>super</code> automatically fall back to <code>build.nvidia.com</code> (<code>NVIDIA_API_KEY</code>). A comma-separated list runs several models side by side, each with its own columns.</p>
 <p>For each video, the model writes:</p>
 <table>
 <thead>
