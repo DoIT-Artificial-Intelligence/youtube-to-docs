@@ -31,13 +31,14 @@ NEMOTRON_LLM_DEFAULT_URL = "http://127.0.0.1:8000/v1"
 NEMOTRON_LLM_TIMEOUT_SECONDS = (30, 15 * 60)
 
 NEMOTRON_LIGHTNING_MODEL = "nvidia-nemotron-3.5-lightning"
+NEMOTRON_BOLT_MODEL = "nvidia-nemotron-3.5-bolt"
 NEMOTRON_SUPER_MODEL = "nvidia-nemotron-3.5-super"
 
 
 @dataclass(frozen=True)
 class NemotronLlmSpec:
     cli_name: str
-    hosted_model_name: str
+    hosted_model_name: Optional[str]
     default_hf_id: str
     hf_ids: Tuple[str, ...]
     # (precision, min_compute_cap, min_memory_mib, size_label, example_gpus)
@@ -67,6 +68,38 @@ NEMOTRON_LLM_SPECS: Dict[str, NemotronLlmSpec] = {
                 22_000,
                 "24 GB",
                 "L4, RTX 4090, L40S, RTX 5090, RTX PRO 6000",
+            ),
+        ),
+        readme_path="scripts/nemotron_llm/README.md",
+    ),
+    NEMOTRON_BOLT_MODEL: NemotronLlmSpec(
+        cli_name=NEMOTRON_BOLT_MODEL,
+        hosted_model_name=None,
+        default_hf_id="nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB",
+        hf_ids=(
+            "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB",
+            "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-BF16",
+            "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B",
+        ),
+        # Compressed from Super VL (120B-A12B) to 74B-A9B using native 2-bit IQ2
+        # quantization to fit in 24 GB VRAM (batch size 1, 128K context). In
+        # vLLM, the block-quantized IQ2 checkpoint requires `b12x` on SM12x
+        # (compute capability 12.0+, e.g. RTX 5090, RTX PRO 6000 / GCP g4, DGX
+        # Spark). BF16 requires ~160 GB total VRAM (e.g. 2x H100 80GB or 1x B200).
+        requirements=(
+            (
+                "BF16",
+                8.0,
+                155_000,
+                "160 GB total",
+                "2x H100 80GB, 2x A100 80GB, 1x B200",
+            ),
+            (
+                "IQ2",
+                12.0,
+                22_000,
+                "24 GB Blackwell SM12x",
+                "RTX 5090, RTX PRO 6000 (GCP g4), DGX Spark",
             ),
         ),
         readme_path="scripts/nemotron_llm/README.md",
@@ -209,6 +242,9 @@ def use_self_hosted_nemotron_llm(model_name: str = NEMOTRON_LIGHTNING_MODEL) -> 
     """True when requests should go to a vLLM server instead of build.nvidia.com."""
     if not uses_local_llm_server():
         return True
+    spec = get_nemotron_llm_spec(model_name)
+    if spec.hosted_model_name is None:
+        return True
     hardware_ok, _ = check_nemotron_llm_hardware(model_name)
     return hardware_ok
 
@@ -323,10 +359,16 @@ class NemotronLlmProvider(BaseProvider, LLMProvider):
         from youtube_to_docs.llms import NvidiaProvider
 
         spec = get_nemotron_llm_spec(self.model_name)
+        if spec.hosted_model_name is None:
+            raise NemotronSetupError(
+                f"{self.model_name} is self-hosted only (not available on "
+                f"build.nvidia.com). {_server_hint(spec)}"
+            )
         return NvidiaProvider(spec.hosted_model_name).generate_content(prompt, **kwargs)
 
 
 __all__ = [
+    "NEMOTRON_BOLT_MODEL",
     "NEMOTRON_LIGHTNING_MODEL",
     "NEMOTRON_LLM_DEFAULT_URL",
     "NEMOTRON_LLM_SPECS",

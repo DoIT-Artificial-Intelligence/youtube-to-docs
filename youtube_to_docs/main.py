@@ -45,6 +45,7 @@ from youtube_to_docs.models import MODEL_SUITES
 from youtube_to_docs.nemotron_llm import (
     check_nemotron_llm_hardware,
     check_nemotron_llm_server,
+    get_nemotron_llm_spec,
     is_nemotron_llm_model,
     uses_local_llm_server,
 )
@@ -262,10 +263,11 @@ def _main_impl(
             "NVIDIA API catalog model, free and rate limited (prefix with "
             "`nvidia-` and leave out the publisher; e.g. "
             "`nvidia-nemotron-3-ultra-550b-a55b`; needs `NVIDIA_API_KEY`). "
-            "`nvidia-nemotron-3.5-lightning` and `nvidia-nemotron-3.5-super` "
+            "`nvidia-nemotron-3.5-lightning`, `nvidia-nemotron-3.5-bolt`, "
+            "and `nvidia-nemotron-3.5-super` "
             "run on your own GPU behind vLLM when compatible hardware is "
-            "detected or `NEMOTRON_LLM_URL` is set, and otherwise fall back "
-            "to build.nvidia.com.\n"
+            "detected or `NEMOTRON_LLM_URL` is set (`lightning` and `super` "
+            "fall back to build.nvidia.com; `bolt` is self-hosted only).\n"
             "Can also be a comma-separated list of models (e.g. "
             "`gemini-3.5-flash-lite,bedrock-claude-haiku-5-5`).\n"
             "Defaults to `None` (Transcript only)."
@@ -551,10 +553,14 @@ def _main_impl(
     for nemotron_model in dict.fromkeys(nemotron_llm_models):
         # Check the GPU and vLLM server before downloading anything. If no
         # compatible local GPU is detected (and NEMOTRON_LLM_URL is unset),
-        # fall back to NVIDIA's hosted API catalog (build.nvidia.com).
+        # fall back to NVIDIA's hosted API catalog (build.nvidia.com) when
+        # available; otherwise fail fast with the hardware requirements.
+        spec = get_nemotron_llm_spec(nemotron_model)
         if uses_local_llm_server():
             hardware_ok, hardware_message = check_nemotron_llm_hardware(nemotron_model)
             if not hardware_ok:
+                if spec.hosted_model_name is None:
+                    raise NemotronSetupError(hardware_message)
                 rprint(
                     f"[yellow]No compatible local GPU detected for {nemotron_model}; "
                     "routing to build.nvidia.com (requires NVIDIA_API_KEY).[/yellow]"

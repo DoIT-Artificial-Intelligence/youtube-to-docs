@@ -6,6 +6,7 @@ import requests
 
 from youtube_to_docs import llms, main, utils
 from youtube_to_docs.nemotron_llm import (
+    NEMOTRON_BOLT_MODEL,
     NEMOTRON_LIGHTNING_MODEL,
     NEMOTRON_SUPER_MODEL,
     NemotronLlmProvider,
@@ -405,6 +406,82 @@ class TestNemotronSuper(unittest.TestCase):
         self.assertEqual(
             utils.normalize_model_name(NEMOTRON_SUPER_MODEL),
             "nemotron-3.5-super",
+        )
+
+
+class TestNemotronBolt(unittest.TestCase):
+    def setUp(self):
+        _served_model_cache.clear()
+
+    def test_hardware_single_and_multi_gpu(self):
+        ok, msg = check_nemotron_llm_hardware(
+            NEMOTRON_BOLT_MODEL, [RTX_5090], platform="linux"
+        )
+        self.assertTrue(ok)
+        self.assertIn("IQ2", msg)
+
+        ok, msg = check_nemotron_llm_hardware(
+            NEMOTRON_BOLT_MODEL, [RTX_PRO_6000], platform="linux"
+        )
+        self.assertTrue(ok)
+        self.assertIn("IQ2", msg)
+
+        ok, msg = check_nemotron_llm_hardware(
+            NEMOTRON_BOLT_MODEL, [H100, H100], platform="linux"
+        )
+        self.assertTrue(ok)
+        self.assertIn("2x", msg)
+        self.assertIn("BF16", msg)
+
+        ok, msg = check_nemotron_llm_hardware(
+            NEMOTRON_BOLT_MODEL, [B200], platform="linux"
+        )
+        self.assertTrue(ok)
+        self.assertIn("BF16", msg)
+
+        # L4 (SM 8.9) and single A100 (SM 8.0) cannot run IQ2 in vLLM (needs SM12x b12x)
+        ok, msg = check_nemotron_llm_hardware(
+            NEMOTRON_BOLT_MODEL, [L4], platform="linux"
+        )
+        self.assertFalse(ok)
+        self.assertIn("too small", msg)
+
+        ok, msg = check_nemotron_llm_hardware(
+            NEMOTRON_BOLT_MODEL, [A100_40], platform="linux"
+        )
+        self.assertFalse(ok)
+        self.assertIn("too small", msg)
+
+    @patch("youtube_to_docs.nemotron_llm.requests.get")
+    def test_server_ok_24gb(self, mock_get):
+        mock_get.return_value.json.return_value = {
+            "data": [{"id": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB"}]
+        }
+        ok, message = check_nemotron_llm_server(NEMOTRON_BOLT_MODEL)
+        self.assertTrue(ok)
+        self.assertIn("24GB", message)
+
+    @patch("youtube_to_docs.main.get_youtube_service")
+    @patch(
+        "youtube_to_docs.main.check_nemotron_llm_hardware",
+        return_value=(False, "No NVIDIA driver found."),
+    )
+    def test_no_gpu_fails_fast_since_self_hosted_only(self, _, mock_youtube):
+        with (
+            patch.dict(os.environ, {}, clear=False),
+            self.assertRaisesRegex(NemotronSetupError, "No NVIDIA driver found"),
+        ):
+            os.environ.pop("NEMOTRON_LLM_URL", None)
+            main.main(["dQw4w9WgXcQ", "-m", NEMOTRON_BOLT_MODEL, "-o", "none"])
+        mock_youtube.assert_not_called()
+
+    def test_routing_pricing_and_normalization(self):
+        provider = get_provider(NEMOTRON_BOLT_MODEL)
+        self.assertIsInstance(provider, NemotronLlmProvider)
+        self.assertEqual(llms.get_model_pricing(NEMOTRON_BOLT_MODEL), (0, 0))
+        self.assertEqual(
+            utils.normalize_model_name(NEMOTRON_BOLT_MODEL),
+            "nemotron-3.5-bolt",
         )
 
 

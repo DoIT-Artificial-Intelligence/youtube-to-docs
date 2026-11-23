@@ -1,14 +1,18 @@
 """
 Run with:
 uv run python scripts/regression/regression_nemotron_llm.py
+NEMOTRON_MODEL=nvidia-nemotron-3.5-bolt \
+  uv run python scripts/regression/regression_nemotron_llm.py
 NEMOTRON_MODEL=nvidia-nemotron-3.5-super \
   uv run python scripts/regression/regression_nemotron_llm.py
 
-Tests `-m nvidia-nemotron-3.5-lightning` (default) or `-m nvidia-nemotron-3.5-super`:
+Tests `-m nvidia-nemotron-3.5-lightning` (default), `-m nvidia-nemotron-3.5-bolt`,
+or `-m nvidia-nemotron-3.5-super`:
 - Uses a self-hosted vLLM server when `NEMOTRON_LLM_URL` is set or compatible
   local GPU hardware is detected (see scripts/nemotron_llm/README.md).
 - Automatically falls back to build.nvidia.com (`NVIDIA_API_KEY`) when no
-  compatible local GPU is detected.
+  compatible local GPU is detected (`lightning` and `super` only; `bolt` is
+  self-hosted only).
 """
 
 import os
