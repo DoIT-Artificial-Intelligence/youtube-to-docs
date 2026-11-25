@@ -75,6 +75,7 @@ Set the variables for the providers you use.
 | `AZURE_TRANSCRIPTION_ENDPOINT`, `AZURE_TRANSCRIPTION_API_KEY` | Microsoft MAI-Transcribe (`-t mai-transcribe-2`). The endpoint and key of an Azure Speech or Foundry resource in a [region that has MAI-Transcribe](https://learn.microsoft.com/azure/ai-services/speech-service/regions?tabs=llmspeech). |
 | `NVIDIA_API_KEY` | Open models from the NVIDIA API catalog (`nvidia-…`). The key is free at [build.nvidia.com](https://build.nvidia.com/) and rate limited. LLMs need no extra; speech-to-text (`-t nvidia-parakeet-tdt-0.6b-v2`) needs the `nvidia` extra. |
 | `NEMOTRON_TRANSCRIBE_URL` | Optional. The vLLM server for `-t nvidia-nemotron-3.5-transcribe`, if it runs on another machine (default `http://127.0.0.1:8000/v1`). See [Running Nemotron 3.5 Transcribe](../scripts/nemotron_transcribe/README.md). |
+| `NEMOTRON_IMAGE_URL` | Optional. The server for `-i nemotron-image`, if it runs on another machine (default `http://127.0.0.1:8001/v1`). See [Running Nemotron-Labs-Image](../scripts/nemotron_image/README.md). |
 | `HF_TOKEN` | Saving to Hugging Face (`-o hf`) |
 | `YTD_CC_WORKERS` | Optional. Parallel `-cc` requests (default 6). Lower it if you hit rate limits. |
 

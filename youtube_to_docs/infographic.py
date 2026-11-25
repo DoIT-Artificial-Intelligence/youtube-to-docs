@@ -256,6 +256,11 @@ def generate_infographic(
                 output_tokens,
             )
 
+        elif image_model == "nemotron-image":
+            from youtube_to_docs.nemotron_image import generate_nemotron_image
+
+            return generate_nemotron_image(prompt)
+
         else:
             print(f"Image model {image_model} not supported yet.")
             return None, 0, 0

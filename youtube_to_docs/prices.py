@@ -306,6 +306,15 @@ PRICES = {
             "input_cached": None,
         },
         {
+            # Self-hosted open weights (nvidia/Nemotron-Labs-Image-30B-A3B).
+            "id": "nemotron-image",
+            "vendor": "nvidia",
+            "name": "Nemotron-Labs-Image-30B-A3B (open source)",
+            "input": 0,
+            "output": 0,
+            "input_cached": None,
+        },
+        {
             "id": "gcp-translate",
             "vendor": "google",
             "name": "GCP Cloud Translation*",
