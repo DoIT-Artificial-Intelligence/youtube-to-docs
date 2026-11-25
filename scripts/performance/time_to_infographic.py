@@ -26,6 +26,7 @@ MODELS = [
     "foundry-gpt-image-2.5-sunburst",
     "foundry-gpt-image-2.5-flare",
     "mai-image-2.7",
+    "nemotron-image",
 ]
 # Width of the WebP previews shown on the Performance page.
 PREVIEW_WIDTH = 1600

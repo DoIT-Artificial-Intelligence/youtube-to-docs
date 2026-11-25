@@ -20,7 +20,7 @@ To re-run it, see [`scripts/performance`](https://github.com/DoIT-Artificial-Int
 How long each image model takes to draw an infographic from the same summary, and what it costs. The summary is of the same video, written by `gemini-3.5-flash-lite` (the default `-m` model). Each model runs at its default: 16:9 landscape at the highest resolution it supports, with high thinking for Gemini.
 
 - **Time** is the wall-clock time for one `generate_infographic` call. *failed* means the call failed or the provider wasn't configured.
-- **Cost** is in USD, from the token counts and the prices on the [Pricing](pricing.md) page.
+- **Cost** is in USD, from the token counts and the prices on the [Pricing](pricing.md) page. Self-hosted `nemotron-image` was measured via vLLM on 2× NVIDIA A100 40GB (GCP `a2-highgpu-2g`) and shows `$0.000` (hourly GPU VM cost rather than per-token pricing).
 - **Size** is the width and height of the image in pixels. `gemini-3.1-flash-lite-image` only supports 1K.
 
 <div class="ytd-perf" markdown>
@@ -61,6 +61,11 @@ How long each image model takes to draw an infographic from the same summary, an
 <figure markdown>
 <a href="../assets/infographics/mai-image-2.7.webp"><img src="../assets/infographics/mai-image-2.7.webp" alt="Infographic titled MJM Committee Session, 10/1/2025 #1: AI in Maryland Government: Better Service, Stronger Guardrails, Smarter Future. Panels cover the meeting overview, Maryland's AI strategy with 25% of employees using AI, upskilling, the federal perspective from NCSL, agency deep dives (DBM, MHBE, DSCI), national best practices from Denver and Oregon, Google Public Sector, results such as 1.3M+ MHBE queries and 125,000+ Medicaid documents verified, committee Q&amp;A themes and a statewide 311 vision." loading="lazy" /></a>
 <figcaption><code>mai-image-2.7</code>: The most panels and figures, and fast and cheap, but some small text is garbled.</figcaption>
+</figure>
+
+<figure markdown>
+<a href="../assets/infographics/nemotron-image.webp"><img src="../assets/infographics/nemotron-image.webp" alt="Infographic titled MJJM Committee Session, 10/1/2025 #1, laid out in three columns covering the Federal Perspective from NCSL, Maryland's AI Roadmap and Progress Update (naming Katie Savage, DoIT, Department of Budget and Management, and Department of Service and Civic Innovation), Workforce and Productivity Rollout, data quality, and Oregon Department of Human Services Eligibot. Many small text lines are garbled or misspelled and raw Markdown hashes appear in the banner." loading="lazy" /></a>
+<figcaption><code>nemotron-image</code>: Self-hosted open weights (1248 × 832). Captures the structure and main headings, but slower on 2× A100 and garbles dense small text.</figcaption>
 </figure>
 
 </div>

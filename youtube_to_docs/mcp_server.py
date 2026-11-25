@@ -77,8 +77,10 @@ def process_video(
             'aws-polly-Ruth').
         infographic_model: The image model to use for generating an infographic
             (e.g., 'gemini-nano-banana-2.1', 'gemini-3-pro-image',
-            'foundry-gpt-image-2.5-sunburst' or 'mai-image-2.7', which needs
-            AZURE_IMAGE_ENDPOINT and AZURE_IMAGE_API_KEY). Can be a
+            'foundry-gpt-image-2.5-sunburst', 'mai-image-2.7', which needs
+            AZURE_IMAGE_ENDPOINT and AZURE_IMAGE_API_KEY, or 'nemotron-image',
+            which runs on your own GPU via a local or NEMOTRON_IMAGE_URL
+            server). Can be a
             comma-separated list to generate one infographic per model.
         alt_text_model: The LLM model to use for generating alt text for the
             infographic. Defaults to the summary model.

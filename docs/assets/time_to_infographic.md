@@ -8,3 +8,4 @@ Measured on 2026-10-19, 2026-11-25.
 | `gemini-nano-banana-2.1` | 49.1 s | $0.22 | 5504 × 3072 |
 | `foundry-gpt-image-2.5-flare` | 65.8 s | $0.40 | 3840 × 2160 |
 | `foundry-gpt-image-2.5-sunburst` | 88.1 s | $0.40 | 3840 × 2160 |
+| `nemotron-image` | 276.4 s | $0.000 | 1248 × 832 |

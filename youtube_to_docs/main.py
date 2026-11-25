@@ -42,6 +42,12 @@ from youtube_to_docs.llms import (
     parse_chapters,
 )
 from youtube_to_docs.models import MODEL_SUITES
+from youtube_to_docs.nemotron_image import (
+    NEMOTRON_IMAGE_MODEL,
+    check_nemotron_image_hardware,
+    check_nemotron_image_server,
+    uses_local_image_server,
+)
 from youtube_to_docs.nemotron_llm import (
     check_nemotron_llm_hardware,
     check_nemotron_llm_server,
@@ -309,9 +315,12 @@ def _main_impl(
             "If set as a flag without a value, defaults to "
             "`foundry-gpt-image-2.5-sunburst` (needs `AZURE_FOUNDRY_ENDPOINT` "
             "and `AZURE_FOUNDRY_API_KEY`). "
-            "e.g. `gemini-nano-banana-2.1`, `gemini-3-pro-image` or "
+            "e.g. `gemini-nano-banana-2.1`, `gemini-3-pro-image`, "
             "`mai-image-2.7` (needs `AZURE_IMAGE_ENDPOINT` and "
-            "`AZURE_IMAGE_API_KEY`). "
+            "`AZURE_IMAGE_API_KEY`), or `nemotron-image` (NVIDIA's open "
+            "Nemotron-Labs-Image-30B-A3B model on your own GPU via a local "
+            "server; set `NEMOTRON_IMAGE_URL` to use a server on another "
+            "machine). "
             "Can be a comma-separated list to generate one infographic per model "
             "(e.g. `gemini-nano-banana-2.1,gemini-3-pro-image`)."
         ),
@@ -553,6 +562,17 @@ def _main_impl(
         if infographic_arg
         else []
     )
+    if NEMOTRON_IMAGE_MODEL in infographic_models:
+        # Check the GPU(s) and server before doing any work.
+        if uses_local_image_server():
+            hardware_ok, hardware_message = check_nemotron_image_hardware()
+            if not hardware_ok:
+                raise NemotronSetupError(hardware_message)
+            rprint(f"[green]{hardware_message}[/green]")
+        server_ok, server_message = check_nemotron_image_server()
+        if not server_ok:
+            raise NemotronSetupError(server_message)
+        rprint(f"[green]{server_message}[/green]")
     translate_model = None
     translate_lang = None
     if translate_arg:
