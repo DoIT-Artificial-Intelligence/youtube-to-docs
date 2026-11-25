@@ -54,7 +54,7 @@ uv run --extra all --with pillow scripts/performance/time_to_infographic.py mai-
 
 #### What it does:
 1.  Fetches the transcript for the same video ID (`atmGAHYpf_c`) and summarizes it with `gemini-3.5-flash-lite`.
-2.  Generates one infographic per image model (Gemini, Azure Foundry and MAI-Image) at the default settings.
+2.  Generates one infographic per image model (Gemini, Azure Foundry, MAI-Image and self-hosted Nemotron) at the default settings.
 3.  Measures the time taken by `generate_infographic` for each model. If a model fails or returns no image, the time is set to `999`.
 4.  Writes `docs/assets/time_to_infographic.csv` and `.md`, and a 1600-pixel-wide WebP preview of each image to `docs/assets/infographics/`.
 
