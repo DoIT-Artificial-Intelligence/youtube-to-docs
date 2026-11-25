@@ -46,8 +46,9 @@ def generate_mai_image(
     endpoint = os.environ.get(MAI_IMAGE_ENDPOINT_ENV)
     api_key = os.environ.get(MAI_IMAGE_API_KEY_ENV)
     if not (endpoint and api_key):
+        # A fixed message, so nothing read near the key reaches the log.
         print(
-            f"Error: {MAI_IMAGE_ENDPOINT_ENV} and {MAI_IMAGE_API_KEY_ENV} "
+            "Error: AZURE_IMAGE_ENDPOINT and AZURE_IMAGE_API_KEY "
             "required for MAI-Image models."
         )
         return None, 0, 0
