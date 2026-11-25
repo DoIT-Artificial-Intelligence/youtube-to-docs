@@ -309,7 +309,9 @@ def _main_impl(
             "If set as a flag without a value, defaults to "
             "`foundry-gpt-image-2.5-sunburst` (needs `AZURE_FOUNDRY_ENDPOINT` "
             "and `AZURE_FOUNDRY_API_KEY`). "
-            "e.g. `gemini-nano-banana-2.1` or `gemini-3-pro-image`. "
+            "e.g. `gemini-nano-banana-2.1`, `gemini-3-pro-image` or "
+            "`mai-image-2.7` (needs `AZURE_IMAGE_ENDPOINT` and "
+            "`AZURE_IMAGE_API_KEY`). "
             "Can be a comma-separated list to generate one infographic per model "
             "(e.g. `gemini-nano-banana-2.1,gemini-3-pro-image`)."
         ),
