@@ -1,3 +1,4 @@
+import argparse
 import io
 import os
 import time
@@ -24,12 +25,20 @@ MODELS = [
     "gemini-3.1-flash-lite-image",
     "foundry-gpt-image-2.5-sunburst",
     "foundry-gpt-image-2.5-flare",
+    "mai-image-2.7",
 ]
 # Width of the WebP previews shown on the Performance page.
 PREVIEW_WIDTH = 1600
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "models",
+        nargs="*",
+        help="Only run these models and keep the other rows (default: all).",
+    )
+    models = parser.parse_args().models or MODELS
     print(f"Fetching transcript for {VIDEO_ID}...")
 
     yt_service = get_youtube_service()
@@ -55,7 +64,6 @@ def main():
         print(f"Failed to summarize: {summary}")
         return
 
-    results = []
     today = date.today()
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -66,7 +74,16 @@ def main():
     output_path = os.path.join(docs_assets_dir, "time_to_infographic.csv")
     md_output_path = os.path.join(docs_assets_dir, "time_to_infographic.md")
 
-    for model in MODELS:
+    results = []
+    if models != MODELS and os.path.exists(output_path):
+        # Keep the earlier rows of the models that aren't re-run.
+        results = (
+            pl.read_csv(output_path, try_parse_dates=True)
+            .filter(~pl.col("model").is_in(models))
+            .to_dicts()
+        )
+
+    for model in models:
         print(f"Testing model: {model}")
         start_time = time.time()
         input_tokens = 0

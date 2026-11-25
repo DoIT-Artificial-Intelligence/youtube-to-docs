@@ -58,4 +58,9 @@ How long each image model takes to draw an infographic from the same summary, an
 <figcaption><code>foundry-gpt-image-2.5-sunburst</code>: Default for <code>-i</code>. The most polished, poster-like design, but with several misspellings.</figcaption>
 </figure>
 
+<figure markdown>
+<a href="../assets/infographics/mai-image-2.7.webp"><img src="../assets/infographics/mai-image-2.7.webp" alt="Infographic titled MJM Committee Session, 10/1/2025 #1: AI in Maryland Government: Better Service, Stronger Guardrails, Smarter Future. Panels cover the meeting overview, Maryland's AI strategy with 25% of employees using AI, upskilling, the federal perspective from NCSL, agency deep dives (DBM, MHBE, DSCI), national best practices from Denver and Oregon, Google Public Sector, results such as 1.3M+ MHBE queries and 125,000+ Medicaid documents verified, committee Q&amp;A themes and a statewide 311 vision." loading="lazy" /></a>
+<figcaption><code>mai-image-2.7</code>: The most panels and figures, and fast and cheap, but some small text is garbled.</figcaption>
+</figure>
+
 </div>
