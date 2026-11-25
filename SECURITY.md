@@ -80,7 +80,7 @@ Claude Code / Antigravity plugin and skill, and the GitHub Actions workflows.
 ### Credentials
 
 The tool reads API keys from environment variables, such as `GEMINI_API_KEY`,
-`YOUTUBE_DATA_API_KEY`, `AWS_BEARER_TOKEN_BEDROCK`, `AZURE_FOUNDRY_API_KEY`,
+`YOUTUBE_DATA_API_KEY`, `AWS_BEARER_TOKEN_BEDROCK`, `AZURE_FOUNDRY_API_KEY`, `AZURE_IMAGE_API_KEY`,
 `NVIDIA_API_KEY` and `HF_TOKEN`. It stores OAuth files in your home directory:
 
 | File                            | Used for                           |

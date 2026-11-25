@@ -192,6 +192,72 @@ class TestInfographic(TestCase):
             (None, 0, 0),
         )
 
+    @patch.dict(
+        os.environ,
+        {
+            "AZURE_IMAGE_ENDPOINT": (
+                "https://res.services.ai.azure.com/api/projects/res-proj"
+            ),
+            "AZURE_IMAGE_API_KEY": "k",
+        },
+    )
+    @patch("requests.post")
+    def test_generate_infographic_mai_image(self, mock_post):
+        mock_post.return_value = MagicMock(ok=True)
+        mock_post.return_value.json.return_value = {
+            "data": [{"b64_json": "ZmFrZV9ieXRlcw=="}],
+            "usage": {
+                "num_output_tokens": 4037,
+                "num_input_text_tokens": 96,
+                "num_input_image_tokens": 0,
+            },
+        }
+        self.assertEqual(
+            infographic.generate_infographic(
+                "mai-image-2.7", "Summary text", "Video Title"
+            ),
+            (b"fake_bytes", 96, 4037),
+        )
+        args, kwargs = mock_post.call_args
+        self.assertEqual(
+            args[0], "https://res.services.ai.azure.com/mai/v1/images/generations"
+        )
+        self.assertEqual(kwargs["headers"]["api-key"], "k")
+        self.assertEqual(kwargs["json"]["model"], "MAI-Image-2.7")
+        self.assertEqual(
+            (kwargs["json"]["width"], kwargs["json"]["height"]), (2720, 1520)
+        )
+        self.assertLessEqual(2720 * 1520, 4_194_304)
+
+    @patch.dict(
+        os.environ,
+        {
+            "AZURE_IMAGE_ENDPOINT": "https://res.services.ai.azure.com",
+            "AZURE_IMAGE_API_KEY": "k",
+        },
+    )
+    @patch("requests.post")
+    def test_generate_infographic_mai_image_error(self, mock_post):
+        mock_post.return_value = MagicMock(ok=False, status_code=400)
+        mock_post.return_value.json.return_value = {"error": {"message": "bad size"}}
+        self.assertEqual(
+            infographic.generate_infographic("mai-image-2.7", "S", "T"), (None, 0, 0)
+        )
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_generate_infographic_mai_image_missing_env(self):
+        self.assertEqual(
+            infographic.generate_infographic("mai-image-2.7", "S", "T"), (None, 0, 0)
+        )
+
+    def test_mai_image_model_id(self):
+        self.assertEqual(
+            infographic.mai_image_model_id("mai-image-2.7"), "MAI-Image-2.7"
+        )
+        self.assertEqual(
+            infographic.mai_image_model_id("mai-image-2.5-flash"), "MAI-Image-2.5-Flash"
+        )
+
 
 if __name__ == "__main__":
     import unittest

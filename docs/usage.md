@@ -71,6 +71,7 @@ Set the variables for the providers you use.
 | `AWS_BEARER_TOKEN_BEDROCK` | AWS Bedrock models (`bedrock-…`) |
 | `YTD_S3_BUCKET_NAME` | AWS Transcribe (`-t aws-transcribe`), for temporary audio |
 | `AZURE_FOUNDRY_ENDPOINT`, `AZURE_FOUNDRY_API_KEY` | Azure Foundry models (`foundry-…`) |
+| `AZURE_IMAGE_ENDPOINT`, `AZURE_IMAGE_API_KEY` | Microsoft MAI-Image (`-i mai-image-2.7`). The endpoint (e.g. `https://<resource>.services.ai.azure.com`) and key of a Foundry resource with MAI-Image. |
 | `AZURE_TRANSCRIPTION_ENDPOINT`, `AZURE_TRANSCRIPTION_API_KEY` | Microsoft MAI-Transcribe (`-t mai-transcribe-2`). The endpoint and key of an Azure Speech or Foundry resource in a [region that has MAI-Transcribe](https://learn.microsoft.com/azure/ai-services/speech-service/regions?tabs=llmspeech). |
 | `NVIDIA_API_KEY` | Open models from the NVIDIA API catalog (`nvidia-…`). The key is free at [build.nvidia.com](https://build.nvidia.com/) and rate limited. LLMs need no extra; speech-to-text (`-t nvidia-parakeet-tdt-0.6b-v2`) needs the `nvidia` extra. |
 | `NEMOTRON_TRANSCRIBE_URL` | Optional. The vLLM server for `-t nvidia-nemotron-3.5-transcribe`, if it runs on another machine (default `http://127.0.0.1:8000/v1`). See [Running Nemotron 3.5 Transcribe](../scripts/nemotron_transcribe/README.md). |

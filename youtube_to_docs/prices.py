@@ -180,6 +180,16 @@ PRICES = {
             "input_cached": 1.25,
         },
         {
+            "id": "mai-image-2.7",
+            "vendor": "microsoft",
+            "name": "Microsoft MAI-Image-2.7 (image gen)",
+            # Not on the Azure pricing page yet (Nov 2026): MAI-Image-2's
+            # Global prices, text input and image output.
+            "input": 5.0,
+            "output": 33.0,
+            "input_cached": None,
+        },
+        {
             "id": "gemini-3-pro-image",
             "vendor": "google",
             "name": "Gemini 3 Pro Image (Nano Banana Pro)",

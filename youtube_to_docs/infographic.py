@@ -5,6 +5,87 @@ from typing import Optional, Tuple
 # Gemini image models that only render at 1K; the rest render at 4K.
 GEMINI_1K_ONLY_MODELS = ("gemini-3.1-flash-lite-image",)
 
+# Microsoft MAI-Image models (e.g. `mai-image-2.7`) on a Foundry resource.
+MAI_IMAGE_PREFIX = "mai-image-"
+MAI_IMAGE_ENDPOINT_ENV = "AZURE_IMAGE_ENDPOINT"
+MAI_IMAGE_API_KEY_ENV = "AZURE_IMAGE_API_KEY"
+# 16:9 at the largest size MAI-Image-2.7 takes (at most 4,194,304 pixels), with
+# both sides a multiple of 16 so the service doesn't round them.
+MAI_IMAGE_SIZE = (2720, 1520)
+# Seconds to connect, and to wait for the image.
+MAI_IMAGE_TIMEOUT_SECONDS = (30, 10 * 60)
+
+
+def mai_image_model_id(image_model: str) -> str:
+    """`mai-image-2.7` -> `MAI-Image-2.7` (the model name the API takes)."""
+    suffix = image_model[len(MAI_IMAGE_PREFIX) :]
+    return "MAI-Image-" + "-".join(p[:1].upper() + p[1:] for p in suffix.split("-"))
+
+
+def mai_image_url(endpoint: str) -> str:
+    """The images endpoint of a Foundry resource, from any URL on it.
+
+    Takes the resource root, or a URL copied from the portal such as the
+    project endpoint (`.../api/projects/...`) or `.../openai/v1/`.
+    """
+    from urllib.parse import urlparse
+
+    parsed = urlparse(endpoint.strip())
+    return f"{parsed.scheme}://{parsed.netloc}/mai/v1/images/generations"
+
+
+def generate_mai_image(
+    image_model: str, prompt: str
+) -> Tuple[Optional[bytes], int, int]:
+    """Generates an image with Microsoft MAI-Image.
+
+    Returns (image_bytes, input_tokens, output_tokens).
+    """
+    import requests
+
+    endpoint = os.environ.get(MAI_IMAGE_ENDPOINT_ENV)
+    api_key = os.environ.get(MAI_IMAGE_API_KEY_ENV)
+    if not (endpoint and api_key):
+        # A fixed message, so nothing read near the key reaches the log.
+        print(
+            "Error: AZURE_IMAGE_ENDPOINT and AZURE_IMAGE_API_KEY "
+            "required for MAI-Image models."
+        )
+        return None, 0, 0
+
+    width, height = MAI_IMAGE_SIZE
+    response = requests.post(
+        mai_image_url(endpoint),
+        headers={"api-key": api_key, "Content-Type": "application/json"},
+        json={
+            "model": mai_image_model_id(image_model),
+            "prompt": prompt,
+            "width": width,
+            "height": height,
+        },
+        timeout=MAI_IMAGE_TIMEOUT_SECONDS,
+    )
+    if not response.ok:
+        try:
+            message = response.json()["error"]["message"]
+        except Exception:
+            message = response.text[:500]
+        print(f"{image_model} failed ({response.status_code}): {message}")
+        return None, 0, 0
+
+    body = response.json()
+    data = body.get("data") or []
+    if not data or not data[0].get("b64_json"):
+        print(f"No image data found in response from {image_model}")
+        return None, 0, 0
+
+    usage = body.get("usage") or {}
+    input_tokens = (usage.get("num_input_text_tokens") or 0) + (
+        usage.get("num_input_image_tokens") or 0
+    )
+    output_tokens = usage.get("num_output_tokens") or 0
+    return base64.b64decode(data[0]["b64_json"]), input_tokens, output_tokens
+
 
 def image_file_extension(image_bytes: bytes) -> str:
     """Returns the file extension matching the image data's actual format."""
@@ -129,6 +210,9 @@ def generate_infographic(
                 "Use a Gemini or Azure Foundry image model instead."
             )
             return None, 0, 0
+
+        elif image_model.startswith(MAI_IMAGE_PREFIX):
+            return generate_mai_image(image_model, prompt)
 
         elif image_model.startswith("foundry"):
             from openai import OpenAI
